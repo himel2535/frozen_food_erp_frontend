@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sales — Toys Factory ERP</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <script type="module" crossorigin src="/assets/sales-invoices-CsgJHoht.js"></script>
+  <link rel="modulepreload" crossorigin href="/assets/lucide-CU5-AOMs.js">
+  <link rel="modulepreload" crossorigin href="/assets/shared-Det_SasC.js">
+  <link rel="modulepreload" crossorigin href="/assets/layout-wQjH3XYy.js">
+  <link rel="stylesheet" crossorigin href="/assets/lucide-bglkidLV.css">
+</head>
+<body class="bg-slate-50 font-['Inter'] antialiased text-slate-600">
+  <div id="screen-workspace" class="min-h-screen flex">
+    <app-sidebar mode="tenant"></app-sidebar>
+    <main class="flex-1 flex flex-col min-h-screen overflow-hidden">
+      <app-header mode="tenant" title="Enterprise Workspace"></app-header>
+
+      <div id="sales-main-view" class="flex-1 overflow-y-auto p-6 md:p-8 space-y-6 flex flex-col">
+        <div class="flex flex-col xl:flex-row xl:items-center xl:justify-between gap-4">
+          <div>
+            <h2 class="text-xl font-extrabold text-slate-900 tracking-tight"><span data-i18n="sales.invoices_title">Sales & Receivables Workspace</span></h2>
+            <p class="text-xs text-slate-500 mt-1 font-medium">Invoice lifecycle, collections, credit exposure, recurring billing, and AR visibility in one operating screen.</p>
+          </div>
+          <div class="flex flex-wrap items-center gap-2">
+            <button onclick="window.exportSalesCSV()" class="border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold px-4 py-2.5 rounded-xl transition-all">
+              Export CSV
+            </button>
+            <button onclick="window.showSalesFormView()" class="bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold px-4 py-2.5 rounded-xl transition-all shadow-md shadow-blue-500/10 flex items-center gap-2">
+              <i data-lucide="plus" class="w-4 h-4"></i> Create Invoice
+            </button>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-6 gap-4">
+          <div class="bg-white p-5 rounded-2xl border border-slate-200/80 premium-shadow">
+            <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Monthly Sales</span>
+            <span class="text-lg font-extrabold text-slate-950 block mt-2" id="sales-metric-monthly-sales">$0.00</span>
+          </div>
+          <div class="bg-white p-5 rounded-2xl border border-emerald-200/80 premium-shadow bg-emerald-50/20">
+            <span class="text-[10px] font-bold text-emerald-500 uppercase tracking-wider block">Collected This Month</span>
+            <span class="text-lg font-extrabold text-emerald-600 block mt-2" id="sales-metric-collected">$0.00</span>
+          </div>
+          <div class="bg-white p-5 rounded-2xl border border-slate-200/80 premium-shadow">
+            <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Open Receivables</span>
+            <span class="text-lg font-extrabold text-blue-600 block mt-2" id="sales-metric-open-receivables">$0.00</span>
+          </div>
+          <div class="bg-white p-5 rounded-2xl border border-rose-200 premium-shadow bg-rose-50/20">
+            <span class="text-[10px] font-bold text-rose-500 uppercase tracking-wider block">Overdue Receivables</span>
+            <span class="text-lg font-extrabold text-rose-600 block mt-2" id="sales-metric-overdue">$0.00</span>
+          </div>
+          <div class="bg-white p-5 rounded-2xl border border-slate-200/80 premium-shadow">
+            <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Collection Rate</span>
+            <span class="text-lg font-extrabold text-slate-950 block mt-2" id="sales-metric-collection-rate">0%</span>
+          </div>
+          <div class="bg-white p-5 rounded-2xl border border-slate-200/80 premium-shadow">
+            <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Avg Invoice Value</span>
+            <span class="text-lg font-extrabold text-slate-950 block mt-2" id="sales-metric-average-invoice">$0.00</span>
+          </div>
+        </div>
+
+        <div class="bg-white p-4 rounded-2xl border border-slate-200/80 premium-shadow space-y-4">
+          <div class="flex flex-col xl:flex-row xl:items-center xl:justify-between gap-3">
+            <div>
+              <h3 class="text-sm font-bold text-slate-900">AR Aging Snapshot</h3>
+              <p class="text-xs text-slate-500 mt-1 font-medium">Current and overdue balances bucketed by age.</p>
+            </div>
+          </div>
+          <div class="grid grid-cols-2 md:grid-cols-5 gap-3">
+            <div class="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
+              <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Current</span>
+              <div id="sales-aging-current" class="text-sm font-extrabold text-slate-900 mt-2">$0.00</div>
+            </div>
+            <div class="rounded-2xl border border-amber-200 bg-amber-50/40 px-4 py-3">
+              <span class="text-[10px] font-bold text-amber-500 uppercase tracking-wider">1-30</span>
+              <div id="sales-aging-0-30" class="text-sm font-extrabold text-amber-700 mt-2">$0.00</div>
+            </div>
+            <div class="rounded-2xl border border-orange-200 bg-orange-50/40 px-4 py-3">
+              <span class="text-[10px] font-bold text-orange-500 uppercase tracking-wider">31-60</span>
+              <div id="sales-aging-31-60" class="text-sm font-extrabold text-orange-700 mt-2">$0.00</div>
+            </div>
+            <div class="rounded-2xl border border-rose-200 bg-rose-50/40 px-4 py-3">
+              <span class="text-[10px] font-bold text-rose-500 uppercase tracking-wider">61-90</span>
+              <div id="sales-aging-61-90" class="text-sm font-extrabold text-rose-700 mt-2">$0.00</div>
+            </div>
+            <div class="rounded-2xl border border-rose-300 bg-rose-50/60 px-4 py-3">
+              <span class="text-[10px] font-bold text-rose-600 uppercase tracking-wider">90+</span>
+              <div id="sales-aging-90-plus" class="text-sm font-extrabold text-rose-800 mt-2">$0.00</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="bg-white p-4 rounded-2xl border border-slate-200/80 premium-shadow space-y-4">
+          <div class="flex flex-col xl:flex-row xl:items-center xl:justify-between gap-3">
+            <div class="text-xs text-slate-500 font-semibold">Filter invoice lifecycle, customer exposure, and invoice date windows.</div>
+            <div class="relative min-w-[240px]">
+              <i data-lucide="search" class="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400"></i>
+              <input type="text" id="sales-search-input" oninput="window.renderSalesTable()" placeholder="Search invoice, customer, source..." class="w-full pl-10 pr-4 py-2 rounded-xl border border-slate-200 bg-slate-50 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 transition-all">
+            </div>
+          </div>
+          <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-6 gap-3">
+            <select id="sales-customer-filter" onchange="window.renderSalesTable()" class="bg-slate-50 border border-slate-200 text-xs font-semibold text-slate-700 rounded-xl px-3 py-2 focus:outline-none">
+              <option value="all">All Customers</option>
+            </select>
+            <select id="sales-status-filter" onchange="window.renderSalesTable()" class="bg-slate-50 border border-slate-200 text-xs font-semibold text-slate-700 rounded-xl px-3 py-2 focus:outline-none">
+              <option value="all">All lifecycle states</option>
+              <option value="draft">Draft</option>
+              <option value="pending_approval">Pending Approval</option>
+              <option value="sent">Sent</option>
+              <option value="partially-paid">Partially Paid</option>
+              <option value="paid">Paid</option>
+              <option value="overdue">Overdue</option>
+              <option value="cancelled">Cancelled</option>
+            </select>
+            <select id="sales-risk-filter" onchange="window.renderSalesTable()" class="bg-slate-50 border border-slate-200 text-xs font-semibold text-slate-700 rounded-xl px-3 py-2 focus:outline-none">
+              <option value="all">All risk views</option>
+              <option value="open">Open balance</option>
+              <option value="overdue">Overdue only</option>
+              <option value="credit">Credit breach</option>
+            </select>
+            <input type="date" id="sales-date-start" onchange="window.renderSalesTable()" class="bg-slate-50 border border-slate-200 text-xs font-semibold text-slate-700 rounded-xl px-3 py-2 focus:outline-none">
+            <input type="date" id="sales-date-end" onchange="window.renderSalesTable()" class="bg-slate-50 border border-slate-200 text-xs font-semibold text-slate-700 rounded-xl px-3 py-2 focus:outline-none">
+            <button onclick="window.renderSalesTable()" class="border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold px-3 py-2 rounded-xl transition-all">Refresh View</button>
+          </div>
+        </div>
+
+        <div class="bg-white p-4 rounded-2xl border border-slate-200/80 premium-shadow space-y-4">
+          <div class="flex flex-col xl:flex-row xl:items-center xl:justify-between gap-3">
+            <div>
+              <h3 class="text-sm font-bold text-slate-900">Recurring Billing Templates</h3>
+              <p class="text-xs text-slate-500 mt-1 font-medium">Store recurring definitions and manually generate the next invoice run.</p>
+            </div>
+          </div>
+          <div id="sales-recurring-list" class="space-y-3"></div>
+        </div>
+
+        <div class="premium-card premium-shadow overflow-hidden">
+          <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs font-medium text-slate-650">
+              <thead>
+                <tr class="bg-slate-50/80 border-b border-slate-200/80 text-[10px] uppercase font-bold text-slate-400/80">
+                  <th class="px-6 py-4">Invoice</th>
+                  <th class="px-6 py-4">Customer</th>
+                  <th class="px-6 py-4">Issue Date</th>
+                  <th class="px-6 py-4">Due Date</th>
+                  <th class="px-6 py-4 text-right"><span data-i18n="common.total">Total</span></th>
+                  <th class="px-6 py-4 text-right">Paid</th>
+                  <th class="px-6 py-4 text-right">Due</th>
+                  <th class="px-6 py-4">Lifecycle</th>
+                  <th class="px-6 py-4">Approval</th>
+                  <th class="px-6 py-4 text-center"><span data-i18n="common.actions">Actions</span></th>
+                </tr>
+              </thead>
+              <tbody id="sales-table-body" class="divide-y divide-slate-100"></tbody>
+            </table>
+          </div>
+          <div class="px-6 py-4 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500 font-semibold bg-slate-50/50">
+            <span>Showing <span class="font-bold text-slate-800" id="sales-page-start">0</span> to <span class="font-bold text-slate-800" id="sales-page-end">0</span> of <span class="font-bold text-slate-800" id="sales-total-entries">0</span> invoices</span>
+            <span class="text-slate-400">Receivables update instantly after approvals, sends, payments, and cancellations.</span>
+          </div>
+        </div>
+
+        <app-footer></app-footer>
+      </div>
+
+      <div id="sales-form-view" class="flex-1 overflow-y-auto p-6 md:p-8 space-y-6 hidden bg-slate-50">
+        <div class="max-w-6xl mx-auto w-full space-y-6">
+          <div class="flex items-center justify-between gap-4 mb-6">
+            <app-form-header title="Create Sales Invoice" subtitle="Capture lifecycle, totals, due date, and recurring rules." back-action="window.showSalesMainView()"></app-form-header>
+          </div>
+
+          <form id="sales-form-invoice" onsubmit="window.handleInvoiceSubmit(event)" class="bg-white rounded-2xl border border-slate-200 p-6 premium-shadow space-y-6">
+            <div class="grid grid-cols-1 md:grid-cols-3 xl:grid-cols-6 gap-4 text-xs font-semibold text-slate-700">
+              <div><label class="block mb-2">Invoice ID</label><input id="invoice-input-id" readonly class="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-100 text-xs focus:outline-none"></div>
+              <div class="xl:col-span-2"><label class="block mb-2">Customer</label><select id="invoice-input-customer" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-xs focus:outline-none"></select></div>
+              <div><label class="block mb-2">Issue Date</label><input type="date" id="invoice-input-date" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-xs focus:outline-none"></div>
+              <div><label class="block mb-2">Due Date</label><input type="date" id="invoice-input-due-date" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-xs focus:outline-none"></div>
+              <div><label class="block mb-2">Lifecycle</label><select id="invoice-input-status" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-xs focus:outline-none"><option value="draft">Draft</option><option value="sent">Sent</option><option value="paid">Paid</option></select></div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4 text-xs font-semibold text-slate-700">
+              <div><label class="block mb-2">Terms</label><input id="invoice-input-terms" value="Net 30" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-xs focus:outline-none"></div>
+              <div><label class="block mb-2">Currency</label><select id="invoice-input-currency" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-xs focus:outline-none"><option value="USD">USD</option></select></div>
+              <div><label class="block mb-2">Initial Payment</label><input type="number" step="0.01" min="0" id="invoice-input-initial-payment" value="0" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-xs focus:outline-none"></div>
+              <div><label class="block mb-2">Recurring Template</label><label class="flex items-center gap-2 px-4 py-3 rounded-xl border border-slate-200 bg-slate-50 text-xs"><input type="checkbox" id="invoice-input-recurring"> Save as recurring</label></div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs font-semibold text-slate-700">
+              <div><label class="block mb-2">Recurring Frequency</label><select id="invoice-input-recurring-frequency" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-xs focus:outline-none"><option value="monthly">Monthly</option><option value="weekly">Weekly</option><option value="quarterly">Quarterly</option></select></div>
+              <div><label class="block mb-2">Next Run Date</label><input type="date" id="invoice-input-recurring-next-run" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-xs focus:outline-none"></div>
+            </div>
+
+            <div class="border border-slate-200 rounded-2xl overflow-hidden">
+              <div class="px-4 py-3 bg-slate-50 border-b border-slate-200 flex items-center justify-between">
+                <h4 class="text-xs font-bold text-slate-900">Invoice Items</h4>
+                <button type="button" onclick="window.addInvoiceItemRow()" class="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold px-3 py-2 rounded-xl transition-all"><i data-lucide="plus" class="w-4 h-4"></i> Add Line</button>
+              </div>
+              <div class="overflow-x-auto">
+                <table class="w-full text-left text-xs font-medium text-slate-600">
+                  <thead><tr class="bg-white border-b border-slate-200 text-[10px] uppercase font-bold text-slate-400"><th class="p-3"><span data-i18n="common.product">Product</span></th><th class="p-3 text-center">Qty</th><th class="p-3 text-right">Unit Price</th><th class="p-3 text-right">Subtotal</th><th class="p-3 text-center">Remove</th></tr></thead>
+                  <tbody id="invoice-items-tbody"></tbody>
+                </table>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs font-semibold text-slate-700 max-w-2xl">
+              <div><label class="block mb-2">Discount (%)</label><input type="number" id="invoice-input-discount" min="0" value="0" oninput="window.calcInvoiceTotals()" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-xs focus:outline-none"></div>
+              <div><label class="block mb-2">Tax (%)</label><input type="number" id="invoice-input-tax" min="0" value="10" oninput="window.calcInvoiceTotals()" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-xs focus:outline-none"></div>
+            </div>
+
+            <div class="flex justify-end">
+              <div class="bg-slate-50 border border-slate-200 rounded-2xl p-5 space-y-3 text-xs font-semibold text-slate-700 w-full max-w-sm">
+                <div class="flex justify-between"><span>Subtotal</span><span id="invoice-calc-subtotal">$0.00</span></div>
+                <div class="flex justify-between"><span>Discount</span><span id="invoice-calc-discount">-$0.00</span></div>
+                <div class="flex justify-between"><span>Tax</span><span id="invoice-calc-tax">+$0.00</span></div>
+                <div class="flex justify-between border-t border-slate-200 pt-3 text-sm font-extrabold text-slate-900"><span>Total</span><span id="invoice-calc-total">$0.00</span></div>
+              </div>
+            </div>
+
+            <div class="flex justify-end gap-3 pt-4 border-t border-slate-100">
+              <button type="button" onclick="window.showSalesMainView()" class="border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold px-4 py-2.5 rounded-xl transition-all">Cancel</button>
+              <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold px-4 py-2.5 rounded-xl transition-all shadow-md shadow-blue-500/10">Save Invoice</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <div id="sales-details-drawer-overlay" class="fixed inset-0 z-50 hidden bg-slate-900/40 backdrop-blur-[2px] transition-opacity duration-300" onclick="window.closeSalesDrawer()">
+    <div id="sales-details-drawer" class="fixed top-0 right-0 h-full w-full max-w-3xl bg-white border-l border-slate-200 shadow-2xl flex flex-col drawer-transition drawer-hidden z-50" onclick="event.stopPropagation()">
+      <div class="p-6 border-b border-slate-100 flex items-center justify-between gap-4">
+        <div>
+          <h3 class="text-sm font-bold text-slate-900">Invoice Detail</h3>
+          <p id="invoice-detail-date" class="text-xs text-slate-400 mt-1">Issued on</p>
+        </div>
+        <div class="flex items-center gap-3">
+          <span id="invoice-detail-status" class="px-2 py-0.5 text-[9px] font-bold rounded-full"></span>
+          <button onclick="window.closeSalesDrawer()" class="p-1.5 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-50">
+            <i data-lucide="x" class="w-4 h-4"></i>
+          </button>
+        </div>
+      </div>
+
+      <div class="flex-1 overflow-y-auto p-6 space-y-6">
+        <div class="flex flex-col lg:flex-row lg:items-start justify-between gap-4">
+          <div>
+            <h4 id="invoice-detail-id" class="text-lg font-extrabold text-slate-950"></h4>
+            <p id="invoice-detail-cust-name" class="text-sm font-bold text-slate-800 mt-3"></p>
+            <p id="invoice-detail-cust-company" class="text-xs text-slate-500 mt-1"></p>
+            <p id="invoice-detail-cust-email" class="text-xs text-slate-500 mt-1"></p>
+            <p id="invoice-detail-cust-phone" class="text-xs text-slate-500 mt-1"></p>
+          </div>
+          <div id="sales-drawer-actions" class="flex flex-wrap gap-2"></div>
+        </div>
+
+        <div class="grid grid-cols-2 md:grid-cols-5 gap-3">
+          <div class="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
+            <div class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Approval</div>
+            <div id="invoice-detail-approval" class="text-xs font-extrabold text-slate-900 mt-2">pending</div>
+          </div>
+          <div class="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
+            <div class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Terms</div>
+            <div id="invoice-detail-terms" class="text-xs font-extrabold text-slate-900 mt-2">Net 30</div>
+          </div>
+          <div class="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
+            <div class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Currency</div>
+            <div id="invoice-detail-currency" class="text-xs font-extrabold text-slate-900 mt-2">USD</div>
+          </div>
+          <div class="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
+            <div class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Credit Limit</div>
+            <div id="invoice-detail-credit" class="text-xs font-extrabold text-slate-900 mt-2">$0.00</div>
+          </div>
+          <div class="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
+            <div class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Customer Due / Overdue</div>
+            <div class="text-xs font-extrabold text-slate-900 mt-2"><span id="invoice-detail-customer-due">$0.00</span> / <span id="invoice-detail-aging">$0.00</span></div>
+          </div>
+        </div>
+
+        <div class="border border-slate-200 rounded-2xl overflow-hidden">
+          <table class="w-full text-left text-xs font-medium text-slate-600">
+            <thead>
+              <tr class="bg-slate-50 border-b border-slate-200 text-[10px] uppercase font-bold text-slate-400">
+                <th class="px-4 py-3">Item</th>
+                <th class="px-4 py-3 text-center">Qty</th>
+                <th class="px-4 py-3 text-right">Unit Price</th>
+                <th class="px-4 py-3 text-right"><span data-i18n="common.total">Total</span></th>
+              </tr>
+            </thead>
+            <tbody id="invoice-detail-items-tbody" class="divide-y divide-slate-100"></tbody>
+          </table>
+        </div>
+
+        <div class="ml-auto max-w-sm bg-slate-50 border border-slate-200 rounded-2xl p-5 space-y-3 text-xs font-semibold text-slate-700">
+          <div class="flex justify-between"><span>Subtotal</span><span id="invoice-detail-subtotal">$0.00</span></div>
+          <div class="flex justify-between"><span>Discount</span><span id="invoice-detail-discount">-$0.00</span></div>
+          <div class="flex justify-between"><span>Tax</span><span id="invoice-detail-tax">+$0.00</span></div>
+          <div class="flex justify-between"><span>Paid</span><span id="invoice-detail-paid">$0.00</span></div>
+          <div class="flex justify-between"><span>Due</span><span id="invoice-detail-due">$0.00</span></div>
+          <div class="flex justify-between border-t border-slate-200 pt-3 text-sm font-extrabold text-slate-900"><span>Total</span><span id="invoice-detail-total">$0.00</span></div>
+        </div>
+
+        <div class="space-y-3">
+          <div>
+            <h4 class="text-sm font-bold text-slate-900">Receive Payment</h4>
+            <p class="text-xs text-slate-500 mt-1 font-medium">Record partial or full collections directly against this invoice.</p>
+          </div>
+          <form onsubmit="window.recordInvoicePayment(event)" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-6 gap-3">
+            <input type="hidden" id="payment-input-invoice-id">
+            <input type="date" id="payment-input-date" class="px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-xs focus:outline-none">
+            <input type="number" step="0.01" min="0" id="payment-input-amount" placeholder="Amount" class="px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-xs focus:outline-none">
+            <select id="payment-input-method" class="px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-xs focus:outline-none">
+              <option value="Bank Transfer">Bank Transfer</option>
+              <option value="Cash">Cash</option>
+              <option value="Stripe">Stripe</option>
+              <option value="PayPal">PayPal</option>
+              <option value="Cheque">Cheque</option>
+            </select>
+            <input type="text" id="payment-input-reference" placeholder="Reference No." class="px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-xs focus:outline-none">
+            <input type="text" id="payment-input-transaction" placeholder="Transaction ID" class="px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-xs focus:outline-none">
+            <div class="flex gap-3 xl:col-span-1">
+              <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold px-4 py-2.5 rounded-xl transition-all shadow-md shadow-blue-500/10">Record</button>
+            </div>
+            <textarea id="payment-input-notes" rows="2" placeholder="Notes" class="md:col-span-2 xl:col-span-6 px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-xs focus:outline-none"></textarea>
+          </form>
+        </div>
+
+        <div class="space-y-3">
+          <div>
+            <h4 class="text-sm font-bold text-slate-900">Payment History</h4>
+            <p class="text-xs text-slate-500 mt-1 font-medium">Every payment applied to this invoice.</p>
+          </div>
+          <div class="border border-slate-200 rounded-2xl overflow-hidden">
+            <table class="w-full text-left text-xs font-medium text-slate-600">
+              <thead>
+                <tr class="bg-slate-50 border-b border-slate-200 text-[10px] uppercase font-bold text-slate-400">
+                  <th class="px-4 py-3">Payment</th>
+                  <th class="px-4 py-3"><span data-i18n="common.date">Date</span></th>
+                  <th class="px-4 py-3">Method</th>
+                  <th class="px-4 py-3">Reference</th>
+                  <th class="px-4 py-3 text-right"><span data-i18n="common.amount">Amount</span></th>
+                </tr>
+              </thead>
+              <tbody id="sales-payment-history-body" class="divide-y divide-slate-100"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="space-y-3">
+          <div>
+            <h4 class="text-sm font-bold text-slate-900">Customer Ledger</h4>
+            <p class="text-xs text-slate-500 mt-1 font-medium">Combined invoice and payment movements for this customer.</p>
+          </div>
+          <div class="border border-slate-200 rounded-2xl overflow-hidden">
+            <table class="w-full text-left text-xs font-medium text-slate-600">
+              <thead>
+                <tr class="bg-slate-50 border-b border-slate-200 text-[10px] uppercase font-bold text-slate-400">
+                  <th class="px-4 py-3"><span data-i18n="common.date">Date</span></th>
+                  <th class="px-4 py-3"><span data-i18n="common.type">Type</span></th>
+                  <th class="px-4 py-3">Reference</th>
+                  <th class="px-4 py-3 text-right">Debit</th>
+                  <th class="px-4 py-3 text-right">Credit</th>
+                  <th class="px-4 py-3 text-right">Running Balance</th>
+                </tr>
+              </thead>
+              <tbody id="sales-customer-ledger-body" class="divide-y divide-slate-100"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="space-y-3">
+          <div>
+            <h4 class="text-sm font-bold text-slate-900">Recurring Template</h4>
+            <p class="text-xs text-slate-500 mt-1 font-medium">Recurring billing details if this invoice was saved as a template.</p>
+          </div>
+          <div id="sales-recurring-panel"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</body>
+</html>

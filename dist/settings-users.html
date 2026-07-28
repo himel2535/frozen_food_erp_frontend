@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Users — Toys Factory ERP</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <script type="module" crossorigin src="/assets/settings-users-CTKQSSFj.js"></script>
+  <link rel="modulepreload" crossorigin href="/assets/lucide-CU5-AOMs.js">
+  <link rel="modulepreload" crossorigin href="/assets/shared-Det_SasC.js">
+  <link rel="modulepreload" crossorigin href="/assets/layout-wQjH3XYy.js">
+  <link rel="stylesheet" crossorigin href="/assets/lucide-bglkidLV.css">
+</head>
+<body class="bg-slate-50 font-['Inter'] antialiased text-slate-600">
+  <div id="screen-workspace" class="min-h-screen flex">
+    <app-sidebar mode="tenant"></app-sidebar>
+    <main class="flex-1 flex flex-col min-h-screen overflow-hidden">
+      <app-header mode="tenant" title="Enterprise Workspace"></app-header>
+
+      <!-- Main Users List View -->
+      <div id="settings-users-main-view" class="flex-1 overflow-y-auto p-6 md:p-8 space-y-6 flex flex-col justify-between">
+        <div class="space-y-6">
+          <!-- Page Header -->
+          <section class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div>
+              <h2 class="text-xl font-extrabold text-slate-900 tracking-tight"><span data-i18n="settings.users_title">Users Management</span></h2>
+              <p class="text-xs text-slate-500 mt-1 font-medium">Configure team credentials, access profiles, and activity status.</p>
+            </div>
+            <div class="flex items-center gap-2.5">
+              <button onclick="window.openUserForm()" class="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl px-5 py-2.5 text-xs font-semibold shadow-md shadow-blue-500/10 transition-all cursor-pointer">
+                <i data-lucide="plus" class="w-4 h-4"></i>
+                <span>Add User</span>
+              </button>
+            </div>
+          </section>
+
+          <!-- Dashboard Metrics -->
+          <div class="grid grid-cols-2 lg:grid-cols-4 gap-4" id="settings-users-metrics">
+            <!-- Populated dynamically by JS -->
+          </div>
+
+          <!-- Filter & Search Bar -->
+          <div class="bg-white p-4 rounded-2xl border border-slate-200/80 premium-shadow flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div class="text-xs text-slate-500 font-semibold">Search and manage credentials.</div>
+            <div class="flex items-center gap-3">
+              <div class="relative min-w-[240px]">
+                <i data-lucide="search" class="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400"></i>
+                <input type="text" id="settings-users-search" oninput="window.renderUsers()" placeholder="Search users by name, email..." class="w-full pl-10 pr-4 py-2 rounded-xl border border-slate-200 bg-slate-50 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 transition-all font-medium">
+              </div>
+            </div>
+          </div>
+
+          <!-- Users Table Grid -->
+          <div class="bg-white rounded-2xl border border-slate-200/80 premium-shadow overflow-hidden">
+            <div class="overflow-x-auto">
+              <table class="w-full text-left text-xs border-collapse">
+                <thead>
+                  <tr class="bg-slate-50/70 border-b border-slate-100 text-slate-500 font-bold">
+                    <th class="p-4">User</th>
+                    <th class="p-4"><span data-i18n="common.email">Email</span></th>
+                    <th class="p-4">Role</th>
+                    <th class="p-4"><span data-i18n="common.status">Status</span></th>
+                    <th class="p-4">Last Login</th>
+                    <th class="p-4 text-right"><span data-i18n="common.actions">Actions</span></th>
+                  </tr>
+                </thead>
+                <tbody id="settings-users-tbody" class="divide-y divide-slate-100 font-medium text-slate-700">
+                  <!-- Rendered dynamically by JS -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+        <app-footer></app-footer>
+      </div>
+
+      <!-- Users Form View -->
+      <div id="settings-users-form-view" class="flex-1 overflow-y-auto p-6 md:p-8 space-y-6 hidden bg-slate-50">
+        <div class="max-w-4xl mx-auto w-full space-y-6">
+          <app-form-header title-id="user-form-title" title="Create User" subtitle="Provide user details to configure their profile." back-action="window.showMainView()"></app-form-header>
+
+          <form id="settings-users-form" onsubmit="window.handleUserSubmit(event)" class="bg-white rounded-2xl border border-slate-200 p-6 premium-shadow space-y-6 text-xs font-semibold text-slate-700">
+            <input type="hidden" id="input-user-index">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label class="block text-slate-600 mb-1.5 text-[11px] font-semibold">Full Name <span class="text-red-500">*</span></label>
+                <input type="text" id="input-name" required placeholder="John Doe" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all font-medium">
+              </div>
+              <div>
+                <label class="block text-slate-600 mb-1.5 text-[11px] font-semibold">Email Address (Optional)</label>
+                <input type="email" id="input-email" placeholder="john.doe@example.com" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all font-medium">
+              </div>
+              <div>
+                <label class="block text-slate-600 mb-1.5 text-[11px] font-semibold">User Role <span class="text-red-500">*</span></label>
+                <select id="input-role" required class="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all cursor-pointer font-bold">
+                  <option value="Admin">Admin</option>
+                  <option value="Manager">Manager</option>
+                  <option value="Staff">Staff</option>
+                  <option value="Viewer">Viewer</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-slate-600 mb-1.5 text-[11px] font-semibold">Status <span class="text-red-500">*</span></label>
+                <select id="input-status" required class="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all cursor-pointer font-bold">
+                  <option value="active">Active</option>
+                  <option value="inactive">Inactive</option>
+                  <option value="on-leave">On-Leave</option>
+                  <option value="pending">Pending Invitation</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- Advanced Details Toggle -->
+            <div>
+              <button type="button" onclick="window.toggleAdvancedFields()" class="flex items-center gap-2 text-blue-600 hover:text-blue-700 text-xs font-bold transition-colors cursor-pointer">
+                <i data-lucide="chevron-down" id="settings-users-advanced-icon" class="w-4 h-4 transition-transform"></i>
+                <span><span data-i18n="common.show_advanced">Show Advanced Details</span></span>
+              </button>
+            </div>
+
+            <div id="settings-users-advanced-section" class="hidden space-y-4 pt-4 border-t border-slate-100">
+              <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                  <label class="block text-slate-600 mb-1.5 text-[11px] font-semibold">Phone Number</label>
+                  <input type="tel" id="input-phone" placeholder="+1 (555) 000-0000" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all font-medium">
+                </div>
+                <div>
+                  <label class="block text-slate-600 mb-1.5 text-[11px] font-semibold">Job Title</label>
+                  <input type="text" id="input-job-title" placeholder="e.g. Sales Specialist" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all font-medium">
+                </div>
+                <div>
+                  <label class="block text-slate-600 mb-1.5 text-[11px] font-semibold">Department</label>
+                  <input type="text" id="input-department" placeholder="e.g. Commerce" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all font-medium">
+                </div>
+              </div>
+              <div>
+                <label class="block text-slate-600 mb-1.5 text-[11px] font-semibold">Biographical Summary</label>
+                <textarea id="input-bio" rows="2" placeholder="Brief notes about the employee..." class="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all resize-none font-medium"></textarea>
+              </div>
+            </div>
+
+            <!-- Form Actions -->
+            <div class="flex justify-end gap-3 pt-4 border-t border-slate-100">
+              <button type="button" onclick="window.showMainView()" class="border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold px-4 py-2.5 rounded-xl transition-all cursor-pointer">Cancel</button>
+              <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold px-4 py-2.5 rounded-xl transition-all shadow-md shadow-blue-500/10 cursor-pointer">Save User</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </main>
+  </div>
+
+</body>
+</html>

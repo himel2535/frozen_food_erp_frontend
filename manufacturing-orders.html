@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Production Orders — Toys Factory ERP</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/index.css">
+</head>
+<body class="bg-slate-50 font-['Inter'] antialiased text-slate-600">
+  <div id="screen-workspace" class="min-h-screen flex">
+    <app-sidebar mode="tenant"></app-sidebar>
+    <main class="flex-1 flex flex-col min-h-screen overflow-hidden">
+      <app-header mode="tenant" title="Manufacturing"></app-header>
+      <div class="flex-1 overflow-y-auto p-6 md:p-8">
+        
+        <!-- Main View (Table) -->
+        <div id="po-main-view" class="max-w-7xl mx-auto flex flex-col gap-6">
+          <section class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div>
+              <h2 class="text-2xl md:text-3xl font-extrabold text-slate-900 tracking-tight"><span data-i18n="manufacturing.orders_title">Production Orders</span></h2>
+              <p class="text-xs text-slate-500 mt-1.5 font-medium">Manage manufacturing jobs, assign machines, and track completion.</p>
+            </div>
+            <div class="flex items-center gap-3">
+              <button onclick="window.openPoModal()" class="flex items-center gap-2 bg-blue-600 text-white px-4 py-2.5 rounded-xl font-bold text-xs shadow-sm hover:bg-blue-700 transition-colors cursor-pointer">
+                <i data-lucide="plus" class="w-4 h-4"></i> Create Production Order
+              </button>
+            </div>
+          </section>
+
+          <!-- Metrics / KPI Row -->
+          <section class="grid grid-cols-1 md:grid-cols-4 gap-4" id="po-metrics">
+            <!-- Rendered via JS -->
+          </section>
+
+          <section class="bg-white rounded-2xl border border-slate-200/80 premium-shadow flex flex-col overflow-hidden">
+            <div class="p-5 border-b border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-4 bg-slate-50/50">
+              <div class="relative w-full sm:w-72">
+                <i data-lucide="search" class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400"></i>
+                <input type="text" id="po-search-input" placeholder="Search PO ID, BOM..." class="w-full pl-9 pr-4 py-2 text-xs font-semibold text-slate-800 bg-white border border-slate-200 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500" oninput="window.renderTable()">
+              </div>
+              <div class="flex items-center gap-2 w-full sm:w-auto">
+                <select id="po-filter-status" class="w-full sm:w-auto px-3 py-2 text-xs font-semibold text-slate-700 bg-white border border-slate-200 rounded-lg focus:outline-none" onchange="window.renderTable()">
+                  <option value="all">All Status</option>
+                  <option value="Planned">Planned</option>
+                  <option value="In Progress">In Progress</option>
+                  <option value="Completed">Completed</option>
+                  <option value="Cancelled">Cancelled</option>
+                </select>
+              </div>
+            </div>
+            <div class="overflow-x-auto">
+              <table class="w-full text-left text-xs font-medium text-slate-600">
+                <thead>
+                  <tr class="bg-slate-50/80 border-b border-slate-100 text-[10px] uppercase font-bold text-slate-400/80 tracking-wider">
+                    <th class="px-6 py-4">PO ID</th>
+                    <th class="px-6 py-4">Target Product & BOM</th>
+                    <th class="px-6 py-4 text-center">Planned Qty</th>
+                    <th class="px-6 py-4">Machine & Mold</th>
+                    <th class="px-6 py-4">Dates</th>
+                    <th class="px-6 py-4"><span data-i18n="common.status">Status</span></th>
+                    <th class="px-6 py-4 text-center"><span data-i18n="common.actions">Actions</span></th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100" id="po-table-body">
+                  <!-- JS Populated -->
+                </tbody>
+              </table>
+            </div>
+          </section>
+        </div>
+
+        <!-- Form View -->
+        <div id="po-form-view" class="max-w-4xl mx-auto hidden flex flex-col gap-6 relative">
+          <app-form-header 
+            title-id="po-form-title" 
+            title="Create Production Order" 
+            subtitle="Plan a new production run and assign resources." 
+            back-action="window.showMainView()">
+          </app-form-header>
+
+          <form id="po-form" onsubmit="window.handleSubmit(event)" class="flex flex-col gap-6">
+            <input type="hidden" id="po-edit-id">
+            
+            <section class="bg-white rounded-2xl border border-slate-200/80 premium-shadow p-6 flex flex-col gap-5">
+              <h3 class="text-sm font-bold text-slate-900 flex items-center gap-2 border-b border-slate-100 pb-3">
+                <i data-lucide="factory" class="w-4 h-4 text-blue-600"></i> Production Details
+              </h3>
+              
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                <label class="flex flex-col gap-1.5">
+                  <span class="text-[11px] font-bold text-slate-700">Select BOM <span class="text-red-500">*</span></span>
+                  <select id="po-input-bom" required class="px-3 py-2.5 text-xs font-semibold text-slate-900 bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20" onchange="window.updateFormHelpers()">
+                    <!-- Populated via JS -->
+                  </select>
+                </label>
+                <label class="flex flex-col gap-1.5">
+                  <span class="text-[11px] font-bold text-slate-700">Planned Quantity <span class="text-red-500">*</span></span>
+                  <input type="number" id="po-input-qty" required min="1" value="1" class="px-3 py-2.5 text-xs font-semibold text-slate-900 bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20">
+                </label>
+              </div>
+
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                <label class="flex flex-col gap-1.5">
+                  <span class="text-[11px] font-bold text-slate-700">Assign Machine</span>
+                  <select id="po-input-machine" class="px-3 py-2.5 text-xs font-semibold text-slate-900 bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20">
+                    <!-- Populated via JS -->
+                  </select>
+                </label>
+                <label class="flex flex-col gap-1.5">
+                  <span class="text-[11px] font-bold text-slate-700">Assign Mold (Optional)</span>
+                  <select id="po-input-mold" class="px-3 py-2.5 text-xs font-semibold text-slate-900 bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20">
+                    <!-- Populated via JS -->
+                  </select>
+                </label>
+              </div>
+
+              <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+                <label class="flex flex-col gap-1.5">
+                  <span class="text-[11px] font-bold text-slate-700">Start Date <span class="text-red-500">*</span></span>
+                  <input type="date" id="po-input-start" required class="px-3 py-2.5 text-xs font-semibold text-slate-900 bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20">
+                </label>
+                <label class="flex flex-col gap-1.5">
+                  <span class="text-[11px] font-bold text-slate-700">End Date</span>
+                  <input type="date" id="po-input-end" class="px-3 py-2.5 text-xs font-semibold text-slate-900 bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20">
+                </label>
+                <label class="flex flex-col gap-1.5">
+                  <span class="text-[11px] font-bold text-slate-700">Status</span>
+                  <select id="po-input-status" class="px-3 py-2.5 text-xs font-semibold text-slate-900 bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20">
+                    <option value="Planned">Planned</option>
+                    <option value="In Progress">In Progress</option>
+                    <option value="Completed">Completed</option>
+                    <option value="Cancelled">Cancelled</option>
+                  </select>
+                </label>
+              </div>
+
+              <div id="po-materials-preview" class="hidden p-4 rounded-xl bg-blue-50/50 border border-blue-100 mt-2">
+                <h4 class="text-[11px] font-bold text-blue-800 mb-2">Required Materials (Preview)</h4>
+                <div id="po-materials-list" class="flex flex-col gap-1 text-xs text-slate-700 font-medium">
+                </div>
+              </div>
+            </section>
+
+            <div class="flex items-center justify-end gap-3 pt-2">
+              <button type="button" onclick="window.showMainView()" class="px-5 py-2.5 rounded-xl font-bold text-xs text-slate-600 bg-white border border-slate-200 hover:bg-slate-50 transition-colors shadow-sm cursor-pointer">Cancel</button>
+              <button type="submit" class="px-6 py-2.5 rounded-xl font-bold text-xs text-white bg-blue-600 hover:bg-blue-700 shadow-md shadow-blue-500/20 transition-all cursor-pointer">Save Order</button>
+            </div>
+          </form>
+        </div>
+
+        <app-footer></app-footer>
+      </div>
+    </main>
+  </div>
+
+  <script type="module" src="/layout.js"></script>
+  <script type="module" src="/js/shared.js"></script>
+  <script type="module" src="/js/manufacturing-orders.js"></script>
+</body>
+</html>

@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Payroll Runs — Toys Factory ERP</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/index.css">
+</head>
+<body class="bg-slate-50 font-['Inter'] antialiased text-slate-600">
+  <div id="screen-workspace" class="min-h-screen flex">
+    <app-sidebar mode="tenant"></app-sidebar>
+    <main class="flex-1 flex flex-col min-h-screen overflow-hidden">
+      <app-header mode="tenant" title="Enterprise Workspace"></app-header>
+
+      <div id="payroll-runs-main-view" class="flex-1 overflow-y-auto p-6 md:p-8 space-y-6 flex flex-col">
+        <div class="flex flex-col xl:flex-row xl:items-center xl:justify-between gap-4">
+          <div>
+            <h2 class="text-xl font-extrabold text-slate-900 tracking-tight"><span data-i18n="payroll.runs_title">Payroll Runs</span></h2>
+            <p class="text-xs text-slate-500 mt-1 font-medium">Execute and track monthly payroll processing.</p>
+          </div>
+          <div class="flex flex-wrap items-center gap-2">
+            <button onclick="window.openRunModal()" class="bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold px-4 py-2.5 rounded-xl transition-all shadow-md shadow-blue-500/10 flex items-center gap-2 cursor-pointer">
+              <i data-lucide="play-circle" class="w-4 h-4"></i> New Payroll Run
+            </button>
+          </div>
+        </div>
+
+        <!-- Metrics Section -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4" id="payroll-runs-metrics">
+          <!-- Populated by JS -->
+        </div>
+
+        <!-- Filter Bar -->
+        <div class="bg-white p-4 rounded-2xl border border-slate-200/80 premium-shadow space-y-4">
+          <div class="flex flex-col xl:flex-row xl:items-center xl:justify-between gap-3">
+            <div class="text-xs text-slate-500 font-semibold">Filter and search operations.</div>
+            <div class="relative min-w-[240px]">
+              <i data-lucide="search" class="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400"></i>
+              <input type="text" id="payroll-runs-search-input" oninput="window.renderTable()" placeholder="Search runs..." class="w-full pl-10 pr-4 py-2 rounded-xl border border-slate-200 bg-slate-50 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 transition-all font-medium cursor-text">
+            </div>
+          </div>
+        </div>
+
+        <!-- Table View -->
+        <section id="payroll-runs-panel-list" class="space-y-4">
+          <div class="bg-white p-4 rounded-2xl border border-slate-200/80 premium-shadow space-y-4">
+            <div class="overflow-x-auto rounded-xl border border-slate-100">
+              <table class="w-full text-left text-xs border-collapse whitespace-nowrap">
+                <thead>
+                  <tr class="bg-slate-50 text-slate-500 border-b border-slate-100 font-bold">
+                    <th class="p-4">Run ID</th>
+                    <th class="p-4">Pay Period</th>
+                    <th class="p-4">Process Date</th>
+                    <th class="p-4">Department</th>
+                    <th class="p-4">Total Gross</th>
+                    <th class="p-4">Total Net</th>
+                    <th class="p-4"><span data-i18n="common.status">Status</span></th>
+                    <th class="p-4 text-right"><span data-i18n="common.actions">Actions</span></th>
+                  </tr>
+                </thead>
+                <tbody id="payroll-runs-body" class="divide-y divide-slate-100 font-medium text-slate-700">
+                  <!-- Rendered by JS -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <app-footer></app-footer>
+      </div>
+
+      <!-- Inline Form View -->
+      <div id="payroll-runs-form-view" class="flex-1 overflow-y-auto p-6 md:p-8 space-y-6 hidden bg-slate-50">
+        <div class="max-w-4xl mx-auto w-full space-y-6">
+          <app-form-header 
+            title-id="run-form-title"
+            title="Execute Payroll Run" 
+            subtitle="Initiate payroll processing for a specific period." 
+            back-action="window.showMainView()">
+          </app-form-header>
+
+          <form id="payroll-runs-form" onsubmit="window.handleSubmit(event)" class="bg-white rounded-2xl border border-slate-200 p-6 premium-shadow space-y-6 text-xs font-semibold text-slate-700">
+            <!-- Basic Fields -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label class="block mb-2 text-slate-600">Pay Period <span class="text-red-500">*</span></label>
+                <input type="month" id="input-period" required class="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:bg-white transition-colors cursor-pointer">
+              </div>
+              <div>
+                <label class="block mb-2 text-slate-600">Process Date <span class="text-red-500">*</span></label>
+                <input type="date" id="input-date" required class="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:bg-white transition-colors cursor-pointer">
+              </div>
+              <div>
+                <label class="block mb-2 text-slate-600">Department</label>
+                <select id="input-department" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:bg-white transition-colors cursor-pointer appearance-none">
+                  <option value="All">All Departments</option>
+                  <option value="Engineering">Engineering</option>
+                  <option value="Sales">Sales</option>
+                  <option value="HR">HR & Admin</option>
+                </select>
+              </div>
+              <div>
+                <label class="block mb-2 text-slate-600">Notes / Remarks</label>
+                <input type="text" id="input-notes" placeholder="e.g. June 2026 Regular Salary" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:bg-white transition-colors cursor-text">
+              </div>
+            </div>
+
+            <!-- Advanced Toggle -->
+            <div class="pt-2">
+              <button type="button" onclick="window.toggleAdvancedFields()" class="flex items-center gap-2 text-blue-600 hover:text-blue-700 text-xs font-bold transition-colors cursor-pointer">
+                <i data-lucide="chevron-down" id="payroll-runs-advanced-icon" class="w-4 h-4 transition-transform"></i>
+                Show Advanced Details
+              </button>
+            </div>
+
+            <!-- Advanced Fields -->
+            <div id="payroll-runs-advanced-section" class="hidden space-y-6 pt-4 border-t border-slate-100">
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label class="block mb-2 text-slate-600">Approval Reference</label>
+                  <input type="text" id="input-approval-ref" placeholder="e.g. AUTH-992211" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:bg-white transition-colors cursor-text">
+                </div>
+                <div>
+                  <label class="block mb-2 text-slate-600">Bank Disbursement File ID</label>
+                  <input type="text" id="input-bank-id" placeholder="e.g. ACH-100299" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:bg-white transition-colors cursor-text">
+                </div>
+                <div class="md:col-span-2 flex items-center gap-3 bg-white p-3 rounded-xl border border-slate-200">
+                  <input type="checkbox" id="input-rule-6-7" checked class="w-4 h-4 text-blue-600 border-slate-300 rounded focus:ring-blue-500/20 cursor-pointer">
+                  <label for="input-rule-6-7" class="text-xs font-bold text-slate-700 cursor-pointer">Apply Standard Factory Rule: 6 days present = 7 days salary</label>
+                </div>
+              </div>
+              <div class="bg-blue-50 text-blue-800 p-4 rounded-xl text-xs flex items-start gap-3">
+                <i data-lucide="info" class="w-4 h-4 mt-0.5 shrink-0"></i>
+                <p>Generating this run will calculate gross pay, deductions, and net pay for all active employees in the selected department based on their assigned salary structures.</p>
+              </div>
+            </div>
+
+            <!-- Form Actions -->
+            <div class="flex justify-end gap-3 pt-4 border-t border-slate-100">
+              <button type="button" onclick="window.showMainView()" class="border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold px-4 py-2.5 rounded-xl transition-all cursor-pointer">Cancel</button>
+              <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold px-4 py-2.5 rounded-xl transition-all shadow-md shadow-blue-500/10 cursor-pointer flex items-center gap-2">
+                <i data-lucide="check-circle" class="w-4 h-4"></i> Generate Payroll
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script type="module" src="/layout.js"></script>
+  <script type="module" src="/js/shared.js"></script>
+  <script type="module" src="/js/payroll-runs.js"></script>
+</body>
+</html>

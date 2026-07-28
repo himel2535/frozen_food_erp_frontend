@@ -1,0 +1,35 @@
+import"./lucide-CU5-AOMs.js";import"./layout-wQjH3XYy.js";import{n as e,o as t,s as n,t as r}from"./shared-Det_SasC.js";var i=[];function a(){return e.wastageLogs||(e.wastageLogs=[...i],n()),e.wastageLogs}function o(){return Array.isArray(e.productionOrders)?e.productionOrders:[]}function s(){return Array.isArray(e.boms)?e.boms:[]}function c(){return Array.isArray(e.inventory)?e.inventory:[]}function l(e){return c().find(t=>t.id===Number(e))}function u(e){return String(e??``).replace(/&/g,`&amp;`).replace(/</g,`&lt;`).replace(/>/g,`&gt;`).replace(/"/g,`&quot;`).replace(/'/g,`&#39;`)}function d(e){return`$${Number(e||0).toLocaleString(`en-US`,{minimumFractionDigits:2,maximumFractionDigits:2})}`}function f(){let e=a().reduce((e,t)=>{let n=Number.parseInt(String(t.id||``).replace(/[^\d]/g,``),10);return Number.isFinite(n)?Math.max(e,n):e},0);return`WST-${String(e+1).padStart(3,`0`)}`}window.showMainView=function(){document.getElementById(`wastage-main-view`).classList.remove(`hidden`),document.getElementById(`wastage-form-view`).classList.add(`hidden`)},window.showFormView=function(){document.getElementById(`wastage-main-view`).classList.add(`hidden`),document.getElementById(`wastage-form-view`).classList.remove(`hidden`)},window.openWastageModal=function(e=``){let n=document.getElementById(`wastage-form`);if(n){if(n.reset(),document.getElementById(`wastage-edit-id`).value=``,document.getElementById(`wastage-form-title`).textContent=`Log Quality Defect`,document.getElementById(`wastage-input-date`).value=new Date().toISOString().split(`T`)[0],p(),e){let t=a().find(t=>t.id===e);t&&(document.getElementById(`wastage-edit-id`).value=t.id,document.getElementById(`wastage-form-title`).textContent=`Edit Quality Defect`,document.getElementById(`wastage-input-po`).value=t.productionOrderId,document.getElementById(`wastage-input-date`).value=t.date,document.getElementById(`wastage-input-qty`).value=t.rejectedQuantity,document.getElementById(`wastage-input-reason`).value=t.reason,document.getElementById(`wastage-input-notes`).value=t.notes||``)}window.updateWastageHelpers(),window.showFormView(),t()}};function p(){let e=document.getElementById(`wastage-input-po`);e.innerHTML=`<option value="">Select Production Order...</option>`+o().map(e=>`<option value="${e.id}">${u(e.id)} (Status: ${u(e.status)})</option>`).join(``)}window.updateWastageHelpers=function(){let e=document.getElementById(`wastage-input-po`).value,t=Number(document.getElementById(`wastage-input-qty`).value)||0,n=document.getElementById(`wastage-cost-preview`),r=document.getElementById(`wastage-product-name`),i=document.getElementById(`wastage-total-cost`);if(!e){n.classList.add(`hidden`);return}let a=o().find(t=>t.id===e);if(!a)return;let c=s().find(e=>e.id===a.bomId);if(!c)return;let f=l(c.targetProductId);if(!f)return;let p=(Number(c.cost)||Number(f.cost)||0)*t;r.textContent=`${u(f.name)} (${u(f.sku)})`,i.textContent=d(p),n.classList.remove(`hidden`)},window.handleSubmit=function(e){e.preventDefault();let t=a(),r=document.getElementById(`wastage-edit-id`).value,i=document.getElementById(`wastage-input-po`).value,c=Number(document.getElementById(`wastage-input-qty`).value)||0;if(!i){alert(`Please select a Production Order.`);return}let u=o().find(e=>e.id===i),d=u?s().find(e=>e.id===u.bomId):null,p=d?l(d.targetProductId):null,m=(d?Number(d.cost):p?Number(p.cost):0)*c,h={id:r||f(),productionOrderId:i,productId:p?p.id:null,date:document.getElementById(`wastage-input-date`).value,rejectedQuantity:c,reason:document.getElementById(`wastage-input-reason`).value,notes:document.getElementById(`wastage-input-notes`).value.trim(),wastedCost:m},_=t.findIndex(e=>e.id===h.id);_>=0?t[_]=h:t.push(h),n(),window.showMainView(),g()},window.renderTable=function(){let e=document.getElementById(`wastage-table-body`);if(!e)return;let t=String(document.getElementById(`wastage-search-input`)?.value||``).toLowerCase(),n=document.getElementById(`wastage-filter-reason`)?.value||`all`,r=a().filter(e=>{let r=l(e.productId),i=[e.id,e.productionOrderId,r?.name].join(` `).toLowerCase(),a=!t||i.includes(t),o=n===`all`||e.reason===n;return a&&o});if(e.innerHTML=``,r.length===0){e.innerHTML=`<tr><td colspan="8" class="px-6 py-8 text-center text-slate-400 font-semibold">No wastage logs found.</td></tr>`;return}r.forEach(t=>{let n=l(t.productId);e.innerHTML+=`
+      <tr class="hover:bg-slate-50/70 transition-colors">
+        <td class="px-6 py-4 font-bold text-slate-900">${u(t.id)}</td>
+        <td class="px-6 py-4 text-[11px] font-semibold text-slate-600">${t.date}</td>
+        <td class="px-6 py-4">
+          <span class="text-xs font-bold text-blue-600 cursor-pointer hover:underline">${u(t.productionOrderId)}</span>
+        </td>
+        <td class="px-6 py-4">
+          <div class="font-bold text-slate-700">${u(n?.name||`Unknown`)}</div>
+        </td>
+        <td class="px-6 py-4 text-center font-bold text-rose-600">${t.rejectedQuantity}</td>
+        <td class="px-6 py-4">
+          <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-600 border border-slate-200">
+            ${u(t.reason)}
+          </span>
+        </td>
+        <td class="px-6 py-4 text-right font-extrabold text-rose-700">${d(t.wastedCost)}</td>
+        <td class="px-6 py-4 text-center">
+          <button onclick="window.openWastageModal('${t.id}')" class="px-3 py-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-[11px] font-bold text-slate-600 transition-colors cursor-pointer">Edit</button>
+        </td>
+      </tr>
+    `})};function m(){let e=document.getElementById(`wastage-metrics`);if(!e)return;let t=a(),n=t.reduce((e,t)=>e+t.rejectedQuantity,0),r=t.reduce((e,t)=>e+t.wastedCost,0);e.innerHTML=`
+    <div class="bg-white p-5 rounded-2xl border border-slate-200/80 premium-shadow">
+      <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Total Logs</span>
+      <span class="text-xl font-extrabold text-slate-950 block mt-2">${t.length}</span>
+    </div>
+    <div class="bg-white p-5 rounded-2xl border border-rose-200 premium-shadow bg-rose-50/20">
+      <span class="text-[10px] font-bold text-rose-600 uppercase tracking-wider block">Total Defective Units</span>
+      <span class="text-xl font-extrabold text-rose-700 block mt-2">${h(n)}</span>
+    </div>
+    <div class="bg-white p-5 rounded-2xl border border-rose-200 premium-shadow bg-rose-50/20 md:col-span-2">
+      <span class="text-[10px] font-bold text-rose-600 uppercase tracking-wider block">Total Financial Loss</span>
+      <span class="text-xl font-extrabold text-rose-700 block mt-2">${d(r)}</span>
+    </div>
+  `}function h(e){return Number(e||0).toLocaleString(`en-US`)}function g(){m(),window.renderTable(),t()}document.addEventListener(`DOMContentLoaded`,async()=>{await r,g()});

@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Packing Management — Toys Factory ERP</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/index.css">
+</head>
+<body class="bg-slate-50 font-['Inter'] antialiased text-slate-600">
+  <div id="screen-workspace" class="min-h-screen flex">
+    <app-sidebar mode="tenant"></app-sidebar>
+    <main class="flex-1 flex flex-col min-h-screen overflow-hidden">
+      <app-header mode="tenant" title="Manufacturing"></app-header>
+      <div class="flex-1 overflow-y-auto p-6 md:p-8">
+        
+        <!-- Main View (Table) -->
+        <div id="packing-main-view" class="max-w-7xl mx-auto flex flex-col gap-6">
+          <section class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div>
+              <h2 class="text-2xl md:text-3xl font-extrabold text-slate-900 tracking-tight"><span data-i18n="manufacturing.packing_title">Packing Management</span></h2>
+              <p class="text-xs text-slate-500 mt-1.5 font-medium">Record finished goods packaged into cartons and generate packing references.</p>
+            </div>
+            <div class="flex items-center gap-3">
+              <button onclick="window.openPackingModal()" class="flex items-center gap-2 bg-blue-600 text-white px-4 py-2.5 rounded-xl font-bold text-xs shadow-sm hover:bg-blue-700 transition-colors cursor-pointer">
+                <i data-lucide="package" class="w-4 h-4"></i> New Packing Slip
+              </button>
+            </div>
+          </section>
+
+          <!-- Metrics / KPI Row -->
+          <section class="grid grid-cols-1 md:grid-cols-4 gap-4" id="packing-metrics">
+            <!-- Rendered via JS -->
+          </section>
+
+          <section class="bg-white rounded-2xl border border-slate-200/80 premium-shadow flex flex-col overflow-hidden">
+            <div class="p-5 border-b border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-4 bg-slate-50/50">
+              <div class="relative w-full sm:w-72">
+                <i data-lucide="search" class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400"></i>
+                <input type="text" id="packing-search-input" placeholder="Search by Slip ID or Product..." class="w-full pl-9 pr-4 py-2 text-xs font-semibold text-slate-800 bg-white border border-slate-200 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500" oninput="window.renderTable()">
+              </div>
+              <div class="flex items-center gap-2 w-full sm:w-auto">
+                <select id="packing-filter-status" class="w-full sm:w-auto px-3 py-2 text-xs font-semibold text-slate-700 bg-white border border-slate-200 rounded-lg focus:outline-none" onchange="window.renderTable()">
+                  <option value="all">All Status</option>
+                  <option value="Packed">Packed</option>
+                  <option value="Staged">Staged</option>
+                </select>
+              </div>
+            </div>
+            <div class="overflow-x-auto">
+              <table class="w-full text-left text-xs font-medium text-slate-600">
+                <thead>
+                  <tr class="bg-slate-50/80 border-b border-slate-100 text-[10px] uppercase font-bold text-slate-400/80 tracking-wider">
+                    <th class="px-6 py-4">Slip ID</th>
+                    <th class="px-6 py-4"><span data-i18n="common.date">Date</span></th>
+                    <th class="px-6 py-4"><span data-i18n="common.product">Product</span></th>
+                    <th class="px-6 py-4 text-center">Total Units</th>
+                    <th class="px-6 py-4 text-center">Cartons</th>
+                    <th class="px-6 py-4"><span data-i18n="common.status">Status</span></th>
+                    <th class="px-6 py-4 text-center"><span data-i18n="common.actions">Actions</span></th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100" id="packing-table-body">
+                  <!-- JS Populated -->
+                </tbody>
+              </table>
+            </div>
+          </section>
+        </div>
+
+        <!-- Form View -->
+        <div id="packing-form-view" class="max-w-3xl mx-auto hidden flex flex-col gap-6 relative">
+          <app-form-header 
+            title-id="packing-form-title" 
+            title="Create Packing Slip" 
+            subtitle="Box finished goods for warehouse staging or direct dispatch." 
+            back-action="window.showMainView()">
+          </app-form-header>
+
+          <form id="packing-form" onsubmit="window.handleSubmit(event)" class="flex flex-col gap-6">
+            <input type="hidden" id="packing-edit-id">
+            
+            <section class="bg-white rounded-2xl border border-slate-200/80 premium-shadow p-6 flex flex-col gap-5">
+              <h3 class="text-sm font-bold text-slate-900 flex items-center gap-2 border-b border-slate-100 pb-3">
+                <i data-lucide="box" class="w-4 h-4 text-blue-600"></i> Packaging Details
+              </h3>
+              
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                <label class="flex flex-col gap-1.5">
+                  <span class="text-[11px] font-bold text-slate-700">Finished Product <span class="text-red-500">*</span></span>
+                  <select id="packing-input-product" required class="px-3 py-2.5 text-xs font-semibold text-slate-900 bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20" onchange="window.updatePackingHelpers()">
+                    <!-- Populated via JS -->
+                  </select>
+                </label>
+                <label class="flex flex-col gap-1.5">
+                  <span class="text-[11px] font-bold text-slate-700">Packing Date <span class="text-red-500">*</span></span>
+                  <input type="date" id="packing-input-date" required class="px-3 py-2.5 text-xs font-semibold text-slate-900 bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20">
+                </label>
+              </div>
+
+              <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+                <label class="flex flex-col gap-1.5">
+                  <span class="text-[11px] font-bold text-slate-700">Total Units to Pack <span class="text-red-500">*</span></span>
+                  <input type="number" id="packing-input-qty" required min="1" value="1" class="px-3 py-2.5 text-xs font-semibold text-slate-900 bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20" oninput="window.updatePackingHelpers()">
+                </label>
+                <label class="flex flex-col gap-1.5">
+                  <span class="text-[11px] font-bold text-slate-700">Units Per Carton <span class="text-red-500">*</span></span>
+                  <input type="number" id="packing-input-units-per-carton" required min="1" value="10" class="px-3 py-2.5 text-xs font-semibold text-slate-900 bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20" oninput="window.updatePackingHelpers()">
+                </label>
+                <label class="flex flex-col gap-1.5">
+                  <span class="text-[11px] font-bold text-slate-700">Status</span>
+                  <select id="packing-input-status" class="px-3 py-2.5 text-xs font-semibold text-slate-900 bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20">
+                    <option value="Packed">Packed</option>
+                    <option value="Staged">Staged</option>
+                  </select>
+                </label>
+              </div>
+
+              <label class="flex flex-col gap-1.5">
+                <span class="text-[11px] font-bold text-slate-700">Carton Dimension/Type</span>
+                <input type="text" id="packing-input-box" class="px-3 py-2.5 text-xs font-semibold text-slate-900 bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20" placeholder="e.g. Standard 50x50x50 cm Box">
+              </label>
+
+              <div id="packing-summary-preview" class="hidden p-4 rounded-xl bg-blue-50/50 border border-blue-100 mt-2 flex justify-between items-center">
+                <div>
+                  <h4 class="text-[11px] font-bold text-blue-800 mb-0.5">Required Cartons</h4>
+                  <div id="packing-total-cartons" class="text-xs text-slate-700 font-semibold">0 Cartons</div>
+                </div>
+                <div class="text-right">
+                  <h4 class="text-[11px] font-bold text-blue-800 mb-0.5">Remainder (Loose)</h4>
+                  <div id="packing-remainder" class="text-base text-blue-700 font-extrabold">0 Units</div>
+                </div>
+              </div>
+            </section>
+
+            <div class="flex items-center justify-end gap-3 pt-2">
+              <button type="button" onclick="window.showMainView()" class="px-5 py-2.5 rounded-xl font-bold text-xs text-slate-600 bg-white border border-slate-200 hover:bg-slate-50 transition-colors shadow-sm cursor-pointer">Cancel</button>
+              <button type="submit" class="px-6 py-2.5 rounded-xl font-bold text-xs text-white bg-blue-600 hover:bg-blue-700 shadow-md shadow-blue-500/20 transition-all cursor-pointer">Save Packing Slip</button>
+            </div>
+          </form>
+        </div>
+
+        <app-footer></app-footer>
+      </div>
+    </main>
+  </div>
+
+  <script type="module" src="/layout.js"></script>
+  <script type="module" src="/js/shared.js"></script>
+  <script type="module" src="/js/manufacturing-packing.js"></script>
+</body>
+</html>

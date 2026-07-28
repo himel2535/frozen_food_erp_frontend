@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Payments — Toys Factory ERP</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <script type="module" crossorigin src="/assets/sales-payments-CzkhtjvB.js"></script>
+  <link rel="modulepreload" crossorigin href="/assets/lucide-CU5-AOMs.js">
+  <link rel="modulepreload" crossorigin href="/assets/shared-Det_SasC.js">
+  <link rel="modulepreload" crossorigin href="/assets/layout-wQjH3XYy.js">
+  <link rel="stylesheet" crossorigin href="/assets/lucide-bglkidLV.css">
+</head>
+<body class="bg-slate-50 font-['Inter'] antialiased text-slate-600">
+  <div id="screen-workspace" class="min-h-screen flex">
+    <app-sidebar mode="tenant"></app-sidebar>
+    <main class="flex-1 flex flex-col min-h-screen overflow-hidden">
+      <app-header mode="tenant" title="Enterprise Workspace"></app-header>
+
+      <!-- Main Payments View -->
+      <div id="sales-payments-main-view" class="flex-1 overflow-y-auto p-6 md:p-8 space-y-6 flex flex-col">
+        <div class="flex flex-col xl:flex-row xl:items-center xl:justify-between gap-4">
+          <div>
+            <h2 class="text-xl font-extrabold text-slate-900 tracking-tight"><span data-i18n="sales.payments_title">Payments Registry</span></h2>
+            <p class="text-xs text-slate-500 mt-1 font-medium">Record collections, manage invoices settlement, process refunds, and view AR aging reports.</p>
+          </div>
+          <div class="flex flex-wrap items-center gap-2">
+            <button onclick="window.openPaymentForm()" class="bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold px-4 py-2.5 rounded-xl transition-all shadow-md shadow-blue-500/10 flex items-center gap-2">
+              <i data-lucide="plus" class="w-4 h-4"></i> Add Payment
+            </button>
+          </div>
+        </div>
+
+        <!-- Metrics Section (KPIs) -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4" id="sales-payments-metrics">
+          <div class="bg-white p-5 rounded-2xl border border-slate-200/80 premium-shadow">
+            <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Total Payments</span>
+            <span class="text-lg font-extrabold text-slate-950 block mt-2" id="metric-total-count">0</span>
+          </div>
+          <div class="bg-white p-5 rounded-2xl border border-emerald-200 bg-emerald-50/10 premium-shadow">
+            <span class="text-[10px] font-bold text-emerald-500 uppercase tracking-wider block">Total Collected</span>
+            <span class="text-lg font-extrabold text-emerald-600 block mt-2" id="metric-total-collected">$0.00</span>
+          </div>
+          <div class="bg-white p-5 rounded-2xl border border-blue-200 bg-blue-50/10 premium-shadow">
+            <span class="text-[10px] font-bold text-blue-500 uppercase tracking-wider block">Outstanding AR</span>
+            <span class="text-lg font-extrabold text-blue-600 block mt-2" id="metric-outstanding-receivables">$0.00</span>
+          </div>
+          <div class="bg-white p-5 rounded-2xl border border-rose-200 bg-rose-50/10 premium-shadow">
+            <span class="text-[10px] font-bold text-rose-500 uppercase tracking-wider block">Overdue Value</span>
+            <span class="text-lg font-extrabold text-rose-600 block mt-2" id="metric-overdue-invoices">$0.00</span>
+          </div>
+          <div class="bg-white p-5 rounded-2xl border border-slate-200/80 premium-shadow">
+            <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Avg Payment Size</span>
+            <span class="text-lg font-extrabold text-slate-950 block mt-2" id="metric-avg-size">$0.00</span>
+          </div>
+        </div>
+
+        <!-- Filter Bar -->
+        <div class="bg-white p-4 rounded-2xl border border-slate-200/80 premium-shadow space-y-4">
+          <div class="flex flex-col xl:flex-row xl:items-center xl:justify-between gap-3">
+            <div class="text-xs text-slate-500 font-semibold">Filter and search customer payments.</div>
+            <div class="relative min-w-[240px]">
+              <i data-lucide="search" class="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400"></i>
+              <input type="text" id="sales-payments-search-input" oninput="window.renderTable()" placeholder="Search payment ID, invoice ref, customer..." class="w-full pl-10 pr-4 py-2 rounded-xl border border-slate-200 bg-slate-50 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 transition-all font-medium">
+            </div>
+          </div>
+          
+          <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+            <select id="filter-customer" onchange="window.renderTable()" class="bg-slate-50 border border-slate-200 text-xs font-semibold text-slate-700 rounded-xl px-3 py-2 focus:outline-none">
+              <option value="all">All Customers</option>
+            </select>
+            <select id="filter-method" onchange="window.renderTable()" class="bg-slate-50 border border-slate-200 text-xs font-semibold text-slate-700 rounded-xl px-3 py-2 focus:outline-none">
+              <option value="all">All Methods</option>
+              <option value="Cash">Cash</option>
+              <option value="Bank Transfer">Bank Transfer</option>
+              <option value="Mobile Banking">Mobile Banking</option>
+              <option value="Cheque">Cheque</option>
+              <option value="Card">Card</option>
+              <option value="Online Gateway">Online Gateway</option>
+            </select>
+            <select id="filter-status" onchange="window.renderTable()" class="bg-slate-50 border border-slate-200 text-xs font-semibold text-slate-700 rounded-xl px-3 py-2 focus:outline-none">
+              <option value="all">All Statuses</option>
+              <option value="received">Completed</option>
+              <option value="partial">Partial</option>
+              <option value="failed">Failed</option>
+              <option value="refunded">Refunded</option>
+            </select>
+            <input type="date" id="filter-date-start" onchange="window.renderTable()" class="bg-slate-50 border border-slate-200 text-xs font-semibold text-slate-700 rounded-xl px-3 py-2 focus:outline-none" placeholder="Start Date">
+            <input type="date" id="filter-date-end" onchange="window.renderTable()" class="bg-slate-50 border border-slate-200 text-xs font-semibold text-slate-700 rounded-xl px-3 py-2 focus:outline-none" placeholder="End Date">
+            <button onclick="window.resetFilters()" class="border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold px-3 py-2 rounded-xl transition-all">Clear Filters</button>
+          </div>
+
+          <!-- Advanced Filters Row -->
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-3 border-t border-slate-100">
+            <div>
+              <input type="text" id="filter-invoice-id" oninput="window.renderTable()" placeholder="Invoice Ref (INV-xxxx)" class="w-full bg-slate-50 border border-slate-200 text-xs font-semibold text-slate-700 rounded-xl px-3 py-2 focus:outline-none">
+            </div>
+            <div>
+              <select id="filter-bank-account" onchange="window.renderTable()" class="w-full bg-slate-50 border border-slate-200 text-xs font-semibold text-slate-700 rounded-xl px-3 py-2 focus:outline-none">
+                <option value="all">All Bank / Cash Accounts</option>
+                <option value="Main Bank Account">Main Bank Account</option>
+                <option value="Petty Cash">Petty Cash</option>
+                <option value="bKash Business Account">bKash Business Account</option>
+                <option value="Nagad Wallet">Nagad Wallet</option>
+                <option value="Stripe Gateway Account">Stripe Gateway Account</option>
+              </select>
+            </div>
+            <div class="flex gap-2">
+              <input type="number" id="filter-amount-min" oninput="window.renderTable()" placeholder="Min Amount" class="w-1/2 bg-slate-50 border border-slate-200 text-xs font-semibold text-slate-700 rounded-xl px-3 py-2 focus:outline-none">
+              <input type="number" id="filter-amount-max" oninput="window.renderTable()" placeholder="Max Amount" class="w-1/2 bg-slate-50 border border-slate-200 text-xs font-semibold text-slate-700 rounded-xl px-3 py-2 focus:outline-none">
+            </div>
+          </div>
+        </div>
+
+        <!-- Payments Table -->
+        <section id="sales-payments-panel-list" class="space-y-4">
+          <div class="bg-white rounded-2xl border border-slate-200/80 premium-shadow overflow-hidden">
+            <div class="overflow-x-auto">
+              <table class="w-full text-left text-xs border-collapse">
+                <thead>
+                  <tr class="bg-slate-50 text-slate-500 border-b border-slate-100 font-bold uppercase text-[10px] tracking-wider">
+                    <th class="p-4">Payment ID</th>
+                    <th class="p-4">Invoice Ref</th>
+                    <th class="p-4">Customer</th>
+                    <th class="p-4">Payment Date</th>
+                    <th class="p-4">Method</th>
+                    <th class="p-4">Reference No</th>
+                    <th class="p-4">Bank/Cash Account</th>
+                    <th class="p-4 text-right"><span data-i18n="common.amount">Amount</span></th>
+                    <th class="p-4"><span data-i18n="common.status">Status</span></th>
+                    <th class="p-4 text-center"><span data-i18n="common.actions">Actions</span></th>
+                  </tr>
+                </thead>
+                <tbody id="sales-payments-body" class="divide-y divide-slate-100 font-medium text-slate-700">
+                  <!-- Rendered dynamically -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- Reports & Financial Snapshot Section -->
+        <div class="bg-white p-6 rounded-2xl border border-slate-200/80 premium-shadow space-y-6">
+          <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between border-b border-slate-150 pb-3 gap-2">
+            <div>
+              <h3 class="text-sm font-bold text-slate-900">Collections & AR Reports</h3>
+              <p class="text-xs text-slate-500 mt-0.5">Real-time collections schedules, aging buckets, and method summaries.</p>
+            </div>
+            <div class="flex border border-slate-200 rounded-xl overflow-hidden text-xs">
+              <button onclick="window.switchReportTab('collection')" id="tab-btn-collection" class="px-3 py-1.5 font-bold transition-all bg-slate-100 text-slate-800 border-r border-slate-200">Collection summary</button>
+              <button onclick="window.switchReportTab('outstanding')" id="tab-btn-outstanding" class="px-3 py-1.5 font-semibold transition-all bg-white text-slate-650 border-r border-slate-200">Outstanding AR</button>
+              <button onclick="window.switchReportTab('aging')" id="tab-btn-aging" class="px-3 py-1.5 font-semibold transition-all bg-white text-slate-650 border-r border-slate-200">Aging buckets</button>
+              <button onclick="window.switchReportTab('method')" id="tab-btn-method" class="px-3 py-1.5 font-semibold transition-all bg-white text-slate-650">Methods breakdown</button>
+            </div>
+          </div>
+
+          <div id="reports-container" class="text-xs">
+            <!-- Report content loaded dynamically -->
+          </div>
+        </div>
+
+        <app-footer></app-footer>
+      </div>
+
+      <!-- Inline Form View (Hidden by Default) -->
+      <div id="sales-payments-form-view" class="flex-1 overflow-y-auto p-6 md:p-8 space-y-6 hidden bg-slate-50">
+        <div class="max-w-4xl mx-auto w-full space-y-6">
+          <app-form-header id="payment-form-header" title="Record Customer Payment" subtitle="Record customer collection and settle invoice outstanding balances." back-action="window.showSalesMainView()"></app-form-header>
+
+          <form id="sales-payments-form" onsubmit="window.handleSubmit(event)" class="bg-white rounded-2xl border border-slate-200 p-6 premium-shadow space-y-6 text-xs font-semibold text-slate-700">
+            <input type="hidden" id="edit-payment-id" value="">
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label class="block mb-2">Invoice Reference *</label>
+                <select id="input-invoice-id" onchange="window.handleInvoiceSelection()" required class="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-xs focus:outline-none"></select>
+              </div>
+              <div>
+                <label class="block mb-2">Customer *</label>
+                <select id="input-customer" disabled required class="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-100 text-xs focus:outline-none select-disabled-look"></select>
+              </div>
+              <div>
+                <label class="block mb-2">Invoice Balance ($)</label>
+                <div class="flex items-center gap-2">
+                  <input type="text" id="invoice-remaining-balance" readonly class="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-100 text-xs focus:outline-none font-bold text-slate-700">
+                </div>
+              </div>
+              <div>
+                <label class="block mb-2">Payment Date *</label>
+                <input type="date" id="input-date" required class="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-xs focus:outline-none">
+              </div>
+              <div>
+                <label class="block mb-2">Payment Amount *</label>
+                <input type="number" step="0.01" min="0.01" id="input-amount" required class="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-xs focus:outline-none text-emerald-600 font-bold" placeholder="0.00">
+              </div>
+              <div>
+                <label class="block mb-2">Payment Method *</label>
+                <select id="input-method" required class="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-xs focus:outline-none">
+                  <option value="Cash">Cash</option>
+                  <option value="Bank Transfer">Bank Transfer</option>
+                  <option value="Mobile Banking">Mobile Banking</option>
+                  <option value="Cheque">Cheque</option>
+                  <option value="Card">Card</option>
+                  <option value="Online Gateway">Online Gateway</option>
+                </select>
+              </div>
+              <div>
+                <label class="block mb-2">Bank / Cash Account</label>
+                <select id="input-bank-account" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-xs focus:outline-none">
+                  <option value="Main Bank Account">Main Bank Account</option>
+                  <option value="Petty Cash">Petty Cash</option>
+                  <option value="bKash Business Account">bKash Business Account</option>
+                  <option value="Nagad Wallet">Nagad Wallet</option>
+                  <option value="Stripe Gateway Account">Stripe Gateway Account</option>
+                </select>
+              </div>
+              <div>
+                <label class="block mb-2">Reference Number</label>
+                <input type="text" id="input-ref" placeholder="Cheque No, Txn ID, Transfer Reference" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-xs focus:outline-none">
+              </div>
+            </div>
+
+            <div>
+              <label class="block mb-2">Internal Notes</label>
+              <textarea id="input-notes" rows="3" placeholder="Add details or remarks..." class="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-xs focus:outline-none font-medium"></textarea>
+            </div>
+
+            <!-- Advanced Fields Collapsible -->
+            <div class="space-y-4">
+              <div>
+                <button type="button" onclick="window.toggleAdvancedFields()" class="flex items-center gap-2 text-blue-600 hover:text-blue-700 text-xs font-bold transition-colors">
+                  <i data-lucide="chevron-down" id="payments-advanced-icon" class="w-4 h-4 transition-transform"></i>
+                  Show Advanced Details
+                </button>
+              </div>
+              <div id="payments-advanced-section" class="hidden space-y-4 pt-4 border-t border-slate-100">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div>
+                    <label class="block mb-2">Transaction ID</label>
+                    <input type="text" id="input-txn-id" placeholder="Processor Transaction ID" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-xs focus:outline-none">
+                  </div>
+                  <div>
+                    <label class="block mb-2">Exchange Rate (Optional)</label>
+                    <input type="number" step="0.000001" id="input-exchange-rate" placeholder="1.0000" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-xs focus:outline-none">
+                  </div>
+                  <div>
+                    <label class="block mb-2">Processing Fee (Optional)</label>
+                    <input type="number" step="0.01" id="input-processing-fee" placeholder="0.00" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-xs focus:outline-none">
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="flex justify-end gap-3 pt-4 border-t border-slate-100">
+              <button type="button" onclick="window.showSalesMainView()" class="border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold px-4 py-2.5 rounded-xl transition-all">Cancel</button>
+              <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold px-4 py-2.5 rounded-xl transition-all shadow-md shadow-blue-500/10">Save Payment</button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <!-- Payment Detail Drawer Overlay -->
+      <div id="payment-details-drawer-overlay" class="fixed inset-0 z-50 hidden bg-slate-900/40 backdrop-blur-[2px] transition-opacity duration-300" onclick="window.closePaymentDrawer()">
+        <div id="payment-details-drawer" class="fixed top-0 right-0 h-full w-full max-w-2xl bg-white border-l border-slate-200 shadow-2xl flex flex-col drawer-transition drawer-hidden z-50" onclick="event.stopPropagation()">
+          <div class="p-6 border-b border-slate-100 flex items-center justify-between gap-4">
+            <div>
+              <h3 class="text-sm font-bold text-slate-900">Payment Transaction Detail</h3>
+              <p id="drawer-payment-date" class="text-xs text-slate-400 mt-1">Recorded on ...</p>
+            </div>
+            <div class="flex items-center gap-3">
+              <span id="drawer-payment-status" class="px-2.5 py-1 text-[9px] font-bold rounded-full"></span>
+              <button onclick="window.closePaymentDrawer()" class="p-1.5 text-slate-400 hover:text-slate-650 rounded-lg hover:bg-slate-50">
+                <i data-lucide="x" class="w-4 h-4"></i>
+              </button>
+            </div>
+          </div>
+
+          <div class="flex-1 overflow-y-auto p-6 space-y-6">
+            <div class="flex justify-between items-start border-b border-slate-100 pb-4">
+              <div>
+                <h4 id="drawer-payment-id" class="text-lg font-extrabold text-slate-950"></h4>
+                <p id="drawer-customer-name" class="text-sm font-bold text-slate-800 mt-2"></p>
+                <p id="drawer-invoice-id" class="text-xs text-slate-500 mt-1 font-semibold"></p>
+              </div>
+              <div class="text-right">
+                <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Collected Amount</span>
+                <span id="drawer-amount" class="text-xl font-extrabold text-emerald-600 mt-1 block"></span>
+              </div>
+            </div>
+
+            <!-- Core Information Block -->
+            <div class="grid grid-cols-2 gap-4 bg-slate-50 p-4 rounded-2xl border border-slate-100">
+              <div>
+                <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Payment Method</span>
+                <span id="drawer-method" class="text-xs font-bold text-slate-800 mt-1 block"></span>
+              </div>
+              <div>
+                <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Bank / Cash Account</span>
+                <span id="drawer-bank-account" class="text-xs font-bold text-slate-800 mt-1 block"></span>
+              </div>
+              <div>
+                <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Reference Number</span>
+                <span id="drawer-reference" class="text-xs font-bold text-slate-800 mt-1 block"></span>
+              </div>
+              <div>
+                <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Recorded By</span>
+                <span id="drawer-recorded-by" class="text-xs font-bold text-slate-800 mt-1 block"></span>
+              </div>
+            </div>
+
+            <!-- Notes Block -->
+            <div class="space-y-2">
+              <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Internal Notes</span>
+              <p id="drawer-notes" class="text-xs text-slate-650 bg-slate-50/50 p-3 rounded-xl border border-slate-100 font-medium whitespace-pre-wrap min-h-[50px]"></p>
+            </div>
+
+            <!-- Advanced Technical Metadata Block -->
+            <div class="space-y-2">
+              <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Technical Details</span>
+              <div class="grid grid-cols-3 gap-3 text-xs font-medium text-slate-700">
+                <div class="border border-slate-100 p-2 rounded-xl">
+                  <div class="text-[9px] text-slate-400 font-bold uppercase">Transaction ID</div>
+                  <div id="drawer-txn-id" class="mt-1 font-bold">N/A</div>
+                </div>
+                <div class="border border-slate-100 p-2 rounded-xl">
+                  <div class="text-[9px] text-slate-400 font-bold uppercase">Exchange Rate</div>
+                  <div id="drawer-exchange-rate" class="mt-1 font-bold">N/A</div>
+                </div>
+                <div class="border border-slate-100 p-2 rounded-xl">
+                  <div class="text-[9px] text-slate-400 font-bold uppercase">Processing Fee</div>
+                  <div id="drawer-processing-fee" class="mt-1 font-bold">N/A</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Allocation Block -->
+            <div class="space-y-2 border-t border-slate-100 pt-4">
+              <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Allocations</span>
+              <div class="border border-slate-100 rounded-xl overflow-hidden text-xs">
+                <table class="w-full text-left font-medium">
+                  <thead>
+                    <tr class="bg-slate-50 border-b border-slate-100 text-[10px] uppercase font-bold text-slate-400">
+                      <th class="p-3">Invoice</th>
+                      <th class="p-3 text-right">Allocated Amount</th>
+                      <th class="p-3">Allocated Date</th>
+                    </tr>
+                  </thead>
+                  <tbody id="drawer-allocations-body">
+                    <!-- Rendered by JS -->
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <!-- Drawer Action Footer -->
+          <div id="drawer-footer-actions" class="p-6 border-t border-slate-100 flex gap-3">
+            <!-- Rendered by JS based on payment state -->
+          </div>
+        </div>
+      </div>
+
+    </main>
+  </div>
+
+</body>
+</html>

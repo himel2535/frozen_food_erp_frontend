@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Inventory Products — Toys Factory ERP</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <script type="module" crossorigin src="/assets/inventory-products-DdfjDRFg.js"></script>
+  <link rel="modulepreload" crossorigin href="/assets/lucide-CU5-AOMs.js">
+  <link rel="modulepreload" crossorigin href="/assets/shared-Det_SasC.js">
+  <link rel="modulepreload" crossorigin href="/assets/layout-wQjH3XYy.js">
+  <link rel="stylesheet" crossorigin href="/assets/lucide-bglkidLV.css">
+</head>
+<body class="bg-slate-50 font-['Inter'] antialiased text-slate-600">
+  <div id="screen-workspace" class="min-h-screen flex">
+    <!-- Reusable Left Sidebar Component -->
+    <app-sidebar mode="tenant"></app-sidebar>
+    <main class="flex-1 flex flex-col min-h-screen overflow-hidden">
+      <!-- Reusable Header Component -->
+      <app-header mode="tenant" title="Enterprise Workspace"></app-header>
+      <div id="inventory-main-view" class="flex-1 overflow-y-auto p-6 md:p-8 space-y-6 flex flex-col">
+
+        <div class="space-y-6">
+          <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+            <div>
+              <h2 class="text-xl font-extrabold text-slate-900 tracking-tight"><span data-i18n="inventory.products_title">Products Master</span></h2>
+              <p class="text-xs text-slate-500 mt-1 font-medium"><span data-i18n="inventory.products_subtitle">Manage catalog items, stock allocation, pricing, and reorder readiness.</span></p>
+            </div>
+            <!-- Add Product SKU Button -->
+            <button onclick="window.showInventoryFormView(false)" class="bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold px-4 py-2.5 rounded-xl transition-all shadow-md shadow-blue-500/10 flex items-center gap-2 cursor-pointer">
+              <i data-lucide="plus" class="w-4 h-4"></i> <span data-i18n="inventory.add_product">Add Product SKU</span>
+            </button>
+          </div>
+
+          <!-- Inventory Statistics widgets (5 items) -->
+          <div class="grid grid-cols-2 md:grid-cols-5 gap-4">
+            <div class="bg-white p-4 rounded-2xl border border-slate-200/80 premium-shadow">
+              <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block" data-i18n="inventory.total_skus">Total SKUs Listed</span>
+              <span class="text-xl font-extrabold text-slate-950 block mt-2" id="inv-total-skus">0</span>
+            </div>
+            <div class="bg-white p-4 rounded-2xl border border-slate-200/80 premium-shadow">
+              <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block" data-i18n="inventory.total_stock">Total Stock Qty</span>
+              <span class="text-xl font-extrabold text-slate-950 block mt-2" id="inv-total-stock">0 items</span>
+            </div>
+            <div class="bg-white p-4 rounded-2xl border border-rose-200 bg-rose-50/20 premium-shadow">
+              <span class="text-[10px] font-bold text-rose-500 uppercase tracking-wider block" data-i18n="inventory.low_alerts">Low Stock Alerts</span>
+              <span class="text-xl font-extrabold text-rose-600 block mt-2" id="inv-low-alerts">0</span>
+            </div>
+            <div class="bg-white p-4 rounded-2xl border border-red-200 bg-red-50/20 premium-shadow">
+              <span class="text-[10px] font-bold text-red-500 uppercase tracking-wider block" data-i18n="inventory.out_of_stock">Out Of Stock</span>
+              <span class="text-xl font-extrabold text-red-600 block mt-2" id="inv-out-of-stock">0</span>
+            </div>
+            <div class="bg-white p-4 rounded-2xl border border-emerald-200 bg-emerald-50/20 premium-shadow">
+              <span class="text-[10px] font-bold text-emerald-600 uppercase tracking-wider block" data-i18n="inventory.inventory_value">Inventory Value</span>
+              <span class="text-xl font-extrabold text-emerald-700 block mt-2" id="inv-total-val">$0.00</span>
+            </div>
+          </div>
+
+          <!-- Table Filters & Search -->
+          <div class="flex flex-col lg:flex-row justify-between items-stretch lg:items-center gap-4 bg-white p-4 rounded-2xl border border-slate-200/80 premium-shadow">
+            <div class="flex flex-wrap items-center gap-4">
+              <div class="flex items-center gap-2">
+                <span class="text-xs font-bold text-slate-400">Category:</span>
+                <select id="inv-category-filter" onchange="window.renderInventoryTable()" class="bg-slate-50 border border-slate-200 text-xs font-semibold text-slate-700 rounded-xl px-3 py-1.5 focus:outline-none cursor-pointer">
+                  <option value="all">All Categories</option>
+                </select>
+              </div>
+              <div class="flex items-center gap-2">
+                <span class="text-xs font-bold text-slate-400">Product Type:</span>
+                <select id="inv-type-filter" onchange="window.renderInventoryTable()" class="bg-slate-50 border border-slate-200 text-xs font-semibold text-slate-700 rounded-xl px-3 py-1.5 focus:outline-none cursor-pointer">
+                  <option value="all">All Types</option>
+                  <option value="Raw Materials">Raw Materials</option>
+                  <option value="Semi-Finished Goods">Semi-Finished Goods</option>
+                  <option value="Finished Goods">Finished Goods</option>
+                  <option value="Service (non-stock)">Service (non-stock)</option>
+                </select>
+              </div>
+            </div>
+            <div class="relative flex-1 max-w-md">
+              <i data-lucide="search" class="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400"></i>
+              <input type="text" id="inv-search-input" oninput="window.renderInventoryTable()" placeholder="Search product name or SKU..." class="w-full pl-10 pr-4 py-2 rounded-xl border border-slate-200 bg-slate-50 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 transition-all">
+            </div>
+          </div>
+
+          <!-- Product Inventory Table -->
+          <div class="premium-card premium-shadow overflow-hidden bg-white border border-slate-200 rounded-2xl">
+            <div class="overflow-x-auto">
+              <table class="w-full text-left text-xs font-medium text-slate-600">
+                <thead>
+                  <tr class="bg-slate-50/80 border-b border-slate-200/80 text-[10px] uppercase font-bold text-slate-400/80">
+                    <th class="px-6 py-4">Product details</th>
+                    <th class="px-6 py-4"><span data-i18n="common.category">Category</span></th>
+                    <th class="px-6 py-4 text-center">Total Stock</th>
+                    <th class="px-6 py-4 text-center">Reserved</th>
+                    <th class="px-6 py-4 text-center text-blue-600 font-bold bg-blue-50/20">Available</th>
+                    <th class="px-6 py-4 text-right">Cost</th>
+                    <th class="px-6 py-4 text-right">Selling Price</th>
+                    <th class="px-6 py-4"><span data-i18n="common.status">Status</span></th>
+                    <th class="px-6 py-4 text-center"><span data-i18n="common.actions">Actions</span></th>
+                  </tr>
+                </thead>
+                <tbody id="inventory-table-body" class="divide-y divide-slate-100">
+                  <!-- JS Rendered rows -->
+                </tbody>
+              </table>
+            </div>
+
+            <!-- Table pagination -->
+            <div class="px-6 py-4 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500 font-semibold bg-slate-50/50">
+              <span>Showing <span class="font-bold text-slate-800" id="inv-page-start">0</span> to <span class="font-bold text-slate-800" id="inv-page-end">0</span> of <span class="font-bold text-slate-800" id="inv-total-count">0</span> products</span>
+              <div class="flex items-center gap-2">
+                <button class="px-3 py-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 transition-colors disabled:opacity-50 cursor-pointer" disabled>Previous</button>
+                <button class="px-3 py-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 transition-colors disabled:opacity-50 cursor-pointer" disabled>Next</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <app-footer></app-footer>
+      </div>
+
+      <div id="inventory-form-view" class="flex-1 overflow-y-auto p-6 md:p-8 space-y-6 hidden bg-slate-50">
+        <div class="max-w-4xl mx-auto w-full space-y-6">
+          <app-form-header title-id="product-form-title" title="Create Product" subtitle="Add a new item to your catalog." back-action="window.showInventoryMainView()"></app-form-header>
+          
+          <form id="inv-form-product" onsubmit="window.handleProductFormSubmit(event)" class="bg-white rounded-2xl border border-slate-200 p-6 premium-shadow space-y-6">
+            <!-- Hidden field to track Edit state -->
+            <input type="hidden" id="inv-input-id">
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs font-semibold text-slate-700">
+              <div class="md:col-span-2">
+                <label class="block mb-2">Product Name <span class="text-rose-500">*</span></label>
+                <input type="text" id="inv-input-name" required class="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500/20">
+              </div>
+              
+              <div>
+                <label class="block mb-2">SKU Code <span class="text-rose-500">*</span></label>
+                <input type="text" id="inv-input-sku" required class="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500/20">
+              </div>
+              
+              <div>
+                <label class="block mb-2">Category <span class="text-rose-500">*</span></label>
+                <select id="inv-input-category" required class="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-xs focus:outline-none cursor-pointer">
+                  <option value="" disabled selected>Select Category</option>
+                </select>
+              </div>
+              
+              <div>
+                <label class="block mb-2">Product Type <span class="text-rose-500">*</span></label>
+                <select id="inv-input-product-type" required class="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-xs focus:outline-none cursor-pointer">
+                  <option value="Finished Goods">Finished Goods</option>
+                  <option value="Semi-Finished Goods">Semi-Finished Goods</option>
+                  <option value="Raw Materials">Raw Materials</option>
+                  <option value="Service (non-stock)">Service (non-stock)</option>
+                </select>
+              </div>
+
+              <div>
+                <label class="block mb-2">Cost Price ($) <span class="text-rose-500">*</span></label>
+                <input type="number" step="0.01" id="inv-input-cost" required class="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500/20">
+              </div>
+
+              <div>
+                <label class="block mb-2">Selling Price ($) <span class="text-rose-500">*</span></label>
+                <input type="number" step="0.01" id="inv-input-price" required class="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500/20">
+              </div>
+
+              <div>
+                  <label class="block mb-2">UoM (Unit of Measure)</label>
+                  <select id="inv-input-uom" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-xs focus:outline-none cursor-pointer">
+                    <option value="">Select Unit</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="block mb-2">Opening Reserved Stock</label>
+                  <input type="number" id="inv-input-reserved" min="0" value="0" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500/20">
+                </div>
+              </div>
+
+            <!-- Warehouse Opening Stocks Section -->
+            <div class="pt-4 border-t border-slate-100">
+              <h4 class="text-xs font-bold text-slate-800 mb-3">Warehouse Stock Allocation</h4>
+              <div id="inv-warehouse-stock-fields" class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs font-semibold text-slate-700">
+                <!-- Rendered by JS -->
+              </div>
+            </div>
+            
+            <div>
+              <button type="button" onclick="window.toggleAdvancedInventoryFields()" class="flex items-center gap-2 text-blue-600 hover:text-blue-700 text-xs font-bold transition-colors cursor-pointer">
+                <i data-lucide="chevron-down" id="inventory-advanced-icon" class="w-4 h-4 transition-transform"></i>
+                Show Advanced Details
+              </button>
+            </div>
+            
+            <div id="inventory-advanced-section" class="hidden space-y-6 pt-4 border-t border-slate-100">
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs font-semibold text-slate-700">
+                <div>
+                  <label class="block mb-2">Wholesale Price ($)</label>
+                  <input type="number" step="0.01" id="inv-input-wholesale" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500/20">
+                </div>
+                <div>
+                  <label class="block mb-2">Tax Rate (%)</label>
+                  <input type="number" step="0.1" id="inv-input-tax" placeholder="e.g. 5" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500/20">
+                </div>
+                <div>
+                  <label class="block mb-2">Minimum Stock Level</label>
+                  <input type="number" id="inv-input-min" placeholder="e.g. 50" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500/20">
+                </div>
+                <div>
+                  <label class="block mb-2">Reorder Level</label>
+                  <input type="number" id="inv-input-reorder" placeholder="e.g. 100" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500/20">
+                </div>
+                <div>
+                  <label class="block mb-2">Default Warehouse</label>
+                  <select id="inv-input-default-wh" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-xs focus:outline-none cursor-pointer">
+                    <!-- Rendered by JS -->
+                  </select>
+                </div>
+                <div>
+                  <label class="block mb-2">Lifecycle</label>
+                  <label class="flex items-center gap-3 px-4 py-3 rounded-xl border border-slate-200 bg-slate-50 text-xs font-semibold text-slate-700 cursor-pointer">
+                    <input type="checkbox" id="inv-input-discontinued" class="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500 cursor-pointer">
+                    <span>Mark this product as discontinued</span>
+                  </label>
+                </div>
+                <div class="md:col-span-2">
+                  <label class="block mb-2">Description</label>
+                  <textarea id="inv-input-description" rows="3" placeholder="Describe the item..." class="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500/20"></textarea>
+                </div>
+              </div>
+            </div>
+            
+            <div class="flex justify-end gap-3 pt-4 border-t border-slate-100">
+              <button type="button" onclick="window.showInventoryMainView()" class="border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold px-4 py-2.5 rounded-xl transition-all cursor-pointer">Cancel</button>
+              <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold px-4 py-2.5 rounded-xl transition-all shadow-md shadow-blue-500/10 cursor-pointer">Save Catalog SKU</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- Modal: Add Product SKU -->
+  
+
+  
+  
+
+</body>
+</html>

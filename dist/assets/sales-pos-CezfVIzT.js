@@ -1,0 +1,22 @@
+import"./lucide-CU5-AOMs.js";import"./layout-wQjH3XYy.js";import{o as e,t}from"./shared-Det_SasC.js";var n=[{id:`PRD-001`,name:`Premium Office Chair`,price:145,stock:45,img:`https://images.unsplash.com/photo-1505843490538-5133c6c7d0e1?auto=format&fit=crop&q=80&w=200`},{id:`PRD-002`,name:`Ergonomic Desk`,price:299.99,stock:12,img:`https://images.unsplash.com/photo-1518455027359-f3f8164ba6bd?auto=format&fit=crop&q=80&w=200`},{id:`PRD-003`,name:`Mechanical Keyboard`,price:85.5,stock:104,img:`https://images.unsplash.com/photo-1595225476474-87563907a212?auto=format&fit=crop&q=80&w=200`},{id:`PRD-004`,name:`Wireless Mouse`,price:45,stock:210,img:`https://images.unsplash.com/photo-1527864550417-7fd91fc51a46?auto=format&fit=crop&q=80&w=200`},{id:`PRD-005`,name:`Monitor Arm Mount`,price:65,stock:34,img:`https://images.unsplash.com/photo-1527443154391-507e9dc6c5cc?auto=format&fit=crop&q=80&w=200`},{id:`PRD-006`,name:`USB-C Docking Station`,price:120,stock:56,img:`https://images.unsplash.com/photo-1616423640778-28d1b53229bd?auto=format&fit=crop&q=80&w=200`}],r=[];window.renderPOSGrid=function(){let e=document.getElementById(`pos-product-grid`);e&&(e.innerHTML=``,n.forEach(t=>{let n=document.createElement(`div`);n.className=`bg-white rounded-2xl border border-slate-200 overflow-hidden cursor-pointer hover:border-blue-500 hover:shadow-lg transition-all flex flex-col group`,n.onclick=()=>window.addToCart(t.id),n.innerHTML=`
+      <div class="h-32 w-full bg-slate-100 overflow-hidden relative">
+        <img src="${t.img}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300">
+        <div class="absolute top-2 right-2 bg-white/90 backdrop-blur-sm text-[10px] font-bold px-2 py-1 rounded-lg text-slate-700 shadow-sm">
+          ${t.stock} in stock
+        </div>
+      </div>
+      <div class="p-3 flex-1 flex flex-col justify-between">
+        <h3 class="text-xs font-bold text-slate-800 line-clamp-2 leading-tight">${t.name}</h3>
+        <p class="text-sm font-extrabold text-blue-600 mt-2">$${t.price.toFixed(2)}</p>
+      </div>
+    `,e.appendChild(n)}))},window.addToCart=function(e){let t=n.find(t=>t.id===e);if(!t)return;let i=r.find(t=>t.id===e);i?i.qty+=1:r.push({...t,qty:1}),window.renderCart()},window.updateQty=function(e,t){let n=r.find(t=>t.id===e);n&&(n.qty+=t,n.qty<=0&&(r=r.filter(t=>t.id!==e)),window.renderCart())},window.renderCart=function(){let e=document.getElementById(`pos-cart-items`),t=document.getElementById(`pos-empty-cart`);if(e){if(r.length===0){e.innerHTML=``,e.appendChild(t),t.classList.remove(`hidden`),window.updateTotals();return}t&&t.classList.add(`hidden`),e.innerHTML=``,r.forEach(t=>{let n=document.createElement(`div`);n.className=`bg-white border border-slate-100 rounded-xl p-2.5 flex items-center justify-between shadow-sm`,n.innerHTML=`
+      <div class="flex-1 pr-2 overflow-hidden">
+        <h4 class="text-xs font-bold text-slate-800 truncate">${t.name}</h4>
+        <p class="text-[11px] font-bold text-blue-600 mt-0.5">$${(t.price*t.qty).toFixed(2)}</p>
+      </div>
+      <div class="flex items-center gap-2 bg-slate-50 p-1 rounded-lg border border-slate-100">
+        <button onclick="window.updateQty('${t.id}', -1)" class="w-6 h-6 flex items-center justify-center rounded-md bg-white border border-slate-200 text-slate-600 hover:text-red-500 hover:border-red-200 transition-colors cursor-pointer text-xs font-bold">-</button>
+        <span class="w-4 text-center text-xs font-extrabold text-slate-800">${t.qty}</span>
+        <button onclick="window.updateQty('${t.id}', 1)" class="w-6 h-6 flex items-center justify-center rounded-md bg-white border border-slate-200 text-slate-600 hover:text-blue-600 hover:border-blue-200 transition-colors cursor-pointer text-xs font-bold">+</button>
+      </div>
+    `,e.appendChild(n)}),window.updateTotals()}},window.updateTotals=function(){let e=r.reduce((e,t)=>e+t.price*t.qty,0),t=e*.05,n=e+t;document.getElementById(`pos-subtotal`).textContent=`$${e.toFixed(2)}`,document.getElementById(`pos-tax`).textContent=`$${t.toFixed(2)}`,document.getElementById(`pos-total`).textContent=`$${n.toFixed(2)}`},window.clearCart=function(){r=[],window.renderCart()},window.checkout=function(){if(r.length===0)return alert(`Cart is empty!`);alert(`Payment processed successfully! Printing receipt...`),window.clearCart()},document.addEventListener(`DOMContentLoaded`,async()=>{await t,window.renderPOSGrid(),e()});

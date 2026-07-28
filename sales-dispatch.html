@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dispatch Management — Toys Factory ERP</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/index.css">
+  <style>
+    .dispatch-card {
+      border-radius: 12px;
+      border: 0.5px solid #e2e8f0;
+      background: #fff;
+    }
+    .dispatch-card-tint-slate { background: #f8fafc; border-color: #e2e8f0; }
+    .dispatch-card-tint-blue { background: #eff6ff; border-color: #bfdbfe; }
+    .dispatch-card-tint-amber { background: #fffbeb; border-color: #fde68a; }
+    .dispatch-card-tint-emerald { background: #ecfdf5; border-color: #a7f3d0; }
+    .dispatch-badge {
+      border-radius: 9999px;
+      padding: 2px 10px;
+      font-size: 11px;
+      font-weight: 600;
+      display: inline-flex;
+      align-items: center;
+    }
+    .dispatch-badge-scheduled { background: #eff6ff; color: #2563eb; }
+    .dispatch-badge-on_route { background: #fffbeb; color: #d97706; }
+    .dispatch-badge-delivered { background: #ecfdf5; color: #059669; }
+    .dispatch-badge-slate { background: #f1f5f9; color: #64748b; }
+  </style>
+</head>
+<body class="bg-slate-50 font-['Inter'] antialiased text-slate-600">
+  <div id="screen-workspace" class="min-h-screen flex">
+    <app-sidebar mode="tenant"></app-sidebar>
+    <main class="flex-1 flex flex-col min-h-screen overflow-hidden">
+      <app-header mode="tenant" title="Manufacturing"></app-header>
+      <div class="flex-1 overflow-y-auto p-6 md:p-8">
+
+        <!-- Main View -->
+        <div id="dispatch-main-view" class="max-w-7xl mx-auto w-full flex flex-col gap-6">
+          <section class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div>
+              <h2 class="text-2xl md:text-3xl font-bold text-slate-900 tracking-tight">Dispatch management</h2>
+              <p class="text-xs text-slate-500 mt-1.5 font-medium">Coordinate logistics, assign delivery vehicles, and track order fulfillment.</p>
+            </div>
+            <div class="flex items-center gap-3">
+              <button type="button" onclick="window.openDispatchModal()" class="flex items-center gap-2 bg-blue-600 text-white px-4 py-2.5 rounded-xl font-semibold text-xs hover:bg-blue-700 transition-colors cursor-pointer">
+                <i data-lucide="truck" class="w-4 h-4"></i> New dispatch log
+              </button>
+            </div>
+          </section>
+
+          <section class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4" id="dispatch-metrics">
+            <!-- Rendered via JS -->
+          </section>
+
+          <div id="dispatch-route-hint" class="hidden dispatch-card dispatch-card-tint-amber px-4 py-3 flex items-start gap-3">
+            <i data-lucide="route" class="w-4 h-4 text-amber-600 shrink-0 mt-0.5"></i>
+            <div class="flex-1 min-w-0">
+              <p class="text-xs font-semibold text-amber-800" id="dispatch-route-hint-text"></p>
+              <p class="text-[11px] text-amber-700/80 mt-0.5">Consider combining routes for the same area.</p>
+            </div>
+            <button type="button" onclick="window.dismissRouteHint()" class="text-amber-600 hover:text-amber-800 cursor-pointer p-1" title="Dismiss">
+              <i data-lucide="x" class="w-3.5 h-3.5"></i>
+            </button>
+          </div>
+
+          <section class="dispatch-card flex flex-col overflow-hidden">
+            <div class="p-4 border-b border-slate-100 flex flex-col gap-3 bg-slate-50/40">
+              <div class="flex flex-col lg:flex-row lg:items-center gap-3">
+                <div class="relative w-full lg:w-64">
+                  <i data-lucide="search" class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400"></i>
+                  <input type="text" id="dispatch-search-input" placeholder="Search by Dispatch ID, SO, Driver..." class="w-full pl-9 pr-4 py-2 text-xs font-medium text-slate-800 bg-white border border-slate-200 rounded-lg focus:outline-none focus:border-blue-500 cursor-text" oninput="window.renderTable()">
+                </div>
+                <div class="flex flex-wrap items-center gap-2 flex-1">
+                  <select id="dispatch-filter-status" class="px-3 py-2 text-xs font-medium text-slate-700 bg-white border border-slate-200 rounded-lg focus:outline-none cursor-pointer" onchange="window.renderTable()">
+                    <option value="all">All status</option>
+                    <option value="scheduled">Scheduled</option>
+                    <option value="on_route">On route</option>
+                    <option value="delivered">Delivered</option>
+                  </select>
+                  <select id="dispatch-filter-vehicle" class="px-3 py-2 text-xs font-medium text-slate-700 bg-white border border-slate-200 rounded-lg focus:outline-none cursor-pointer" onchange="window.renderTable()">
+                    <option value="all">All vehicles</option>
+                  </select>
+                  <input type="date" id="dispatch-filter-date-start" class="px-2 py-2 text-[11px] font-medium text-slate-700 bg-white border border-slate-200 rounded-lg focus:outline-none cursor-pointer" onchange="window.renderTable()" title="From date">
+                  <span class="text-slate-400 text-xs">–</span>
+                  <input type="date" id="dispatch-filter-date-end" class="px-2 py-2 text-[11px] font-medium text-slate-700 bg-white border border-slate-200 rounded-lg focus:outline-none cursor-pointer" onchange="window.renderTable()" title="To date">
+                </div>
+                <label class="flex items-center gap-2 text-[11px] font-medium text-slate-600 cursor-pointer shrink-0">
+                  <input type="checkbox" id="dispatch-sms-toggle" class="rounded border-slate-300 text-blue-600 focus:ring-blue-500 cursor-pointer" onchange="window.toggleAutoSms()">
+                  Auto SMS on status change
+                </label>
+              </div>
+            </div>
+
+            <div id="dispatch-bulk-bar" class="hidden px-4 py-3 border-b border-slate-100 bg-blue-50/50 flex flex-col sm:flex-row sm:items-center gap-3">
+              <span class="text-xs font-semibold text-blue-800"><span id="dispatch-bulk-count">0</span> selected</span>
+              <input type="text" id="dispatch-bulk-driver" placeholder="Driver name" class="px-3 py-2 text-xs font-medium border border-slate-200 rounded-lg bg-white focus:outline-none flex-1 min-w-[120px]">
+              <select id="dispatch-bulk-vehicle" class="px-3 py-2 text-xs font-medium border border-slate-200 rounded-lg bg-white focus:outline-none cursor-pointer">
+                <option value="">Select vehicle</option>
+              </select>
+              <button type="button" onclick="window.bulkAssignDispatches()" class="px-4 py-2 bg-blue-600 text-white text-xs font-semibold rounded-lg hover:bg-blue-700 cursor-pointer">Assign selected</button>
+              <button type="button" onclick="window.clearBulkSelection()" class="px-3 py-2 text-xs font-medium text-slate-600 border border-slate-200 rounded-lg bg-white hover:bg-slate-50 cursor-pointer">Clear</button>
+            </div>
+
+            <!-- Desktop table -->
+            <div class="hidden md:block overflow-x-auto">
+              <table class="w-full text-left text-xs font-medium text-slate-600">
+                <thead>
+                  <tr class="bg-slate-50/80 border-b border-slate-100 text-[11px] font-semibold text-slate-500">
+                    <th class="px-4 py-3 w-10">
+                      <input type="checkbox" id="dispatch-select-all" class="rounded border-slate-300 cursor-pointer" onchange="window.toggleSelectAll(this.checked)" title="Select all">
+                    </th>
+                    <th class="px-4 py-3">Dispatch ID</th>
+                    <th class="px-4 py-3">Date</th>
+                    <th class="px-4 py-3">Sales order</th>
+                    <th class="px-4 py-3">Vehicle</th>
+                    <th class="px-4 py-3">Driver</th>
+                    <th class="px-4 py-3">ETA</th>
+                    <th class="px-4 py-3">Status</th>
+                    <th class="px-4 py-3 text-center">Actions</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100" id="dispatch-table-body">
+                  <!-- JS populated -->
+                </tbody>
+              </table>
+            </div>
+
+            <!-- Mobile cards -->
+            <div id="dispatch-mobile-list" class="md:hidden p-3 flex flex-col gap-3">
+              <!-- JS populated -->
+            </div>
+          </section>
+        </div>
+
+        <!-- Form View -->
+        <div id="dispatch-form-view" class="max-w-3xl mx-auto w-full hidden flex flex-col gap-6 relative">
+          <app-form-header
+            title-id="dispatch-form-title"
+            title="Create dispatch log"
+            subtitle="Link a sales order to logistics and deduct from inventory."
+            back-action="window.showMainView()">
+          </app-form-header>
+
+          <form id="dispatch-form" onsubmit="window.handleSubmit(event)" class="flex flex-col gap-6">
+            <input type="hidden" id="dispatch-edit-id">
+
+            <section class="bg-white p-6 md:p-8 rounded-2xl border border-slate-200/80 premium-shadow flex flex-col gap-6">
+              <h3 class="text-sm font-bold text-slate-900 flex items-center gap-2 border-b border-slate-100 pb-4">
+                <div class="p-1.5 bg-blue-50 text-blue-600 rounded-lg"><i data-lucide="clipboard-list" class="w-4 h-4"></i></div>
+                Dispatch Details
+              </h3>
+
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <label class="flex flex-col gap-1.5">
+                  <span class="text-[11px] font-bold text-slate-500 uppercase tracking-wide">Sales order <span class="text-red-500">*</span></span>
+                  <select id="dispatch-input-so" required class="px-4 py-2.5 text-xs font-semibold text-slate-900 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 cursor-pointer transition-all" onchange="window.updateDispatchHelpers()">
+                  </select>
+                </label>
+                <label class="flex flex-col gap-1.5">
+                  <span class="text-[11px] font-bold text-slate-500 uppercase tracking-wide">Dispatch date <span class="text-red-500">*</span></span>
+                  <input type="date" id="dispatch-input-date" required class="px-4 py-2.5 text-xs font-semibold text-slate-900 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 cursor-pointer transition-all">
+                </label>
+                <label class="flex flex-col gap-1.5">
+                  <span class="text-[11px] font-bold text-slate-500 uppercase tracking-wide">ETA</span>
+                  <input type="datetime-local" id="dispatch-input-eta" class="px-4 py-2.5 text-xs font-semibold text-slate-900 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 cursor-pointer transition-all">
+                </label>
+                <label class="flex flex-col gap-1.5">
+                  <span class="text-[11px] font-bold text-slate-500 uppercase tracking-wide">Delivery area</span>
+                  <input type="text" id="dispatch-input-location" placeholder="e.g. Dhaka, Mirpur" class="px-4 py-2.5 text-xs font-semibold text-slate-900 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all">
+                </label>
+              </div>
+
+              <div id="dispatch-order-preview" class="hidden p-5 rounded-xl bg-blue-50/50 border border-blue-100 mt-2">
+                <h4 class="text-[11px] font-bold text-blue-800 mb-3 uppercase tracking-wide flex items-center gap-1.5"><i data-lucide="package" class="w-3.5 h-3.5"></i> Order items to be deducted</h4>
+                <div id="dispatch-order-items" class="flex flex-col gap-2 text-xs text-slate-700 font-medium">
+                </div>
+              </div>
+            </section>
+
+            <section class="bg-white p-6 md:p-8 rounded-2xl border border-slate-200/80 premium-shadow flex flex-col gap-6">
+              <h3 class="text-sm font-bold text-slate-900 flex items-center gap-2 border-b border-slate-100 pb-4">
+                <div class="p-1.5 bg-emerald-50 text-emerald-600 rounded-lg"><i data-lucide="truck" class="w-4 h-4"></i></div>
+                Logistics & Routing
+              </h3>
+
+              <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <label class="flex flex-col gap-1.5">
+                  <span class="text-[11px] font-bold text-slate-500 uppercase tracking-wide">Vehicle assigned</span>
+                  <select id="dispatch-input-vehicle" class="px-4 py-2.5 text-xs font-semibold text-slate-900 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 cursor-pointer transition-all">
+                  </select>
+                </label>
+                <label class="flex flex-col gap-1.5">
+                  <span class="text-[11px] font-bold text-slate-500 uppercase tracking-wide">Driver name</span>
+                  <input type="text" id="dispatch-input-driver" class="px-4 py-2.5 text-xs font-semibold text-slate-900 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all" placeholder="e.g. Rahim Uddin">
+                </label>
+                <label class="flex flex-col gap-1.5">
+                  <span class="text-[11px] font-bold text-slate-500 uppercase tracking-wide">Driver phone</span>
+                  <input type="text" id="dispatch-input-phone" class="px-4 py-2.5 text-xs font-semibold text-slate-900 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all" placeholder="01700-000000">
+                </label>
+              </div>
+
+              <div class="grid grid-cols-1 gap-6">
+                <label class="flex flex-col gap-1.5 p-5 rounded-xl border border-slate-100 bg-slate-50/50">
+                  <span class="text-[11px] font-bold text-slate-500 uppercase tracking-wide">Dispatch status</span>
+                  <select id="dispatch-input-status" class="px-4 py-2.5 text-xs font-semibold text-slate-900 bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 cursor-pointer transition-all">
+                    <option value="scheduled">Scheduled</option>
+                    <option value="on_route">On route</option>
+                    <option value="delivered">Delivered</option>
+                  </select>
+                  <span class="text-[10px] text-slate-500 font-semibold mt-1 flex items-center gap-1.5"><i data-lucide="info" class="w-3.5 h-3.5"></i> Changing status to On route or Delivered will deduct order items from inventory.</span>
+                  <span id="dispatch-sms-note" class="hidden text-[10px] text-blue-600 font-bold mt-0.5 flex items-center gap-1.5"><i data-lucide="message-square" class="w-3.5 h-3.5"></i> Auto SMS is on — customer will be notified on status change.</span>
+                </label>
+              </div>
+            </section>
+
+            <div class="flex items-center justify-end gap-3 pt-2">
+              <button type="button" onclick="window.showMainView()" class="px-5 py-2.5 rounded-xl font-semibold text-xs text-slate-600 bg-white border border-slate-200 hover:bg-slate-50 transition-colors cursor-pointer">Cancel</button>
+              <button type="submit" class="px-6 py-2.5 rounded-xl font-semibold text-xs text-white bg-blue-600 hover:bg-blue-700 transition-colors cursor-pointer">Save dispatch log</button>
+            </div>
+          </form>
+        </div>
+
+        <app-footer></app-footer>
+      </div>
+    </main>
+  </div>
+  <!-- Live Location Modal -->
+  <div id="dispatch-location-modal" class="fixed inset-0 z-[60] hidden bg-slate-900/40 backdrop-blur-[2px] flex items-center justify-center p-4 transition-opacity duration-300 opacity-0" onclick="window.closeLiveLocation()">
+    <div class="bg-white rounded-2xl border border-slate-200 p-6 w-full max-w-md premium-shadow transform transition-all duration-300 scale-95" onclick="event.stopPropagation()">
+      <h3 class="text-base font-bold text-slate-900 mb-1 flex items-center gap-2">
+        <i data-lucide="map-pin" class="w-5 h-5 text-blue-600"></i> Live Location (Simulated)
+      </h3>
+      <p class="text-xs text-slate-500 mb-4 border-b border-slate-100 pb-3">Real-time delivery tracking info.</p>
+      <div class="space-y-2 text-xs font-medium text-slate-700">
+        <div class="flex justify-between p-2 bg-slate-50 rounded-lg">
+          <span class="text-slate-500">Dispatch ID:</span>
+          <span id="loc-modal-id" class="font-bold text-slate-900"></span>
+        </div>
+        <div class="flex justify-between p-2">
+          <span class="text-slate-500">Area:</span>
+          <span id="loc-modal-area" class="font-bold text-slate-900"></span>
+        </div>
+        <div class="flex justify-between p-2 bg-slate-50 rounded-lg">
+          <span class="text-slate-500">Status:</span>
+          <span id="loc-modal-status" class="font-bold"></span>
+        </div>
+        <div class="flex justify-between p-2">
+          <span class="text-slate-500">Driver:</span>
+          <span id="loc-modal-driver" class="font-bold text-slate-900"></span>
+        </div>
+        <div class="flex justify-between p-2 bg-slate-50 rounded-lg">
+          <span class="text-slate-500">Vehicle:</span>
+          <span id="loc-modal-vehicle" class="font-bold text-slate-900"></span>
+        </div>
+      </div>
+      <div class="flex justify-end mt-6">
+        <button type="button" onclick="window.closeLiveLocation()" class="bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold px-5 py-2.5 rounded-xl cursor-pointer shadow-md shadow-blue-500/10">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="/layout.js"></script>
+  <script type="module" src="/js/shared.js"></script>
+  <script type="module" src="/js/sales-dispatch.js"></script>
+</body>
+</html>

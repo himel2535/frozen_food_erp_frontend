@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Toys Factory ERP</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <script type="module" crossorigin src="/assets/lucide-CU5-AOMs.js"></script>
+  <script type="module" crossorigin src="/assets/shared-Det_SasC.js"></script>
+  <link rel="stylesheet" crossorigin href="/assets/lucide-bglkidLV.css">
+</head>
+<body class="bg-slate-50 text-slate-900 font-sans min-h-screen overflow-x-hidden">
+  <div id="screen-login" class="min-h-screen flex flex-col md:flex-row w-full">
+    <div class="hidden md:flex md:w-[55%] lg:w-[60%] bg-slate-950 p-12 flex-col justify-between relative overflow-hidden text-white border-r border-slate-900">
+      <div class="absolute -top-40 -left-40 w-96 h-96 bg-blue-500/10 rounded-full blur-[120px]"></div>
+      <div class="absolute bottom-[-10%] right-[-10%] w-[500px] h-[500px] bg-indigo-500/5 rounded-full blur-[150px]"></div>
+
+      <div class="flex items-center gap-3 relative z-10">
+        <div class="h-10 w-10 rounded-xl bg-blue-600 flex items-center justify-center text-white font-extrabold text-xl shadow-lg shadow-blue-500/20">
+          H
+        </div>
+        <span data-i18n="login.title" class="text-xl font-bold tracking-tight">Toys Factory ERP</span>
+      </div>
+
+      <div class="my-auto max-w-xl relative z-10">
+        <h1 class="text-3xl lg:text-4xl font-extrabold tracking-tight leading-tight">
+          <span data-i18n="login.subtitle">One Platform.<br>Complete Business Management.</span>
+        </h1>
+        <p class="text-sm text-slate-400 mt-4 leading-relaxed max-w-md">
+          Streamline your CRM, Sales, Inventory, HRM, and Accounting in a modern multi-tenant enterprise system designed for high-growth SaaS environments.
+        </p>
+
+        <div class="mt-10 grid grid-cols-2 gap-4">
+          <div class="bg-slate-900/60 border border-slate-800/80 p-5 rounded-2xl backdrop-blur-md">
+            <span class="text-[10px] font-bold text-slate-500 uppercase tracking-wider block"><span data-i18n="login.realtime">Real-time Revenue</span></span>
+            <span class="text-xl font-extrabold text-white block mt-2">$1,243,150</span>
+            <span class="text-[9px] text-emerald-500 font-bold block mt-1">▲ +12.5% vs last month</span>
+          </div>
+          <div class="bg-slate-900/60 border border-slate-800/80 p-5 rounded-2xl backdrop-blur-md">
+            <span class="text-[10px] font-bold text-slate-500 uppercase tracking-wider block"><span data-i18n="login.active">Active Products</span></span>
+            <span class="text-xl font-extrabold text-white block mt-2">1,452 SKU</span>
+            <span class="text-[9px] text-slate-400 font-bold block mt-1">In Stock: 14 Sectors</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="text-xs text-slate-500 relative z-10">
+        © 2026 Toys Factory ERP Cloud. All rights reserved.
+      </div>
+    </div>
+
+    <div class="flex-1 bg-slate-50 flex flex-col justify-center items-center p-6 sm:p-12 md:p-16 lg:p-24">
+      <div class="w-full max-w-md">
+        <div class="flex items-center gap-2.5 mb-8 md:hidden">
+          <div class="h-8 w-8 rounded-lg bg-blue-600 flex items-center justify-center text-white font-extrabold text-md">
+            H
+          </div>
+          <span class="text-md font-bold tracking-tight text-slate-950">Toys Factory ERP</span>
+        </div>
+
+        <h2 class="text-2xl font-extrabold text-slate-950 tracking-tight"><span data-i18n="login.welcome">Welcome back</span></h2>
+        <p class="text-xs text-slate-500 mt-2 font-medium"><span data-i18n="login.credentials">Please enter your credentials</span> to access your sandbox company workspace.</p>
+
+        <form id="login-form" class="mt-8 space-y-4" onsubmit="handleSandboxLogin(event)">
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-2"><span data-i18n="login.email">Email Address</span></label>
+            <input type="email" id="login-email" required value="admin@toysfactory.com" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-white text-xs focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all font-medium text-slate-800">
+          </div>
+
+          <div>
+            <div class="flex justify-between items-center mb-2">
+              <label class="block text-xs font-semibold text-slate-700"><span data-i18n="login.password">Password</span></label>
+              <a href="#" class="text-xs text-blue-600 font-semibold hover:text-blue-700 transition-colors"><span data-i18n="login.forgot">Forgot password?</span></a>
+            </div>
+            <input type="password" id="login-password" required value="password123" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-white text-xs focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all font-medium text-slate-800">
+          </div>
+
+          <div class="flex items-center gap-2 pt-2">
+            <input type="checkbox" id="remember-me" class="h-4 w-4 text-blue-600 border-slate-300 rounded focus:ring-blue-500/20">
+            <label for="remember-me" class="text-xs font-medium text-slate-600 select-none"><span data-i18n="login.remember">Remember this device</span> for 30 days</label>
+          </div>
+
+          <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-xl transition-all shadow-md shadow-blue-500/15 mt-6 hover:scale-[1.01]">
+            <span data-i18n="login.btn">Sign in to workspace</span>
+          </button>
+        </form>
+
+        <div class="mt-8 pt-6 border-t border-slate-200/60 flex items-center justify-between text-xs font-semibold text-slate-400">
+          <span><span data-i18n="login.footer">Toys Factory ERP Cloud Sandbox Platform</span></span>
+          <a href="#" class="text-slate-600 hover:text-slate-900 transition-colors"><span data-i18n="login.create">Create account</span></a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</body>
+</html>

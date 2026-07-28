@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Toys Factory ERP UI Kit & Complete Design System</title>
+  <!-- Google Fonts Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/index.css">
+</head>
+<body class="bg-slate-50 text-slate-900 font-sans min-h-screen overflow-x-hidden flex">
+
+  <!-- ========================================== -->
+  <!-- SIDEBAR SYSTEM NAVIGATION                  -->
+  <!-- ========================================== -->
+  <aside class="w-64 bg-slate-900 text-slate-300 flex flex-col shrink-0 relative z-30">
+    <div class="h-16 px-6 border-b border-slate-800 flex items-center justify-between overflow-hidden">
+      <div class="flex items-center gap-3">
+        <div class="h-9 w-9 rounded-xl bg-blue-600 flex items-center justify-center text-white font-extrabold text-lg shadow-lg shadow-blue-500/20 shrink-0">
+          H
+        </div>
+        <span class="text-sm font-bold tracking-tight text-white">Toys Factory ERP UI Kit</span>
+      </div>
+    </div>
+
+    <!-- Scroll list of component links -->
+    <nav class="flex-1 overflow-y-auto px-3 py-4 flex flex-col gap-0.5 text-xs font-semibold">
+      <div class="px-3 py-1.5 uppercase font-bold text-slate-500 tracking-wider text-[10px]">Brand Guidelines</div>
+      <a href="#section-colors" class="flex items-center gap-3 px-3 py-2 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800/60 transition-all">Colors & Palette</a>
+      <a href="#section-typography" class="flex items-center gap-3 px-3 py-2 text-slate-400 hover:text-white hover:bg-slate-800/60 transition-all">Typography</a>
+
+      <div class="px-3 py-1.5 uppercase font-bold text-slate-500 tracking-wider text-[10px] mt-4">Form Components</div>
+      <a href="#section-buttons" class="flex items-center gap-3 px-3 py-2 text-slate-400 hover:text-white hover:bg-slate-800/60 transition-all">Buttons</a>
+      <a href="#section-inputs" class="flex items-center gap-3 px-3 py-2 text-slate-400 hover:text-white hover:bg-slate-800/60 transition-all">Inputs & Selects</a>
+      <a href="#section-controls" class="flex items-center gap-3 px-3 py-2 text-slate-400 hover:text-white hover:bg-slate-800/60 transition-all">Checks, Radios & Toggles</a>
+      <a href="#section-datepicker" class="flex items-center gap-3 px-3 py-2 text-slate-400 hover:text-white hover:bg-slate-800/60 transition-all">Date Pickers</a>
+
+      <div class="px-3 py-1.5 uppercase font-bold text-slate-500 tracking-wider text-[10px] mt-4">Data Elements</div>
+      <a href="#section-tables" class="flex items-center gap-3 px-3 py-2 text-slate-400 hover:text-white hover:bg-slate-800/60 transition-all">Tables & Data Grids</a>
+      <a href="#section-charts" class="flex items-center gap-3 px-3 py-2 text-slate-400 hover:text-white hover:bg-slate-800/60 transition-all">Charts & Metrics</a>
+
+      <div class="px-3 py-1.5 uppercase font-bold text-slate-500 tracking-wider text-[10px] mt-4">Overlays & Navigation</div>
+      <a href="#section-modals" class="flex items-center gap-3 px-3 py-2 text-slate-400 hover:text-white hover:bg-slate-800/60 transition-all">Modals & Drawers</a>
+      <a href="#section-navigation" class="flex items-center gap-3 px-3 py-2 text-slate-400 hover:text-white hover:bg-slate-800/60 transition-all">Tabs, Breadcrumbs & Paginations</a>
+
+      <div class="px-3 py-1.5 uppercase font-bold text-slate-500 tracking-wider text-[10px] mt-4">Status & Alerts</div>
+      <a href="#section-alerts" class="flex items-center gap-3 px-3 py-2 text-slate-400 hover:text-white hover:bg-slate-800/60 transition-all">Alerts, Badges & Toasts</a>
+    </nav>
+  </aside>
+
+  <!-- ========================================== -->
+  <!-- MAIN COMPONENT DISPLAY CONTAINER           -->
+  <!-- ========================================== -->
+  <main class="flex-1 flex flex-col min-h-screen overflow-hidden">
+    <!-- Header banner -->
+    <header class="h-16 bg-white border-b border-slate-200/80 px-8 flex items-center justify-between shrink-0">
+      <div>
+        <h1 class="text-sm font-extrabold text-slate-900 tracking-tight">Toys Factory ERP Design System Showcase</h1>
+        <p class="text-[10px] text-slate-500 mt-0.5">Interactive components library suitable for production modules.</p>
+      </div>
+      <a href="/dashboard" class="bg-blue-600 hover:bg-blue-700 text-white text-[11px] font-bold px-3.5 py-1.5 rounded-xl transition-all shadow-md">Back to Dashboard</a>
+    </header>
+
+    <!-- Scroll Content Wrapper -->
+    <div class="flex-1 overflow-y-auto p-8 space-y-12">
+
+      <!-- A. COLORS -->
+      <section id="section-colors" class="space-y-4 scroll-mt-6">
+        <h2 class="text-base font-extrabold text-slate-950 border-b border-slate-200 pb-2">Color Palette Guidelines</h2>
+        <div class="grid grid-cols-2 md:grid-cols-6 gap-4">
+          <div class="bg-white p-4 rounded-xl border border-slate-200 premium-shadow">
+            <div class="h-12 w-full rounded bg-blue-600 mb-2"></div>
+            <span class="text-xs font-bold text-slate-900">Primary Blue</span>
+            <span class="text-[10px] text-slate-400 block font-mono">#2563EB</span>
+          </div>
+          <div class="bg-white p-4 rounded-xl border border-slate-200 premium-shadow">
+            <div class="h-12 w-full rounded bg-emerald-500 mb-2"></div>
+            <span class="text-xs font-bold text-slate-900">Success Green</span>
+            <span class="text-[10px] text-slate-400 block font-mono">#22C55E</span>
+          </div>
+          <div class="bg-white p-4 rounded-xl border border-slate-200 premium-shadow">
+            <div class="h-12 w-full rounded bg-amber-500 mb-2"></div>
+            <span class="text-xs font-bold text-slate-900">Warning Gold</span>
+            <span class="text-[10px] text-slate-400 block font-mono">#F59E0B</span>
+          </div>
+          <div class="bg-white p-4 rounded-xl border border-slate-200 premium-shadow">
+            <div class="h-12 w-full rounded bg-rose-500 mb-2"></div>
+            <span class="text-xs font-bold text-slate-900">Danger Red</span>
+            <span class="text-[10px] text-slate-400 block font-mono">#EF4444</span>
+          </div>
+          <div class="bg-white p-4 rounded-xl border border-slate-200 premium-shadow">
+            <div class="h-12 w-full rounded bg-slate-900 mb-2"></div>
+            <span class="text-xs font-bold text-slate-900">Dark Sidebar</span>
+            <span class="text-[10px] text-slate-400 block font-mono">#0F172A</span>
+          </div>
+          <div class="bg-white p-4 rounded-xl border border-slate-200 premium-shadow">
+            <div class="h-12 w-full rounded bg-slate-50 border border-slate-200 mb-2"></div>
+            <span class="text-xs font-bold text-slate-900">Light Background</span>
+            <span class="text-[10px] text-slate-400 block font-mono">#F8FAFC</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- B. TYPOGRAPHY -->
+      <section id="section-typography" class="space-y-4 scroll-mt-6">
+        <h2 class="text-base font-extrabold text-slate-955 border-b border-slate-200 pb-2">Typography & Scale</h2>
+        <div class="bg-white p-6 rounded-2xl border border-slate-200/80 premium-shadow space-y-4">
+          <div class="flex items-baseline gap-4"><span class="w-24 text-[10px] font-bold text-slate-400">Heading 1:</span> <h1 class="text-3xl font-extrabold text-slate-950">Inter Extra Bold Heading</h1></div>
+          <div class="flex items-baseline gap-4"><span class="w-24 text-[10px] font-bold text-slate-400">Heading 2:</span> <h2 class="text-xl font-bold text-slate-900">Module Subsection Label</h2></div>
+          <div class="flex items-baseline gap-4"><span class="w-24 text-[10px] font-bold text-slate-400">Heading 3:</span> <h3 class="text-sm font-bold text-slate-900">Standard Card Title Header</h3></div>
+          <div class="flex items-baseline gap-4"><span class="w-24 text-[10px] font-bold text-slate-400">Paragraph:</span> <p class="text-xs text-slate-500 font-medium">This is standard text content describing SaaS ERP details.</p></div>
+        </div>
+      </section>
+
+      <!-- C. BUTTONS -->
+      <section id="section-buttons" class="space-y-4 scroll-mt-6">
+        <h2 class="text-base font-extrabold text-slate-955 border-b border-slate-200 pb-2">1. Buttons Showcase</h2>
+        <div class="bg-white p-6 rounded-2xl border border-slate-200/80 premium-shadow flex flex-wrap gap-4">
+          <button class="bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold px-4 py-2 rounded-xl transition-all shadow-sm">Primary Blue</button>
+          <button class="bg-slate-200 hover:bg-slate-300 text-slate-800 text-xs font-bold px-4 py-2 rounded-xl transition-all">Secondary Slate</button>
+          <button class="border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-bold px-4 py-2 rounded-xl transition-all">Outline Border</button>
+          <button class="bg-rose-500 hover:bg-rose-600 text-white text-xs font-bold px-4 py-2 rounded-xl transition-all">Danger Action</button>
+          <button class="text-blue-600 hover:underline text-xs font-bold px-4 py-2 rounded-xl transition-all">Ghost Link</button>
+        </div>
+      </section>
+
+      <!-- D. INPUTS & SELECTS -->
+      <section id="section-inputs" class="space-y-4 scroll-mt-6">
+        <h2 class="text-base font-extrabold text-slate-955 border-b border-slate-200 pb-2">2. Inputs & Select Dropdowns</h2>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 bg-white p-6 rounded-2xl border border-slate-200/80 premium-shadow">
+          <div>
+            <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2">Default Input</label>
+            <input type="text" placeholder="Enter values..." class="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 transition-all text-slate-800 font-medium">
+          </div>
+          <div>
+            <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2">Validation Error State</label>
+            <input type="text" value="invalid-value" class="w-full px-4 py-2.5 rounded-xl border border-rose-350 bg-rose-50/20 text-xs focus:outline-none focus:ring-2 focus:ring-rose-500/10 text-rose-600 font-medium">
+          </div>
+          <div>
+            <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2">Select Options Selector</label>
+            <select class="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-xs text-slate-700 focus:outline-none font-medium">
+              <option>Dropdown Value A</option>
+              <option>Dropdown Value B</option>
+            </select>
+          </div>
+        </div>
+      </section>
+
+      <!-- E. CHECKS, RADIOS & TOGGLES -->
+      <section id="section-controls" class="space-y-4 scroll-mt-6">
+        <h2 class="text-base font-extrabold text-slate-955 border-b border-slate-200 pb-2">3. Checkboxes, Radios & Switches</h2>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 bg-white p-6 rounded-2xl border border-slate-200/80 premium-shadow">
+          <!-- Checks -->
+          <div class="space-y-3">
+            <label class="flex items-center gap-3 text-xs font-semibold text-slate-700">
+              <input type="checkbox" checked class="h-4.5 w-4.5 rounded border-slate-350 text-blue-600 focus:ring-blue-500/10">
+              <span>Checkbox Checked</span>
+            </label>
+            <label class="flex items-center gap-3 text-xs font-semibold text-slate-700">
+              <input type="checkbox" class="h-4.5 w-4.5 rounded border-slate-350 text-blue-600 focus:ring-blue-500/10">
+              <span>Checkbox Empty</span>
+            </label>
+          </div>
+
+          <!-- Radios -->
+          <div class="space-y-3">
+            <label class="flex items-center gap-3 text-xs font-semibold text-slate-700">
+              <input type="radio" name="demo-radio" checked class="h-4.5 w-4.5 border-slate-350 text-blue-600 focus:ring-blue-500/10">
+              <span>Radio Selected</span>
+            </label>
+            <label class="flex items-center gap-3 text-xs font-semibold text-slate-700">
+              <input type="radio" name="demo-radio" class="h-4.5 w-4.5 border-slate-350 text-blue-600 focus:ring-blue-500/10">
+              <span>Radio Unselected</span>
+            </label>
+          </div>
+
+          <!-- Custom Toggles -->
+          <div class="space-y-3">
+            <label class="relative inline-flex items-center cursor-pointer">
+              <input type="checkbox" checked class="sr-only peer">
+              <div class="w-9 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-600"></div>
+              <span class="ml-3 text-xs font-semibold text-slate-700">Toggle Switch Active</span>
+            </label>
+          </div>
+        </div>
+      </section>
+
+      <!-- F. DATE PICKER -->
+      <section id="section-datepicker" class="space-y-4 scroll-mt-6">
+        <h2 class="text-base font-extrabold text-slate-955 border-b border-slate-200 pb-2">4. Date Picker Input</h2>
+        <div class="bg-white p-6 rounded-2xl border border-slate-200/80 premium-shadow max-w-sm">
+          <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2">Calendar Selector</label>
+          <div class="relative flex items-center">
+            <i data-lucide="calendar" class="absolute left-3.5 w-4 h-4 text-slate-400"></i>
+            <input type="date" value="2026-06-17" class="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-xs focus:outline-none text-slate-800 font-semibold">
+          </div>
+        </div>
+      </section>
+
+      <!-- G. TABLES & DATA GRIDS -->
+      <section id="section-tables" class="space-y-4 scroll-mt-6">
+        <h2 class="text-base font-extrabold text-slate-955 border-b border-slate-200 pb-2">5. Data Tables & Card Grids</h2>
+        <!-- Table -->
+        <div class="premium-card premium-shadow overflow-hidden">
+          <table class="w-full text-left text-xs font-semibold text-slate-600">
+            <thead>
+              <tr class="bg-slate-50 border-b border-slate-200/80 text-[10px] uppercase font-bold text-slate-400/80">
+                <th class="px-6 py-4">Item Catalog</th>
+                <th class="px-6 py-4">Category</th>
+                <th class="px-6 py-4 text-right">Revenue Yield</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100">
+              <tr class="hover:bg-slate-50/50 transition-colors">
+                <td class="px-6 py-4 font-bold text-slate-950">Table Row Item A</td>
+                <td class="px-6 py-4"><span class="bg-blue-50 text-blue-600 text-[10px] font-bold px-2 py-0.5 rounded">Core</span></td>
+                <td class="px-6 py-4 text-right font-extrabold text-slate-900">$124,00.00</td>
+              </tr>
+              <tr class="hover:bg-slate-50/50 transition-colors">
+                <td class="px-6 py-4 font-bold text-slate-955">Table Row Item B</td>
+                <td class="px-6 py-4"><span class="bg-blue-50 text-blue-600 text-[10px] font-bold px-2 py-0.5 rounded">Sales</span></td>
+                <td class="px-6 py-4 text-right font-extrabold text-slate-900">$85,200.00</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- H. CHARTS & ANALYTICS -->
+      <section id="section-charts" class="space-y-4 scroll-mt-6">
+        <h2 class="text-base font-extrabold text-slate-955 border-b border-slate-200 pb-2">6. Charts & Analytics</h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <!-- Trend chart mockup -->
+          <div class="premium-card p-6 premium-shadow">
+            <h3 class="text-xs font-bold text-slate-900 tracking-tight mb-4">SVG Chart Graphics</h3>
+            <div class="h-40 w-full relative pt-4">
+              <svg class="w-full h-full" preserveAspectRatio="none">
+                <path d="M 0 60 L 100 40 L 200 90 L 300 20 L 400 50" fill="none" stroke="#2563eb" stroke-width="2.5"></path>
+              </svg>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- I. OVERLAYS, MODALS & DRAWER -->
+      <section id="section-modals" class="space-y-4 scroll-mt-6">
+        <h2 class="text-base font-extrabold text-slate-955 border-b border-slate-200 pb-2">7. Modals & Drawer Overlays</h2>
+        <div class="bg-white p-6 rounded-2xl border border-slate-200/80 premium-shadow flex gap-4">
+          <button onclick="toggleModal('ds-demo-modal', true)" class="bg-slate-900 text-white text-xs font-bold px-4 py-2.5 rounded-xl">Launch Demo Modal</button>
+          <button onclick="toggleDSDrawer(true)" class="bg-slate-900 text-white text-xs font-bold px-4 py-2.5 rounded-xl">Open Slide-out Drawer</button>
+        </div>
+      </section>
+
+      <!-- J. NAVIGATION ELEMENTS -->
+      <section id="section-navigation" class="space-y-4 scroll-mt-6">
+        <h2 class="text-base font-extrabold text-slate-955 border-b border-slate-200 pb-2">8. Tabs, Breadcrumbs & Pagination</h2>
+        <div class="bg-white p-6 rounded-2xl border border-slate-200/80 premium-shadow space-y-8">
+          <!-- Breadcrumbs -->
+          <div class="space-y-2">
+            <span class="block text-[10px] font-bold text-slate-450 uppercase">Breadcrumbs</span>
+            <div class="flex items-center gap-2 text-xs font-bold text-slate-400">
+              <a href="#" class="hover:text-slate-700">Workspace</a>
+              <span>/</span>
+              <a href="#" class="hover:text-slate-700">Customers</a>
+              <span>/</span>
+              <span class="text-slate-800">Alexander Bell</span>
+            </div>
+          </div>
+
+          <!-- Tabs -->
+          <div class="space-y-2">
+            <span class="block text-[10px] font-bold text-slate-450 uppercase">Horizontal Tabs</span>
+            <div class="flex items-center gap-1.5 border-b border-slate-200/80 pb-0.5">
+              <button class="border-b-2 border-blue-600 px-4 py-2 text-xs font-bold text-slate-900">Active Tab</button>
+              <button class="border-b-2 border-transparent px-4 py-2 text-xs font-semibold text-slate-500 hover:text-slate-900">Tab Option B</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- K. ALERTS, BADGES & NOTIFICATIONS -->
+      <section id="section-alerts" class="space-y-4 scroll-mt-6">
+        <h2 class="text-base font-extrabold text-slate-955 border-b border-slate-200 pb-2">9. Alerts, Badges & Indicators</h2>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 bg-white p-6 rounded-2xl border border-slate-200/80 premium-shadow">
+          <!-- Alerts -->
+          <div class="space-y-3 flex flex-col justify-start">
+            <div class="p-3 rounded-xl bg-blue-50 border border-blue-200/50 text-xs font-semibold text-blue-700">
+              Information Banner Message
+            </div>
+            <div class="p-3 rounded-xl bg-rose-50 border border-rose-200/50 text-xs font-semibold text-rose-700">
+              Danger/Alert Notification Error
+            </div>
+          </div>
+
+          <!-- Badges -->
+          <div class="space-y-3">
+            <div class="flex flex-wrap gap-2">
+              <span class="bg-blue-50 text-blue-600 text-[10px] font-bold px-2 py-0.5 rounded-lg border border-blue-100">Primary</span>
+              <span class="bg-emerald-50 text-emerald-600 text-[10px] font-bold px-2 py-0.5 rounded-lg border border-emerald-100">Active</span>
+              <span class="bg-rose-50 text-rose-600 text-[10px] font-bold px-2 py-0.5 rounded-lg border border-rose-100">Overdue</span>
+            </div>
+          </div>
+
+          <!-- Indicators -->
+          <div class="space-y-3">
+            <div class="flex items-center gap-3 text-xs font-bold text-slate-700">
+              <!-- Pulse dot indicator -->
+              <span class="relative flex h-2 w-2">
+                <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+              </span>
+              <span>Pulse Online Status Cues</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+    </div>
+  </main>
+
+  <!-- ========================================== -->
+  <!-- DEMO OVERLAYS: MODAL & DRAWER             -->
+  <!-- ========================================== -->
+  <div id="ds-demo-modal" class="fixed inset-0 z-50 hidden bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-6">
+    <div class="bg-white w-full max-w-md rounded-2xl shadow-2xl p-6 border border-slate-200 relative text-slate-800">
+      <button onclick="toggleModal('ds-demo-modal', false)" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600">
+        <i data-lucide="x" class="w-4 h-4"></i>
+      </button>
+      <h3 class="text-sm font-bold text-slate-900 mb-2">Design System Modal Dialog</h3>
+      <p class="text-xs text-slate-500 mt-2 font-medium">This modal displays clean rounded borders and standard sizing metrics.</p>
+      <button onclick="toggleModal('ds-demo-modal', false)" class="bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold w-full py-3 rounded-xl mt-6">Confirm Action</button>
+    </div>
+  </div>
+
+  <div id="ds-demo-drawer-overlay" class="fixed inset-0 z-50 hidden bg-slate-900/40 backdrop-blur-[2px]" onclick="toggleDSDrawer(false)">
+    <div id="ds-demo-drawer" class="fixed top-0 right-0 h-full w-full max-w-md bg-white border-l border-slate-200 shadow-2xl flex flex-col drawer-transition drawer-hidden z-50" onclick="event.stopPropagation()">
+      <div class="p-6 border-b border-slate-100 flex items-center justify-between">
+        <h3 class="text-sm font-bold text-slate-900">Slide-out Drawer Component</h3>
+        <button onclick="toggleDSDrawer(false)" class="p-1.5 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-50">
+          <i data-lucide="x" class="w-4 h-4"></i>
+        </button>
+      </div>
+      <div class="p-6">
+        <p class="text-xs text-slate-500 font-medium">This right-aligned panel slides in smoothly and fits CRM drawer files perfectly.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Lucide script inclusion and UI Kit logic bundle -->
+  <script type="module" src="/design-system.js"></script>
+</body>
+</html>

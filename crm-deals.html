@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CRM Deals — Toys Factory ERP</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/index.css">
+</head>
+<body class="bg-slate-50 font-['Inter'] antialiased text-slate-600">
+  <div id="screen-workspace" class="min-h-screen flex">
+    <app-sidebar mode="tenant"></app-sidebar>
+    <main class="flex-1 flex flex-col min-h-screen overflow-hidden">
+      <app-header mode="tenant" title="Enterprise Workspace"></app-header>
+
+      <div id="crm-deals-main-view" class="flex-1 overflow-y-auto p-6 md:p-8 space-y-6 flex flex-col">
+        <div class="flex flex-col xl:flex-row xl:items-center xl:justify-between gap-4">
+          <div>
+            <h2 class="text-xl font-extrabold text-slate-900 tracking-tight">Deals &amp; pipeline</h2>
+            <p class="text-xs text-slate-500 mt-1 font-medium">Track qualified opportunities, manage follow-ups, and move revenue through the pipeline.</p>
+          </div>
+          <div class="flex flex-wrap items-center gap-2">
+            <div class="inline-flex rounded-xl border border-slate-200 bg-white p-0.5">
+              <button type="button" id="crm-deal-view-table" onclick="window.switchDealView('table')" class="crm-deal-view-btn px-3 py-1.5 rounded-lg text-xs font-bold bg-blue-600 text-white cursor-pointer">Table</button>
+              <button type="button" id="crm-deal-view-kanban" onclick="window.switchDealView('kanban')" class="crm-deal-view-btn px-3 py-1.5 rounded-lg text-xs font-bold text-slate-500 hover:text-slate-900 cursor-pointer">Pipeline board</button>
+            </div>
+            <button onclick="window.openDealModal()" id="crm-deals-add-btn" class="bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold px-4 py-2.5 rounded-xl transition-colors flex items-center gap-2 cursor-pointer">
+              <i data-lucide="plus" class="w-4 h-4"></i> Add deal
+            </button>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+          <div class="bg-white p-5 rounded-xl border border-slate-200 flex items-start gap-3">
+            <img src="/images/icons/metrics/customers.png" alt="" class="w-8 h-8 object-contain shrink-0 pointer-events-none" />
+            <div>
+              <span class="text-[10px] font-bold text-slate-400 block">Total active deals</span>
+              <span class="text-xl font-extrabold text-slate-900 block mt-1" id="crm-metric-deals-count">0</span>
+            </div>
+          </div>
+          <div class="bg-emerald-50/50 p-5 rounded-xl border border-emerald-100 flex items-start gap-3">
+            <img src="/images/icons/metrics/spending.png" alt="" class="w-8 h-8 object-contain shrink-0 pointer-events-none" />
+            <div>
+              <span class="text-[10px] font-bold text-slate-400 block">Pipeline value</span>
+              <span class="text-xl font-extrabold text-emerald-600 block mt-1" id="crm-metric-pipeline">৳0.00</span>
+            </div>
+          </div>
+          <div class="bg-indigo-50/40 p-5 rounded-xl border border-indigo-100 flex items-start gap-3">
+            <img src="/images/icons/metrics/delivered.png" alt="" class="w-8 h-8 object-contain shrink-0 pointer-events-none" />
+            <div>
+              <span class="text-[10px] font-bold text-slate-400 block">Average deal size</span>
+              <span class="text-xl font-extrabold text-indigo-600 block mt-1" id="crm-metric-deal-avg">৳0.00</span>
+            </div>
+          </div>
+          <div class="bg-amber-50/40 p-5 rounded-xl border border-amber-100 flex items-start gap-3">
+            <img src="/images/icons/metrics/scheduled.png" alt="" class="w-8 h-8 object-contain shrink-0 pointer-events-none" />
+            <div>
+              <span class="text-[10px] font-bold text-slate-400 block">Closing this month</span>
+              <span class="text-xl font-extrabold text-amber-600 block mt-1" id="crm-metric-closing-month">0</span>
+            </div>
+          </div>
+          <div class="bg-emerald-50/40 p-5 rounded-xl border border-emerald-100 flex items-start gap-3">
+            <img src="/images/icons/metrics/delivered.png" alt="" class="w-8 h-8 object-contain shrink-0 pointer-events-none" />
+            <div>
+              <span class="text-[10px] font-bold text-slate-400 block">Won deals</span>
+              <span class="text-xl font-extrabold text-emerald-600 block mt-1" id="crm-metric-won-count">0</span>
+            </div>
+          </div>
+          <div class="bg-rose-50/40 p-5 rounded-xl border border-rose-100 flex items-start gap-3">
+            <img src="/images/icons/metrics/risk.png" alt="" class="w-8 h-8 object-contain shrink-0 pointer-events-none" />
+            <div>
+              <span class="text-[10px] font-bold text-slate-400 block">Lost deals</span>
+              <span class="text-xl font-extrabold text-rose-600 block mt-1" id="crm-metric-lost-count">0</span>
+            </div>
+          </div>
+          <div class="bg-blue-50/40 p-5 rounded-xl border border-blue-100 flex items-start gap-3 md:col-span-2">
+            <img src="/images/icons/metrics/on-route.png" alt="" class="w-8 h-8 object-contain shrink-0 pointer-events-none" />
+            <div>
+              <span class="text-[10px] font-bold text-slate-400 block">Forecast value</span>
+              <span class="text-xl font-extrabold text-blue-600 block mt-1" id="crm-metric-forecast">৳0.00</span>
+              <span class="text-[11px] text-slate-500 font-semibold mt-1 block" id="crm-metric-forecast-sub">Weighted revenue from open deals</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="flex flex-wrap items-center gap-2" id="crm-deals-quick-filter-chips">
+          <button type="button" data-quick="all" onclick="window.setDealQuickFilter('all')" class="crm-deal-quick-chip px-2.5 py-1 rounded-full text-[10px] font-bold border border-blue-500 bg-blue-50 text-blue-700 cursor-pointer">All</button>
+          <button type="button" data-quick="open" onclick="window.setDealQuickFilter('open')" class="crm-deal-quick-chip px-2.5 py-1 rounded-full text-[10px] font-bold border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 cursor-pointer">Open</button>
+          <button type="button" data-quick="won" onclick="window.setDealQuickFilter('won')" class="crm-deal-quick-chip px-2.5 py-1 rounded-full text-[10px] font-bold border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 cursor-pointer">Won</button>
+          <button type="button" data-quick="lost" onclick="window.setDealQuickFilter('lost')" class="crm-deal-quick-chip px-2.5 py-1 rounded-full text-[10px] font-bold border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 cursor-pointer">Lost</button>
+          <button type="button" data-quick="closing-month" onclick="window.setDealQuickFilter('closing-month')" class="crm-deal-quick-chip px-2.5 py-1 rounded-full text-[10px] font-bold border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 cursor-pointer">Closing this month</button>
+        </div>
+
+        <div class="bg-white p-4 rounded-xl border border-slate-200 space-y-4">
+          <div class="flex flex-col xl:flex-row xl:items-center xl:justify-between gap-3">
+            <div class="relative min-w-[240px] flex-1 max-w-md">
+              <i data-lucide="search" class="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400"></i>
+              <input type="text" id="crm-deals-search" oninput="window.handleDealFilterChange()" placeholder="Search title, company, contact, phone..." class="w-full pl-10 pr-4 py-2 rounded-xl border border-slate-200 bg-slate-50 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 font-medium">
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 flex-1">
+              <select id="crm-deals-filter-stage" onchange="window.handleDealFilterChange()" class="bg-slate-50 border border-slate-200 text-xs font-semibold text-slate-700 rounded-xl px-3 py-2 focus:outline-none cursor-pointer">
+                <option value="all">All stages</option>
+              </select>
+              <select id="crm-deals-filter-status" onchange="window.handleDealFilterChange()" class="bg-slate-50 border border-slate-200 text-xs font-semibold text-slate-700 rounded-xl px-3 py-2 focus:outline-none cursor-pointer">
+                <option value="all">All statuses</option>
+              </select>
+              <select id="crm-deals-filter-owner" onchange="window.handleDealFilterChange()" class="bg-slate-50 border border-slate-200 text-xs font-semibold text-slate-700 rounded-xl px-3 py-2 focus:outline-none cursor-pointer">
+                <option value="all">All reps</option>
+              </select>
+            </div>
+          </div>
+          <div class="flex flex-wrap items-center gap-2">
+            <button onclick="window.toggleDealFilters()" class="border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-700 text-xs font-semibold px-3 py-2 rounded-xl cursor-pointer">Advanced filters</button>
+            <button onclick="window.clearDealFilters()" class="border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold px-3 py-2 rounded-xl cursor-pointer">Reset</button>
+          </div>
+          <div id="crm-deals-advanced-filters" class="hidden grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-3 bg-slate-50 p-4 rounded-xl border border-slate-100">
+            <div>
+              <label class="block text-[10px] font-bold text-slate-500 mb-1.5 uppercase">Date From</label>
+              <input type="date" id="crm-deals-filter-date-from" oninput="window.handleDealFilterChange()" class="w-full bg-white border border-slate-200 text-xs rounded-lg px-2.5 py-2 focus:outline-none">
+            </div>
+            <div>
+              <label class="block text-[10px] font-bold text-slate-500 mb-1.5 uppercase">Date To</label>
+              <input type="date" id="crm-deals-filter-date-to" oninput="window.handleDealFilterChange()" class="w-full bg-white border border-slate-200 text-xs rounded-lg px-2.5 py-2 focus:outline-none">
+            </div>
+            <div>
+              <label class="block text-[10px] font-bold text-slate-500 mb-1.5 uppercase">Value Min</label>
+              <input type="number" id="crm-deals-filter-value-min" oninput="window.handleDealFilterChange()" class="w-full bg-white border border-slate-200 text-xs rounded-lg px-2.5 py-2 focus:outline-none" placeholder="0">
+            </div>
+            <div>
+              <label class="block text-[10px] font-bold text-slate-500 mb-1.5 uppercase">Value Max</label>
+              <input type="number" id="crm-deals-filter-value-max" oninput="window.handleDealFilterChange()" class="w-full bg-white border border-slate-200 text-xs rounded-lg px-2.5 py-2 focus:outline-none" placeholder="50000">
+            </div>
+            <div>
+              <label class="block text-[10px] font-bold text-slate-500 mb-1.5 uppercase">Company</label>
+              <input type="text" id="crm-deals-filter-company" oninput="window.handleDealFilterChange()" class="w-full bg-white border border-slate-200 text-xs rounded-lg px-2.5 py-2 focus:outline-none" placeholder="Company name">
+            </div>
+            <div>
+              <label class="block text-[10px] font-bold text-slate-500 mb-1.5 uppercase">Probability Min</label>
+              <input type="number" id="crm-deals-filter-probability" oninput="window.handleDealFilterChange()" min="0" max="100" class="w-full bg-white border border-slate-200 text-xs rounded-lg px-2.5 py-2 focus:outline-none" placeholder="50">
+            </div>
+            <div>
+              <label class="block text-[10px] font-bold text-slate-500 mb-1.5 uppercase">Lead Source</label>
+              <input type="text" id="crm-deals-filter-source" oninput="window.handleDealFilterChange()" class="w-full bg-white border border-slate-200 text-xs rounded-lg px-2.5 py-2 focus:outline-none" placeholder="Trade Show, Website">
+            </div>
+            <div class="flex items-end">
+              <button onclick="window.clearDealFilters()" class="w-full border border-slate-200 bg-white hover:bg-slate-50 text-xs font-semibold py-2 rounded-lg transition-colors">Clear Advanced</button>
+            </div>
+          </div>
+        </div>
+
+        <section id="crm-panel-deals" class="space-y-4">
+          <div id="crm-deals-table-container" class="bg-white p-4 rounded-xl border border-slate-200">
+            <div class="overflow-x-auto rounded-xl border border-slate-100">
+              <table class="w-full text-left text-xs border-collapse">
+                <thead>
+                  <tr class="bg-slate-50 text-slate-500 border-b border-slate-100 font-bold">
+                    <th class="p-4">Deal / company</th>
+                    <th class="p-4">Linked lead</th>
+                    <th class="p-4">Assigned rep</th>
+                    <th class="p-4 text-right">Expected value</th>
+                    <th class="p-4">Probability</th>
+                    <th class="p-4">Stage</th>
+                    <th class="p-4">Expected close</th>
+                    <th class="p-4">Last activity</th>
+                    <th class="p-4">Status</th>
+                    <th class="p-4 text-center">Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="crm-deals-body" class="divide-y divide-slate-100 font-semibold text-slate-700"></tbody>
+              </table>
+            </div>
+          </div>
+
+          <div id="crm-deals-kanban" class="hidden grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 2xl:grid-cols-7 gap-4"></div>
+
+          <div class="grid grid-cols-1 xl:grid-cols-[minmax(0,1.5fr)_minmax(340px,0.9fr)] gap-4">
+            <div class="bg-white p-5 rounded-xl border border-slate-200 space-y-4">
+              <div class="flex items-center justify-between gap-3">
+                <div>
+                  <h3 class="text-sm font-bold text-slate-900">Selected deal</h3>
+                  <p class="text-xs text-slate-500 font-medium">Deal context, stage controls, and follow-up snapshot.</p>
+                </div>
+                <button id="crm-selected-deal-edit-btn" onclick="window.editSelectedDeal()" class="border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold px-3 py-2 rounded-xl cursor-pointer">Edit</button>
+              </div>
+              <div id="crm-deal-summary-empty" class="text-xs text-slate-400 font-semibold py-10 text-center border border-dashed border-slate-200 rounded-xl">Select a deal from the table or pipeline board to view details.</div>
+              <div id="crm-deal-summary" class="hidden space-y-4">
+                <div id="crm-selected-deal-hero" class="bg-blue-50/50 p-4 rounded-xl border border-blue-100 flex items-start gap-4">
+                  <div id="crm-selected-deal-avatar"></div>
+                  <div class="min-w-0 flex-1">
+                    <div class="text-sm font-extrabold text-slate-900" id="crm-selected-deal-title">—</div>
+                    <div class="text-xs text-slate-500 font-semibold mt-0.5" id="crm-selected-deal-company">—</div>
+                    <div class="flex flex-wrap items-center gap-2 mt-2">
+                      <span id="crm-selected-deal-stage-badge" class="px-2 py-0.5 rounded-full text-[9px] font-bold bg-blue-50 text-blue-600">—</span>
+                      <span id="crm-selected-deal-status-badge" class="px-2 py-0.5 rounded-full text-[9px] font-bold bg-blue-50 text-blue-600">—</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs font-semibold text-slate-700">
+                  <div class="bg-emerald-50/60 p-3 rounded-xl border border-emerald-100">
+                    <div class="text-[9px] font-bold text-slate-400 uppercase">Expected value</div>
+                    <div class="text-sm font-extrabold text-emerald-600 mt-1" id="crm-selected-deal-value">—</div>
+                  </div>
+                  <div class="bg-blue-50/60 p-3 rounded-xl border border-blue-100">
+                    <div class="text-[9px] font-bold text-slate-400 uppercase">Probability</div>
+                    <div class="text-sm font-extrabold text-blue-600 mt-1" id="crm-selected-deal-probability">—</div>
+                  </div>
+                  <div class="bg-indigo-50/60 p-3 rounded-xl border border-indigo-100">
+                    <div class="text-[9px] font-bold text-slate-400 uppercase">Forecast</div>
+                    <div class="text-sm font-extrabold text-indigo-600 mt-1" id="crm-selected-deal-forecast">—</div>
+                  </div>
+                  <div class="bg-amber-50/60 p-3 rounded-xl border border-amber-100">
+                    <div class="text-[9px] font-bold text-slate-400 uppercase">Close date</div>
+                    <div class="text-sm font-extrabold text-amber-700 mt-1" id="crm-selected-deal-close-date">—</div>
+                  </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs font-semibold text-slate-700">
+                  <div class="bg-slate-50 p-4 rounded-xl border border-slate-100 space-y-1">
+                    <div class="text-[10px] font-bold text-slate-400 uppercase">Contact</div>
+                    <div>Contact: <span class="text-slate-900" id="crm-selected-deal-contact">—</span></div>
+                    <div>Phone: <span class="text-slate-900" id="crm-selected-deal-phone">—</span></div>
+                    <div>Lead source: <span class="text-slate-900" id="crm-selected-deal-source">—</span></div>
+                    <div>Rep: <span class="text-slate-900" id="crm-selected-deal-owner">—</span></div>
+                  </div>
+                  <div id="crm-selected-followup-card" class="bg-slate-50 p-4 rounded-xl border border-slate-100 space-y-1">
+                    <div class="text-[10px] font-bold text-slate-400 uppercase">Follow-up snapshot</div>
+                    <div>Next follow-up: <span class="text-slate-900" id="crm-selected-followup-date">—</span></div>
+                    <div>Type: <span class="text-slate-900" id="crm-selected-followup-type">—</span></div>
+                    <div>Assigned user: <span class="text-slate-900" id="crm-selected-followup-owner">—</span></div>
+                    <div>Last activity: <span class="text-slate-900" id="crm-selected-last-activity">—</span></div>
+                  </div>
+                </div>
+
+                <div class="bg-white rounded-xl border border-slate-200 p-4 space-y-3">
+                  <h4 class="text-xs font-extrabold text-slate-900">Quick stage actions</h4>
+                  <div class="flex flex-wrap gap-2">
+                    <button onclick="window.advanceSelectedDealStage()" id="crm-selected-deal-advance-btn" class="border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold px-3 py-2 rounded-xl cursor-pointer">Advance</button>
+                    <button onclick="window.markSelectedDealWon()" id="crm-selected-deal-won-btn" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold px-3 py-2 rounded-xl cursor-pointer">Mark won</button>
+                    <button onclick="window.toggleLostForm(true)" id="crm-selected-deal-lost-btn" class="bg-rose-600 hover:bg-rose-700 text-white text-xs font-semibold px-3 py-2 rounded-xl cursor-pointer">Mark lost</button>
+                  </div>
+                  <div class="text-[11px] text-slate-500 font-semibold" id="crm-selected-deal-stage-help">Use these actions to move the selected deal through the pipeline.</div>
+                </div>
+
+                <div id="crm-deal-loss-form" class="hidden bg-rose-50 border border-rose-100 rounded-xl p-4 space-y-3">
+                  <div class="flex items-center justify-between gap-2">
+                    <h4 class="text-xs font-extrabold text-rose-700">Mark Deal as Lost</h4>
+                    <button type="button" onclick="window.toggleLostForm(false)" class="text-[11px] font-bold text-rose-500 hover:text-rose-700">Close</button>
+                  </div>
+                  <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs font-semibold text-slate-700">
+                    <div>
+                      <label class="block mb-2">Reason</label>
+                      <select id="crm-deal-loss-reason" class="w-full px-3 py-2 rounded-xl border border-rose-200 bg-white focus:outline-none"></select>
+                    </div>
+                    <div>
+                      <label class="block mb-2">Competitor</label>
+                      <input type="text" id="crm-deal-loss-competitor" class="w-full px-3 py-2 rounded-xl border border-rose-200 bg-white focus:outline-none" placeholder="Competitor name">
+                    </div>
+                    <div class="md:col-span-2">
+                      <label class="block mb-2">Notes</label>
+                      <textarea id="crm-deal-loss-notes" rows="3" class="w-full px-3 py-2 rounded-xl border border-rose-200 bg-white focus:outline-none" placeholder="Store context for the loss."></textarea>
+                    </div>
+                  </div>
+                  <div class="flex justify-end gap-2">
+                    <button type="button" onclick="window.toggleLostForm(false)" class="border border-rose-200 bg-white hover:bg-rose-100 text-rose-700 text-xs font-semibold px-3 py-2 rounded-xl transition-all">Cancel</button>
+                    <button type="button" onclick="window.submitSelectedDealLost()" class="bg-rose-600 hover:bg-rose-700 text-white text-xs font-semibold px-3 py-2 rounded-xl transition-all">Confirm Lost</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="bg-white p-5 rounded-xl border border-slate-200 space-y-4">
+              <div>
+                <h3 class="text-sm font-bold text-slate-900">Timeline, notes &amp; follow-ups</h3>
+                <p class="text-xs text-slate-500 font-medium mt-1">Log notes, activities, and follow-ups inline.</p>
+              </div>
+
+              <div id="crm-deal-side-empty" class="text-xs text-slate-400 font-semibold py-10 text-center border border-dashed border-slate-200 rounded-xl">Select a deal to log notes, activities, and follow-ups.</div>
+
+              <div id="crm-deal-side-panel" class="hidden space-y-4">
+                <form id="crm-deal-note-form" onsubmit="window.handleDealNoteSubmit(event)" class="bg-slate-50 p-4 rounded-xl border border-slate-100 space-y-3">
+                  <div class="flex items-center justify-between gap-2">
+                    <h4 class="text-xs font-extrabold text-slate-900">Add Internal Note</h4>
+                    <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold px-3 py-2 rounded-xl cursor-pointer">Save Note</button>
+                  </div>
+                  <textarea id="crm-deal-note-input" rows="3" class="w-full px-3 py-2 rounded-xl border border-slate-200 bg-white focus:outline-none text-xs font-medium" placeholder="Client requests yearly contract, waiting for approval, budget update..."></textarea>
+                </form>
+
+                <form id="crm-deal-activity-form" onsubmit="window.handleDealActivitySubmit(event)" class="bg-slate-50 p-4 rounded-xl border border-slate-100 space-y-3">
+                  <h4 class="text-xs font-extrabold text-slate-900">Log Activity</h4>
+                  <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs font-semibold text-slate-700">
+                    <div>
+                      <label class="block mb-2">Activity Type</label>
+                      <input type="text" id="crm-deal-activity-type" class="w-full px-3 py-2 rounded-xl border border-slate-200 bg-white focus:outline-none" placeholder="Call, Meeting, Proposal Submission">
+                    </div>
+                    <div>
+                      <label class="block mb-2">Date</label>
+                      <input type="date" id="crm-deal-activity-date" class="w-full px-3 py-2 rounded-xl border border-slate-200 bg-white focus:outline-none">
+                    </div>
+                    <div class="md:col-span-2">
+                      <label class="block mb-2">Summary</label>
+                      <input type="text" id="crm-deal-activity-summary" required class="w-full px-3 py-2 rounded-xl border border-slate-200 bg-white focus:outline-none" placeholder="Proposal sent, negotiation call completed">
+                    </div>
+                    <div class="md:col-span-2">
+                      <label class="block mb-2">Details</label>
+                      <textarea id="crm-deal-activity-notes" rows="2" class="w-full px-3 py-2 rounded-xl border border-slate-200 bg-white focus:outline-none"></textarea>
+                    </div>
+                  </div>
+                  <div class="flex justify-end">
+                    <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold px-3 py-2 rounded-xl cursor-pointer">Log Activity</button>
+                  </div>
+                </form>
+
+                <form id="crm-deal-followup-form" onsubmit="window.handleDealFollowUpSubmit(event)" class="bg-slate-50 p-4 rounded-xl border border-slate-100 space-y-3">
+                  <h4 class="text-xs font-extrabold text-slate-900">Schedule Follow-Up</h4>
+                  <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs font-semibold text-slate-700">
+                    <div>
+                      <label class="block mb-2">Follow-Up Date</label>
+                      <input type="date" id="crm-deal-followup-date" required class="w-full px-3 py-2 rounded-xl border border-slate-200 bg-white focus:outline-none">
+                    </div>
+                    <div>
+                      <label class="block mb-2">Type</label>
+                      <select id="crm-deal-followup-type" class="w-full px-3 py-2 rounded-xl border border-slate-200 bg-white focus:outline-none"></select>
+                    </div>
+                    <div>
+                      <label class="block mb-2">Assigned User</label>
+                      <select id="crm-deal-followup-owner" class="w-full px-3 py-2 rounded-xl border border-slate-200 bg-white focus:outline-none"></select>
+                    </div>
+                    <div class="md:col-span-2">
+                      <label class="block mb-2">Notes</label>
+                      <textarea id="crm-deal-followup-notes" rows="2" class="w-full px-3 py-2 rounded-xl border border-slate-200 bg-white focus:outline-none"></textarea>
+                    </div>
+                  </div>
+                  <div class="flex justify-end">
+                    <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold px-3 py-2 rounded-xl cursor-pointer">Save Follow-Up</button>
+                  </div>
+                </form>
+
+                <div class="space-y-3">
+                  <div class="flex items-center justify-between gap-2">
+                    <h4 class="text-xs font-extrabold text-slate-900">Activity Timeline</h4>
+                    <span class="text-[11px] font-semibold text-slate-400">Newest first</span>
+                  </div>
+                  <div id="crm-deal-timeline" class="space-y-3 max-h-[520px] overflow-y-auto pr-1"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <app-footer></app-footer>
+      </div>
+
+      <div id="crm-deals-form-view" class="flex-1 overflow-y-auto p-6 md:p-8 space-y-6 hidden bg-slate-50">
+        <div class="max-w-5xl mx-auto w-full space-y-6">
+          <app-form-header title-id="crm-deal-form-title" title="Create Deal" subtitle="Capture opportunity details, follow-up ownership, and pipeline value." back-action="window.showDealsMainView()"></app-form-header>
+          <form id="crm-deal-form" onsubmit="window.handleDealSubmit(event)" class="bg-white rounded-xl border border-slate-200 p-6 space-y-6">
+            <input type="hidden" id="crm-deal-id">
+
+            <section class="space-y-4">
+              <div>
+                <h3 class="text-sm font-extrabold text-slate-900">Basic Information</h3>
+                <p class="text-xs text-slate-500 font-medium mt-1">Keep the core opportunity fields visible at all times.</p>
+              </div>
+              <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 text-xs font-semibold text-slate-700">
+                <div><label class="block mb-2">Deal Title <span class="text-rose-500">*</span></label><input id="crm-deal-title" required class="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-xs focus:outline-none"></div>
+                <div><label class="block mb-2">Company <span class="text-rose-500">*</span></label><input id="crm-deal-company" required class="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-xs focus:outline-none"></div>
+                <div><label class="block mb-2">Contact Person</label><input id="crm-deal-contact-person" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-xs focus:outline-none"></div>
+                <div><label class="block mb-2">Phone</label><input id="crm-deal-phone" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-xs focus:outline-none"></div>
+                <div><label class="block mb-2">Assigned Rep</label><select id="crm-deal-owner" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-xs focus:outline-none"></select></div>
+                <div><label class="block mb-2">Linked Lead</label><select id="crm-deal-lead" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-xs focus:outline-none"></select></div>
+              </div>
+            </section>
+
+            <section class="space-y-4">
+              <div>
+                <h3 class="text-sm font-extrabold text-slate-900">Opportunity Information</h3>
+                <p class="text-xs text-slate-500 font-medium mt-1">Pipeline stage, value, expected close, and customer linkage.</p>
+              </div>
+              <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 text-xs font-semibold text-slate-700">
+                <div><label class="block mb-2">Stage</label><select id="crm-deal-stage" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-xs focus:outline-none"></select></div>
+                <div><label class="block mb-2">Status</label><select id="crm-deal-status" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-xs focus:outline-none"></select></div>
+                <div><label class="block mb-2">Expected Value <span class="text-rose-500">*</span></label><input id="crm-deal-value" type="number" min="0" required class="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-xs focus:outline-none"></div>
+                <div><label class="block mb-2">Probability %</label><input id="crm-deal-probability" type="number" min="0" max="100" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-xs focus:outline-none"></div>
+                <div><label class="block mb-2">Expected Close Date <span class="text-rose-500">*</span></label><input id="crm-deal-close-date" type="date" required class="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-xs focus:outline-none"></div>
+                <div><label class="block mb-2">Linked Customer</label><select id="crm-deal-customer" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-xs focus:outline-none"></select></div>
+                <div class="md:col-span-2 xl:col-span-3"><label class="block mb-2">Products / Services</label><textarea id="crm-deal-products" rows="3" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-xs focus:outline-none"></textarea></div>
+              </div>
+            </section>
+
+            <section class="space-y-4">
+              <div>
+                <h3 class="text-sm font-extrabold text-slate-900">Follow-Up Information</h3>
+                <p class="text-xs text-slate-500 font-medium mt-1">Optional next action captured at the time of deal creation or edit.</p>
+              </div>
+              <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 text-xs font-semibold text-slate-700">
+                <div><label class="block mb-2">Follow-Up Date</label><input id="crm-deal-followup-date-input" type="date" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-xs focus:outline-none"></div>
+                <div><label class="block mb-2">Follow-Up Type</label><select id="crm-deal-followup-type-input" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-xs focus:outline-none"></select></div>
+                <div><label class="block mb-2">Assigned User</label><select id="crm-deal-followup-owner-input" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-xs focus:outline-none"></select></div>
+                <div class="md:col-span-2 xl:col-span-4"><label class="block mb-2">Follow-Up Notes</label><textarea id="crm-deal-followup-notes-input" rows="2" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-xs focus:outline-none"></textarea></div>
+              </div>
+            </section>
+
+            <div>
+              <button type="button" onclick="window.toggleAdvancedCrmFields('deal')" class="flex items-center gap-2 text-blue-600 hover:text-blue-700 text-xs font-bold transition-colors">
+                <i data-lucide="chevron-down" id="crm-deal-advanced-icon" class="w-4 h-4 transition-transform"></i>
+                Show Advanced Details
+              </button>
+            </div>
+
+            <div id="crm-deal-advanced-section" class="hidden space-y-6 pt-4 border-t border-slate-100">
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs font-semibold text-slate-700">
+                <div><label class="block mb-2">Lead Source</label><input id="crm-deal-lead-source" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-xs focus:outline-none"></div>
+                <div><label class="block mb-2">Competitor</label><input id="crm-deal-competitor" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-xs focus:outline-none"></div>
+              </div>
+              <div>
+                <label class="block text-xs font-semibold text-slate-700 mb-2">Internal Notes</label>
+                <textarea id="crm-deal-initial-note" rows="3" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-xs focus:outline-none"></textarea>
+              </div>
+              <div>
+                <label class="block text-xs font-semibold text-slate-700 mb-2">Internal Remarks</label>
+                <textarea id="crm-deal-remarks" rows="3" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-xs focus:outline-none"></textarea>
+              </div>
+            </div>
+
+            <div class="flex justify-end gap-3 pt-4 border-t border-slate-100">
+              <button type="button" onclick="window.showDealsMainView()" class="border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold px-4 py-2.5 rounded-xl transition-all">Cancel</button>
+              <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold px-4 py-2.5 rounded-xl cursor-pointer">Save deal</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </main>
+  </div>
+  <script type="module" src="/layout.js"></script>
+  <script type="module" src="/js/shared.js"></script>
+  <script type="module" src="/js/crm-deals.js"></script>
+</body>
+</html>

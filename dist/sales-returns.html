@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sales Returns — Toys Factory ERP</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <script type="module" crossorigin src="/assets/sales-returns-CaB4ncTM.js"></script>
+  <link rel="modulepreload" crossorigin href="/assets/lucide-CU5-AOMs.js">
+  <link rel="modulepreload" crossorigin href="/assets/shared-Det_SasC.js">
+  <link rel="modulepreload" crossorigin href="/assets/layout-wQjH3XYy.js">
+  <link rel="stylesheet" crossorigin href="/assets/lucide-bglkidLV.css">
+</head>
+<body class="bg-slate-50 font-['Inter'] antialiased text-slate-600">
+  <div id="screen-workspace" class="min-h-screen flex">
+    <app-sidebar mode="tenant"></app-sidebar>
+    <main class="flex-1 flex flex-col min-h-screen overflow-hidden">
+      <app-header mode="tenant" title="Enterprise Workspace"></app-header>
+
+      <!-- Main Table View -->
+      <div id="sales-returns-main-view" class="flex-1 overflow-y-auto p-6 md:p-8 space-y-6 flex flex-col justify-between">
+        <div class="space-y-6">
+          <div class="flex flex-col xl:flex-row xl:items-center xl:justify-between gap-4">
+            <div>
+              <h2 class="text-xl font-extrabold text-slate-900 tracking-tight"><span data-i18n="sales.returns_title">Sales Returns Master</span></h2>
+              <p class="text-xs text-slate-500 mt-1 font-medium">Manage and track your business sales returns lifecycle.</p>
+            </div>
+            <div class="flex flex-wrap items-center gap-2">
+              <button onclick="window.openReturnsModal()" class="bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold px-4 py-2.5 rounded-xl transition-all shadow-md shadow-blue-500/10 flex items-center gap-2 cursor-pointer">
+                <i data-lucide="plus" class="w-4 h-4"></i> Add Return
+              </button>
+            </div>
+          </div>
+
+          <!-- Metrics Section -->
+          <div class="grid grid-cols-1 md:grid-cols-3 xl:grid-cols-5 gap-4" id="sales-returns-metrics">
+            <!-- Populated by JS -->
+          </div>
+
+          <!-- Filters & Search -->
+          <div class="bg-white p-4 rounded-2xl border border-slate-200/80 premium-shadow space-y-4">
+            <div class="flex flex-col xl:flex-row xl:items-center xl:justify-between gap-3">
+              <div class="text-xs text-slate-500 font-semibold">Filter and search returns.</div>
+              <div class="relative min-w-[240px]">
+                <i data-lucide="search" class="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400"></i>
+                <input type="text" id="sales-returns-search-input" oninput="window.renderTable()" placeholder="Search Return ID, Invoice, Customer..." class="w-full pl-10 pr-4 py-2 rounded-xl border border-slate-200 bg-slate-50 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 transition-all font-medium">
+              </div>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-3">
+              <select id="sales-returns-customer-filter" onchange="window.renderTable()" class="bg-slate-50 border border-slate-200 text-xs font-semibold text-slate-700 rounded-xl px-3 py-2 focus:outline-none cursor-pointer">
+                <option value="all">All Customers</option>
+              </select>
+              <select id="sales-returns-status-filter" onchange="window.renderTable()" class="bg-slate-50 border border-slate-200 text-xs font-semibold text-slate-700 rounded-xl px-3 py-2 focus:outline-none cursor-pointer">
+                <option value="all">All Statuses</option>
+                <option value="pending">Pending</option>
+                <option value="approved">Approved</option>
+                <option value="rejected">Rejected</option>
+                <option value="processed">Processed</option>
+                <option value="refunded">Refunded</option>
+              </select>
+              <select id="sales-returns-type-filter" onchange="window.renderTable()" class="bg-slate-50 border border-slate-200 text-xs font-semibold text-slate-700 rounded-xl px-3 py-2 focus:outline-none cursor-pointer">
+                <option value="all">All Types</option>
+                <option value="Refund">Refund</option>
+                <option value="Replacement">Replacement</option>
+                <option value="Credit Note">Credit Note</option>
+              </select>
+              <input type="date" id="sales-returns-date-start" onchange="window.renderTable()" class="bg-slate-50 border border-slate-200 text-xs font-semibold text-slate-700 rounded-xl px-3 py-2 focus:outline-none">
+              <input type="date" id="sales-returns-date-end" onchange="window.renderTable()" class="bg-slate-50 border border-slate-200 text-xs font-semibold text-slate-700 rounded-xl px-3 py-2 focus:outline-none">
+            </div>
+          </div>
+
+          <!-- Table Panel -->
+          <section id="sales-returns-panel-list" class="space-y-4">
+            <div class="bg-white p-0 rounded-2xl border border-slate-200/80 premium-shadow overflow-hidden">
+              <div class="overflow-x-auto">
+                <table class="w-full text-left text-xs border-collapse">
+                  <thead>
+                    <tr class="bg-slate-50/85 text-slate-400 border-b border-slate-100 font-bold uppercase text-[10px] tracking-wider">
+                      <th class="p-4 pl-6">Return ID</th>
+                      <th class="p-4">Invoice Ref</th>
+                      <th class="p-4">Customer</th>
+                      <th class="p-4">Return Date</th>
+                      <th class="p-4">Reason</th>
+                      <th class="p-4"><span data-i18n="common.type">Type</span></th>
+                      <th class="p-4 text-right">Refund Amount</th>
+                      <th class="p-4 text-center"><span data-i18n="common.status">Status</span></th>
+                      <th class="p-4 text-center"><span data-i18n="common.actions">Actions</span></th>
+                    </tr>
+                  </thead>
+                  <tbody id="sales-returns-body" class="divide-y divide-slate-100 font-medium text-slate-700">
+                    <!-- Rendered by JS -->
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </section>
+        </div>
+
+        <app-footer></app-footer>
+      </div>
+
+      <!-- Inline Form View (Add/Edit/Detail) -->
+      <div id="sales-returns-form-view" class="flex-1 overflow-y-auto p-6 md:p-8 space-y-6 hidden bg-slate-50">
+        <div class="max-w-4xl mx-auto w-full space-y-6">
+          <app-form-header title-id="return-form-title" title="Create Return" subtitle="Link return to invoices, inspect items, and handle inventory stock updates." back-action="window.showMainView()"></app-form-header>
+
+          <form id="sales-returns-form" onsubmit="window.handleSubmit(event)" class="bg-white rounded-2xl border border-slate-200 p-6 premium-shadow space-y-6 text-xs font-semibold text-slate-700">
+            <!-- Hidden context field -->
+            <input type="hidden" id="input-return-id">
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label class="block mb-2">Invoice Reference *</label>
+                <select id="input-invoice-id" required class="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-xs focus:outline-none cursor-pointer" onchange="window.handleInvoiceSelection(this.value)">
+                  <!-- Loaded from active invoices list -->
+                </select>
+              </div>
+              <div>
+                <label class="block mb-2">Customer</label>
+                <input type="text" id="input-customer-name" readonly placeholder="Auto-populated from Invoice" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-100 text-xs focus:outline-none">
+              </div>
+              <div>
+                <label class="block mb-2">Return Date *</label>
+                <input type="date" id="input-date" required class="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-xs focus:outline-none">
+              </div>
+              <div>
+                <label class="block mb-2">Reason *</label>
+                <select id="input-reason" required class="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-xs focus:outline-none cursor-pointer">
+                  <option value="">Select Return Reason</option>
+                  <option value="Defective Product">Defective Product</option>
+                  <option value="Wrong Item Delivered">Wrong Item Delivered</option>
+                  <option value="Damaged in Transit">Damaged in Transit</option>
+                  <option value="Quality Issue">Quality Issue</option>
+                  <option value="Customer Changed Mind">Customer Changed Mind</option>
+                  <option value="Expired Product">Expired Product</option>
+                  <option value="Other">Other</option>
+                </select>
+              </div>
+              <div>
+                <label class="block mb-2">Return Type *</label>
+                <select id="input-type" required class="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-xs focus:outline-none cursor-pointer">
+                  <option value="Refund">Refund</option>
+                  <option value="Replacement">Replacement</option>
+                  <option value="Credit Note">Credit Note</option>
+                </select>
+              </div>
+              <div>
+                <label class="block mb-2">Status</label>
+                <input type="text" id="input-status-display" readonly value="Pending" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-100 text-xs font-bold text-amber-600 focus:outline-none">
+              </div>
+            </div>
+
+            <!-- Items Table to return -->
+            <div class="space-y-3">
+              <h3 class="text-sm font-bold text-slate-800 border-b border-slate-100 pb-2">Line Items for Return</h3>
+              <div class="overflow-x-auto rounded-xl border border-slate-100">
+                <table class="w-full text-left text-xs border-collapse">
+                  <thead>
+                    <tr class="bg-slate-50 text-slate-500 font-bold border-b border-slate-100">
+                      <th class="p-3">Product Name</th>
+                      <th class="p-3 text-right">Sold Qty</th>
+                      <th class="p-3 text-center">Return Qty</th>
+                      <th class="p-3 text-right">Unit Price</th>
+                      <th class="p-3 text-right">Refund Total</th>
+                    </tr>
+                  </thead>
+                  <tbody id="input-items-tbody" class="divide-y divide-slate-150">
+                    <tr>
+                      <td colspan="5" class="p-6 text-center text-slate-400">Please select an Invoice Reference first.</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <!-- Financial Summary block -->
+            <div class="bg-slate-50 p-4 rounded-xl border border-slate-200/60 max-w-md ml-auto space-y-3 font-semibold text-xs text-slate-700">
+              <div class="flex justify-between">
+                <span>Items Subtotal:</span>
+                <span id="calc-subtotal">$0.00</span>
+              </div>
+              <div class="flex justify-between items-center gap-2">
+                <span>Tax Adjustment ($):</span>
+                <input type="number" step="0.01" id="input-tax-adjustment" value="0.00" oninput="window.calculateRefundTotals()" class="w-24 px-2 py-1 rounded-lg border border-slate-200 bg-white text-right focus:outline-none">
+              </div>
+              <div class="flex justify-between items-center gap-2">
+                <span>Discount Reversal ($):</span>
+                <input type="number" step="0.01" id="input-discount-reversal" value="0.00" oninput="window.calculateRefundTotals()" class="w-24 px-2 py-1 rounded-lg border border-slate-200 bg-white text-right focus:outline-none">
+              </div>
+              <div class="flex justify-between items-center border-t border-slate-250 pt-2 font-bold text-slate-900">
+                <span>Total Refund Amount:</span>
+                <input type="number" step="0.01" id="input-amount" readonly required class="w-28 px-2 py-1 rounded-lg border border-slate-250 bg-slate-100 text-right font-extrabold text-blue-600 focus:outline-none">
+              </div>
+            </div>
+
+            <!-- Advanced Details Toggle -->
+            <div class="pt-2 border-t border-slate-100">
+              <button type="button" onclick="window.toggleAdvancedFields()" class="flex items-center gap-2 text-blue-600 hover:text-blue-700 text-xs font-bold transition-colors cursor-pointer focus:outline-none">
+                <i data-lucide="chevron-down" id="sales-returns-advanced-icon" class="w-4 h-4 transition-transform"></i>
+                Show Advanced Details
+              </button>
+            </div>
+
+            <!-- Advanced Section -->
+            <div id="sales-returns-advanced-section" class="hidden space-y-4 pt-4 border-t border-slate-100">
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label class="block mb-2">Item Condition</label>
+                  <select id="input-condition" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-xs focus:outline-none cursor-pointer">
+                    <option value="Good">Good</option>
+                    <option value="Damaged">Damaged</option>
+                    <option value="Defective">Defective</option>
+                    <option value="Used">Used</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="block mb-2">Warehouse Destination Status</label>
+                  <select id="input-warehouse-status" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-xs focus:outline-none cursor-pointer">
+                    <option value="Restocked">Restocked (Increases Inventory)</option>
+                    <option value="Scrapped">Scrapped (Recorded as loss)</option>
+                    <option value="Under Inspection">Under Inspection (Stock Pending)</option>
+                  </select>
+                </div>
+                <div class="md:col-span-2">
+                  <label class="block mb-2">Supporting Images URL (Optional)</label>
+                  <input type="text" id="input-images" placeholder="https://example.com/image.jpg" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-xs focus:outline-none">
+                </div>
+                <div class="md:col-span-2">
+                  <label class="block mb-2">Manager / Operations Notes</label>
+                  <textarea id="input-notes" rows="3" placeholder="Enter reason notes, stock verification details, etc." class="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-xs focus:outline-none font-medium"></textarea>
+                </div>
+              </div>
+            </div>
+
+            <!-- Form actions and Approval controls -->
+            <div class="flex justify-between items-center pt-6 border-t border-slate-100">
+              <!-- Left side: workflow actions if viewing existing return -->
+              <div class="flex gap-2" id="workflow-actions-container">
+                <!-- Injected dynamically by JS (Approve, Reject, Process, etc.) -->
+              </div>
+
+              <!-- Right side: Save/Cancel standard buttons -->
+              <div class="flex gap-2">
+                <button type="button" onclick="window.showMainView()" class="border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold px-4 py-2.5 rounded-xl transition-all cursor-pointer">Cancel</button>
+                <button type="submit" id="btn-save" class="bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold px-4 py-2.5 rounded-xl transition-all shadow-md shadow-blue-500/10 cursor-pointer">Save Record</button>
+              </div>
+            </div>
+          </form>
+        </div>
+      </div>
+    </main>
+  </div>
+
+</body>
+</html>

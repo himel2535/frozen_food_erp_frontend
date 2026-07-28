@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Designations — Toys Factory ERP</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <script type="module" crossorigin src="/assets/hrm-designations-MC19Ie3B.js"></script>
+  <link rel="modulepreload" crossorigin href="/assets/lucide-CU5-AOMs.js">
+  <link rel="modulepreload" crossorigin href="/assets/shared-Det_SasC.js">
+  <link rel="modulepreload" crossorigin href="/assets/layout-wQjH3XYy.js">
+  <link rel="stylesheet" crossorigin href="/assets/lucide-bglkidLV.css">
+</head>
+<body class="bg-slate-50 font-['Inter'] antialiased text-slate-600">
+  <div id="screen-workspace" class="min-h-screen flex">
+    <app-sidebar mode="tenant"></app-sidebar>
+    <main class="flex-1 flex flex-col min-h-screen overflow-hidden">
+      <app-header mode="tenant" title="Enterprise Workspace"></app-header>
+
+      <!-- Main view: Designations list -->
+      <div id="hrm-designations-main-view" class="flex-1 overflow-y-auto p-6 md:p-8 space-y-6 flex flex-col justify-between">
+        <div class="space-y-6">
+          <div class="flex flex-col xl:flex-row xl:items-center xl:justify-between gap-4">
+            <div>
+              <h2 class="text-xl font-extrabold text-slate-900 tracking-tight"><span data-i18n="hrm.designations_title">Designations directory</span></h2>
+              <p class="text-xs text-slate-500 mt-1 font-medium">Manage and track company job titles, grade structures, and role capacities.</p>
+            </div>
+            <div class="flex flex-wrap items-center gap-2">
+              <button onclick="window.openDesignationModal()" class="bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold px-4 py-2.5 rounded-xl transition-all shadow-md shadow-blue-500/10 flex items-center gap-2 cursor-pointer">
+                <i data-lucide="plus" class="w-4 h-4"></i> Add Designation
+              </button>
+            </div>
+          </div>
+
+          <!-- Metrics Widgets -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4" id="hrm-designations-metrics">
+            <!-- Populated dynamically -->
+          </div>
+
+          <!-- Filters & Search Bar -->
+          <div class="bg-white p-4 rounded-2xl border border-slate-200/80 premium-shadow space-y-4">
+            <div class="flex flex-col xl:flex-row xl:items-center xl:justify-between gap-3">
+              <div class="text-xs text-slate-500 font-semibold">Filter and search designations.</div>
+              <div class="relative min-w-[240px] w-full xl:w-auto">
+                <i data-lucide="search" class="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400"></i>
+                <input type="text" id="hrm-designations-search-input" oninput="window.renderTable()" placeholder="Search designation title, grade..." class="w-full pl-10 pr-4 py-2 rounded-xl border border-slate-200 bg-slate-50 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 transition-all font-medium">
+              </div>
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <select id="filter-desg-status" onchange="window.renderTable()" class="bg-slate-50 border border-slate-200 text-xs font-semibold text-slate-700 rounded-xl px-3 py-2 focus:outline-none cursor-pointer">
+                <option value="all">All Statuses</option>
+                <option value="Active">Active</option>
+                <option value="Inactive">Inactive</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Table View -->
+          <section id="hrm-designations-panel-list" class="space-y-4">
+            <div class="bg-white p-0 rounded-2xl border border-slate-200/80 premium-shadow overflow-hidden">
+              <div class="overflow-x-auto">
+                <table class="w-full text-left text-xs border-collapse">
+                  <thead>
+                    <tr class="bg-slate-50/85 text-slate-400 border-b border-slate-100 font-bold uppercase text-[10px] tracking-wider">
+                      <th class="p-4 pl-6">ID</th>
+                      <th class="p-4">Designation Title</th>
+                      <th class="p-4">Pay Grade</th>
+                      <th class="p-4 text-center">Active Headcount</th>
+                      <th class="p-4 text-center"><span data-i18n="common.status">Status</span></th>
+                      <th class="p-4 text-center"><span data-i18n="common.actions">Actions</span></th>
+                    </tr>
+                  </thead>
+                  <tbody id="hrm-designations-body" class="divide-y divide-slate-100 font-medium text-slate-700">
+                    <!-- Rendered dynamically -->
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </section>
+        </div>
+
+        <app-footer></app-footer>
+      </div>
+
+      <!-- Inline form view: Add/Edit Designation -->
+      <div id="hrm-designations-form-view" class="flex-1 overflow-y-auto p-6 md:p-8 space-y-6 hidden bg-slate-50">
+        <div class="max-w-3xl mx-auto w-full space-y-6">
+          <app-form-header title-id="desg-form-title" title="Create Designation" subtitle="Define personnel roles and pay grades inside corporate hierarchy." back-action="window.showMainView()"></app-form-header>
+
+          <form id="hrm-designations-form" onsubmit="window.handleSubmit(event)" class="bg-white rounded-2xl border border-slate-200 p-6 premium-shadow space-y-6 text-xs font-semibold text-slate-700">
+            
+            <!-- Basic details -->
+            <div class="space-y-4">
+              <h3 class="text-sm font-bold text-slate-900 border-b border-slate-100 pb-2">Designation details</h3>
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label class="block mb-2">Designation Title *</label>
+                  <input type="text" id="input-desg-name" required placeholder="e.g. Lead DevOps Architect" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-xs focus:outline-none">
+                </div>
+                <div>
+                  <label class="block mb-2">Pay Grade *</label>
+                  <input type="text" id="input-desg-grade" required placeholder="e.g. Grade 8, L2" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-xs focus:outline-none">
+                </div>
+                <div>
+                  <label class="block mb-2">Status *</label>
+                  <select id="input-desg-status" required class="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-xs focus:outline-none cursor-pointer">
+                    <option value="Active">Active</option>
+                    <option value="Inactive">Inactive</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            <!-- Advanced details Collapsible -->
+            <div class="space-y-4 pt-2">
+              <div>
+                <button type="button" onclick="window.toggleAdvancedFields()" class="flex items-center gap-2 text-blue-600 hover:text-blue-700 text-xs font-bold transition-colors cursor-pointer">
+                  <i data-lucide="chevron-down" id="desg-advanced-icon" class="w-4 h-4 transition-transform"></i>
+                  Show Advanced Details
+                </button>
+              </div>
+              <div id="desg-advanced-section" class="hidden space-y-6 pt-4 border-t border-slate-100">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div class="md:col-span-2">
+                    <label class="block mb-2">Job Description</label>
+                    <textarea id="input-desg-desc" placeholder="Responsibilities, roles, and guidelines..." class="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-xs focus:outline-none h-14 resize-y"></textarea>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Form Actions -->
+            <div class="flex justify-end gap-3 pt-4 border-t border-slate-100">
+              <button type="button" onclick="window.showMainView()" class="border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold px-4 py-2.5 rounded-xl transition-all cursor-pointer">Cancel</button>
+              <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold px-4 py-2.5 rounded-xl transition-all shadow-md shadow-blue-500/10 cursor-pointer">Save Record</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </main>
+  </div>
+
+</body>
+</html>
