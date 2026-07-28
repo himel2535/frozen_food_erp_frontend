@@ -92,20 +92,19 @@ export function Sidebar() {
             const isActiveModule = activeModule === section.id;
             const c = getSectionColor(section);
             const containerClasses = isActiveModule
-              ? `${c.bg} border ${c.border} ring-1 ${c.ring} shadow-sm`
+              ? 'bg-white/95 border border-white shadow-md ring-1 ring-slate-950/5'
               : 'bg-white/45 hover:bg-white/75 backdrop-blur-md border border-white/80 shadow-[0_4px_16px_rgba(31,38,135,0.03)]';
-            const linkClasses = isActiveModule ? c.text : 'text-slate-700 hover:text-slate-950';
+            const linkClasses = isActiveModule ? `${c.text} font-black` : 'text-slate-700 hover:text-slate-950 font-extrabold';
 
             return (
-              <div
-                key={section.id}
-                className={`sidebar-group flex flex-col rounded-2xl transition-all duration-200 overflow-hidden ${containerClasses}`}
-              >
-                <div className="sidebar-main-row flex items-center justify-between transition-all">
+              <div key={section.id} className="space-y-2">
+                <div
+                  className={`sidebar-group flex items-center justify-between rounded-2xl transition-all duration-200 overflow-hidden ${containerClasses}`}
+                >
                   <Link
                     href={section.href}
                     id={`side-${section.id}`}
-                    className={`side-btn sidebar-primary-link flex min-w-0 flex-1 items-center px-3.5 py-2.5 text-sm font-extrabold tracking-[0.01em] transition-all ${linkClasses}`}
+                    className={`side-btn sidebar-primary-link flex min-w-0 flex-1 items-center px-3.5 py-2.5 text-sm tracking-[0.01em] transition-all ${linkClasses}`}
                   >
                     <span className="flex items-center justify-center shrink-0">
                       <SidebarIcon
@@ -129,21 +128,26 @@ export function Sidebar() {
                     </button>
                   )}
                 </div>
+
                 {hasSubmenu && openSubmenus[section.id] && !collapsed && (
-                  <div className="sidebar-submenu sidebar-label mx-2.5 mb-2.5 pt-1.5 space-y-1 border-t border-slate-200/60">
+                  <div className="sidebar-submenu sidebar-label relative ml-4 pl-3.5 border-l-2 border-blue-500/30 space-y-2 my-1">
                     {section.items.map((item) => {
                       const isActiveItem = isActiveModule && activeView === item.view;
                       const itemClasses = isActiveItem
-                        ? `${c.bg} ${c.text} border ${c.border} shadow-xs font-bold`
-                        : 'text-slate-600 hover:text-slate-900 hover:bg-white/70 border border-transparent';
+                        ? 'bg-white/95 border border-white shadow-md ring-1 ring-blue-500/20 text-blue-600 font-black'
+                        : 'bg-white/45 hover:bg-white/75 backdrop-blur-md border border-white/80 shadow-[0_4px_16px_rgba(31,38,135,0.03)] text-slate-700 hover:text-slate-950 font-extrabold';
                       return (
                         <Link
                           key={item.href}
                           href={item.href}
-                          className={`group/item rounded-xl px-2.5 py-1.5 text-xs font-semibold tracking-[0.01em] transition-all flex items-center gap-2.5 ${itemClasses}`}
+                          className={`group/item relative rounded-2xl px-3 py-2.5 text-sm tracking-[0.01em] transition-all flex items-center gap-2.5 ${itemClasses} before:absolute before:-left-3.5 before:top-1/2 before:-translate-y-1/2 before:w-2.5 before:h-[2px] before:bg-blue-500/30 before:rounded-full`}
                         >
-                          <SidebarIcon imageIcon={item.imageIcon} iconifyIcon={item.iconifyIcon} size={20} />
-                          <span className="truncate">{t(`sidebar.${item.view}`) !== `sidebar.${item.view}` ? t(`sidebar.${item.view}`) : item.label}</span>
+                          <span className="flex items-center justify-center shrink-0">
+                            <SidebarIcon imageIcon={item.imageIcon} iconifyIcon={item.iconifyIcon} size={22} />
+                          </span>
+                          <span className="truncate text-xs md:text-sm font-extrabold">
+                            {t(`sidebar.${item.view}`) !== `sidebar.${item.view}` ? t(`sidebar.${item.view}`) : item.label}
+                          </span>
                         </Link>
                       );
                     })}

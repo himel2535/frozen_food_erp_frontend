@@ -4,6 +4,7 @@ import { useEffect } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { useAppStore } from '@/lib/state/app-store';
 import { useAppReady } from '@/hooks/use-app-ready';
+import { ToysLoader } from '@/components/shared/ToysLoader';
 
 export function AuthGuard({ children }: { children: React.ReactNode }) {
   const router = useRouter();
@@ -20,11 +21,7 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
   }, [hydrated, isLoggedIn, pathname, router]);
 
   if (!hydrated || !ready) {
-    return (
-      <div className="flex-1 flex items-center justify-center text-sm text-slate-500">
-        Loading workspace...
-      </div>
-    );
+    return <ToysLoader label="Loading Workspace..." sublabel="Connecting real-time factory data" fullScreen />;
   }
 
   if (!isLoggedIn) {

@@ -78,14 +78,23 @@ const htmlRedirects = [
 ] as const;
 
 const nextConfig: NextConfig = {
+  reactStrictMode: true,
+  compress: true,
+  experimental: {
+    optimizePackageImports: [
+      'lucide-react',
+      '@iconify/react',
+      'recharts',
+      'framer-motion',
+    ],
+  },
+  images: {
+    formats: ['image/avif', 'image/webp'],
+  },
   async redirects() {
     return htmlRedirects.flatMap(([html, destination]) => [
       { source: `/${html}`, destination, permanent: false },
     ]);
-  },
-  images: {
-    remotePatterns: [],
-    unoptimized: true,
   },
 };
 
