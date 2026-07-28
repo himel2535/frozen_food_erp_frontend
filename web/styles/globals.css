@@ -1,0 +1,336 @@
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Bengali:wght@400;500;600;700;800&display=swap');
+@import "tailwindcss";
+
+@theme {
+  /* Override default slate with a deeper, richer "zinc" for a sleeker, premium look */
+  --color-slate-50: #fafafa;
+  --color-slate-100: #f4f4f5;
+  --color-slate-200: #e4e4e7;
+  --color-slate-300: #d4d4d8;
+  --color-slate-400: #a1a1aa;
+  --color-slate-500: #71717a;
+  --color-slate-600: #52525b;
+  --color-slate-700: #3f3f46;
+  --color-slate-800: #27272a;
+  --color-slate-900: #18181b;
+  --color-slate-950: #09090b;
+
+  /* Toy Factory Vibrant Colors */
+  --color-blue-50: #eff6ff;
+  --color-blue-100: #dbeafe;
+  --color-blue-200: #bfdbfe;
+  --color-blue-300: #93c5fd;
+  --color-blue-400: #60a5fa;
+  --color-blue-500: #3b82f6;
+  --color-blue-600: #2563eb;
+  --color-blue-700: #1d4ed8;
+  --color-blue-800: #1e40af;
+  --color-blue-900: #1e3a8a;
+  --color-blue-950: #172554;
+}
+
+body {
+  font-family: 'Nunito', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+  background-color: #fafafa;
+  color: #18181b;
+  -webkit-font-smoothing: antialiased;
+}
+
+body.lang-bn {
+  font-family: 'Noto Sans Bengali', 'Nunito', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+
+body.lang-bn .uppercase {
+  text-transform: none;
+}
+
+/* Custom premium shadows matching modern SaaS platforms (Linear, Stripe) */
+.premium-shadow {
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05), 
+              0 1px 2px -1px rgba(0, 0, 0, 0.05),
+              0 4px 6px -1px rgba(0, 0, 0, 0.02);
+}
+
+.premium-card {
+  background-color: #ffffff;
+  border: 1px solid #f1f5f9;
+  border-radius: 1.5rem;
+}
+
+/* Dashboard decorative image icons */
+.dashboard-icon-action {
+  width: 1.75rem;
+  height: 1.75rem;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+
+.dashboard-icon-wrap-kpi {
+  width: 3.5rem;
+  height: 3.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.dashboard-icon-kpi {
+  width: 3rem;
+  height: 3rem;
+  object-fit: contain;
+}
+
+.dashboard-icon-wrap-sm {
+  width: 2.875rem;
+  height: 2.875rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.dashboard-icon-sm {
+  width: 2.25rem;
+  height: 2.25rem;
+  object-fit: contain;
+}
+
+.dashboard-icon-wrap-md {
+  width: 3.125rem;
+  height: 3.125rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.dashboard-icon-md {
+  width: 2.5rem;
+  height: 2.5rem;
+  object-fit: contain;
+}
+
+/* Compact KPI metric cards (dashboard metrics grid only) */
+#dashboard-metrics-grid .dashboard-kpi-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+  min-height: auto;
+  padding: 0.75rem 1rem;
+  border-radius: 1rem;
+}
+
+#dashboard-metrics-grid .dashboard-kpi-header {
+  position: relative;
+  padding-right: 3.25rem;
+}
+
+#dashboard-metrics-grid .dashboard-kpi-header .dashboard-icon-wrap-kpi {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 3.5rem;
+  height: 3.5rem;
+}
+
+#dashboard-metrics-grid .dashboard-icon-kpi {
+  width: 3rem;
+  height: 3rem;
+}
+
+#dashboard-metrics-grid .dashboard-kpi-values {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+}
+
+#sidebar nav.flex-col {
+  gap: 0;
+}
+
+#sidebar .sidebar-primary-link {
+  padding-top: 2px;
+  padding-bottom: 2px;
+  gap: 2px;
+}
+
+#sidebar .sidebar-submenu a {
+  display: grid;
+  grid-template-columns: 24px minmax(0, 1fr);
+  column-gap: 4px;
+  align-items: center;
+  padding-top: 0.375rem;
+  padding-bottom: 0.375rem;
+}
+
+/* Collapsible sidebar transitions */
+.sidebar-transition {
+  transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+#sidebar.sidebar-is-collapsed .sidebar-primary-link,
+#sidebar.sidebar-is-collapsed .sidebar-main-row,
+#sidebar.sidebar-is-collapsed .side-btn {
+  justify-content: center;
+}
+
+#sidebar.sidebar-is-collapsed .sidebar-main-row {
+  padding-left: 0;
+  padding-right: 0;
+}
+
+.sidebar-icon {
+  width: 32px;
+  height: 32px;
+  min-width: 32px;
+  min-height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  vertical-align: middle;
+  line-height: 0;
+}
+
+img.sidebar-icon {
+  object-fit: contain;
+  max-width: 100%;
+  max-height: 100%;
+}
+
+.sidebar-primary-link > span,
+.sidebar-submenu a {
+  overflow: visible;
+}
+
+.sidebar-icon.sidebar-icon-lg {
+  width: 36px;
+  height: 36px;
+  min-width: 36px;
+  min-height: 36px;
+}
+
+.sidebar-icon.sidebar-icon-primary {
+  width: 40px;
+  height: 40px;
+  min-width: 40px;
+  min-height: 40px;
+}
+
+.sidebar-icon.sidebar-icon-primary-sm {
+  width: 32px;
+  height: 32px;
+  min-width: 32px;
+  min-height: 32px;
+}
+
+.sidebar-icon.sidebar-icon-sm {
+  width: 24px;
+  height: 24px;
+  min-width: 24px;
+  min-height: 24px;
+}
+
+@media (max-width: 767px) {
+  #mobile-menu-grid-sheet .grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 360px) {
+  #mobile-menu-grid-sheet .grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* Tooltips */
+.chart-tooltip {
+  position: absolute;
+  background: #0f172a;
+  color: #ffffff;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  pointer-events: none;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  transform: translate(-50%, -130%);
+  transition: all 0.1s ease;
+  z-index: 50;
+}
+
+/* Custom scrollbars for SaaS dashboards */
+::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* Slide over drawer animation */
+.drawer-transition {
+  transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.drawer-hidden {
+  transform: translateX(100%);
+}
+.drawer-visible {
+  transform: translateX(0);
+}
+
+/* Global rule to guarantee all clickable/interactive elements have a pointer cursor */
+a,
+button,
+input[type="submit"],
+input[type="button"],
+input[type="reset"],
+select,
+[role="button"],
+.clickable {
+  cursor: pointer;
+}
+
+@keyframes scan {
+  0% { transform: translateY(0); }
+  50% { transform: translateY(100%); }
+  100% { transform: translateY(0); }
+}
+
+/* Prevent iOS Safari zoom and tiny select popup bugs on mobile */
+@media (max-width: 768px) {
+  input, select, textarea {
+    font-size: 16px !important;
+  }
+}
+
+/* Dashboard-only typography bump */
+body.dashboard-page .text-\[10px\] { font-size: 11px; }
+body.dashboard-page .text-\[11px\] { font-size: 12px; }
+body.dashboard-page .text-xs { font-size: 0.8125rem; }   /* 13px */
+body.dashboard-page .text-sm { font-size: 0.9375rem; }   /* 15px */
+body.dashboard-page .text-lg { font-size: 1.25rem; }       /* 20px */
+body.dashboard-page .text-xl { font-size: 1.375rem; }    /* 22px */
+body.dashboard-page .text-2xl { font-size: 1.625rem; }   /* 26px */
+body.dashboard-page .text-3xl { font-size: 2rem; }        /* 32px */
+
+@media (min-width: 768px) {
+  body.dashboard-page .md\:text-xl { font-size: 1.375rem; }
+  body.dashboard-page .md\:text-3xl { font-size: 2rem; }
+}
+
+@layer utilities {
+  .bg-blue-600 {
+    background: linear-gradient(135deg, var(--color-blue-400), var(--color-blue-600)) !important;
+  }
+  .hover\:bg-blue-700:hover {
+    background: linear-gradient(135deg, var(--color-blue-500), var(--color-blue-700)) !important;
+  }
+}

@@ -1,0 +1,508 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard ΓÇö Toys Factory ERP</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/index.css">
+</head>
+<body class="dashboard-page bg-slate-50 font-sans antialiased text-slate-600">
+  <div id="screen-workspace" class="min-h-screen flex">
+    <!-- Reusable Left Sidebar Component -->
+    <app-sidebar mode="tenant"></app-sidebar>
+    <main class="flex-1 flex flex-col min-h-screen overflow-hidden">
+      <!-- Reusable Header Component -->
+      <app-header mode="tenant" title="Enterprise Workspace"></app-header>
+      <div class="flex-1 overflow-y-auto p-6 md:p-8 space-y-6 flex flex-col">
+
+        <section class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div>
+            <h2 class="text-2xl md:text-3xl font-extrabold text-slate-900 tracking-tight flex items-center gap-2"><span data-i18n="dashboard.welcome_john">Welcome back, John! ≡ƒæï</span></h2>
+            <p class="text-xs text-slate-500 mt-1.5 font-medium"><span data-i18n="dashboard.happening">Here's what's happening with your business today.</span></p>
+          </div>
+          <div class="flex items-center gap-2.5">
+            <input type="date" id="dashboard-date-picker" class="bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold text-slate-700 premium-shadow focus:outline-none focus:ring-2 focus:ring-blue-500/20 cursor-pointer">
+            <button id="dashboard-customize-btn" class="flex items-center gap-2 bg-white border border-slate-200 rounded-xl px-4 py-2.5 text-xs font-semibold text-slate-700 premium-shadow hover:bg-slate-50 cursor-pointer">
+              <i data-lucide="sliders-horizontal" class="w-4 h-4 text-slate-400"></i>
+              <span data-i18n="dashboard.customize">Customize</span>
+            </button>
+          </div>
+        </section>
+
+        <!-- Quick Actions -->
+        <section class="hidden md:flex overflow-x-auto gap-3 pb-2 -mx-6 px-6 md:mx-0 md:px-0 hide-scrollbar" style="-webkit-overflow-scrolling: touch; scrollbar-width: none;">
+          <button onclick="window.location.href='/sales-orders.html'" class="flex items-center gap-2 whitespace-nowrap bg-blue-600 text-white px-4 py-2.5 rounded-xl font-semibold text-xs shadow-sm hover:bg-blue-700 transition-colors shrink-0">
+            <img src="/images/dashboard/e-cummers.webp" alt="" width="28" height="28" class="dashboard-icon-action"> <span data-i18n="dashboard.new_sale">New Sale</span>
+          </button>
+          <button onclick="window.location.href='/manufacturing-orders.html'" class="flex items-center gap-2 whitespace-nowrap bg-rose-50 text-rose-700 border border-rose-200/60 px-4 py-2.5 rounded-xl font-semibold text-xs shadow-sm hover:bg-rose-100 transition-colors shrink-0">
+            <img src="/images/dashboard/report.webp" alt="" width="28" height="28" class="dashboard-icon-action"> <span data-i18n="dashboard.new_production">New Production</span>
+          </button>
+          <button onclick="window.location.href='/purchases-orders.html'" class="flex items-center gap-2 whitespace-nowrap bg-white border border-slate-200 px-4 py-2.5 rounded-xl font-semibold text-slate-700 text-xs shadow-sm hover:bg-slate-50 transition-colors shrink-0">
+            <img src="/images/dashboard/delivery.webp" alt="" width="28" height="28" class="dashboard-icon-action"> <span data-i18n="dashboard.purchase_rm">Purchase RM</span>
+          </button>
+          <button onclick="window.location.href='/inventory-stock-in.html'" class="flex items-center gap-2 whitespace-nowrap bg-white border border-slate-200 px-4 py-2.5 rounded-xl font-semibold text-slate-700 text-xs shadow-sm hover:bg-slate-50 transition-colors shrink-0">
+            <img src="/images/dashboard/inventory.webp" alt="" width="28" height="28" class="dashboard-icon-action"> <span data-i18n="dashboard.receive_goods">Receive Goods</span>
+          </button>
+        </section>
+
+        <section class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4" id="dashboard-metrics-grid">
+          <!-- Production Summary -->
+          <div class="premium-card premium-shadow dashboard-kpi-card" data-metric="production-summary">
+            <div class="dashboard-kpi-header">
+              <span class="text-xs font-bold text-slate-500 uppercase tracking-wider" data-i18n="dashboard.production_summary">Production Summary</span>
+              <div class="dashboard-icon-wrap-kpi"><img src="/images/dashboard/production-summary.png" alt="" width="48" height="48" class="dashboard-icon-kpi"></div>
+            </div>
+            <div class="dashboard-kpi-values">
+              <span class="text-lg md:text-xl font-extrabold tracking-tight text-slate-900" data-metric-value="production-summary">0 completed</span>
+              <span class="text-[11px] text-slate-500 font-medium block" data-metric-sub="production-summary">0 pcs produced</span>
+            </div>
+          </div>
+
+          <!-- Purchase Summary -->
+          <div class="premium-card premium-shadow dashboard-kpi-card" data-metric="purchase-summary">
+            <div class="dashboard-kpi-header">
+              <span class="text-xs font-bold text-slate-500 uppercase tracking-wider" data-i18n="dashboard.purchase_summary">Purchase Summary</span>
+              <div class="dashboard-icon-wrap-kpi"><img src="/images/dashboard/purchase-summary.png" alt="" width="48" height="48" class="dashboard-icon-kpi"></div>
+            </div>
+            <div class="dashboard-kpi-values">
+              <span class="text-lg md:text-xl font-extrabold tracking-tight text-slate-900" data-metric-value="purchase-summary">0 orders</span>
+              <span class="text-[11px] text-slate-500 font-medium block" data-metric-sub="purchase-summary">αº│ 0 total</span>
+            </div>
+          </div>
+
+          <!-- Sales Summary -->
+          <div class="premium-card premium-shadow dashboard-kpi-card" data-metric="sales-summary">
+            <div class="dashboard-kpi-header">
+              <span class="text-xs font-bold text-slate-500 uppercase tracking-wider" data-i18n="dashboard.sales_summary">Sales Summary</span>
+              <div class="dashboard-icon-wrap-kpi"><img src="/images/dashboard/sales-summary.png" alt="" width="48" height="48" class="dashboard-icon-kpi"></div>
+            </div>
+            <div class="dashboard-kpi-values">
+              <span class="text-lg md:text-xl font-extrabold tracking-tight text-slate-900" data-metric-value="sales-summary">0 orders</span>
+              <span class="text-[11px] text-slate-500 font-medium block" data-metric-sub="sales-summary">αº│ 0 total</span>
+            </div>
+          </div>
+
+          <!-- RM Stock -->
+          <div class="premium-card premium-shadow dashboard-kpi-card" data-metric="rm-stock">
+            <div class="dashboard-kpi-header">
+              <span class="text-xs font-bold text-slate-500 uppercase tracking-wider" data-i18n="dashboard.rm_stock">RM Stock Value</span>
+              <div class="dashboard-icon-wrap-kpi"><img src="/images/dashboard/rm-stock.png" alt="" width="48" height="48" class="dashboard-icon-kpi"></div>
+            </div>
+            <div class="dashboard-kpi-values">
+              <span class="text-lg md:text-xl font-extrabold tracking-tight text-slate-900" data-metric-value="rm-stock">αº│ 0</span>
+              <span class="text-[11px] text-slate-500 font-medium block" data-metric-sub="rm-stock">Raw materials</span>
+            </div>
+          </div>
+
+          <!-- Semi Finished Stock -->
+          <div class="premium-card premium-shadow dashboard-kpi-card" data-metric="sf-stock">
+            <div class="dashboard-kpi-header">
+              <span class="text-xs font-bold text-slate-500 uppercase tracking-wider" data-i18n="dashboard.sf_stock">Semi Finished Stock</span>
+              <div class="dashboard-icon-wrap-kpi"><img src="/images/dashboard/sf-stock.png" alt="" width="48" height="48" class="dashboard-icon-kpi"></div>
+            </div>
+            <div class="dashboard-kpi-values">
+              <span class="text-lg md:text-xl font-extrabold tracking-tight text-slate-900" data-metric-value="sf-stock">αº│ 0</span>
+              <span class="text-[11px] text-slate-500 font-medium block" data-metric-sub="sf-stock">Parts &amp; WIP</span>
+            </div>
+          </div>
+
+          <!-- Finished Goods Stock -->
+          <div class="premium-card premium-shadow dashboard-kpi-card" data-metric="fg-stock">
+            <div class="dashboard-kpi-header">
+              <span class="text-xs font-bold text-slate-500 uppercase tracking-wider" data-i18n="dashboard.fg_stock">FG Stock Value</span>
+              <div class="dashboard-icon-wrap-kpi"><img src="/images/dashboard/fg-stock.png" alt="" width="48" height="48" class="dashboard-icon-kpi"></div>
+            </div>
+            <div class="dashboard-kpi-values">
+              <span class="text-lg md:text-xl font-extrabold tracking-tight text-slate-900" data-metric-value="fg-stock">αº│ 0</span>
+              <span class="text-[11px] text-slate-500 font-medium block" data-metric-sub="fg-stock">Ready for dispatch</span>
+            </div>
+          </div>
+          
+          <!-- Low Stock Alert -->
+          <div class="premium-card premium-shadow dashboard-kpi-card" data-metric="low-stock">
+            <div class="dashboard-kpi-header">
+              <span class="text-xs font-bold text-slate-500 uppercase tracking-wider" data-i18n="dashboard.low_stock">Low Stock Alert</span>
+              <div class="dashboard-icon-wrap-kpi"><img src="/images/dashboard/low-stock.png" alt="" width="48" height="48" class="dashboard-icon-kpi"></div>
+            </div>
+            <div class="dashboard-kpi-values">
+              <span class="text-lg md:text-xl font-extrabold tracking-tight text-slate-900" data-metric-value="low-stock">0 Items</span>
+              <span class="text-[11px] text-red-600 font-bold block" data-i18n="dashboard.requires_attention">Requires attention</span>
+            </div>
+          </div>
+
+          <!-- Pending Production -->
+          <div class="premium-card premium-shadow dashboard-kpi-card" data-metric="pending-production">
+            <div class="dashboard-kpi-header">
+              <span class="text-xs font-bold text-slate-500 uppercase tracking-wider" data-i18n="dashboard.pending_production">Pending Production</span>
+              <div class="dashboard-icon-wrap-kpi"><img src="/images/dashboard/pending-production.png" alt="" width="48" height="48" class="dashboard-icon-kpi"></div>
+            </div>
+            <div class="dashboard-kpi-values">
+              <span class="text-lg md:text-xl font-extrabold tracking-tight text-slate-900" data-metric-value="pending-production">0 Orders</span>
+              <span class="text-[11px] text-slate-500 font-medium block" data-metric-sub="pending-production">0 pcs planned</span>
+            </div>
+          </div>
+          
+          <!-- Pending Purchase -->
+          <div class="premium-card premium-shadow dashboard-kpi-card" data-metric="pending-purchase">
+            <div class="dashboard-kpi-header">
+              <span class="text-xs font-bold text-slate-500 uppercase tracking-wider" data-i18n="dashboard.pending_purchase">Pending Purchase</span>
+              <div class="dashboard-icon-wrap-kpi"><img src="/images/dashboard/pending-purchase.png" alt="" width="48" height="48" class="dashboard-icon-kpi"></div>
+            </div>
+            <div class="dashboard-kpi-values">
+              <span class="text-lg md:text-xl font-extrabold tracking-tight text-slate-900" data-metric-value="pending-purchase">0 Orders</span>
+              <span class="text-[11px] text-slate-500 font-medium block" data-metric-sub="pending-purchase">Raw Materials</span>
+            </div>
+          </div>
+
+          <!-- Pending Sales -->
+          <div class="premium-card premium-shadow dashboard-kpi-card" data-metric="pending-sales">
+            <div class="dashboard-kpi-header">
+              <span class="text-xs font-bold text-slate-500 uppercase tracking-wider" data-i18n="dashboard.pending_sales">Pending Sales</span>
+              <div class="dashboard-icon-wrap-kpi"><img src="/images/dashboard/pending-sales.png" alt="" width="48" height="48" class="dashboard-icon-kpi"></div>
+            </div>
+            <div class="dashboard-kpi-values">
+              <span class="text-lg md:text-xl font-extrabold tracking-tight text-slate-900" data-metric-value="pending-sales">0 Orders</span>
+              <span class="text-[11px] text-slate-500 font-medium block" data-metric-sub="pending-sales">Awaiting dispatch</span>
+            </div>
+          </div>
+
+          <!-- Customer Due -->
+          <div class="premium-card premium-shadow dashboard-kpi-card" data-metric="customer-due">
+            <div class="dashboard-kpi-header">
+              <span class="text-xs font-bold text-slate-500 uppercase tracking-wider" data-i18n="dashboard.customer_due">Customer Due</span>
+              <div class="dashboard-icon-wrap-kpi"><img src="/images/dashboard/customer-due.png" alt="" width="48" height="48" class="dashboard-icon-kpi"></div>
+            </div>
+            <div class="dashboard-kpi-values">
+              <span class="text-lg md:text-xl font-extrabold tracking-tight text-slate-900" data-metric-value="customer-due">αº│ 0</span>
+              <span class="text-[11px] text-slate-500 font-medium block" data-metric-sub="customer-due">Across 0 customers</span>
+            </div>
+          </div>
+
+          <!-- Supplier Due -->
+          <div class="premium-card premium-shadow dashboard-kpi-card" data-metric="supplier-due">
+            <div class="dashboard-kpi-header">
+              <span class="text-xs font-bold text-slate-500 uppercase tracking-wider" data-i18n="dashboard.supplier_due">Supplier Due</span>
+              <div class="dashboard-icon-wrap-kpi"><img src="/images/dashboard/supplier-due.png" alt="" width="48" height="48" class="dashboard-icon-kpi"></div>
+            </div>
+            <div class="dashboard-kpi-values">
+              <span class="text-lg md:text-xl font-extrabold tracking-tight text-slate-900" data-metric-value="supplier-due">αº│ 0</span>
+              <span class="text-[11px] text-slate-500 font-medium block" data-metric-sub="supplier-due">Across 0 suppliers</span>
+            </div>
+          </div>
+        </section>
+
+        <section class="grid grid-cols-1 lg:grid-cols-4 gap-6">
+          <div class="premium-card p-6 premium-shadow lg:col-span-2 flex flex-col relative">
+            <div class="flex items-center justify-between mb-4">
+              <div class="flex items-center gap-2">
+                <div class="dashboard-icon-wrap-md"><img src="/images/dashboard/icons/sales-trend.png" alt="" width="40" height="40" class="dashboard-icon-md"></div>
+                <h3 class="text-sm font-bold text-slate-900 tracking-tight" data-i18n="dashboard.sales_trend">Sales Trend</h3>
+              </div>
+              <select class="bg-slate-50 border border-slate-200 text-[10px] font-semibold text-slate-600 rounded-lg px-2.5 py-1">
+                <option data-i18n="dashboard.this_month">This Month</option>
+                <option data-i18n="dashboard.last_quarter">Last Quarter</option>
+              </select>
+            </div>
+            <div class="h-56 w-full relative pt-6" id="trend-chart-box">
+              <svg id="trend-line-svg" class="w-full h-full" preserveAspectRatio="none">
+                <defs>
+                  <linearGradient id="line-area-grad" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stop-color="#2563eb" stop-opacity="0.15"/>
+                    <stop offset="100%" stop-color="#2563eb" stop-opacity="0"/>
+                  </linearGradient>
+                </defs>
+                <path id="trend-area" d="" fill="url(#line-area-grad)"></path>
+                <path id="trend-line" d="" fill="none" stroke="#2563eb" stroke-width="2.5" stroke-linecap="round"></path>
+              </svg>
+              <div id="chart-point-marker" class="absolute w-3.5 h-3.5 rounded-full border-2 border-white bg-blue-600 shadow-md hidden"></div>
+              <div class="absolute bottom-0 left-0 w-full flex justify-between text-[10px] font-bold text-slate-400/80 pt-2 border-t border-slate-100">
+                <span>May 12</span>
+                <span>May 19</span>
+                <span>May 26</span>
+                <span>Jun 2</span>
+                <span>Jun 9</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="premium-card p-6 premium-shadow lg:col-span-1 flex flex-col">
+            <div class="flex items-center justify-between mb-4">
+              <div class="flex items-center gap-2">
+                <div class="dashboard-icon-wrap-sm"><img src="/images/dashboard/icons/revenue-analytics.png" alt="" width="36" height="36" class="dashboard-icon-sm"></div>
+                <h3 class="text-sm font-bold text-slate-900 tracking-tight" data-i18n="dashboard.revenue_analytics">Revenue Analytics</h3>
+              </div>
+              <select class="bg-slate-50 border border-slate-200 text-[10px] font-semibold text-slate-600 rounded-lg px-2.5 py-1">
+                <option data-i18n="dashboard.this_year">This Year</option>
+                <option data-i18n="dashboard.last_3_years">Last 3 Years</option>
+              </select>
+            </div>
+            <div class="h-56 flex items-end justify-between gap-1.5 relative pt-4 pb-6">
+              <div class="flex-1 flex flex-col items-center h-full justify-end group">
+                <div class="bg-blue-600/10 group-hover:bg-blue-600 w-full rounded-md transition-all cursor-pointer relative" style="height: 38%;">
+                  <span class="opacity-0 group-hover:opacity-100 absolute -top-8 left-1/2 -translate-x-1/2 bg-slate-900 text-white text-[9px] font-bold py-1 px-1.5 rounded whitespace-nowrap z-40 transition-opacity">$340K</span>
+                </div>
+              </div>
+              <div class="flex-1 flex flex-col items-center h-full justify-end group">
+                <div class="bg-blue-600/10 group-hover:bg-blue-600 w-full rounded-md transition-all cursor-pointer relative" style="height: 48%;">
+                  <span class="opacity-0 group-hover:opacity-100 absolute -top-8 left-1/2 -translate-x-1/2 bg-slate-900 text-white text-[9px] font-bold py-1 px-1.5 rounded whitespace-nowrap z-40 transition-opacity">$420K</span>
+                </div>
+              </div>
+              <div class="flex-1 flex flex-col items-center h-full justify-end group">
+                <div class="bg-blue-600/10 group-hover:bg-blue-600 w-full rounded-md transition-all cursor-pointer relative" style="height: 42%;">
+                  <span class="opacity-0 group-hover:opacity-100 absolute -top-8 left-1/2 -translate-x-1/2 bg-slate-900 text-white text-[9px] font-bold py-1 px-1.5 rounded whitespace-nowrap z-40 transition-opacity">$390K</span>
+                </div>
+              </div>
+              <div class="flex-1 flex flex-col items-center h-full justify-end group">
+                <div class="bg-blue-600/10 group-hover:bg-blue-600 w-full rounded-md transition-all cursor-pointer relative" style="height: 60%;">
+                  <span class="opacity-0 group-hover:opacity-100 absolute -top-8 left-1/2 -translate-x-1/2 bg-slate-900 text-white text-[9px] font-bold py-1 px-1.5 rounded whitespace-nowrap z-40 transition-opacity">$520K</span>
+                </div>
+              </div>
+              <div class="flex-1 flex flex-col items-center h-full justify-end group">
+                <div class="bg-blue-600/15 group-hover:bg-blue-600 w-full rounded-md transition-all cursor-pointer relative" style="height: 82%;">
+                  <span class="opacity-100 absolute -top-8 left-1/2 -translate-x-1/2 bg-slate-900 text-white text-[9px] font-bold py-1 px-1.5 rounded whitespace-nowrap z-40">$820,650</span>
+                </div>
+              </div>
+              <div class="flex-1 flex flex-col items-center h-full justify-end group">
+                <div class="bg-blue-600/10 group-hover:bg-blue-600 w-full rounded-md transition-all cursor-pointer relative" style="height: 54%;">
+                  <span class="opacity-0 group-hover:opacity-100 absolute -top-8 left-1/2 -translate-x-1/2 bg-slate-900 text-white text-[9px] font-bold py-1 px-1.5 rounded whitespace-nowrap z-40 transition-opacity">$480K</span>
+                </div>
+              </div>
+              <div class="flex-1 flex flex-col items-center h-full justify-end group">
+                <div class="bg-blue-600/10 group-hover:bg-blue-600 w-full rounded-md transition-all cursor-pointer relative" style="height: 65%;">
+                  <span class="opacity-0 group-hover:opacity-100 absolute -top-8 left-1/2 -translate-x-1/2 bg-slate-900 text-white text-[9px] font-bold py-1 px-1.5 rounded whitespace-nowrap z-40 transition-opacity">$590K</span>
+                </div>
+              </div>
+              <div class="flex-1 flex flex-col items-center h-full justify-end group">
+                <div class="bg-blue-600/10 group-hover:bg-blue-600 w-full rounded-md transition-all cursor-pointer relative" style="height: 52%;">
+                  <span class="opacity-0 group-hover:opacity-100 absolute -top-8 left-1/2 -translate-x-1/2 bg-slate-900 text-white text-[9px] font-bold py-1 px-1.5 rounded whitespace-nowrap z-40 transition-opacity">$470K</span>
+                </div>
+              </div>
+              <div class="flex-1 flex flex-col items-center h-full justify-end group">
+                <div class="bg-blue-600/10 group-hover:bg-blue-600 w-full rounded-md transition-all cursor-pointer relative" style="height: 70%;">
+                  <span class="opacity-0 group-hover:opacity-100 absolute -top-8 left-1/2 -translate-x-1/2 bg-slate-900 text-white text-[9px] font-bold py-1 px-1.5 rounded whitespace-nowrap z-40 transition-opacity">$620K</span>
+                </div>
+              </div>
+              <div class="flex-1 flex flex-col items-center h-full justify-end group">
+                <div class="bg-blue-600/10 group-hover:bg-blue-600 w-full rounded-md transition-all cursor-pointer relative" style="height: 72%;">
+                  <span class="opacity-0 group-hover:opacity-100 absolute -top-8 left-1/2 -translate-x-1/2 bg-slate-900 text-white text-[9px] font-bold py-1 px-1.5 rounded whitespace-nowrap z-40 transition-opacity">$680K</span>
+                </div>
+              </div>
+              <div class="absolute bottom-0 left-0 w-full flex justify-between text-[9px] font-bold text-slate-400/80 pt-2 border-t border-slate-100">
+                <span>Feb</span>
+                <span>Mar</span>
+                <span>Apr</span>
+                <span>May</span>
+                <span>Jun</span>
+                <span>Jul</span>
+                <span>Aug</span>
+                <span>Sep</span>
+                <span>Oct</span>
+                <span>Nov</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="premium-card p-6 premium-shadow flex flex-col justify-between">
+            <div class="flex items-center justify-between mb-4 border-b border-slate-100 pb-2">
+              <div class="flex items-center gap-2">
+                <div class="dashboard-icon-wrap-sm"><img src="/images/dashboard/icons/notifications.png" alt="" width="36" height="36" class="dashboard-icon-sm"></div>
+                <h3 class="text-sm font-bold text-slate-900 tracking-tight" data-i18n="dashboard.notifications">Notifications</h3>
+              </div>
+              <a href="#" class="text-[10px] font-bold text-blue-600 hover:text-blue-700" data-i18n="dashboard.view_all">View all</a>
+            </div>
+            <div class="flex-1 flex flex-col gap-3.5 overflow-y-auto">
+              <div class="flex gap-3">
+                <div class="dashboard-icon-wrap-sm mt-0.5"><img src="/images/dashboard/icons/notif-sales-order.png" alt="" width="36" height="36" class="dashboard-icon-sm"></div>
+                <div class="flex flex-col">
+                  <span class="text-xs font-bold text-slate-800" data-i18n="dashboard.notif_new_sale">New sales order created</span>
+                  <span class="text-[10px] text-slate-400 mt-0.5">SO-2025-00125 ΓÇó 2 mins ago</span>
+                </div>
+              </div>
+              <div class="flex gap-3">
+                <div class="dashboard-icon-wrap-sm mt-0.5"><img src="/images/dashboard/icons/notif-payment.png" alt="" width="36" height="36" class="dashboard-icon-sm"></div>
+                <div class="flex flex-col">
+                  <span class="text-xs font-bold text-slate-800" data-i18n="dashboard.notif_payment">Payment received</span>
+                  <span class="text-[10px] text-slate-400 mt-0.5">$2,450.00 ΓÇó 15 mins ago</span>
+                </div>
+              </div>
+              <div class="flex gap-3">
+                <div class="dashboard-icon-wrap-sm mt-0.5"><img src="/images/dashboard/icons/notif-low-stock.png" alt="" width="36" height="36" class="dashboard-icon-sm"></div>
+                <div class="flex flex-col">
+                  <span class="text-xs font-bold text-slate-800" data-i18n="dashboard.notif_low_stock">Low stock alert</span>
+                  <span class="text-[10px] text-slate-400 mt-0.5">iPhone 15 Pro ΓÇó 1 hour ago</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="grid grid-cols-1 lg:grid-cols-4 gap-6">
+          <div class="premium-card p-6 premium-shadow lg:col-span-2 flex flex-col">
+            <div class="flex items-center justify-between mb-4 border-b border-slate-100 pb-3">
+              <div class="flex items-center gap-2">
+                <div class="dashboard-icon-wrap-sm"><img src="/images/dashboard/icons/top-products.png" alt="" width="36" height="36" class="dashboard-icon-sm"></div>
+                <h3 class="text-sm font-bold text-slate-900 tracking-tight" data-i18n="dashboard.top_products">Top Products</h3>
+              </div>
+              <a href="#" class="text-[10px] font-bold text-blue-600 hover:text-blue-700" data-i18n="dashboard.view_all">View all</a>
+            </div>
+            <div class="overflow-x-auto">
+              <table class="w-full text-left text-xs font-medium text-slate-600">
+                <thead>
+                  <tr class="text-[10px] uppercase font-bold text-slate-400/80 border-b border-slate-100">
+                    <th class="pb-2.5" data-i18n="common.product">Product</th>
+                    <th class="pb-2.5" data-i18n="common.category">Category</th>
+                    <th class="pb-2.5 text-center" data-i18n="common.sold">Sold</th>
+                    <th class="pb-2.5 text-right" data-i18n="common.revenue">Revenue</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-150">
+                  <tr class="hover:bg-slate-50/50 transition-colors">
+                    <td class="py-3 flex items-center gap-3">
+                      <img src="https://images.unsplash.com/photo-1592750475338-74b7b21085ab?auto=format&fit=crop&q=80&w=50" class="h-7 w-7 rounded-md object-cover bg-slate-100 border border-slate-200" alt="Prod">
+                      <span class="font-bold text-slate-950">iPhone 15 Pro</span>
+                    </td>
+                    <td class="py-3"><span class="bg-blue-50 text-blue-600 text-[10px] font-bold px-2 py-0.5 rounded-lg">Electronics</span></td>
+                    <td class="py-3 text-center font-bold text-slate-800">245</td>
+                    <td class="py-3 text-right font-extrabold text-slate-950">$367,500</td>
+                  </tr>
+                  <tr class="hover:bg-slate-50/50 transition-colors">
+                    <td class="py-3 flex items-center gap-3">
+                      <img src="https://images.unsplash.com/photo-1517336714731-489689fd1ca8?auto=format&fit=crop&q=80&w=50" class="h-7 w-7 rounded-md object-cover bg-slate-100 border border-slate-200" alt="Prod">
+                      <span class="font-bold text-slate-950">MacBook Air M3</span>
+                    </td>
+                    <td class="py-3"><span class="bg-blue-50 text-blue-600 text-[10px] font-bold px-2 py-0.5 rounded-lg">Electronics</span></td>
+                    <td class="py-3 text-center font-bold text-slate-800">89</td>
+                    <td class="py-3 text-right font-extrabold text-slate-950">$178,000</td>
+                  </tr>
+                  <tr class="hover:bg-slate-50/50 transition-colors">
+                    <td class="py-3 flex items-center gap-3">
+                      <img src="https://images.unsplash.com/photo-1588449668365-d15e397f6787?auto=format&fit=crop&q=80&w=50" class="h-7 w-7 rounded-md object-cover bg-slate-100 border border-slate-200" alt="Prod">
+                      <span class="font-bold text-slate-950">AirPods Pro 2</span>
+                    </td>
+                    <td class="py-3"><span class="bg-blue-50 text-blue-600 text-[10px] font-bold px-2 py-0.5 rounded-lg">Electronics</span></td>
+                    <td class="py-3 text-center font-bold text-slate-800">312</td>
+                    <td class="py-3 text-right font-extrabold text-slate-950">$78,000</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="premium-card p-6 premium-shadow lg:col-span-1 flex flex-col">
+            <div class="flex items-center justify-between mb-4 border-b border-slate-100 pb-3">
+              <div class="flex items-center gap-2">
+                <div class="dashboard-icon-wrap-sm"><img src="/images/dashboard/icons/recent-invoices.png" alt="" width="36" height="36" class="dashboard-icon-sm"></div>
+                <h3 class="text-sm font-bold text-slate-900 tracking-tight" data-i18n="dashboard.recent_invoices">Recent Invoices</h3>
+              </div>
+              <a href="#" class="text-[10px] font-bold text-blue-600 hover:text-blue-700" data-i18n="dashboard.view_all">View all</a>
+            </div>
+            <div class="flex-1 flex flex-col gap-3.5 overflow-y-auto">
+              <div class="flex items-center justify-between text-xs">
+                <div class="flex flex-col">
+                  <span class="font-bold text-slate-800 hover:text-blue-600 cursor-pointer">INV-2025-00145</span>
+                  <span class="text-[10px] text-slate-400 mt-0.5">Acme Corp ΓÇó Jun 12, 2025</span>
+                </div>
+                <div class="flex flex-col items-end">
+                  <span class="font-extrabold text-slate-950">$2,450.00</span>
+                  <span class="text-[9px] font-bold bg-emerald-50 text-emerald-600 px-2 py-0.5 rounded mt-0.5" data-i18n="common.paid">Paid</span>
+                </div>
+              </div>
+              <div class="flex items-center justify-between text-xs">
+                <div class="flex flex-col">
+                  <span class="font-bold text-slate-800 hover:text-blue-600 cursor-pointer">INV-2025-00144</span>
+                  <span class="text-[10px] text-slate-400 mt-0.5">Globex Inc ΓÇó Jun 11, 2025</span>
+                </div>
+                <div class="flex flex-col items-end">
+                  <span class="font-extrabold text-slate-955">$1,850.00</span>
+                  <span class="text-[9px] font-bold bg-amber-50 text-amber-600 px-2 py-0.5 rounded mt-0.5" data-i18n="common.pending">Pending</span>
+                </div>
+              </div>
+              <div class="flex items-center justify-between text-xs">
+                <div class="flex flex-col">
+                  <span class="font-bold text-slate-800 hover:text-blue-600 cursor-pointer">INV-2025-00143</span>
+                  <span class="text-[10px] text-slate-400 mt-0.5">Soylent Corp ΓÇó Jun 10, 2025</span>
+                </div>
+                <div class="flex flex-col items-end">
+                  <span class="font-extrabold text-slate-955">$3,200.00</span>
+                  <span class="text-[9px] font-bold bg-emerald-50 text-emerald-600 px-2 py-0.5 rounded mt-0.5" data-i18n="common.paid">Paid</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="premium-card p-6 premium-shadow flex flex-col justify-between">
+            <div class="flex items-center justify-between mb-4 border-b border-slate-100 pb-3">
+              <div class="flex items-center gap-2">
+                <div class="dashboard-icon-wrap-sm"><img src="/images/dashboard/icons/activity-feed.png" alt="" width="36" height="36" class="dashboard-icon-sm"></div>
+                <h3 class="text-sm font-bold text-slate-900 tracking-tight" data-i18n="dashboard.activity_feed">Activity Feed</h3>
+              </div>
+              <a href="#" class="text-[10px] font-bold text-blue-600 hover:text-blue-700" data-i18n="dashboard.view_all">View all</a>
+            </div>
+            <div class="flex-1 flex flex-col gap-4 overflow-y-auto">
+              <div class="flex gap-3">
+                <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=100" class="h-6 w-6 rounded-full object-cover shrink-0" alt="Feed">
+                <div class="flex flex-col text-xs text-slate-600 leading-tight">
+                  <span><span class="font-bold text-slate-800">John Doe</span> created invoice <span class="font-bold text-blue-600">INV-2025-00145</span></span>
+                  <span class="text-[9px] text-slate-400 mt-0.5">2 minutes ago</span>
+                </div>
+              </div>
+              <div class="flex gap-3">
+                <div class="h-6 w-6 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0 text-[10px] font-bold">P</div>
+                <div class="flex flex-col text-xs text-slate-600 leading-tight">
+                  <span>Payment received from <span class="font-bold text-slate-800">Acme Corp</span> ($2,450)</span>
+                  <span class="text-[9px] text-slate-400 mt-0.5">15 minutes ago</span>
+                </div>
+              </div>
+              <div class="flex gap-3">
+                <div class="h-6 w-6 rounded-full bg-orange-50 text-orange-600 flex items-center justify-center shrink-0 text-[10px] font-bold">S</div>
+                <div class="flex flex-col text-xs text-slate-600 leading-tight">
+                  <span>Stock updated for <span class="font-bold text-slate-800">iPhone 15 Pro</span> by Mike</span>
+                  <span class="text-[9px] text-slate-400 mt-0.5">1 hour ago</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <app-footer></app-footer>
+      </div>
+    </main>
+  </div>
+
+  <!-- Customize Modal -->
+  <div id="customize-modal" class="fixed inset-0 z-50 hidden">
+    <div class="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" id="customize-modal-overlay"></div>
+    <div class="absolute right-0 top-0 h-full w-80 bg-white border-l border-slate-200 shadow-2xl flex flex-col transform transition-transform duration-300 translate-x-full" id="customize-drawer">
+      <div class="p-5 border-b border-slate-100 flex items-center justify-between bg-slate-50">
+        <h3 class="font-bold text-slate-900 text-sm" data-i18n="dashboard.customize_title">Customize Dashboard</h3>
+        <button id="close-customize" class="text-slate-400 hover:text-slate-700 bg-white border border-slate-200 rounded-lg p-1.5"><i data-lucide="x" class="w-4 h-4"></i></button>
+      </div>
+      <div class="p-5 space-y-4 flex-1 overflow-y-auto">
+        <p class="text-xs text-slate-500 mb-4" data-i18n="dashboard.customize_hint">Toggle the visibility of your metrics widgets.</p>
+        
+        <label class="flex items-center justify-between bg-slate-50 border border-slate-100 p-3 rounded-xl cursor-pointer hover:border-slate-200 transition-colors">
+          <span class="text-xs font-semibold text-slate-700" data-i18n="dashboard.total_revenue">Total Revenue</span>
+          <input type="checkbox" checked class="toggle-card w-4 h-4 text-blue-600 border-slate-300 rounded focus:ring-blue-500" data-target="card-revenue">
+        </label>
+        
+        <label class="flex items-center justify-between bg-slate-50 border border-slate-100 p-3 rounded-xl cursor-pointer hover:border-slate-200 transition-colors">
+          <span class="text-xs font-semibold text-slate-700" data-i18n="dashboard.total_sales">Total Sales</span>
+          <input type="checkbox" checked class="toggle-card w-4 h-4 text-blue-600 border-slate-300 rounded focus:ring-blue-500" data-target="card-sales">
+        </label>
+        
+        <label class="flex items-center justify-between bg-slate-50 border border-slate-100 p-3 rounded-xl cursor-pointer hover:border-slate-200 transition-colors">
+          <span class="text-xs font-semibold text-slate-700" data-i18n="dashboard.new_customers">New Customers</span>
+          <input type="checkbox" checked class="toggle-card w-4 h-4 text-blue-600 border-slate-300 rounded focus:ring-blue-500" data-target="card-customers">
+        </label>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="/layout.js"></script>
+  <script type="module" src="/js/shared.js"></script>
+  <script type="module" src="/js/dashboard.js"></script>
+</body>
+</html>

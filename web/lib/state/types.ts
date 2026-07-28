@@ -1,0 +1,38 @@
+export type Lang = 'en' | 'bn';
+
+export interface AppState {
+  isLoggedIn: boolean;
+  sidebarCollapsed: boolean;
+  lang?: Lang;
+  crmFilter: string;
+  invFilterCategory: string;
+  hrmActiveTab: string;
+  hrmDirectoryFilterStatus: string;
+  hrmDirectoryFilterDept: string;
+  hrmAttendanceDate: string;
+  salesUi: Record<string, unknown>;
+  invoiceApprovalsById: Record<string, unknown>;
+  recurringInvoicesById: Record<string, unknown>;
+  paymentAllocationsById: Record<string, unknown>;
+  crmCustomers: Array<Record<string, unknown>>;
+  inventory: Array<Record<string, unknown>>;
+  inventoryCategories: Array<Record<string, unknown>>;
+  inventoryUnits: Array<Record<string, unknown>>;
+  inventoryWarehouses: Array<Record<string, unknown>>;
+  invoices: Array<Record<string, unknown>>;
+  employees: Array<Record<string, unknown>>;
+  attendance: Array<Record<string, unknown>>;
+  purchases: Array<Record<string, unknown>>;
+  purchasesFilter?: string;
+  accounting: Array<Record<string, unknown>>;
+  payroll: Array<Record<string, unknown>>;
+  projects: Array<Record<string, unknown>>;
+  manufacturing: Array<Record<string, unknown>>;
+  productionOrders?: Array<Record<string, unknown>>;
+  purchasesSuppliers?: Array<Record<string, unknown>>;
+  salesOrders?: Array<Record<string, unknown>>;
+  currentUser?: Record<string, unknown>;
+  crmUi?: Record<string, unknown>;
+  crmData?: Record<string, unknown>;
+  [key: string]: unknown;
+}

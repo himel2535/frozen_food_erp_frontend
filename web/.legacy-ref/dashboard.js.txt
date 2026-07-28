@@ -1,0 +1,251 @@
+﻿// ----------------------------------------------------
+// Dashboard Module ΓÇö Toys Factory ERP MPA
+// ----------------------------------------------------
+import { appReadyPromise, appState, initIcons } from '/js/shared.js';
+
+function formatMoney(value) {
+  return `αº│ ${Number(value || 0).toLocaleString('en-US', { maximumFractionDigits: 0 })}`;
+}
+
+function stockValue(list) {
+  return list.reduce((sum, product) => sum + Number(product.stock || 0) * Number(product.cost || 0), 0);
+}
+
+function getDashboardMetrics() {
+  const inventory = Array.isArray(appState.inventory) ? appState.inventory : [];
+  const production = Array.isArray(appState.productionOrders) ? appState.productionOrders : [];
+  const purchases = Array.isArray(appState.purchases) ? appState.purchases : [];
+  const sales = Array.isArray(appState.salesOrders) ? appState.salesOrders : [];
+  const customers = Array.isArray(appState.crmCustomers) ? appState.crmCustomers : [];
+  const suppliers = Array.isArray(appState.purchasesSuppliers) ? appState.purchasesSuppliers : [];
+
+  const rm = inventory.filter((p) => p.productType === 'Raw Materials');
+  const sf = inventory.filter((p) => p.productType === 'Semi-Finished Goods');
+  const fg = inventory.filter((p) => p.productType === 'Finished Goods');
+
+  const lowStock = inventory.filter((p) => {
+    const min = Number(p.minStock ?? p.reorderLevel ?? 0);
+    return min > 0 && Number(p.stock || 0) < min;
+  }).length;
+
+  const pendingProd = production.filter((p) => ['Planned', 'In Progress'].includes(p.status));
+  const pendingPurchase = purchases.filter((p) => ['Draft', 'Sent'].includes(p.status));
+  const pendingSales = sales.filter((s) =>
+    ['confirmed', 'processing', 'draft'].includes(String(s.status || '').toLowerCase())
+  );
+
+  const completedProd = production.filter((p) => p.status === 'Completed');
+  const prodQty = completedProd.reduce((s, p) => s + Number(p.actualQuantity || p.plannedQuantity || 0), 0);
+  const pendingProdQty = pendingProd.reduce((s, p) => s + Number(p.plannedQuantity || 0), 0);
+
+  const customersWithDue = customers.filter((c) => Number(c.due || 0) > 0);
+  const suppliersWithDue = suppliers.filter((s) => Number(s.due || s.balance || 0) > 0);
+
+  return {
+    pendingProduction: pendingProd.length,
+    pendingProductionQty: pendingProdQty,
+    pendingPurchase: pendingPurchase.length,
+    pendingSales: pendingSales.length,
+    lowStock,
+    rmStockValue: stockValue(rm),
+    sfStockValue: stockValue(sf),
+    fgStockValue: stockValue(fg),
+    customerDue: customers.reduce((s, c) => s + Number(c.due || 0), 0),
+    customerDueCount: customersWithDue.length || customers.length,
+    supplierDue: suppliers.reduce((s, item) => s + Number(item.due || item.balance || 0), 0),
+    supplierDueCount: suppliersWithDue.length || suppliers.length,
+    productionSummary: { completed: completedProd.length, qty: prodQty },
+    purchaseSummary: {
+      count: purchases.length,
+      total: purchases.reduce((s, o) => s + Number(o.total || 0), 0)
+    },
+    salesSummary: {
+      count: sales.length,
+      total: sales.reduce((s, o) => s + Number(o.total || 0), 0)
+    }
+  };
+}
+
+function setMetric(key, value, sub) {
+  const valueEl = document.querySelector(`[data-metric-value="${key}"]`);
+  const subEl = document.querySelector(`[data-metric-sub="${key}"]`);
+  if (valueEl) valueEl.textContent = value;
+  if (subEl && sub != null) subEl.textContent = sub;
+}
+
+function t(key, vars) {
+  return typeof window.t === 'function' ? window.t(key, vars) : key;
+}
+
+function applyDashboardMetrics() {
+  const m = getDashboardMetrics();
+
+  setMetric(
+    'pending-production',
+    t('dashboard.metric_orders', { n: m.pendingProduction }),
+    t('dashboard.metric_pcs_planned', { n: m.pendingProductionQty.toLocaleString() })
+  );
+  setMetric(
+    'pending-purchase',
+    t('dashboard.metric_orders', { n: m.pendingPurchase }),
+    t('dashboard.raw_materials')
+  );
+  setMetric(
+    'pending-sales',
+    t('dashboard.metric_orders', { n: m.pendingSales }),
+    t('dashboard.awaiting_dispatch')
+  );
+  setMetric('low-stock', t('dashboard.metric_items', { n: m.lowStock }));
+  setMetric('rm-stock', formatMoney(m.rmStockValue), t('dashboard.raw_materials'));
+  setMetric('sf-stock', formatMoney(m.sfStockValue), t('dashboard.metric_parts_wip'));
+  setMetric('fg-stock', formatMoney(m.fgStockValue), t('dashboard.ready_dispatch'));
+  setMetric(
+    'customer-due',
+    formatMoney(m.customerDue),
+    t('dashboard.metric_across_customers', { n: m.customerDueCount })
+  );
+  setMetric(
+    'supplier-due',
+    formatMoney(m.supplierDue),
+    t('dashboard.metric_across_suppliers', { n: m.supplierDueCount })
+  );
+  setMetric(
+    'production-summary',
+    t('dashboard.metric_completed', { n: m.productionSummary.completed }),
+    t('dashboard.metric_pcs_produced', { n: m.productionSummary.qty.toLocaleString() })
+  );
+  setMetric(
+    'purchase-summary',
+    t('dashboard.metric_orders_lower', { n: m.purchaseSummary.count }),
+    t('dashboard.metric_total_suffix', { amount: formatMoney(m.purchaseSummary.total) })
+  );
+  setMetric(
+    'sales-summary',
+    t('dashboard.metric_orders_lower', { n: m.salesSummary.count }),
+    t('dashboard.metric_total_suffix', { amount: formatMoney(m.salesSummary.total) })
+  );
+}
+
+// ----------------------------------------------------
+// DYNAMIC SVG SALES TREND LINE CHART
+// ----------------------------------------------------
+function drawSalesTrend() {
+  const box = document.getElementById('trend-chart-box');
+  const svg = document.getElementById('trend-line-svg');
+  const path = document.getElementById('trend-line');
+  const area = document.getElementById('trend-area');
+  const marker = document.getElementById('chart-point-marker');
+
+  if (!box || !svg || !path) return;
+
+  const w = box.clientWidth;
+  const h = box.clientHeight - 20;
+
+  const values = [24000, 39000, 32000, 64300, 50000, 78000, 68000];
+  const max = 100000;
+
+  const points = values.map((val, idx) => {
+    const x = (idx / (values.length - 1)) * w;
+    const y = h - (val / max) * (h - 20);
+    return { x, y, val };
+  });
+
+  const lineD = points.map((p, idx) => `${idx === 0 ? 'M' : 'L'} ${p.x} ${p.y}`).join(' ');
+  path.setAttribute('d', lineD);
+
+  const areaD = `${lineD} L ${w} ${h} L 0 ${h} Z`;
+  area.setAttribute('d', areaD);
+
+  const highlightIdx = 3;
+  const targetPt = points[highlightIdx];
+
+  if (targetPt) {
+    marker.classList.remove('hidden');
+    marker.style.left = `${targetPt.x - 7}px`;
+    marker.style.top = `${targetPt.y - 7}px`;
+
+    let tooltip = document.getElementById('chart-tooltip-bubble');
+    if (!tooltip) {
+      tooltip = document.createElement('div');
+      tooltip.id = 'chart-tooltip-bubble';
+      tooltip.className = 'chart-tooltip';
+      box.appendChild(tooltip);
+    }
+    tooltip.innerHTML = `
+      <div class="text-[9px] text-slate-400 font-medium leading-none">May 28, 2025</div>
+      <div class="text-[11px] text-white font-extrabold mt-1">$64,300</div>
+    `;
+    tooltip.style.left = `${targetPt.x}px`;
+    tooltip.style.top = `${targetPt.y}px`;
+  }
+}
+
+window.drawSalesTrend = drawSalesTrend;
+
+document.addEventListener('DOMContentLoaded', async () => {
+  await appReadyPromise;
+  applyDashboardMetrics();
+  drawSalesTrend();
+  initIcons();
+
+  const datePicker = document.getElementById('dashboard-date-picker');
+  if (datePicker) {
+    datePicker.valueAsDate = new Date();
+    datePicker.addEventListener('change', () => {
+      applyDashboardMetrics();
+      if (typeof window.drawSalesTrend === 'function') {
+        setTimeout(() => window.drawSalesTrend(), 100);
+      }
+    });
+  }
+
+  const customizeBtn = document.getElementById('dashboard-customize-btn');
+  const customizeModal = document.getElementById('customize-modal');
+  const customizeOverlay = document.getElementById('customize-modal-overlay');
+  const customizeDrawer = document.getElementById('customize-drawer');
+  const closeCustomizeBtn = document.getElementById('close-customize');
+
+  function openCustomize() {
+    if (!customizeModal || !customizeDrawer) return;
+    customizeModal.classList.remove('hidden');
+    setTimeout(() => {
+      customizeDrawer.classList.remove('translate-x-full');
+    }, 10);
+  }
+
+  function closeCustomize() {
+    if (!customizeModal || !customizeDrawer) return;
+    customizeDrawer.classList.add('translate-x-full');
+    setTimeout(() => {
+      customizeModal.classList.add('hidden');
+    }, 300);
+  }
+
+  if (customizeBtn) customizeBtn.addEventListener('click', openCustomize);
+  if (closeCustomizeBtn) closeCustomizeBtn.addEventListener('click', closeCustomize);
+  if (customizeOverlay) customizeOverlay.addEventListener('click', closeCustomize);
+
+  document.querySelectorAll('.toggle-card').forEach((toggle) => {
+    toggle.addEventListener('change', (e) => {
+      const targetId = e.target.getAttribute('data-target');
+      const card = document.getElementById(targetId);
+      if (card) {
+        if (e.target.checked) {
+          card.classList.remove('hidden');
+        } else {
+          card.classList.add('hidden');
+        }
+      }
+    });
+  });
+});
+
+window.addEventListener('hookerp:state-synced', () => {
+  applyDashboardMetrics();
+});
+
+window.addEventListener('hookerp:language-changed', () => {
+  applyDashboardMetrics();
+});
+
+window.addEventListener('resize', drawSalesTrend);

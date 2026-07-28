@@ -7,76 +7,100 @@ description: Specific development guidelines for creating, modifying, and struct
 
 Use this skill when designing, building, or modifying views, navigation menus, and screens for Toys Factory ERP.
 
+All frontend work lives in **`web/`** (Next.js App Router + TypeScript).
+
 ## Page Layout Template
-Each top-level module has its own page containing the sidebar, header, main view, form view, and footer. Keep them clean and organized inside `<main>`:
 
-```html
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Module Name - Toys Factory ERP</title>
-  <link rel="stylesheet" href="/index.css">
-</head>
-<body class="bg-slate-50 font-sans text-slate-800 antialiased">
-  <div id="screen-workspace" class="min-h-screen flex">
-    <app-sidebar mode="tenant"></app-sidebar>
-    
-    <main class="flex-1 flex flex-col min-h-screen overflow-hidden">
-      <app-header mode="tenant" title="Enterprise Workspace"></app-header>
-      
-      <!-- List View -->
-      <div id="[module]-main-view" class="flex-1 overflow-y-auto p-6 md:p-8 space-y-6 flex flex-col justify-between">
-         <!-- Content (Header with Add Button, Tables, Lists, Kanban) -->
-         <app-footer></app-footer>
-      </div>
+Each module is a Next.js route under `web/app/(tenant)/`. The tenant layout injects sidebar and header automatically.
 
-      <!-- Form View (Hidden by Default) -->
-      <div id="[module]-form-view" class="flex-1 overflow-y-auto p-6 md:p-8 space-y-6 hidden bg-slate-50">
-         <div class="max-w-3xl mx-auto w-full space-y-6">
-            <app-form-header 
-              title="Add New [Entity]" 
-              subtitle="Capture required fields to create a new profile." 
-              back-action="window.show[Module]MainView()">
-            </app-form-header>
-            <form id="[module]-form" onsubmit="window.handleFormSubmit(event)" class="bg-white rounded-2xl border border-slate-200 p-6 premium-shadow space-y-6">
-               <!-- Inputs -->
-            </form>
-         </div>
-      </div>
-    </main>
-  </div>
+```tsx
+// web/app/(tenant)/crm/leads/page.tsx
+import { LeadsPage } from '@/components/modules/crm/LeadsPage';
 
-  <script type="module" src="/layout.js"></script>
-  <script type="module" src="/js/shared.js"></script>
-  <script type="module" src="/js/[module].js"></script>
-</body>
-</html>
+export default function Page() {
+  return <LeadsPage />;
+}
 ```
 
-## Fast File Routing
-Before editing, check this ownership map first so shared UI work lands in the correct file:
+Module component pattern (list + inline form):
 
-- Use `references/file-map.md` for a quick "what lives where" lookup.
-- Sidebar, header, footer, and shared navigation markup belong in `layout.js`.
-- Shared interaction logic, state, auth guards, and reusable UI helpers belong in `js/shared.js`.
-- Global visual rules, shared sidebar sizing, and reusable polish belong in `index.css`.
-- Module-specific screen content belongs in `[module].html` and `/js/[module].js`.
-- If the request changes every page's layout or navigation, do not patch a single module page first. Start from `layout.js`, `js/shared.js`, and `index.css`.
+```tsx
+'use client';
+
+import { useState } from 'react';
+import { Footer } from '@/components/layout/Footer';
+import { FormHeader } from '@/components/layout/FormHeader';
+
+export function ExampleModulePage() {
+  const [view, setView] = useState<'main' | 'form'>('main');
+
+  if (view === 'form') {
+    return (
+      <div className="flex-1 overflow-y-auto p-6 md:p-8 space-y-6 bg-slate-50">
+        <div className="max-w-3xl mx-auto w-full space-y-6">
+          <FormHeader
+            title="Add New Record"
+            subtitle="Capture required fields."
+            onBack={() => setView('main')}
+          />
+          <form className="bg-white rounded-2xl border border-slate-200 p-6 premium-shadow space-y-6">
+            {/* inputs */}
+          </form>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex-1 overflow-y-auto p-6 md:p-8 space-y-6 flex flex-col">
+      {/* list view: header, filters, table */}
+      <Footer />
+    </div>
+  );
+}
+```
+
+For simple list-only modules, use `GenericListModule` via `web/lib/modules/registry.ts` and `ModulePage`.
+
+## Fast File Routing
+
+Before editing, check this ownership map:
+
+| What | Where |
+|------|-------|
+| Sidebar, header, footer, form header | `web/components/layout/` |
+| Auth guard, app bootstrap | `web/components/auth/`, `web/hooks/use-app-ready.tsx` |
+| Global state, Firebase sync | `web/lib/state/app-store.ts` |
+| CRM and domain services | `web/lib/services/` |
+| Navigation config | `web/lib/navigation/tenant-sidebar.ts` |
+| i18n translations | `web/lib/i18n/translations.ts` |
+| Global CSS | `web/styles/globals.css` |
+| Module list configs | `web/lib/modules/registry.ts` |
+| Dedicated module UI | `web/components/modules/` |
+| Route entry points | `web/app/(tenant)/` |
+
+If the request changes every page's layout or navigation, start from `web/components/layout/` and `web/lib/navigation/tenant-sidebar.ts` — not a single module page.
 
 ## Form Logic & Validation
-1. **Dynamic Titles:** If you support editing, pass a `title-id` attribute to `<app-form-header>` (e.g. `title-id="crm-customer-modal-title"`) so the JS can dynamically swap the text of the header from "Create" to "Edit" without destroying the back button layout.
-2. **Email Option:** Email fields should NOT have the `required` attribute.
-3. **Advanced Toggles:** Collapsible section for advanced details:
-   ```html
-   <div>
-     <button type="button" onclick="window.toggleAdvancedFields()" class="flex items-center gap-2 text-blue-600 hover:text-blue-700 text-xs font-bold transition-colors">
-       <i data-lucide="chevron-down" id="[module]-advanced-icon" class="w-4 h-4 transition-transform"></i>
-       Show Advanced Details
-     </button>
-   </div>
-   <div id="[module]-advanced-section" class="hidden space-y-6 pt-4 border-t border-slate-100">
-      <!-- Advanced Inputs -->
-   </div>
-   ```
+
+1. **Dynamic Titles:** Use state to swap form header title between "Create" and "Edit" via `FormHeader` props.
+2. **Email Optional:** Email fields must NOT have the `required` attribute.
+3. **Advanced Toggles:** Collapsible section labelled **"Show Advanced Details"**, collapsed by default:
+
+```tsx
+const [showAdvanced, setShowAdvanced] = useState(false);
+
+<button type="button" onClick={() => setShowAdvanced(!showAdvanced)} className="flex items-center gap-2 text-blue-600 text-xs font-bold cursor-pointer">
+  <ChevronDown className={`w-4 h-4 transition-transform ${showAdvanced ? 'rotate-180' : ''}`} />
+  Show Advanced Details
+</button>
+{showAdvanced && (
+  <div className="space-y-6 pt-4 border-t border-slate-100">{/* advanced fields */}</div>
+)}
+```
+
+## State & Data
+
+- Read/write app data via `useAppStore` from `web/lib/state/app-store.ts`
+- CRM helpers: `web/lib/services/crm-service.ts`
+- No server API — all persistence is client-side (localStorage + Firebase RTDB)

@@ -1,3 +1,7 @@
 /node_modules/
 .DS_Store
 .vercel
+web/.next/
+web/node_modules/
+web/.legacy-ref/js/
+web/.legacy-ref/js/

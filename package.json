@@ -1,24 +1,12 @@
 {
   "name": "hookerp",
   "version": "1.0.0",
-  "main": "index.js",
+  "private": true,
+  "description": "Toys Factory ERP — Next.js frontend",
   "scripts": {
-    "dev": "vite",
-    "build": "vite build",
-    "preview": "vite preview"
-  },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "description": "",
-  "devDependencies": {
-    "@tailwindcss/vite": "^4.3.1",
-    "tailwindcss": "^4.3.1",
-    "vite": "^8.0.16"
-  },
-  "dependencies": {
-    "firebase": "^12.15.0",
-    "lucide": "^1.20.0",
-    "lucide-static": "^1.20.0"
+    "dev": "npm run dev --prefix web",
+    "build": "npm run build --prefix web",
+    "start": "npm run start --prefix web",
+    "lint": "npm run lint --prefix web"
   }
 }
