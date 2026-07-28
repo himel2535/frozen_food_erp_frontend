@@ -10,7 +10,10 @@ interface SidebarIconProps {
   size?: number;
 }
 
-export function SidebarIcon({ imageIcon, iconifyIcon, className = '', size = 32 }: SidebarIconProps) {
+export function SidebarIcon({ imageIcon, iconifyIcon, className = '', size = 26 }: SidebarIconProps) {
+  if (iconifyIcon) {
+    return <Icon icon={iconifyIcon} width={size} height={size} className={`sidebar-icon shrink-0 ${className}`} />;
+  }
   if (imageIcon) {
     return (
       <Image
@@ -18,12 +21,9 @@ export function SidebarIcon({ imageIcon, iconifyIcon, className = '', size = 32 
         alt=""
         width={size}
         height={size}
-        className={`sidebar-icon object-contain ${className}`}
+        className={`sidebar-icon object-contain shrink-0 ${className}`}
       />
     );
-  }
-  if (iconifyIcon) {
-    return <Icon icon={iconifyIcon} width={size} height={size} className={`sidebar-icon ${className}`} />;
   }
   return null;
 }

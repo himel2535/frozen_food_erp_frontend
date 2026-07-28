@@ -1,8 +1,8 @@
 'use client';
 
-import Image from 'next/image';
 import Link from 'next/link';
 import { useMemo } from 'react';
+import { Icon } from '@iconify/react';
 import { useAppStore } from '@/lib/state/app-store';
 import type { AppState } from '@/lib/state/types';
 
@@ -45,7 +45,7 @@ const ACTIVITY = [
   {
     type: 'badge' as const,
     badge: 'P',
-    badgeClass: 'bg-emerald-50 text-emerald-600',
+    badgeClass: 'bg-emerald-50 text-emerald-600 border border-emerald-100',
     text: (
       <>
         Payment received from <span className="font-bold text-slate-800">Acme Corp</span> ($2,450)
@@ -56,7 +56,7 @@ const ACTIVITY = [
   {
     type: 'badge' as const,
     badge: 'S',
-    badgeClass: 'bg-orange-50 text-orange-600',
+    badgeClass: 'bg-orange-50 text-orange-600 border border-orange-100',
     text: (
       <>
         Stock updated for <span className="font-bold text-slate-800">Super Hero Action Figure</span> by Mike
@@ -86,9 +86,7 @@ export function DashboardBottomPanels() {
       <div className="premium-card p-4 premium-shadow lg:col-span-2 flex flex-col">
         <div className="flex items-center justify-between mb-4 border-b border-slate-100 pb-3">
           <div className="flex items-center gap-2">
-            <div className="dashboard-icon-wrap-sm">
-              <Image src="/images/dashboard/icons/top-products.png" alt="" width={36} height={36} className="dashboard-icon-sm" unoptimized />
-            </div>
+            <Icon icon="fluent-color:ribbon-24" width={22} height={22} className="shrink-0" />
             <h3 className="text-sm font-bold text-slate-900 tracking-tight">{t('dashboard.top_products')}</h3>
           </div>
           <Link href="/inventory/products" className="text-[10px] font-bold text-blue-600 hover:text-blue-700 cursor-pointer">
@@ -129,9 +127,7 @@ export function DashboardBottomPanels() {
       <div className="premium-card p-4 premium-shadow lg:col-span-1 flex flex-col">
         <div className="flex items-center justify-between mb-4 border-b border-slate-100 pb-3">
           <div className="flex items-center gap-2">
-            <div className="dashboard-icon-wrap-sm">
-              <Image src="/images/dashboard/icons/recent-invoices.png" alt="" width={36} height={36} className="dashboard-icon-sm" unoptimized />
-            </div>
+            <Icon icon="fluent-color:receipt-24" width={22} height={22} className="shrink-0" />
             <h3 className="text-sm font-bold text-slate-900 tracking-tight">{t('dashboard.recent_invoices')}</h3>
           </div>
           <Link href="/sales/invoices" className="text-[10px] font-bold text-blue-600 hover:text-blue-700 cursor-pointer">
@@ -165,9 +161,7 @@ export function DashboardBottomPanels() {
       <div className="premium-card p-4 premium-shadow flex flex-col justify-between">
         <div className="flex items-center justify-between mb-4 border-b border-slate-100 pb-3">
           <div className="flex items-center gap-2">
-            <div className="dashboard-icon-wrap-sm">
-              <Image src="/images/dashboard/icons/activity-feed.png" alt="" width={36} height={36} className="dashboard-icon-sm" unoptimized />
-            </div>
+            <Icon icon="fluent-color:history-24" width={22} height={22} className="shrink-0" />
             <h3 className="text-sm font-bold text-slate-900 tracking-tight">{t('dashboard.activity_feed')}</h3>
           </div>
           <Link href="/settings/audit-logs" className="text-[10px] font-bold text-blue-600 hover:text-blue-700 cursor-pointer">
@@ -176,7 +170,7 @@ export function DashboardBottomPanels() {
         </div>
         <div className="flex-1 flex flex-col gap-4 overflow-y-auto">
           {ACTIVITY.map((item, idx) => (
-            <div key={idx} className="flex gap-3">
+            <div key={idx} className="flex items-center gap-3">
               {item.type === 'avatar' ? (
                 <img src={item.avatar} className="h-6 w-6 rounded-full object-cover shrink-0" alt="" />
               ) : (

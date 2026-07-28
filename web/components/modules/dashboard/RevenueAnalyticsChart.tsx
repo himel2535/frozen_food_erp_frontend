@@ -1,6 +1,6 @@
 'use client';
 
-import Image from 'next/image';
+import { Icon } from '@iconify/react';
 import { useAppStore } from '@/lib/state/app-store';
 
 const BARS = [
@@ -25,9 +25,7 @@ export function RevenueAnalyticsChart() {
     <div className="premium-card p-4 premium-shadow lg:col-span-1 flex flex-col">
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
-          <div className="dashboard-icon-wrap-sm">
-            <Image src="/images/dashboard/icons/revenue-analytics.png" alt="" width={36} height={36} className="dashboard-icon-sm" unoptimized />
-          </div>
+          <Icon icon="fluent-color:chart-multiple-24" width={26} height={26} className="shrink-0" />
           <h3 className="text-sm font-bold text-slate-900 tracking-tight">{t('dashboard.revenue_analytics')}</h3>
         </div>
         <select className="bg-slate-50 border border-slate-200 text-[10px] font-semibold text-slate-600 rounded-lg px-2.5 py-1 cursor-pointer">

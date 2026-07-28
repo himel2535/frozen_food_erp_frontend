@@ -1,7 +1,7 @@
 'use client';
 
-import Image from 'next/image';
 import { useEffect, useRef } from 'react';
+import { Icon } from '@iconify/react';
 import { useAppStore } from '@/lib/state/app-store';
 
 const TREND_VALUES = [24000, 39000, 32000, 64300, 50000, 78000, 68000];
@@ -57,9 +57,7 @@ export function SalesTrendChart() {
     <div className="premium-card p-4 premium-shadow lg:col-span-2 flex flex-col relative">
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
-          <div className="dashboard-icon-wrap-md">
-            <Image src="/images/dashboard/icons/sales-trend.png" alt="" width={40} height={40} className="dashboard-icon-md" unoptimized />
-          </div>
+          <Icon icon="fluent-color:data-trending-24" width={26} height={26} className="shrink-0" />
           <h3 className="text-sm font-bold text-slate-900 tracking-tight">{t('dashboard.sales_trend')}</h3>
         </div>
         <select className="bg-slate-50 border border-slate-200 text-[10px] font-semibold text-slate-600 rounded-lg px-2.5 py-1 cursor-pointer">

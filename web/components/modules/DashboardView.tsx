@@ -1,8 +1,8 @@
 'use client';
 
 import Link from 'next/link';
-import Image from 'next/image';
 import { useEffect, useMemo, useState } from 'react';
+import { Icon } from '@iconify/react';
 import { Footer } from '@/components/layout/Footer';
 import { useAppStore } from '@/lib/state/app-store';
 import type { AppState } from '@/lib/state/types';
@@ -65,44 +65,44 @@ function getDashboardMetrics(appState: AppState) {
 }
 
 const KPI_CARDS: { key: string; labelKey: string; icon: string; alert?: boolean }[] = [
-  { key: 'production-summary', labelKey: 'dashboard.production_summary', icon: '/images/dashboard/production-summary.png' },
-  { key: 'purchase-summary', labelKey: 'dashboard.purchase_summary', icon: '/images/dashboard/purchase-summary.png' },
-  { key: 'sales-summary', labelKey: 'dashboard.sales_summary', icon: '/images/dashboard/sales-summary.png' },
-  { key: 'rm-stock', labelKey: 'dashboard.rm_stock', icon: '/images/dashboard/rm-stock.png' },
-  { key: 'sf-stock', labelKey: 'dashboard.sf_stock', icon: '/images/dashboard/sf-stock.png' },
-  { key: 'fg-stock', labelKey: 'dashboard.fg_stock', icon: '/images/dashboard/fg-stock.png' },
-  { key: 'low-stock', labelKey: 'dashboard.low_stock', icon: '/images/dashboard/low-stock.png', alert: true },
-  { key: 'pending-production', labelKey: 'dashboard.pending_production', icon: '/images/dashboard/pending-production.png' },
-  { key: 'pending-purchase', labelKey: 'dashboard.pending_purchase', icon: '/images/dashboard/pending-purchase.png' },
-  { key: 'pending-sales', labelKey: 'dashboard.pending_sales', icon: '/images/dashboard/pending-sales.png' },
-  { key: 'customer-due', labelKey: 'dashboard.customer_due', icon: '/images/dashboard/customer-due.png' },
-  { key: 'supplier-due', labelKey: 'dashboard.supplier_due', icon: '/images/dashboard/supplier-due.png' },
+  { key: 'production-summary', labelKey: 'dashboard.production_summary', icon: 'flat-color-icons:factory' },
+  { key: 'purchase-summary', labelKey: 'dashboard.purchase_summary', icon: 'fluent-color:notebook-24' },
+  { key: 'sales-summary', labelKey: 'dashboard.sales_summary', icon: 'fluent-color:data-trending-24' },
+  { key: 'rm-stock', labelKey: 'dashboard.rm_stock', icon: 'flat-color-icons:tree-structure' },
+  { key: 'sf-stock', labelKey: 'dashboard.sf_stock', icon: 'fluent-color:puzzle-piece-24' },
+  { key: 'fg-stock', labelKey: 'dashboard.fg_stock', icon: 'flat-color-icons:filing-cabinet' },
+  { key: 'low-stock', labelKey: 'dashboard.low_stock', icon: 'fluent-color:alert-badge-24', alert: true },
+  { key: 'pending-production', labelKey: 'dashboard.pending_production', icon: 'fluent-color:clock-24' },
+  { key: 'pending-purchase', labelKey: 'dashboard.pending_purchase', icon: 'fluent-color:document-add-24' },
+  { key: 'pending-sales', labelKey: 'dashboard.pending_sales', icon: 'flat-color-icons:shipped' },
+  { key: 'customer-due', labelKey: 'dashboard.customer_due', icon: 'fluent-color:person-24' },
+  { key: 'supplier-due', labelKey: 'dashboard.supplier_due', icon: 'fluent-color:building-store-24' },
 ];
 
 const QUICK_ACTIONS: { href: string; labelKey: string; icon: string; className: string }[] = [
   {
     href: '/sales/orders',
     labelKey: 'dashboard.new_sale',
-    icon: '/images/dashboard/e-cummers.webp',
-    className: 'bg-sky-100 text-sky-800 border border-sky-200/80 hover:bg-sky-200/80 shadow-sm',
+    icon: 'fluent-color:clipboard-task-24',
+    className: 'bg-sky-50 text-sky-900 border border-sky-200/80 hover:bg-sky-100/80 shadow-xs',
   },
   {
     href: '/manufacturing/orders',
     labelKey: 'dashboard.new_production',
-    icon: '/images/dashboard/report.webp',
-    className: 'bg-rose-100 text-rose-800 border border-rose-200/80 hover:bg-rose-200/80 shadow-sm',
+    icon: 'flat-color-icons:serial-tasks',
+    className: 'bg-rose-50 text-rose-900 border border-rose-200/80 hover:bg-rose-100/80 shadow-xs',
   },
   {
     href: '/purchases/orders',
     labelKey: 'dashboard.purchase_rm',
-    icon: '/images/dashboard/delivery.webp',
-    className: 'bg-violet-100 text-violet-800 border border-violet-200/80 hover:bg-violet-200/80 shadow-sm',
+    icon: 'fluent-color:document-add-24',
+    className: 'bg-violet-50 text-violet-900 border border-violet-200/80 hover:bg-violet-100/80 shadow-xs',
   },
   {
     href: '/inventory/stock-in',
     labelKey: 'dashboard.receive_goods',
-    icon: '/images/dashboard/inventory.webp',
-    className: 'bg-emerald-100 text-emerald-800 border border-emerald-200/80 hover:bg-emerald-200/80 shadow-sm',
+    icon: 'flat-color-icons:download',
+    className: 'bg-emerald-50 text-emerald-900 border border-emerald-200/80 hover:bg-emerald-100/80 shadow-xs',
   },
 ];
 
@@ -166,9 +166,9 @@ export function DashboardView() {
             <Link
               key={action.href}
               href={action.href}
-              className={`flex items-center gap-2 whitespace-nowrap px-4 py-2.5 rounded-xl font-semibold text-xs transition-colors shrink-0 ${action.className}`}
+              className={`flex items-center gap-2.5 whitespace-nowrap px-4 py-2.5 rounded-xl font-bold text-xs transition-all shrink-0 cursor-pointer ${action.className}`}
             >
-              <Image src={action.icon} alt="" width={28} height={28} className="dashboard-icon-action" unoptimized />
+              <Icon icon={action.icon} width={22} height={22} className="shrink-0" />
               {t(action.labelKey)}
             </Link>
           ))}
@@ -188,36 +188,34 @@ export function DashboardView() {
           <Link
             key={action.href}
             href={action.href}
-            className={`flex items-center gap-2 whitespace-nowrap px-4 py-2.5 rounded-xl font-semibold text-xs transition-colors shrink-0 ${action.className}`}
+            className={`flex items-center gap-2.5 whitespace-nowrap px-4 py-2.5 rounded-xl font-bold text-xs transition-all shrink-0 cursor-pointer ${action.className}`}
           >
-            <Image src={action.icon} alt="" width={28} height={28} className="dashboard-icon-action" unoptimized />
+            <Icon icon={action.icon} width={22} height={22} className="shrink-0" />
             {t(action.labelKey)}
           </Link>
         ))}
       </section>
 
-      <section className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2" id="dashboard-metrics-grid">
+      <section className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
         {KPI_CARDS.map((card) => {
           const data = metricValues[card.key];
           return (
             <div
               key={card.key}
-              className="premium-card premium-shadow dashboard-kpi-card"
+              className="premium-card premium-shadow p-3.5 flex items-center justify-between gap-3 transition-all hover:border-slate-300 hover:shadow-md min-h-[86px]"
               data-metric={card.key}
             >
-              <div className="dashboard-kpi-header">
-                <span className="text-xs font-bold text-slate-500 tracking-wide">{t(card.labelKey)}</span>
-                <div className="dashboard-icon-wrap-kpi">
-                  <Image src={card.icon} alt="" width={48} height={48} className="dashboard-icon-kpi" unoptimized />
-                </div>
-              </div>
-              <div className="dashboard-kpi-values">
-                <span className="text-lg md:text-xl font-extrabold tracking-tight text-slate-900">{data?.value ?? '—'}</span>
+              <div className="flex flex-col justify-center gap-0.5 min-w-0 flex-1 my-auto">
+                <span className="text-xs font-bold text-slate-500 tracking-wide leading-tight">{t(card.labelKey)}</span>
+                <span className="text-lg md:text-xl font-extrabold tracking-tight text-slate-900 leading-tight mt-0.5">{data?.value ?? '—'}</span>
                 {card.alert ? (
-                  <span className="text-[11px] text-red-600 font-bold block">{t('dashboard.requires_attention')}</span>
+                  <span className="text-[11px] text-rose-600 font-bold block">{t('dashboard.requires_attention')}</span>
                 ) : data?.sub ? (
-                  <span className="text-[11px] text-slate-500 font-medium block">{data.sub}</span>
+                  <span className="text-[11px] text-slate-500 font-medium block truncate">{data.sub}</span>
                 ) : null}
+              </div>
+              <div className="flex items-center justify-center shrink-0 my-auto self-center">
+                <Icon icon={card.icon} width={38} height={38} className="shrink-0" />
               </div>
             </div>
           );

@@ -3,30 +3,22 @@
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState, useRef, useEffect } from 'react';
-import {
-  Menu,
-  Search,
-  Bell,
-  MessageSquare,
-  ChevronDown,
-  User,
-  Settings,
-  LogOut,
-} from 'lucide-react';
+import { Search, User, Settings, LogOut } from 'lucide-react';
+import { Icon } from '@iconify/react';
 import { useAppStore } from '@/lib/state/app-store';
 
 interface HeaderProps {
   title?: string;
 }
 
-export function Header({ title = 'Enterprise Workspace' }: HeaderProps) {
+export function Header({ title }: HeaderProps) {
   const router = useRouter();
-  const toggleSidebar = useAppStore((s) => s.toggleSidebar);
   const toggleLanguage = useAppStore((s) => s.toggleLanguage);
   const setLoggedIn = useAppStore((s) => s.setLoggedIn);
   const lang = useAppStore((s) => s.appState.lang);
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
+  const displayTitle = title && title !== 'Enterprise Workspace' ? title : 'Toys Factory Operations Hub';
 
   useEffect(() => {
     const handler = (e: MouseEvent) => {
@@ -44,88 +36,118 @@ export function Header({ title = 'Enterprise Workspace' }: HeaderProps) {
   };
 
   return (
-    <header className="h-16 bg-white border-b border-slate-200/80 px-6 flex items-center justify-between shrink-0">
-      <div className="flex items-center gap-3 min-w-0 flex-1">
-        <button
-          type="button"
-          onClick={toggleSidebar}
-          className="hidden md:inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-slate-200 bg-slate-50 text-slate-600 transition-all hover:bg-slate-100 hover:text-slate-900 cursor-pointer"
-          aria-label="Toggle sidebar"
-        >
-          <Menu className="w-4 h-4" />
-        </button>
+    <header className="h-16 glass-header px-5 flex items-center justify-between shrink-0 sticky top-0 z-20 border-b border-white/40 bg-white/20 backdrop-blur-2xl">
+      {/* Left: Title + Live Badge */}
+      <div className="flex items-center gap-3 min-w-0 flex-1 ml-3">
         <div className="min-w-0">
-          <h2 className="text-sm font-bold text-slate-900 tracking-tight truncate">{title}</h2>
-          <p className="text-[11px] font-medium text-slate-500 truncate max-md:hidden">Shared navigation and workspace tools</p>
-        </div>
-      </div>
-
-      <div className="flex-1 max-w-xl px-4 md:px-8 hidden lg:block">
-        <div className="relative group">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-indigo-500 transition-colors" />
-          <input
-            type="text"
-            className="w-full bg-slate-100/50 border border-transparent text-sm rounded-xl pl-10 pr-4 py-2.5 focus:bg-white focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all placeholder:text-slate-400"
-            placeholder="Global search..."
-          />
-          <div className="absolute inset-y-0 right-0 pr-2 flex items-center pointer-events-none">
-            <span className="text-[10px] font-medium text-slate-400 bg-white border border-slate-200 px-1.5 py-0.5 rounded shadow-sm">Ctrl K</span>
+          <div className="flex items-center gap-2">
+            <h2 className="text-sm md:text-[15px] font-black text-slate-900 tracking-tight truncate flex items-center gap-1.5">
+              {displayTitle.startsWith('Toys') ? (
+                <span>
+                  <span className="text-amber-600">T</span>
+                  {displayTitle.slice(1)}
+                </span>
+              ) : (
+                <span>{displayTitle}</span>
+              )}
+            </h2>
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-700 text-[10px] font-extrabold tracking-wide shrink-0">
+              <span className="relative flex h-1.5 w-1.5">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+                <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500" />
+              </span>
+              System Active
+            </span>
+          </div>
+          <div className="flex items-center gap-1.5 text-[11px] font-medium text-slate-500 truncate max-md:hidden -mt-0.5">
+            <Icon icon="fluent-color:database-24" width={13} height={13} className="shrink-0 opacity-80" />
+            <span>Real-time manufacturing, sales, stock &amp; factory management</span>
           </div>
         </div>
       </div>
 
-      <div className="flex items-center gap-4">
-        <Link href="/notifications" className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-50 rounded-xl transition-all relative cursor-pointer">
-          <Bell className="w-4 h-4" />
-          <span className="absolute top-1 right-1 w-2 h-2 bg-blue-600 rounded-full border border-white" />
-        </Link>
-        <button type="button" className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-50 rounded-xl transition-all cursor-pointer">
-          <MessageSquare className="w-4 h-4" />
+      {/* Middle: Compact Modern Search */}
+      <div className="flex-1 max-w-md px-3 hidden lg:block">
+        <div className="relative group">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 group-focus-within:text-blue-600 transition-colors" />
+          <input
+            type="text"
+            className="w-full bg-white/40 hover:bg-white/70 focus:bg-white border border-white/80 focus:border-blue-500/80 text-xs font-semibold rounded-xl pl-8.5 pr-10 py-1.5 shadow-2xs transition-all placeholder:text-slate-400 text-slate-800"
+            placeholder="Search anything..."
+          />
+          <div className="absolute inset-y-0 right-0 pr-2 flex items-center pointer-events-none">
+            <span className="text-[9px] font-extrabold text-slate-400 bg-white/80 border border-slate-200/80 px-1.5 py-0.5 rounded-md shadow-2xs">
+              ⌘K
+            </span>
+          </div>
+        </div>
+      </div>
+
+      {/* Right: Vibrant Colorful Controls & Matching Brand Avatar */}
+      <div className="flex items-center gap-2">
+        {/* Messages Button with Vibrant Colorful Icon */}
+        <button
+          type="button"
+          className="h-9 w-9 rounded-xl bg-white/50 hover:bg-white/90 border border-white/80 shadow-xs flex items-center justify-center transition-all cursor-pointer"
+          title="Messages"
+        >
+          <Icon icon="fluent-color:comment-multiple-24" width={20} height={20} className="shrink-0" />
         </button>
 
-        <div className="h-8 w-px bg-slate-200" />
+        {/* Notifications Button with Vibrant Colorful Icon */}
+        <Link
+          href="/notifications"
+          className="h-9 w-9 rounded-xl bg-white/50 hover:bg-white/90 border border-white/80 shadow-xs flex items-center justify-center transition-all relative cursor-pointer"
+          title="Notifications"
+        >
+          <Icon icon="fluent-color:alert-badge-24" width={20} height={20} className="shrink-0" />
+        </Link>
 
+        {/* Language Switcher with Vibrant Colorful Globe Icon */}
         <button
           type="button"
           onClick={toggleLanguage}
-          className="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-lg text-[10px] font-bold tracking-wider transition-colors cursor-pointer"
+          className="h-9 px-2.5 rounded-xl bg-white/50 hover:bg-white/90 border border-white/80 shadow-xs flex items-center gap-1.5 transition-all cursor-pointer"
+          title="Switch Language"
         >
-          <span className={lang === 'en' ? 'text-slate-900' : 'text-slate-400'}>EN</span>
-          {' | '}
-          <span className={lang === 'bn' ? 'text-slate-900' : 'text-slate-400'}>বাংলা</span>
+          <Icon icon="fluent-color:globe-location-24" width={18} height={18} className="shrink-0" />
+          <span className="uppercase text-[11px] font-extrabold text-slate-800">{lang === 'en' ? 'EN' : 'বাংলা'}</span>
         </button>
 
-        <div className="h-8 w-px bg-slate-200" />
-
+        {/* User Profile Circular Avatar with Matching Toys Amber Brand Palette (NO violet!) */}
         <div className="relative" ref={menuRef}>
           <button
             type="button"
             onClick={() => setMenuOpen(!menuOpen)}
-            className="flex items-center gap-2 p-1 hover:bg-slate-50 rounded-xl transition-all cursor-pointer"
+            className="h-9 w-9 rounded-full bg-gradient-to-br from-amber-500 via-amber-600 to-amber-700 text-white flex items-center justify-center font-black text-xs shadow-md shadow-amber-500/25 border-2 border-white hover:scale-105 transition-all cursor-pointer focus:outline-none"
+            title="User Profile"
           >
-            <div className="h-7 w-7 rounded-lg bg-blue-600 text-white flex items-center justify-center font-bold text-xs">JD</div>
-            <ChevronDown className="w-3 h-3 text-slate-400" />
+            JD
           </button>
 
           {menuOpen && (
-            <div className="absolute right-0 top-full mt-1 w-48 rounded-xl bg-white border border-slate-200 shadow-lg z-50">
-              <div className="p-3 border-b border-slate-100">
-                <p className="text-sm font-semibold text-slate-800">John Doe</p>
-                <p className="text-xs text-slate-500">Administrator</p>
+            <div className="absolute right-0 top-full mt-2 w-52 rounded-2xl bg-white/95 backdrop-blur-2xl border border-white/90 shadow-2xl z-50 p-1.5 space-y-1">
+              <div className="p-2.5 border-b border-slate-100/80 bg-amber-50/50 rounded-xl mb-1">
+                <p className="text-xs font-extrabold text-slate-900">John Doe</p>
+                <p className="text-[11px] font-medium text-slate-400 truncate">admin@toysfactory.com</p>
               </div>
-              <div className="p-1">
-                <Link href="/settings/profile" className="flex items-center gap-2 px-3 py-2 text-xs font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-50 rounded-lg transition-colors cursor-pointer">
-                  <User className="w-4 h-4" /> Profile
-                </Link>
-                <Link href="/settings/company" className="flex items-center gap-2 px-3 py-2 text-xs font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-50 rounded-lg transition-colors cursor-pointer">
-                  <Settings className="w-4 h-4" /> Settings
-                </Link>
-              </div>
-              <div className="p-1 border-t border-slate-100">
+              <Link
+                href="/settings/profile"
+                className="flex items-center gap-2.5 px-3 py-2 text-xs font-bold text-slate-600 hover:text-slate-900 hover:bg-slate-100/70 rounded-xl transition-all cursor-pointer"
+              >
+                <User className="w-4 h-4 text-amber-600" /> My Profile
+              </Link>
+              <Link
+                href="/settings/company"
+                className="flex items-center gap-2.5 px-3 py-2 text-xs font-bold text-slate-600 hover:text-slate-900 hover:bg-slate-100/70 rounded-xl transition-all cursor-pointer"
+              >
+                <Settings className="w-4 h-4 text-cyan-600" /> Company Settings
+              </Link>
+              <div className="pt-1 border-t border-slate-100">
                 <button
                   type="button"
                   onClick={handleLogout}
-                  className="flex items-center gap-2 w-full px-3 py-2 text-xs font-semibold text-rose-500 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors text-left cursor-pointer"
+                  className="flex items-center gap-2.5 w-full px-3 py-2 text-xs font-bold text-rose-500 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-all text-left cursor-pointer"
                 >
                   <LogOut className="w-4 h-4" /> Logout
                 </button>
