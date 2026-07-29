@@ -253,7 +253,7 @@ export function RecipesPage() {
     setMaterialFormKey((k) => k + 1);
   };
 
-  const handleMaterialSubmit = (values: BomMaterialFormValues, mode: 'add' | 'addAnother') => {
+  const handleMaterialSubmit = (values: BomMaterialFormValues) => {
     if (!bomRecipeId) return;
     const payload = {
       materialId: values.materialId || `custom-${Date.now()}`,
@@ -278,12 +278,7 @@ export function RecipesPage() {
       return;
     }
     saveAppState();
-    if (mode === 'add') resetMaterialForm();
-    else {
-      setEditingMaterialId(null);
-      setEditMaterialInitial(undefined);
-      setMaterialFormKey((k) => k + 1);
-    }
+    resetMaterialForm();
   };
 
   const handleEditMaterial = (material: BomMaterial) => {

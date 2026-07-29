@@ -11,6 +11,7 @@ import { StatusBadge } from '@/components/shared/StatusBadge';
 import { KanbanBoard, type KanbanCard } from '@/components/shared/KanbanBoard';
 import { ProfileDrawer } from '@/components/shared/ProfileDrawer';
 import { KpiCards } from '@/components/shared/KpiCards';
+import { MODULE_FORM_SHELL, MODULE_LIST_SHELL } from '@/lib/ui/module-layout';
 
 function formatCurrency(value: number) {
   return `৳${Number(value || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
@@ -154,7 +155,7 @@ export function LeadsPage() {
 
   if (view === 'form') {
     return (
-      <div className="flex-1 overflow-y-auto p-6 md:p-8 space-y-6 bg-slate-50">
+      <div className={MODULE_FORM_SHELL}>
         <div className="max-w-4xl mx-auto w-full space-y-6">
           <FormHeader
             title={editingId ? 'Edit lead' : 'Create lead'}
@@ -254,7 +255,7 @@ export function LeadsPage() {
   }
 
   return (
-    <div className="flex-1 overflow-y-auto p-6 md:p-8 space-y-6 flex flex-col">
+    <div className={MODULE_LIST_SHELL}>
       <div className="flex flex-col xl:flex-row xl:items-center xl:justify-between gap-4">
         <div>
           <h2 className="text-xl font-extrabold text-slate-900 tracking-tight">Leads</h2>

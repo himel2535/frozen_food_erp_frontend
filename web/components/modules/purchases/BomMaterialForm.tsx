@@ -82,7 +82,7 @@ interface BomMaterialFormProps {
   unitOptions: string[];
   editingMaterialId: string | null;
   initialValues?: Partial<BomMaterialFormValues>;
-  onSubmit: (values: BomMaterialFormValues, mode: 'add' | 'addAnother') => void;
+  onSubmit: (values: BomMaterialFormValues) => void;
   onCancel: () => void;
 }
 
@@ -237,7 +237,7 @@ export function BomMaterialForm({
     reader.readAsDataURL(file);
   };
 
-  const handleSubmit = (mode: 'add' | 'addAnother') => {
+  const handleSubmit = () => {
     const name = (form.name || materialSearch).trim();
     if (!name) {
       window.alert('Please select or enter a material.');
@@ -251,13 +251,7 @@ export function BomMaterialForm({
       window.alert('Cost must be greater than zero.');
       return;
     }
-    onSubmit({ ...form, name, category: form.category || insight.category || 'General' }, mode);
-    if (mode === 'addAnother') {
-      setForm({ ...EMPTY_FORM, unit: form.unit });
-      setMaterialSearch('');
-      setSupplierSearch('');
-      supplierTouchedRef.current = false;
-    }
+    onSubmit({ ...form, name, category: form.category || insight.category || 'General' });
   };
 
   return (
@@ -461,10 +455,7 @@ export function BomMaterialForm({
         <button type="button" onClick={onCancel} className="px-4 py-2.5 rounded-lg border border-slate-200 bg-white text-sm font-semibold text-slate-700 hover:bg-slate-50 cursor-pointer">
           Cancel
         </button>
-        <button type="button" onClick={() => handleSubmit('addAnother')} className="px-4 py-2.5 rounded-lg border border-blue-200 bg-blue-50 text-sm font-semibold text-blue-700 hover:bg-blue-100 cursor-pointer">
-          Save &amp; Add Another
-        </button>
-        <button type="button" onClick={() => handleSubmit('add')} className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold cursor-pointer">
+        <button type="button" onClick={handleSubmit} className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold cursor-pointer">
           <Plus className="w-4 h-4" />
           {editingMaterialId ? 'Update Material' : 'Add Material'}
         </button>

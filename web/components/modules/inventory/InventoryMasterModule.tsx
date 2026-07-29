@@ -5,6 +5,7 @@ import { Footer } from '@/components/layout/Footer';
 import { FormHeader } from '@/components/layout/FormHeader';
 import { ListToolbar } from '@/components/shared/ListToolbar';
 import { KpiCards, type KpiCardItem } from '@/components/shared/KpiCards';
+import { MODULE_FORM_SHELL, MODULE_LIST_SHELL } from '@/lib/ui/module-layout';
 import { FilterTabs } from '@/components/shared/FilterTabs';
 import { AdvancedDetailsToggle } from '@/components/shared/AdvancedDetailsToggle';
 import { AppTable } from '@/components/shared/AppTable';
@@ -98,7 +99,7 @@ export function InventoryMasterModule({ config }: { config: InventoryMasterConfi
 
   if (view === 'form') {
     return (
-      <div className="flex-1 overflow-y-auto p-6 md:p-8 space-y-6 bg-slate-50">
+      <div className={MODULE_FORM_SHELL}>
         <div className="max-w-4xl mx-auto w-full space-y-6">
           <FormHeader title={editingId ? `Edit ${config.title}` : `Create ${config.title}`} subtitle={config.subtitle} onBack={() => { setView('main'); resetForm(); }} />
           <form onSubmit={handleSubmit} className="bg-white rounded-xl border border-slate-200 p-6 space-y-6">
@@ -135,7 +136,7 @@ export function InventoryMasterModule({ config }: { config: InventoryMasterConfi
   const tabs = config.statusTabs ?? [{ id: 'all', label: 'All' }, { id: 'active', label: 'Active' }, { id: 'inactive', label: 'Inactive' }];
 
   return (
-    <div className="flex-1 overflow-y-auto p-6 md:p-8 space-y-6 flex flex-col">
+    <div className={MODULE_LIST_SHELL}>
       <ListToolbar title={config.title} subtitle={config.subtitle} search={search} onSearchChange={setSearch} searchPlaceholder={`Search ${config.title.toLowerCase()}...`} onAdd={() => { resetForm(); setView('form'); }} addLabel={config.addLabel} filters={<FilterTabs tabs={tabs} active={statusFilter} onChange={setStatusFilter} />} />
       {kpis.length > 0 && <KpiCards items={kpis} />}
       <AppTable

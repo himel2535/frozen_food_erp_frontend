@@ -3,6 +3,7 @@
 import { Footer } from '@/components/layout/Footer';
 import { FormHeader } from '@/components/layout/FormHeader';
 import { KpiCards, type KpiCardItem } from '@/components/shared/KpiCards';
+import { MODULE_FORM_SHELL, MODULE_LIST_SHELL } from '@/lib/ui/module-layout';
 
 export const INPUT_CLS = 'w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500/10';
 export const SELECT_CLS = `${INPUT_CLS} cursor-pointer`;
@@ -29,7 +30,7 @@ export function InventoryListLayout({
   pagination?: React.ReactNode;
 }) {
   return (
-    <div className="flex-1 overflow-y-auto p-6 md:p-8 space-y-6 flex flex-col">
+    <div className={MODULE_LIST_SHELL}>
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-lg font-bold text-slate-900">{title}</h1>
@@ -62,7 +63,7 @@ export function InventoryFormLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="flex-1 overflow-y-auto p-6 md:p-8 space-y-6 bg-slate-50">
+    <div className={MODULE_FORM_SHELL}>
       <div className="max-w-4xl mx-auto w-full space-y-6">
         <FormHeader title={title} subtitle={subtitle} onBack={onBack} />
         <form onSubmit={onSubmit} className="bg-white rounded-xl border border-slate-200 p-6 space-y-6">

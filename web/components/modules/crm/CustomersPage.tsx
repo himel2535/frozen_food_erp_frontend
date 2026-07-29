@@ -5,6 +5,7 @@ import { Download, Upload, Printer } from 'lucide-react';
 import { Footer } from '@/components/layout/Footer';
 import { FormHeader } from '@/components/layout/FormHeader';
 import { KpiCards } from '@/components/shared/KpiCards';
+import { MODULE_FORM_SHELL, MODULE_LIST_SHELL } from '@/lib/ui/module-layout';
 import { FilterTabs } from '@/components/shared/FilterTabs';
 import { ProfileDrawer } from '@/components/shared/ProfileDrawer';
 import { BulkActionBar } from '@/components/shared/BulkActionBar';
@@ -235,7 +236,7 @@ export function CustomersPage() {
 
   if (view === 'form') {
     return (
-      <div className="flex-1 overflow-y-auto p-6 md:p-8 space-y-6 bg-slate-50">
+      <div className={MODULE_FORM_SHELL}>
         <div className="max-w-4xl mx-auto w-full space-y-6">
           <FormHeader title={editingId ? 'Edit Customer' : 'Add Customer'} subtitle="Customer master records, commercial terms, and profile." onBack={() => { setView('main'); resetForm(); }} />
           <form onSubmit={handleSubmit} className="bg-white rounded-xl border border-slate-200 p-6 space-y-6">
@@ -266,7 +267,7 @@ export function CustomersPage() {
   }
 
   return (
-    <div className="flex-1 overflow-y-auto p-6 md:p-8 space-y-6 flex flex-col">
+    <div className={MODULE_LIST_SHELL}>
       <div className="flex flex-col xl:flex-row xl:items-center xl:justify-between gap-4">
         <div>
           <h2 className="text-xl font-extrabold text-slate-900">Customers</h2>

@@ -4,6 +4,7 @@ import { useMemo, useState } from 'react';
 import { Footer } from '@/components/layout/Footer';
 import { FormHeader } from '@/components/layout/FormHeader';
 import { KpiCards } from '@/components/shared/KpiCards';
+import { MODULE_FORM_SHELL, MODULE_LIST_SHELL } from '@/lib/ui/module-layout';
 import { AdvancedDetailsToggle } from '@/components/shared/AdvancedDetailsToggle';
 import { AppTable, type AppTableColumn } from '@/components/shared/AppTable';
 import { StatusBadge } from '@/components/shared/StatusBadge';
@@ -160,7 +161,7 @@ export function ProductsPage() {
 
   if (view === 'form') {
     return (
-      <div className="flex-1 overflow-y-auto p-6 md:p-8 space-y-6 bg-slate-50">
+      <div className={MODULE_FORM_SHELL}>
         <div className="max-w-4xl mx-auto w-full space-y-6">
           <FormHeader title={editingId ? 'Edit Product' : 'Create Product'} subtitle="Add a new item to your catalog." onBack={() => { setView('main'); resetForm(); }} />
           <form onSubmit={handleSubmit} className="bg-white rounded-xl border border-slate-200 p-6 space-y-6">
@@ -247,7 +248,7 @@ export function ProductsPage() {
   }
 
   return (
-    <div className="flex-1 overflow-y-auto p-6 md:p-8 space-y-6 flex flex-col">
+    <div className={MODULE_LIST_SHELL}>
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-lg font-bold text-slate-900">Products Master</h1>
