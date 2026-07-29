@@ -132,7 +132,7 @@ export function AppTable<T extends object = Record<string, unknown>>({
     <div className={`app-table ${className}`.trim()}>
       <div className="app-table-scroll">
         <table className="app-table-element">
-          <thead>
+          <thead className="app-table-head">
             <tr>
               {columns.map((col) => {
                 const align = resolveColumnAlign(col.key, col.label, col.align);

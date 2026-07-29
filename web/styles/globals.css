@@ -99,24 +99,70 @@ body.lang-bn .uppercase {
 }
 
 /* Global AppTable — glassmorphism list tables (portable with AppTable.tsx) */
+:root {
+  --glass-bg: rgba(255, 255, 255, 0.42);
+  --glass-bg-hover: rgba(255, 255, 255, 0.62);
+  --glass-border: rgba(191, 219, 254, 0.55);
+  --glass-blur: blur(24px) saturate(180%);
+  --glass-shadow:
+    0 12px 40px rgba(31, 38, 135, 0.08),
+    0 4px 16px rgba(15, 23, 42, 0.04),
+    inset 0 1.5px 1px rgba(255, 255, 255, 0.85),
+    inset 0 -1px 1px rgba(255, 255, 255, 0.35);
+  --glass-accent: linear-gradient(90deg, rgba(59, 130, 246, 0.22), rgba(139, 92, 246, 0.16), rgba(16, 185, 129, 0.14));
+  --glass-header-bg: linear-gradient(180deg, rgba(239, 246, 255, 0.92) 0%, rgba(219, 234, 254, 0.78) 100%);
+  --glass-shell-tint: linear-gradient(145deg, rgba(239, 246, 255, 0.62) 0%, rgba(255, 255, 255, 0.48) 45%, rgba(236, 253, 245, 0.38) 100%);
+  --glass-row-even: rgba(239, 246, 255, 0.35);
+  --glass-row-odd: rgba(255, 255, 255, 0.12);
+}
+
 .app-table {
-  background: rgba(255, 255, 255, 0.48);
-  backdrop-filter: blur(20px) saturate(180%);
-  -webkit-backdrop-filter: blur(20px) saturate(180%);
-  border: 1px solid rgba(255, 255, 255, 0.72);
+  position: relative;
+  background: var(--glass-shell-tint);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--glass-border);
   border-radius: 1.25rem;
-  box-shadow:
-    0 12px 40px 0 rgba(31, 38, 135, 0.08),
-    0 4px 16px 0 rgba(15, 23, 42, 0.04),
-    inset 0 1.5px 1px 0 rgba(255, 255, 255, 0.85),
-    inset 0 -1px 1px 0 rgba(255, 255, 255, 0.35);
+  box-shadow: var(--glass-shadow);
   overflow: hidden;
   font-family: inherit;
+}
+
+.app-table::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: var(--glass-accent);
+  z-index: 5;
+  pointer-events: none;
 }
 
 .app-table-scroll {
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
+  padding: 0.25rem;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(148, 163, 184, 0.35) transparent;
+}
+
+.app-table-scroll::-webkit-scrollbar {
+  height: 6px;
+}
+
+.app-table-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.app-table-scroll::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.35);
+  border-radius: 9999px;
+}
+
+.app-table-scroll::-webkit-scrollbar-thumb:hover {
+  background: rgba(148, 163, 184, 0.55);
 }
 
 .app-table-element {
@@ -162,18 +208,30 @@ body.lang-bn .uppercase {
   text-align: right;
 }
 
+.app-table thead,
+.app-table-head {
+  box-shadow: 0 4px 16px rgba(59, 130, 246, 0.06);
+}
+
 .app-table-th {
-  padding: 0.9375rem 1rem;
-  font-size: 0.9375rem;
-  font-weight: 700;
-  color: #334155;
+  position: sticky;
+  top: 0;
+  z-index: 4;
+  padding: 1rem 1rem 0.875rem;
+  font-size: 0.6875rem;
+  font-weight: 800;
+  color: #1e3a8a;
   white-space: nowrap;
-  letter-spacing: 0.01em;
-  background: linear-gradient(180deg, rgba(248, 250, 252, 0.95) 0%, rgba(241, 245, 249, 0.75) 100%);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border-bottom: 1px solid rgba(148, 163, 184, 0.25);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  background: var(--glass-header-bg);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-bottom: 2px solid rgba(59, 130, 246, 0.12);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.95),
+    0 2px 0 rgba(59, 130, 246, 0.12),
+    0 4px 12px rgba(59, 130, 246, 0.06);
 }
 
 .app-table-td {
@@ -182,8 +240,18 @@ body.lang-bn .uppercase {
   font-weight: 500;
   color: #1e293b;
   vertical-align: middle;
-  border-bottom: 1px solid rgba(226, 232, 240, 0.45);
-  transition: background 0.15s ease, box-shadow 0.15s ease;
+  border-bottom: 1px solid rgba(191, 219, 254, 0.35);
+  transition:
+    background 0.2s cubic-bezier(0.4, 0, 0.2, 1),
+    box-shadow 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.app-table-tr:nth-child(odd) .app-table-td {
+  background: var(--glass-row-odd);
+}
+
+.app-table-tr:nth-child(even) .app-table-td {
+  background: var(--glass-row-even);
 }
 
 .app-table-th.app-table-align-left,
@@ -211,16 +279,24 @@ body.lang-bn .uppercase {
 }
 
 .app-table-tr:hover .app-table-td {
-  background: rgba(255, 255, 255, 0.55);
-  box-shadow: inset 0 0 0 9999px rgba(255, 255, 255, 0.06);
+  background: rgba(224, 242, 254, 0.72);
+  box-shadow: 0 4px 20px rgba(31, 38, 135, 0.06);
+}
+
+.app-table-tr:hover .app-table-td:first-child {
+  box-shadow:
+    inset 3px 0 0 rgba(59, 130, 246, 0.45),
+    0 4px 20px rgba(31, 38, 135, 0.06);
 }
 
 .app-table-empty {
-  padding: 2rem 1rem;
+  padding: 2.5rem 1.5rem;
   text-align: center;
-  color: #94a3b8;
+  color: #64748b;
   font-size: 0.875rem;
   font-weight: 500;
+  background: rgba(255, 255, 255, 0.25);
+  box-shadow: inset 0 0 24px rgba(255, 255, 255, 0.35);
 }
 
 .app-table-actions {
@@ -238,10 +314,12 @@ body.lang-bn .uppercase {
   width: 2rem;
   height: 2rem;
   border-radius: 0.625rem;
-  border: 1px solid transparent;
-  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  background: rgba(255, 255, 255, 0.45);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
   cursor: pointer;
-  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease, box-shadow 0.15s ease;
 }
 
 .app-table-icon-btn--edit {
@@ -322,17 +400,49 @@ body.lang-bn .uppercase {
   -webkit-backdrop-filter: none;
 }
 
+.app-table--embedded::before {
+  display: none;
+}
+
+.app-table--embedded .app-table-scroll {
+  padding: 0;
+}
+
 .app-table--embedded .app-table-th {
-  background: linear-gradient(180deg, rgba(248, 250, 252, 0.6) 0%, transparent 100%);
-  border-bottom: 1px solid rgba(148, 163, 184, 0.2);
+  position: static;
+  background: linear-gradient(180deg, rgba(239, 246, 255, 0.55) 0%, transparent 100%);
+  border-bottom: 1px solid rgba(59, 130, 246, 0.12);
   box-shadow: none;
   padding-left: 0;
   padding-right: 0;
+  font-size: 0.6875rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #1e3a8a;
 }
 
 .app-table--embedded .app-table-td {
   padding-left: 0;
   padding-right: 0;
+  border-bottom-color: rgba(191, 219, 254, 0.3);
+}
+
+.app-table--embedded .app-table-tr:nth-child(odd) .app-table-td {
+  background: transparent;
+}
+
+.app-table--embedded .app-table-tr:nth-child(even) .app-table-td {
+  background: rgba(239, 246, 255, 0.15);
+}
+
+.app-table--embedded .app-table-tr:hover .app-table-td {
+  background: rgba(224, 242, 254, 0.45);
+  box-shadow: none;
+}
+
+.app-table--embedded .app-table-tr:hover .app-table-td:first-child {
+  box-shadow: inset 2px 0 0 rgba(59, 130, 246, 0.3);
 }
 
 .app-table tfoot td {
@@ -341,12 +451,14 @@ body.lang-bn .uppercase {
   font-weight: 600;
   color: #1e293b;
   text-align: left;
-  border-top: 1px solid rgba(148, 163, 184, 0.25);
-  background: rgba(241, 245, 249, 0.45);
+  border-top: 1px solid rgba(255, 255, 255, 0.5);
+  background: rgba(241, 245, 249, 0.55);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
 }
 
 .app-table--compact .app-table-th {
-  font-size: 0.875rem;
+  font-size: 0.6875rem;
   padding: 0.75rem 0.875rem;
 }
 

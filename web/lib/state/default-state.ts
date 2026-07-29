@@ -32,6 +32,7 @@ export const DEFAULT_STATE: AppState = {
     { id: 2, name: 'Red Dye Colorant', sku: 'SKU-DYE-02', category: 'Colorants', productType: 'Raw Materials', cost: 15.0, price: 25.0, wholesalePrice: 20.0, taxRate: 12, stock: 250, warehouseStock: { 'WH-001': 150, 'WH-002': 100 }, minStock: 30, reorderLevel: 50, defaultWarehouse: 'WH-001', description: 'Concentrated red dye for plastic molding.', uom: 'liter', reserved: 5, discontinued: false },
     { id: 3, name: 'Action Figure Arms', sku: 'SKU-AF-ARMS', category: 'Action Figure Parts', productType: 'Semi-Finished Goods', cost: 0.4, price: 1.0, wholesalePrice: 0.8, taxRate: 15, stock: 8000, warehouseStock: { 'WH-001': 5000, 'WH-002': 3000 }, minStock: 1000, reorderLevel: 2000, defaultWarehouse: 'WH-001', description: 'Molded arms for standard action figure assembly.', uom: 'pcs', reserved: 1000, discontinued: false },
     { id: 4, name: 'Super Hero Action Figure', sku: 'SKU-AF-SH01', category: 'Action Figures', productType: 'Finished Goods', cost: 2.1, price: 12.99, wholesalePrice: 8.5, taxRate: 5, stock: 1200, warehouseStock: { 'WH-001': 1200, 'WH-002': 0 }, minStock: 500, reorderLevel: 800, defaultWarehouse: 'WH-001', description: 'Fully assembled and packaged super hero action figure.', uom: 'pcs', reserved: 200, discontinued: false },
+    { id: 5, name: 'Kids Toy Car', sku: 'T101', category: 'RC Cars', productType: 'Finished Goods', cost: 186.5, price: 349.99, wholesalePrice: 280, taxRate: 15, stock: 450, warehouseStock: { 'WH-001': 300, 'WH-002': 150 }, minStock: 50, reorderLevel: 100, defaultWarehouse: 'WH-001', description: 'Remote control toy car with motor, wheels, and packaging.', uom: 'pcs', reserved: 25, discontinued: false },
   ],
   inventoryCategories: [
     { id: 'CAT-001', code: 'PLST', name: 'Plastic Pellets', type: 'Raw Materials', description: 'Plastic resins and pellets used in injection molding.', parentId: '', status: 'Active', defaultTaxRate: 5, defaultUnitType: 'kg', stockPolicy: 'FIFO' },
@@ -206,6 +207,24 @@ export const DEFAULT_STATE: AppState = {
   ],
   journals: [],
   departments: [{ name: 'IT', head: 'Sarah Connor', status: 'active' }, { name: 'Sales', head: 'Marcus Wright', status: 'active' }, { name: 'HR', head: 'Arthur Dent', status: 'active' }],
+  recipes: [
+    {
+      id: 'RCP-001',
+      productSku: 'T101',
+      product: 'Kids Toy Car',
+      productId: 5,
+      status: 'active',
+      materials: [
+        { id: 'mat-1', materialId: 'RM-WHEEL', name: 'Wheel', category: 'Plastic Parts', unit: 'pcs', qtyPerProduct: 4, wastagePct: 2, effectiveQty: 4.08, standardCost: 10.15, costPerProduct: 41.41, preferredSupplier: 'ABC Parts Ltd.', remarks: '' },
+        { id: 'mat-2', materialId: 'RM-007', name: 'DC Motor (5V)', category: 'Electronics', unit: 'pcs', qtyPerProduct: 1, wastagePct: 1, effectiveQty: 1.01, standardCost: 60, costPerProduct: 60.6, preferredSupplier: 'ElectroComponents Ltd', remarks: '' },
+        { id: 'mat-3', materialId: 'RM-CHASSIS', name: 'Chassis', category: 'Plastic Parts', unit: 'pcs', qtyPerProduct: 1, wastagePct: 0, effectiveQty: 1, standardCost: 35, costPerProduct: 35, preferredSupplier: 'ABC Parts Ltd.', remarks: '' },
+        { id: 'mat-4', materialId: 'RM-006', name: 'Lithium Battery (AA)', category: 'Electronics', unit: 'pcs', qtyPerProduct: 1, wastagePct: 0, effectiveQty: 1, standardCost: 25, costPerProduct: 25, preferredSupplier: 'ElectroComponents Ltd', remarks: '' },
+        { id: 'mat-5', materialId: 'RM-004', name: 'Cardboard Box (Small)', category: 'Packaging', unit: 'pcs', qtyPerProduct: 1, wastagePct: 0, effectiveQty: 1, standardCost: 12, costPerProduct: 12, preferredSupplier: 'Toy Packaging Ltd.', remarks: '' },
+        { id: 'mat-6', materialId: 'RM-MANUAL', name: 'Instruction Manual', category: 'Paper', unit: 'pcs', qtyPerProduct: 1, wastagePct: 0, effectiveQty: 1, standardCost: 2, costPerProduct: 2, preferredSupplier: 'Toy Packaging Ltd.', remarks: '' },
+        { id: 'mat-7', materialId: 'RM-011', name: 'Sticker Sheets', category: 'Packaging', unit: 'pcs', qtyPerProduct: 1, wastagePct: 5, effectiveQty: 1.05, standardCost: 3, costPerProduct: 3.15, preferredSupplier: 'Toy Packaging Ltd.', remarks: '' },
+      ],
+    },
+  ],
   lang: 'en',
 };
 

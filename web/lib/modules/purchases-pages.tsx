@@ -1,6 +1,7 @@
 'use client';
 
 import { DedicatedModule } from '@/components/modules/shared/DedicatedModule';
+import { RecipesPage as RecipesBomPage } from '@/components/modules/purchases/RecipesPage';
 import { getLegacyParityConfig } from '@/lib/modules/legacy-parity-configs';
 
 function cfg(id: string) {
@@ -13,4 +14,4 @@ export function GoodsReceivedPage() { return <DedicatedModule config={cfg('purch
 export function BillsPage() { return <DedicatedModule config={cfg('purchases-bills')} />; }
 export function PurchasePaymentsPage() { return <DedicatedModule config={cfg('purchases-payments')} />; }
 export function PurchaseReturnsPage() { return <DedicatedModule config={cfg('purchases-returns')} />; }
-export function RecipesPage() { return <DedicatedModule config={cfg('purchases-recipes')} />; }
+export function RecipesPage() { return <RecipesBomPage />; }
