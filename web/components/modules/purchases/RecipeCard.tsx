@@ -7,10 +7,11 @@ import { formatMoney, getRecipeBomCost, type Recipe } from '@/lib/services/recip
 interface RecipeCardProps {
   recipe: Recipe;
   onCreateBom: () => void;
+  onPlanProduction: () => void;
   onDelete: () => void;
 }
 
-export function RecipeCard({ recipe, onCreateBom, onDelete }: RecipeCardProps) {
+export function RecipeCard({ recipe, onCreateBom, onPlanProduction, onDelete }: RecipeCardProps) {
   const materialCount = recipe.materials.length;
   const bomCost = getRecipeBomCost(recipe);
   const hasMaterials = materialCount > 0;
@@ -34,18 +35,27 @@ export function RecipeCard({ recipe, onCreateBom, onDelete }: RecipeCardProps) {
         BOM {recipe.version} • {materialCount} Material{materialCount === 1 ? '' : 's'} • Est. Cost {formatMoney(bomCost)} / product
       </p>
 
-      <div className="flex flex-wrap gap-1.5 pt-2 border-t border-slate-100">
+      <div className="flex items-center gap-1.5 pt-2 border-t border-slate-100">
         <button
           type="button"
           onClick={onCreateBom}
-          className="flex-1 min-w-[100px] px-3 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-[11px] font-bold cursor-pointer"
+          className="flex-1 min-w-0 px-2 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-[10px] font-bold cursor-pointer truncate"
         >
           {hasMaterials ? 'Manage BOM' : 'Create BOM'}
         </button>
         <button
           type="button"
+          onClick={onPlanProduction}
+          disabled={!hasMaterials}
+          title={hasMaterials ? 'Calculate materials for a batch' : 'Add BOM materials first'}
+          className="flex-1 min-w-0 px-2 py-2 rounded-lg border border-violet-200 bg-violet-50 hover:bg-violet-100 text-violet-800 text-[10px] font-bold cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed truncate"
+        >
+          Plan Production
+        </button>
+        <button
+          type="button"
           onClick={onDelete}
-          className="px-2.5 py-2 rounded-lg border border-rose-200 text-rose-600 hover:bg-rose-50 cursor-pointer"
+          className="shrink-0 px-2.5 py-2 rounded-lg border border-rose-200 text-rose-600 hover:bg-rose-50 cursor-pointer"
           aria-label="Delete recipe"
           title="Delete recipe"
         >

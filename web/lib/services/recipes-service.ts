@@ -366,6 +366,83 @@ export function getRecipeBomTotals(recipe: Recipe) {
   };
 }
 
+export type ProductionPlanLine = {
+  materialId: string;
+  name: string;
+  category: string;
+  unit: string;
+  qtyPerProduct: number;
+  effectiveQtyPerProduct: number;
+  requiredQty: number;
+  unitCost: number;
+  lineCost: number;
+  inStockQty: number;
+  shortfallQty: number;
+  insight: MaterialInsight;
+};
+
+export type ProductionPlanSummary = {
+  batchQty: number;
+  totalMaterials: number;
+  materialsFullyInStock: number;
+  materialsShort: number;
+  totalLineCost: number;
+  estimatedPurchaseForShortfall: number;
+};
+
+function estimateShortfallCost(shortfallQty: number, insight: MaterialInsight, unitCost: number): number {
+  if (shortfallQty <= 0) return 0;
+  const bestPrice = insight.supplierOffers[0]?.price ?? insight.lastPrice ?? unitCost;
+  return Number((shortfallQty * bestPrice).toFixed(2));
+}
+
+export function getProductionPlan(state: AppState, recipe: Recipe, batchQty: number): {
+  lines: ProductionPlanLine[];
+  summary: ProductionPlanSummary;
+} {
+  const qty = Math.max(0, batchQty);
+  const lines: ProductionPlanLine[] = recipe.materials.map((material) => {
+    const requiredQty = Number((material.effectiveQty * qty).toFixed(2));
+    const insight = getMaterialInsight(state, material.name, material.materialId, requiredQty);
+    const inStockQty = insight.availability;
+    const shortfallQty = Math.max(0, Number((requiredQty - inStockQty).toFixed(2)));
+
+    return {
+      materialId: material.materialId,
+      name: material.name,
+      category: material.category,
+      unit: material.unit,
+      qtyPerProduct: material.qtyPerProduct,
+      effectiveQtyPerProduct: material.effectiveQty,
+      requiredQty,
+      unitCost: material.standardCost,
+      lineCost: Number((material.costPerProduct * qty).toFixed(2)),
+      inStockQty,
+      shortfallQty,
+      insight,
+    };
+  });
+
+  const materialsFullyInStock = lines.filter((l) => l.shortfallQty === 0).length;
+  const materialsShort = lines.filter((l) => l.shortfallQty > 0).length;
+  const totalLineCost = Number(lines.reduce((s, l) => s + l.lineCost, 0).toFixed(2));
+  const estimatedPurchaseForShortfall = Number(
+    lines.reduce((s, l) => s + estimateShortfallCost(l.shortfallQty, l.insight, l.unitCost), 0).toFixed(2),
+  );
+
+  return {
+    lines,
+    summary: {
+      batchQty: qty,
+      totalMaterials: lines.length,
+      materialsFullyInStock,
+      materialsShort,
+      totalLineCost,
+      estimatedPurchaseForShortfall,
+    },
+  };
+}
+
 export function listMaterialOptions(state: AppState): MaterialOption[] {
   const raw = listFromState(state, 'rawMaterials');
   const inventory = listFromState(state, 'inventory').filter((p) => {

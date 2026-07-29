@@ -10,7 +10,9 @@ import { AppTable, type AppTableColumn } from '@/components/shared/AppTable';
 import { StatusBadge } from '@/components/shared/StatusBadge';
 import { TableIconAction } from '@/components/shared/TableIconAction';
 import { BomMaterialForm, type BomMaterialFormValues } from '@/components/modules/purchases/BomMaterialForm';
+import { PlanProductionModal } from '@/components/modules/purchases/PlanProductionModal';
 import { RecipeCard } from '@/components/modules/purchases/RecipeCard';
+import { RecipeProductionPlanView } from '@/components/modules/purchases/RecipeProductionPlanView';
 import { useAppStore } from '@/lib/state/app-store';
 import {
   listRecipes,
@@ -31,7 +33,7 @@ import {
   type BomMaterial,
 } from '@/lib/services/recipes-service';
 
-type View = 'main' | 'form' | 'bom';
+type View = 'main' | 'form' | 'bom' | 'plan';
 type RecipeListLayout = 'cards' | 'table';
 
 const RECIPES_LAYOUT_KEY = 'recipes-list-layout';
@@ -109,6 +111,10 @@ export function RecipesPage() {
   const [materialFormKey, setMaterialFormKey] = useState(0);
   const [editMaterialInitial, setEditMaterialInitial] = useState<Partial<BomMaterialFormValues> | undefined>();
   const [newRecipe, setNewRecipe] = useState({ product: '', model: '', recipeNumber: '' });
+  const [planRecipeId, setPlanRecipeId] = useState<string | null>(null);
+  const [planBatchQty, setPlanBatchQty] = useState(1);
+  const [planQtyInput, setPlanQtyInput] = useState('');
+  const [planModalOpen, setPlanModalOpen] = useState(false);
   const [listLayout, setListLayout] = useState<RecipeListLayout>(() => {
     if (typeof window === 'undefined') return 'cards';
     const saved = window.localStorage.getItem(RECIPES_LAYOUT_KEY);
@@ -140,6 +146,10 @@ export function RecipesPage() {
   const activeRecipe = useMemo(
     () => (bomRecipeId ? getRecipe(appState, bomRecipeId) : null),
     [appState, bomRecipeId],
+  );
+  const planRecipe = useMemo(
+    () => (planRecipeId ? getRecipe(appState, planRecipeId) : null),
+    [appState, planRecipeId],
   );
   const bomTotals = useMemo(
     () => (activeRecipe ? getRecipeBomTotals(activeRecipe) : null),
@@ -200,6 +210,42 @@ export function RecipesPage() {
     setMaterialFormKey((k) => k + 1);
     setView('bom');
   };
+
+  const openPlanInput = (recipeId: string) => {
+    const recipe = getRecipe(appState, recipeId);
+    if (!recipe || recipe.materials.length === 0) return;
+    setPlanRecipeId(recipeId);
+    setPlanQtyInput('');
+    setPlanModalOpen(true);
+  };
+
+  const resetPlanState = () => {
+    setPlanRecipeId(null);
+    setPlanBatchQty(1);
+    setPlanQtyInput('');
+    setPlanModalOpen(false);
+  };
+
+  const backToMain = () => {
+    setView('main');
+    resetPlanState();
+  };
+
+  const handlePlanSubmit = (qty: number) => {
+    setPlanBatchQty(qty);
+    setPlanModalOpen(false);
+    setView('plan');
+  };
+
+  const planModal = (
+    <PlanProductionModal
+      open={planModalOpen}
+      recipe={planRecipe}
+      initialQty={planQtyInput}
+      onClose={() => setPlanModalOpen(false)}
+      onSubmit={handlePlanSubmit}
+    />
+  );
 
   const resetMaterialForm = () => {
     setEditingMaterialId(null);
@@ -297,6 +343,24 @@ export function RecipesPage() {
     deleteRecipe(appState, id);
     saveAppState();
   };
+
+  if (view === 'plan' && planRecipe) {
+    return (
+      <>
+        <RecipeProductionPlanView
+          recipe={planRecipe}
+          batchQty={planBatchQty}
+          appState={appState}
+          onBack={backToMain}
+          onEditQty={() => {
+            setPlanQtyInput(String(planBatchQty));
+            setPlanModalOpen(true);
+          }}
+        />
+        {planModal}
+      </>
+    );
+  }
 
   if (view === 'form') {
     return (
@@ -437,6 +501,7 @@ export function RecipesPage() {
   }
 
   return (
+    <>
     <div className="flex-1 overflow-y-auto p-2 md:p-4 space-y-2 flex flex-col">
       <ListToolbar
         title="Recipes (BOM)"
@@ -515,6 +580,7 @@ export function RecipesPage() {
               key={recipe.id}
               recipe={recipe}
               onCreateBom={() => openBom(recipe.id)}
+              onPlanProduction={() => openPlanInput(recipe.id)}
               onDelete={() => handleDeleteRecipe(recipe.id)}
             />
           ))}
@@ -534,6 +600,15 @@ export function RecipesPage() {
               >
                 {row.materials.length > 0 ? 'Manage BOM' : 'Create BOM'}
               </button>
+              <button
+                type="button"
+                onClick={() => openPlanInput(row.id)}
+                disabled={row.materials.length === 0}
+                title={row.materials.length > 0 ? 'Calculate materials for a batch' : 'Add BOM materials first'}
+                className="inline-flex items-center px-2.5 py-1.5 rounded-lg border border-violet-200 bg-violet-50 hover:bg-violet-100 text-violet-800 text-[11px] font-bold cursor-pointer whitespace-nowrap disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                Plan Production
+              </button>
               <TableIconAction variant="delete" label="Delete recipe" onClick={() => handleDeleteRecipe(row.id)} />
             </>
           )}
@@ -542,5 +617,7 @@ export function RecipesPage() {
 
       <Footer />
     </div>
+    {planModal}
+    </>
   );
 }
