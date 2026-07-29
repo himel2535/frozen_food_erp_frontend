@@ -4,6 +4,7 @@ import { useMemo, useState } from 'react';
 import { Footer } from '@/components/layout/Footer';
 import { ListToolbar } from '@/components/shared/ListToolbar';
 import { KpiCards, type KpiCardItem } from '@/components/shared/KpiCards';
+import { AppTable } from '@/components/shared/AppTable';
 import { StatusBadge } from '@/components/shared/StatusBadge';
 import { useAppStore } from '@/lib/state/app-store';
 import type { AppState } from '@/lib/state/types';
@@ -100,30 +101,18 @@ export function ReportModule({ config }: { config: ReportModuleConfig }) {
         }
       />
       {kpis.length > 0 && <KpiCards items={kpis} />}
-      <div className="bg-white rounded-xl border border-slate-200/80 overflow-x-auto">
-        <table className="w-full text-left text-xs">
-          <thead className="bg-slate-50 text-slate-500 uppercase text-[10px] font-bold">
-            <tr>
-              {config.columns.map((col) => (
-                <th key={col.key} className={`px-4 py-3 ${col.align === 'right' ? 'text-right' : ''}`}>{col.label}</th>
-              ))}
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-slate-100">
-            {rows.length === 0 ? (
-              <tr><td colSpan={config.columns.length} className="px-4 py-8 text-center text-slate-400">No records found matching filters.</td></tr>
-            ) : rows.map((row, i) => (
-              <tr key={String(row.id ?? row.ref ?? row.sku ?? i)} className="hover:bg-slate-50/80">
-                {config.columns.map((col) => (
-                  <td key={col.key} className={`px-4 py-3 font-medium text-slate-700 ${col.align === 'right' ? 'text-right' : ''}`}>
-                    {col.render?.(row) ?? (col.key === 'status' ? <StatusBadge status={String(row.status ?? '—')} /> : String(row[col.key] ?? '—'))}
-                  </td>
-                ))}
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+      <AppTable
+        columns={config.columns.map((col) => ({
+          key: col.key,
+          label: col.label,
+          align: col.align === 'right' ? 'right' : 'left',
+          render: (row) =>
+            col.render?.(row) ?? (col.key === 'status' ? <StatusBadge status={String(row.status ?? '—')} /> : String(row[col.key] ?? '—')),
+        }))}
+        rows={rows}
+        rowKey={(row, i) => String(row.id ?? row.ref ?? row.sku ?? i)}
+        emptyMessage="No records found matching filters."
+      />
       <Footer />
     </div>
   );

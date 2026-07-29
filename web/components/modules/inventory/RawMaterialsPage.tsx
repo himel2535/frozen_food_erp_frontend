@@ -1,9 +1,10 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { Pencil } from 'lucide-react';
 import { AdvancedDetailsToggle } from '@/components/shared/AdvancedDetailsToggle';
+import { AppTable, type AppTableColumn } from '@/components/shared/AppTable';
 import { StatusBadge } from '@/components/shared/StatusBadge';
+import { TableIconAction } from '@/components/shared/TableIconAction';
 import { InventoryFormLayout, InventoryListLayout, FilterBar, SearchInput, PaginationBar, INPUT_CLS } from '@/components/modules/inventory/shared/inventory-ui';
 import { SupplierSelect } from '@/components/modules/inventory/shared/selects';
 import { useAppStore } from '@/lib/state/app-store';
@@ -46,6 +47,35 @@ export function RawMaterialsPage() {
   const metrics = useMemo(() => getRawMaterialMetrics(appState), [appState]);
   const paged = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
   const liveTotal = Number(form.quantity || 0) * Number(form.price || 0);
+
+  const columns = useMemo<AppTableColumn<Record<string, unknown>>[]>(() => [
+    {
+      key: 'name',
+      label: 'Material',
+      render: (rm) => {
+        const qty = Number(rm.quantity ?? 0);
+        const threshold = Number(rm.threshold ?? 100);
+        const isLow = qty < threshold;
+        return (
+          <div className="flex items-center gap-2">
+            <span className="font-bold text-slate-800">{String(rm.name)}</span>
+            {isLow && <span className="px-1.5 py-0.5 bg-red-50 text-red-500 border border-red-100 rounded text-[9px] font-bold">Low Stock</span>}
+          </div>
+        );
+      },
+    },
+    { key: 'category', label: 'Category', render: (rm) => String(rm.category || 'Uncategorized') },
+    { key: 'unit', label: 'Unit', render: (rm) => String(rm.unit) },
+    { key: 'quantity', label: 'Qty', render: (rm) => Number(rm.quantity ?? 0) },
+    { key: 'threshold', label: 'Threshold', render: (rm) => Number(rm.threshold ?? 100) },
+    { key: 'price', label: 'Price', render: (rm) => Number(rm.price ?? 0).toFixed(2) },
+    {
+      key: 'totalValue',
+      label: 'Total Value',
+      render: (rm) => (Number(rm.quantity ?? 0) * Number(rm.price ?? 0)).toFixed(2),
+    },
+    { key: 'status', label: 'Status', render: () => <StatusBadge status="active" /> },
+  ], []);
 
   const resetForm = () => {
     setForm({ name: '', category: '', unit: 'pcs', quantity: '', price: '', supplierId: '', supplierPrice: '', threshold: '0', notes: '' });
@@ -117,37 +147,13 @@ export function RawMaterialsPage() {
       filters={<FilterBar><SearchInput value={search} onChange={(v) => { setSearch(v); setPage(1); }} placeholder="Search materials, suppliers, categories..." /></FilterBar>}
       pagination={<PaginationBar page={page} pageSize={PAGE_SIZE} total={filtered.length} onPageChange={setPage} />}
     >
-      <div className="bg-white rounded-xl border border-slate-200/80 overflow-x-auto flex-1">
-        <table className="w-full text-left text-xs">
-          <thead className="bg-slate-50 text-slate-500 uppercase text-[10px] font-bold"><tr>
-            <th className="px-6 py-3">Material</th><th className="px-6 py-3">Category</th><th className="px-6 py-3">Unit</th>
-            <th className="px-6 py-3">Qty</th><th className="px-6 py-3">Threshold</th><th className="px-6 py-3">Price</th>
-            <th className="px-6 py-3">Total Value</th><th className="px-6 py-3">Status</th><th className="px-6 py-3 text-center">Actions</th>
-          </tr></thead>
-          <tbody>
-            {paged.map((rm) => {
-              const qty = Number(rm.quantity ?? 0);
-              const threshold = Number(rm.threshold ?? 100);
-              const isLow = qty < threshold;
-              const total = qty * Number(rm.price ?? 0);
-              return (
-                <tr key={String(rm.id)} className="border-b border-slate-100 hover:bg-slate-50/50">
-                  <td className="px-6 py-4"><div className="flex items-center gap-2"><span className="font-bold text-slate-800">{String(rm.name)}</span>{isLow && <span className="px-1.5 py-0.5 bg-red-50 text-red-500 border border-red-100 rounded text-[9px] font-bold">Low Stock</span>}</div></td>
-                  <td className="px-6 py-4 text-slate-600">{String(rm.category || 'Uncategorized')}</td>
-                  <td className="px-6 py-4 text-slate-600">{String(rm.unit)}</td>
-                  <td className="px-6 py-4 text-slate-600">{qty}</td>
-                  <td className="px-6 py-4 text-slate-600">{threshold}</td>
-                  <td className="px-6 py-4 text-slate-600">{Number(rm.price ?? 0).toFixed(2)}</td>
-                  <td className="px-6 py-4 text-slate-600">{total.toFixed(2)}</td>
-                  <td className="px-6 py-4"><StatusBadge status="active" /></td>
-                  <td className="px-6 py-4 text-center"><button type="button" onClick={() => openEdit(rm)} className="px-3 py-1.5 border border-slate-200 rounded-lg text-[11px] font-bold cursor-pointer hover:bg-slate-50 inline-flex items-center gap-1"><Pencil className="w-3 h-3" /> Edit</button></td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-        {filtered.length === 0 && <p className="p-8 text-center text-slate-400">No raw materials found.</p>}
-      </div>
+      <AppTable
+        className="flex-1"
+        columns={columns}
+        rows={paged}
+        emptyMessage="No raw materials found."
+        renderActions={(rm) => <TableIconAction variant="edit" onClick={() => openEdit(rm)} />}
+      />
     </InventoryListLayout>
   );
 }

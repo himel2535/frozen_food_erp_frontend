@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { Eye, Pencil, Trash2, Download, Upload, Printer } from 'lucide-react';
+import { Download, Upload, Printer } from 'lucide-react';
 import { Footer } from '@/components/layout/Footer';
 import { FormHeader } from '@/components/layout/FormHeader';
 import { KpiCards } from '@/components/shared/KpiCards';
@@ -9,7 +9,9 @@ import { FilterTabs } from '@/components/shared/FilterTabs';
 import { ProfileDrawer } from '@/components/shared/ProfileDrawer';
 import { BulkActionBar } from '@/components/shared/BulkActionBar';
 import { AdvancedDetailsToggle } from '@/components/shared/AdvancedDetailsToggle';
+import { AppTable, type AppTableColumn } from '@/components/shared/AppTable';
 import { StatusBadge } from '@/components/shared/StatusBadge';
+import { TableIconAction } from '@/components/shared/TableIconAction';
 import { useAppStore } from '@/lib/state/app-store';
 import {
   getCustomerList,
@@ -163,6 +165,74 @@ export function CustomersPage() {
     URL.revokeObjectURL(url);
   };
 
+  const customerColumns = useMemo<AppTableColumn<Record<string, unknown>>[]>(() => [
+    {
+      key: '_select',
+      label: '',
+      headerClassName: 'w-10',
+      className: 'w-10',
+      render: (row) => (
+        <input
+          type="checkbox"
+          checked={selected.has(String(row.id))}
+          onChange={() => toggleSelect(String(row.id))}
+          className="cursor-pointer"
+          onClick={(e) => e.stopPropagation()}
+        />
+      ),
+    },
+    {
+      key: 'name',
+      label: 'Customer / Company',
+      render: (row) => (
+        <div className="flex items-center gap-3 min-w-[200px]">
+          <div className={`w-9 h-9 rounded-full flex items-center justify-center text-[10px] font-bold shrink-0 ${avatarClass(String(row.name))}`}>
+            {initials(String(row.name))}
+          </div>
+          <div>
+            <div className="font-bold text-slate-900">{String(row.name)}</div>
+            <div className="text-slate-500">{String(row.company)}</div>
+            <span className="inline-flex mt-1 px-1.5 py-0.5 rounded-full text-[8px] font-bold border bg-slate-50 text-slate-600 border-slate-200">{String(row.category ?? 'Standard')}</span>
+          </div>
+        </div>
+      ),
+    },
+    { key: 'contact', label: 'Primary Contact', render: (row) => <span className="font-medium">{String(row.name)}</span> },
+    {
+      key: 'contactInfo',
+      label: 'Contact Info',
+      render: (row) => (
+        <>
+          <div className="font-medium">{String(row.phone ?? '—')}</div>
+          <div className="text-slate-400">{String(row.email ?? '')}</div>
+        </>
+      ),
+    },
+    {
+      key: 'rep',
+      label: 'Assigned Rep',
+      render: (row) => (
+        <span className="inline-flex items-center gap-2 font-bold text-slate-700">
+          <span className="w-6 h-6 rounded-full bg-indigo-100 text-indigo-700 text-[9px] flex items-center justify-center">
+            {initials(String(row.ownerName ?? row.salesRepName ?? 'R'))}
+          </span>
+          {String(row.ownerName ?? row.salesRepName ?? '—')}
+        </span>
+      ),
+    },
+    {
+      key: 'spend',
+      label: 'Spend / Balance',
+      render: (row) => (
+        <>
+          <div>Sales: <span className="font-bold">{formatMoney(Number(row.totalSales ?? 0))}</span></div>
+          <div>Due: <span className="font-bold text-rose-600">{formatMoney(Number(row.totalDue ?? 0))}</span></div>
+        </>
+      ),
+    },
+    { key: 'status', label: 'Status', render: (row) => <StatusBadge status={String(row.status)} /> },
+  ], [selected]);
+
   if (view === 'form') {
     return (
       <div className="flex-1 overflow-y-auto p-6 md:p-8 space-y-6 bg-slate-50">
@@ -235,62 +305,33 @@ export function CustomersPage() {
         } />
       </div>
 
-      <div className="bg-white rounded-xl border border-slate-200/80 premium-shadow overflow-x-auto">
-        <table className="w-full text-left text-xs min-w-[900px]">
-          <thead className="bg-slate-50 text-slate-500 uppercase text-[10px] font-bold">
-            <tr>
-              <th className="px-4 py-3 w-10"><input type="checkbox" className="cursor-pointer" onChange={(e) => setSelected(e.target.checked ? new Set(customers.map((c) => String(c.id))) : new Set())} /></th>
-              <th className="px-4 py-3">Customer / Company</th>
-              <th className="px-4 py-3">Primary Contact</th>
-              <th className="px-4 py-3">Contact Info</th>
-              <th className="px-4 py-3">Assigned Rep</th>
-              <th className="px-4 py-3">Spend / Balance</th>
-              <th className="px-4 py-3">Status</th>
-              <th className="px-4 py-3 text-right">Actions</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-slate-100">
-            {customers.map((row) => (
-              <tr key={String(row.id)} className="hover:bg-slate-50/80">
-                <td className="px-4 py-3"><input type="checkbox" checked={selected.has(String(row.id))} onChange={() => toggleSelect(String(row.id))} className="cursor-pointer" /></td>
-                <td className="px-4 py-3">
-                  <div className="flex items-center gap-3">
-                    <div className={`w-9 h-9 rounded-full flex items-center justify-center text-[10px] font-bold ${avatarClass(String(row.name))}`}>{initials(String(row.name))}</div>
-                    <div>
-                      <div className="font-bold text-slate-900">{String(row.name)}</div>
-                      <div className="text-slate-500">{String(row.company)}</div>
-                      <span className="inline-flex mt-1 px-1.5 py-0.5 rounded-full text-[8px] font-bold border bg-slate-50 text-slate-600 border-slate-200">{String(row.category ?? 'Standard')}</span>
-                    </div>
-                  </div>
-                </td>
-                <td className="px-4 py-3 font-medium">{String(row.name)}</td>
-                <td className="px-4 py-3">
-                  <div className="font-medium">{String(row.phone ?? '—')}</div>
-                  <div className="text-slate-400">{String(row.email ?? '')}</div>
-                </td>
-                <td className="px-4 py-3">
-                  <span className="inline-flex items-center gap-2 font-bold text-slate-700">
-                    <span className="w-6 h-6 rounded-full bg-indigo-100 text-indigo-700 text-[9px] flex items-center justify-center">{initials(String(row.ownerName ?? row.salesRepName ?? 'R'))}</span>
-                    {String(row.ownerName ?? row.salesRepName ?? '—')}
-                  </span>
-                </td>
-                <td className="px-4 py-3">
-                  <div>Sales: <span className="font-bold">{formatMoney(Number(row.totalSales ?? 0))}</span></div>
-                  <div>Due: <span className="font-bold text-rose-600">{formatMoney(Number(row.totalDue ?? 0))}</span></div>
-                </td>
-                <td className="px-4 py-3"><StatusBadge status={String(row.status)} /></td>
-                <td className="px-4 py-3">
-                  <div className="flex justify-end gap-2">
-                    <button type="button" onClick={() => { setDrawerId(String(row.id)); setDrawerTab('overview'); }} className="inline-flex items-center gap-1 text-blue-600 font-bold cursor-pointer"><Eye className="w-4 h-4" /> View</button>
-                    <button type="button" onClick={() => openEdit(row)} className="inline-flex items-center gap-1 text-amber-600 font-bold cursor-pointer"><Pencil className="w-4 h-4" /> Edit</button>
-                    <button type="button" onClick={() => { if (window.confirm('Delete customer?')) { deleteCustomer(appState, String(row.id)); saveAppState(); } }} className="text-rose-600 cursor-pointer"><Trash2 className="w-4 h-4" /></button>
-                  </div>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+      <AppTable
+        className="min-w-[900px]"
+        columns={customerColumns}
+        rows={customers}
+        emptyMessage="No customers found."
+        renderActions={(row) => (
+          <>
+            <TableIconAction
+              variant="view"
+              onClick={() => {
+                setDrawerId(String(row.id));
+                setDrawerTab('overview');
+              }}
+            />
+            <TableIconAction variant="edit" onClick={() => openEdit(row)} />
+            <TableIconAction
+              variant="delete"
+              onClick={() => {
+                if (window.confirm('Delete customer?')) {
+                  deleteCustomer(appState, String(row.id));
+                  saveAppState();
+                }
+              }}
+            />
+          </>
+        )}
+      />
 
       <ProfileDrawer
         open={!!drawerId && !!profile}

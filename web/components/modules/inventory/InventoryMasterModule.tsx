@@ -1,14 +1,14 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { Pencil, Trash2 } from 'lucide-react';
 import { Footer } from '@/components/layout/Footer';
 import { FormHeader } from '@/components/layout/FormHeader';
 import { ListToolbar } from '@/components/shared/ListToolbar';
 import { KpiCards, type KpiCardItem } from '@/components/shared/KpiCards';
 import { FilterTabs } from '@/components/shared/FilterTabs';
 import { AdvancedDetailsToggle } from '@/components/shared/AdvancedDetailsToggle';
-import { StatusBadge } from '@/components/shared/StatusBadge';
+import { AppTable } from '@/components/shared/AppTable';
+import { TableIconAction } from '@/components/shared/TableIconAction';
 import { useAppStore } from '@/lib/state/app-store';
 import type { PortField } from '@/lib/modules/port-types';
 
@@ -138,28 +138,31 @@ export function InventoryMasterModule({ config }: { config: InventoryMasterConfi
     <div className="flex-1 overflow-y-auto p-6 md:p-8 space-y-6 flex flex-col">
       <ListToolbar title={config.title} subtitle={config.subtitle} search={search} onSearchChange={setSearch} searchPlaceholder={`Search ${config.title.toLowerCase()}...`} onAdd={() => { resetForm(); setView('form'); }} addLabel={config.addLabel} filters={<FilterTabs tabs={tabs} active={statusFilter} onChange={setStatusFilter} />} />
       {kpis.length > 0 && <KpiCards items={kpis} />}
-      <div className="bg-white rounded-xl border border-slate-200 overflow-x-auto">
-        <table className="w-full text-xs">
-          <thead className="bg-slate-50 text-slate-500 uppercase text-[10px] font-bold">
-            <tr>{config.columns.map((c) => <th key={c.key} className="px-4 py-3 text-left">{c.label}</th>)}<th className="px-4 py-3 text-right">Actions</th></tr>
-          </thead>
-          <tbody className="divide-y divide-slate-100">
-            {rows.length === 0 ? <tr><td colSpan={config.columns.length + 1} className="px-4 py-8 text-center text-slate-400">No records</td></tr> : rows.map((row) => (
-              <tr key={String(row.id)} className="hover:bg-slate-50">
-                {config.columns.map((col) => (
-                  <td key={col.key} className="px-4 py-3 font-medium text-slate-700">{col.render ? col.render(row) : String(row[col.key] ?? '—')}</td>
-                ))}
-                <td className="px-4 py-3">
-                  <div className="flex justify-end gap-2">
-                    <button type="button" onClick={() => openEdit(row)} className="text-amber-600 font-bold cursor-pointer inline-flex items-center gap-1"><Pencil className="w-3.5 h-3.5" /> Edit</button>
-                    {config.delete && <button type="button" onClick={() => { if (window.confirm('Delete?')) { config.delete!(appState, String(row.id)); saveAppState(); } }} className="text-rose-600 font-bold cursor-pointer"><Trash2 className="w-3.5 h-3.5" /></button>}
-                  </div>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+      <AppTable
+        columns={config.columns.map((col) => ({
+          key: col.key,
+          label: col.label,
+          render: (row) => (col.render ? col.render(row) : String(row[col.key] ?? '—')),
+        }))}
+        rows={rows}
+        emptyMessage="No records"
+        renderActions={(row) => (
+          <>
+            <TableIconAction variant="edit" onClick={() => openEdit(row)} />
+            {config.delete && (
+              <TableIconAction
+                variant="delete"
+                onClick={() => {
+                  if (window.confirm('Delete?')) {
+                    config.delete!(appState, String(row.id));
+                    saveAppState();
+                  }
+                }}
+              />
+            )}
+          </>
+        )}
+      />
       <Footer />
     </div>
   );

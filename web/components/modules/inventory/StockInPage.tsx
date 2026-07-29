@@ -1,9 +1,10 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { CheckCircle } from 'lucide-react';
 import { AdvancedDetailsToggle } from '@/components/shared/AdvancedDetailsToggle';
+import { AppTable, type AppTableColumn } from '@/components/shared/AppTable';
 import { StatusBadge } from '@/components/shared/StatusBadge';
+import { TableIconAction } from '@/components/shared/TableIconAction';
 import { InventoryFormLayout, InventoryListLayout, FilterBar, FilterSelect, SearchInput, INPUT_CLS, SELECT_CLS } from '@/components/modules/inventory/shared/inventory-ui';
 import { ProductSelect, WarehouseSelect } from '@/components/modules/inventory/shared/selects';
 import { useAppStore } from '@/lib/state/app-store';
@@ -74,6 +75,23 @@ export function StockInPage() {
     saveAppState();
   };
 
+  const columns = useMemo<AppTableColumn<Record<string, unknown>>[]>(() => [
+    { key: 'id', label: 'ID', render: (row) => <span className="font-mono text-slate-600">{String(row.id)}</span> },
+    { key: 'product', label: 'Product', render: (row) => <span className="font-bold text-slate-800">{String(productName(row.productId))}</span> },
+    { key: 'warehouse', label: 'Warehouse', render: (row) => getWarehouseName(appState, String(row.warehouseId)) },
+    { key: 'qty', label: 'Qty', render: (row) => Number(row.qty ?? 0) },
+    { key: 'unitCost', label: 'Unit Cost', render: (row) => formatMoney(Number(row.unitCost ?? 0)) },
+    {
+      key: 'total',
+      label: 'Total',
+      render: (row) => formatMoney(Number(row.qty ?? 0) * Number(row.unitCost ?? 0)),
+    },
+    { key: 'sourceType', label: 'Source', render: (row) => String(row.sourceType ?? '—') },
+    { key: 'refDocId', label: 'Ref Doc', render: (row) => String(row.refDocId ?? '—') },
+    { key: 'date', label: 'Date', render: (row) => String(row.date ?? '—') },
+    { key: 'status', label: 'Status', render: (row) => <StatusBadge status={String(row.status ?? 'Pending')} /> },
+  ], [appState, products]);
+
   if (view === 'form') {
     return (
       <InventoryFormLayout title="Create Stock In" subtitle="Record incoming inventory with product, warehouse, and cost details." onBack={() => { setView('main'); resetForm(); }} onSubmit={handleSubmit} submitLabel="Save Stock-In">
@@ -121,43 +139,16 @@ export function StockInPage() {
         </FilterBar>
       }
     >
-      <div className="bg-white rounded-xl border border-slate-200/80 overflow-x-auto">
-        <table className="w-full text-left text-xs">
-          <thead className="bg-slate-50 text-slate-500 uppercase text-[10px] font-bold"><tr>
-            <th className="px-6 py-3">ID</th><th className="px-6 py-3">Product</th><th className="px-6 py-3">Warehouse</th>
-            <th className="px-6 py-3">Qty</th><th className="px-6 py-3">Unit Cost</th><th className="px-6 py-3">Total</th>
-            <th className="px-6 py-3">Source</th><th className="px-6 py-3">Ref Doc</th><th className="px-6 py-3">Date</th>
-            <th className="px-6 py-3">Status</th><th className="px-6 py-3 text-center">Actions</th>
-          </tr></thead>
-          <tbody>
-            {filtered.map((row) => {
-              const qty = Number(row.qty ?? 0);
-              const cost = Number(row.unitCost ?? 0);
-              return (
-                <tr key={String(row.id)} className="border-b border-slate-100 hover:bg-slate-50/50">
-                  <td className="px-6 py-4 font-mono text-slate-600">{String(row.id)}</td>
-                  <td className="px-6 py-4 font-bold text-slate-800">{String(productName(row.productId))}</td>
-                  <td className="px-6 py-4 text-slate-600">{getWarehouseName(appState, String(row.warehouseId))}</td>
-                  <td className="px-6 py-4 text-slate-600">{qty}</td>
-                  <td className="px-6 py-4 text-slate-600">{formatMoney(cost)}</td>
-                  <td className="px-6 py-4 text-slate-600">{formatMoney(qty * cost)}</td>
-                  <td className="px-6 py-4 text-slate-600">{String(row.sourceType ?? '—')}</td>
-                  <td className="px-6 py-4 text-slate-600">{String(row.refDocId ?? '—')}</td>
-                  <td className="px-6 py-4 text-slate-600">{String(row.date ?? '—')}</td>
-                  <td className="px-6 py-4"><StatusBadge status={String(row.status ?? 'Pending')} /></td>
-                  <td className="px-6 py-4 text-center">
-                    {String(row.status) === 'Pending' && (
-                      <button type="button" onClick={() => handleApprove(String(row.id))} className="inline-flex items-center gap-1 px-3 py-1.5 text-emerald-600 border border-emerald-200 rounded-lg text-[11px] font-bold cursor-pointer hover:bg-emerald-50">
-                        <CheckCircle className="w-3 h-3" /> Approve
-                      </button>
-                    )}
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      </div>
+      <AppTable
+        columns={columns}
+        rows={filtered}
+        emptyMessage="No stock-in records found."
+        renderActions={(row) => (
+          String(row.status) === 'Pending' ? (
+            <TableIconAction variant="approve" onClick={() => handleApprove(String(row.id))} />
+          ) : null
+        )}
+      />
     </InventoryListLayout>
   );
 }

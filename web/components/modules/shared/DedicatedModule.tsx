@@ -1,14 +1,15 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { Pencil, Trash2 } from 'lucide-react';
 import { Footer } from '@/components/layout/Footer';
 import { FormHeader } from '@/components/layout/FormHeader';
 import { ListToolbar } from '@/components/shared/ListToolbar';
 import { KpiCards, type KpiCardItem } from '@/components/shared/KpiCards';
 import { FilterTabs } from '@/components/shared/FilterTabs';
 import { AdvancedDetailsToggle } from '@/components/shared/AdvancedDetailsToggle';
+import { AppTable } from '@/components/shared/AppTable';
 import { StatusBadge } from '@/components/shared/StatusBadge';
+import { TableIconAction } from '@/components/shared/TableIconAction';
 import { useAppStore } from '@/lib/state/app-store';
 import type { PortField, PortModuleConfig } from '@/lib/modules/port-types';
 
@@ -180,40 +181,35 @@ export function DedicatedModule({ config }: { config: DedicatedModuleConfig }) {
         }
       />
       {kpis.length > 0 && <KpiCards items={kpis} />}
-      <div className="bg-white rounded-xl border border-slate-200/80 overflow-x-auto">
-        <table className="w-full text-left text-xs">
-          <thead className="bg-slate-50 text-slate-500 uppercase text-[10px] font-bold">
-            <tr>
-              {config.columns.map((col) => <th key={col.key} className="px-4 py-3">{col.label}</th>)}
-              <th className="px-4 py-3 text-right">Actions</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-slate-100">
-            {rows.length === 0 ? (
-              <tr><td colSpan={config.columns.length + 1} className="px-4 py-8 text-center text-slate-400">No records yet</td></tr>
-            ) : rows.map((row) => (
-              <tr key={String(row.id ?? row.name ?? Math.random())} className="hover:bg-slate-50/80">
-                {config.columns.map((col) => (
-                  <td key={col.key} className="px-4 py-3 font-medium text-slate-700">
-                    {col.render?.(row)
-                      ?? config.columnRender?.[col.key]?.(row)
-                      ?? (col.key === 'status' ? <StatusBadge status={String(row.status ?? '—')} /> : String(row[col.key] ?? '—'))}
-                  </td>
-                ))}
-                <td className="px-4 py-3">
-                  <div className="flex justify-end gap-2 flex-wrap">
-                    {config.rowActions?.(row, { appState, save: saveAppState })}
-                    <button type="button" onClick={() => openEdit(row)} className="inline-flex items-center gap-1 text-amber-600 font-bold cursor-pointer"><Pencil className="w-3.5 h-3.5" /> Edit</button>
-                    {config.adapter.delete && (
-                      <button type="button" onClick={() => { if (window.confirm('Delete?')) { config.adapter.delete!(appState, String(row.id)); saveAppState(); } }} className="inline-flex items-center gap-1 text-rose-600 font-bold cursor-pointer"><Trash2 className="w-3.5 h-3.5" /></button>
-                    )}
-                  </div>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+      <AppTable
+        columns={config.columns.map((col) => ({
+          key: col.key,
+          label: col.label,
+          render: (row) =>
+            col.render?.(row)
+            ?? config.columnRender?.[col.key]?.(row)
+            ?? (col.key === 'status' ? <StatusBadge status={String(row.status ?? '—')} /> : String(row[col.key] ?? '—')),
+        }))}
+        rows={rows}
+        emptyMessage="No records yet"
+        renderActions={(row) => (
+          <>
+            {config.rowActions?.(row, { appState, save: saveAppState })}
+            <TableIconAction variant="edit" onClick={() => openEdit(row)} />
+            {config.adapter.delete && (
+              <TableIconAction
+                variant="delete"
+                onClick={() => {
+                  if (window.confirm('Delete?')) {
+                    config.adapter.delete!(appState, String(row.id));
+                    saveAppState();
+                  }
+                }}
+              />
+            )}
+          </>
+        )}
+      />
       <Footer />
     </div>
   );

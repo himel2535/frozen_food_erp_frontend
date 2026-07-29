@@ -1,9 +1,10 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { Pencil, Trash2 } from 'lucide-react';
 import { AdvancedDetailsToggle } from '@/components/shared/AdvancedDetailsToggle';
+import { AppTable, type AppTableColumn } from '@/components/shared/AppTable';
 import { StatusBadge } from '@/components/shared/StatusBadge';
+import { TableIconAction } from '@/components/shared/TableIconAction';
 import { InventoryFormLayout, InventoryListLayout, FilterBar, FilterSelect, SearchInput, INPUT_CLS, SELECT_CLS } from '@/components/modules/inventory/shared/inventory-ui';
 import { useAppStore } from '@/lib/state/app-store';
 import {
@@ -71,6 +72,20 @@ export function WarehousesPage() {
     saveAppState();
   };
 
+  const columns = useMemo<AppTableColumn<Record<string, unknown>>[]>(() => [
+    { key: 'name', label: 'Warehouse', render: (wh) => <span className="font-bold text-slate-800">{String(wh.name)}</span> },
+    { key: 'location', label: 'Location', render: (wh) => String(wh.location ?? '—') },
+    { key: 'type', label: 'Type', render: (wh) => String(wh.type ?? '—') },
+    { key: 'manager', label: 'Manager', render: (wh) => String(wh.manager ?? '—') },
+    { key: 'contact', label: 'Contact', render: (wh) => String(wh.contact ?? '—') },
+    { key: 'capacity', label: 'Capacity', render: (wh) => Number(wh.capacity ?? 0).toLocaleString() },
+    { key: 'currentStock', label: 'Current Stock', render: (wh) => Number(wh.currentStock ?? 0).toLocaleString() },
+    { key: 'utilizationPercent', label: 'Utilization', render: (wh) => `${Number(wh.utilizationPercent ?? 0).toFixed(1)}%` },
+    { key: 'stockValueStored', label: 'Stock Value', render: (wh) => formatMoney(Number(wh.stockValueStored ?? 0)) },
+    { key: 'activeProductsCount', label: 'Products', render: (wh) => Number(wh.activeProductsCount ?? 0) },
+    { key: 'status', label: 'Status', render: (wh) => <StatusBadge status={String(wh.status ?? 'Active')} /> },
+  ], []);
+
   if (view === 'form') {
     return (
       <InventoryFormLayout title={editingId ? 'Edit Warehouse' : 'Create Warehouse'} subtitle="Configure warehouse locations, capacity, and storage rules." onBack={() => { setView('main'); resetForm(); }} onSubmit={handleSubmit} submitLabel="Save Warehouse">
@@ -112,37 +127,17 @@ export function WarehousesPage() {
         </FilterBar>
       }
     >
-      <div className="bg-white rounded-xl border border-slate-200/80 overflow-x-auto">
-        <table className="w-full text-left text-xs">
-          <thead className="bg-slate-50 text-slate-500 uppercase text-[10px] font-bold"><tr>
-            <th className="px-6 py-3">Warehouse</th><th className="px-6 py-3">Location</th><th className="px-6 py-3">Type</th>
-            <th className="px-6 py-3">Manager</th><th className="px-6 py-3">Contact</th><th className="px-6 py-3">Capacity</th>
-            <th className="px-6 py-3">Current Stock</th><th className="px-6 py-3">Utilization</th><th className="px-6 py-3">Stock Value</th>
-            <th className="px-6 py-3">Products</th><th className="px-6 py-3">Status</th><th className="px-6 py-3 text-center">Actions</th>
-          </tr></thead>
-          <tbody>
-            {filtered.map((wh) => (
-              <tr key={String(wh.id)} className="border-b border-slate-100 hover:bg-slate-50/50">
-                <td className="px-6 py-4 font-bold text-slate-800">{String(wh.name)}</td>
-                <td className="px-6 py-4 text-slate-600">{String(wh.location ?? '—')}</td>
-                <td className="px-6 py-4 text-slate-600">{String(wh.type ?? '—')}</td>
-                <td className="px-6 py-4 text-slate-600">{String(wh.manager ?? '—')}</td>
-                <td className="px-6 py-4 text-slate-600">{String(wh.contact ?? '—')}</td>
-                <td className="px-6 py-4 text-slate-600">{Number(wh.capacity ?? 0).toLocaleString()}</td>
-                <td className="px-6 py-4 text-slate-600">{Number(wh.currentStock ?? 0).toLocaleString()}</td>
-                <td className="px-6 py-4 text-slate-600">{Number(wh.utilizationPercent ?? 0).toFixed(1)}%</td>
-                <td className="px-6 py-4 text-slate-600">{formatMoney(Number(wh.stockValueStored ?? 0))}</td>
-                <td className="px-6 py-4 text-slate-600">{Number(wh.activeProductsCount ?? 0)}</td>
-                <td className="px-6 py-4"><StatusBadge status={String(wh.status ?? 'Active')} /></td>
-                <td className="px-6 py-4 text-center flex justify-center gap-2">
-                  <button type="button" onClick={() => openEdit(wh)} className="p-1.5 text-blue-600 cursor-pointer"><Pencil className="w-4 h-4" /></button>
-                  <button type="button" onClick={() => handleDelete(String(wh.id))} className="p-1.5 text-red-500 cursor-pointer"><Trash2 className="w-4 h-4" /></button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+      <AppTable
+        columns={columns}
+        rows={filtered}
+        emptyMessage="No warehouses found."
+        renderActions={(wh) => (
+          <>
+            <TableIconAction variant="edit" onClick={() => openEdit(wh)} />
+            <TableIconAction variant="delete" onClick={() => handleDelete(String(wh.id))} />
+          </>
+        )}
+      />
     </InventoryListLayout>
   );
 }

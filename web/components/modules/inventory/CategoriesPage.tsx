@@ -1,9 +1,10 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { Pencil, Trash2 } from 'lucide-react';
 import { AdvancedDetailsToggle } from '@/components/shared/AdvancedDetailsToggle';
+import { AppTable, type AppTableColumn } from '@/components/shared/AppTable';
 import { StatusBadge } from '@/components/shared/StatusBadge';
+import { TableIconAction } from '@/components/shared/TableIconAction';
 import { InventoryFormLayout, InventoryListLayout, FilterBar, FilterSelect, SearchInput, INPUT_CLS, SELECT_CLS } from '@/components/modules/inventory/shared/inventory-ui';
 import { useAppStore } from '@/lib/state/app-store';
 import {
@@ -74,6 +75,17 @@ export function CategoriesPage() {
     saveAppState();
   };
 
+  const columns = useMemo<AppTableColumn<Record<string, unknown>>[]>(() => [
+    { key: 'name', label: 'Category', render: (cat) => <span className="font-bold text-slate-800">{String(cat.name)}</span> },
+    { key: 'code', label: 'Code', render: (cat) => String(cat.code ?? '—') },
+    { key: 'type', label: 'Type', render: (cat) => String(cat.type ?? '—') },
+    { key: 'parent', label: 'Parent', render: (cat) => String(cat.parentCategoryName) },
+    { key: 'productCount', label: 'Products', render: (cat) => Number(cat.productCount ?? 0) },
+    { key: 'totalStockValue', label: 'Stock Value', render: (cat) => formatMoney(Number(cat.totalStockValue ?? 0)) },
+    { key: 'stockPolicy', label: 'Policy', render: (cat) => String(cat.stockPolicy ?? 'FIFO') },
+    { key: 'status', label: 'Status', render: (cat) => <StatusBadge status={String(cat.status ?? 'Active')} /> },
+  ], []);
+
   if (view === 'form') {
     return (
       <InventoryFormLayout title={editingId ? 'Edit Category' : 'Create Category'} subtitle="Organize products with hierarchy, tax defaults, and stock policies." onBack={() => { setView('main'); resetForm(); }} onSubmit={handleSubmit} submitLabel="Save Category">
@@ -117,33 +129,17 @@ export function CategoriesPage() {
         </FilterBar>
       }
     >
-      <div className="bg-white rounded-xl border border-slate-200/80 overflow-x-auto">
-        <table className="w-full text-left text-xs">
-          <thead className="bg-slate-50 text-slate-500 uppercase text-[10px] font-bold"><tr>
-            <th className="px-6 py-3">Category</th><th className="px-6 py-3">Code</th><th className="px-6 py-3">Type</th>
-            <th className="px-6 py-3">Parent</th><th className="px-6 py-3">Products</th><th className="px-6 py-3">Stock Value</th>
-            <th className="px-6 py-3">Policy</th><th className="px-6 py-3">Status</th><th className="px-6 py-3 text-center">Actions</th>
-          </tr></thead>
-          <tbody>
-            {filtered.map((cat) => (
-              <tr key={String(cat.id)} className="border-b border-slate-100 hover:bg-slate-50/50">
-                <td className="px-6 py-4 font-bold text-slate-800">{String(cat.name)}</td>
-                <td className="px-6 py-4 text-slate-600">{String(cat.code ?? '—')}</td>
-                <td className="px-6 py-4 text-slate-600">{String(cat.type ?? '—')}</td>
-                <td className="px-6 py-4 text-slate-600">{String(cat.parentCategoryName)}</td>
-                <td className="px-6 py-4 text-slate-600">{Number(cat.productCount ?? 0)}</td>
-                <td className="px-6 py-4 text-slate-600">{formatMoney(Number(cat.totalStockValue ?? 0))}</td>
-                <td className="px-6 py-4 text-slate-600">{String(cat.stockPolicy ?? 'FIFO')}</td>
-                <td className="px-6 py-4"><StatusBadge status={String(cat.status ?? 'Active')} /></td>
-                <td className="px-6 py-4 text-center flex justify-center gap-2">
-                  <button type="button" onClick={() => openEdit(cat)} className="p-1.5 text-blue-600 cursor-pointer"><Pencil className="w-4 h-4" /></button>
-                  <button type="button" onClick={() => handleDelete(String(cat.id))} className="p-1.5 text-red-500 cursor-pointer"><Trash2 className="w-4 h-4" /></button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+      <AppTable
+        columns={columns}
+        rows={filtered}
+        emptyMessage="No categories found."
+        renderActions={(cat) => (
+          <>
+            <TableIconAction variant="edit" onClick={() => openEdit(cat)} />
+            <TableIconAction variant="delete" onClick={() => handleDelete(String(cat.id))} />
+          </>
+        )}
+      />
     </InventoryListLayout>
   );
 }

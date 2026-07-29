@@ -6,21 +6,14 @@ import { Footer } from '@/components/layout/Footer';
 import { FormHeader } from '@/components/layout/FormHeader';
 import { useAppStore } from '@/lib/state/app-store';
 import { getLeadList, getOwnerOptions, createLead, updateLead, convertLeadToCustomer, getLeadActivities } from '@/lib/services/crm-service';
+import { AppTable, type AppTableColumn } from '@/components/shared/AppTable';
+import { StatusBadge } from '@/components/shared/StatusBadge';
 import { KanbanBoard, type KanbanCard } from '@/components/shared/KanbanBoard';
 import { ProfileDrawer } from '@/components/shared/ProfileDrawer';
 import { KpiCards } from '@/components/shared/KpiCards';
 
 function formatCurrency(value: number) {
   return `৳${Number(value || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-}
-
-function statusBadgeClass(status: string) {
-  const s = String(status || '').toLowerCase();
-  if (s === 'new') return 'bg-blue-50 text-blue-700';
-  if (s === 'contacted') return 'bg-amber-50 text-amber-700';
-  if (s === 'qualified') return 'bg-emerald-50 text-emerald-700';
-  if (s === 'lost') return 'bg-rose-50 text-rose-700';
-  return 'bg-slate-100 text-slate-600';
 }
 
 export function LeadsPage() {
@@ -83,6 +76,37 @@ export function LeadsPage() {
 
   const openCount = leads.filter((l) => l.conversionStatus !== 'converted' && l.status !== 'lost').length;
   const totalValue = leads.reduce((s, l) => s + Number(l.expectedValue || 0), 0);
+
+  const leadColumns = useMemo<AppTableColumn<Record<string, unknown>>[]>(() => [
+    {
+      key: 'name',
+      label: 'Lead name / company',
+      render: (row) => (
+        <>
+          <div className="font-bold text-slate-900">{String(row.name)}</div>
+          <div className="text-slate-500 text-[11px]">{String(row.company)}</div>
+        </>
+      ),
+    },
+    {
+      key: 'contact',
+      label: 'Contact detail',
+      render: (row) => (
+        <>
+          <div>{String(row.phone)}</div>
+          <div className="text-slate-500 text-[11px]">{String(row.email || '—')}</div>
+        </>
+      ),
+    },
+    { key: 'source', label: 'Source', render: (row) => String(row.source) },
+    { key: 'rep', label: 'Assigned rep', render: (row) => String(row.assignedRepName || '—') },
+    {
+      key: 'status',
+      label: 'Status',
+      render: (row) => <StatusBadge status={String(row.status)} />,
+    },
+    { key: 'value', label: 'Value', render: (row) => formatCurrency(Number(row.expectedValue || 0)) },
+  ], []);
 
   const resetForm = () => {
     setForm({
@@ -293,48 +317,12 @@ export function LeadsPage() {
           onCardClick={(card) => setDrawerId(card.id)}
         />
       ) : (
-      <div className="bg-white p-4 rounded-xl border border-slate-200">
-        <div className="overflow-x-auto rounded-xl border border-slate-100">
-          <table className="w-full text-left text-xs border-collapse">
-            <thead>
-              <tr className="bg-slate-50 text-slate-500 border-b border-slate-100 font-bold">
-                <th className="p-4">Lead name / company</th>
-                <th className="p-4">Contact detail</th>
-                <th className="p-4">Source</th>
-                <th className="p-4">Assigned rep</th>
-                <th className="p-4">Status</th>
-                <th className="p-4 text-right">Value</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100 font-semibold text-slate-700">
-              {leads.length === 0 ? (
-                <tr><td colSpan={6} className="p-8 text-center text-slate-400">No leads found</td></tr>
-              ) : (
-                leads.map((lead) => (
-                  <tr key={String(lead.id)} className="hover:bg-slate-50 transition-colors cursor-pointer" onClick={() => setDrawerId(String(lead.id))}>
-                    <td className="p-4">
-                      <div className="font-bold text-slate-900">{String(lead.name)}</div>
-                      <div className="text-slate-500 text-[11px]">{String(lead.company)}</div>
-                    </td>
-                    <td className="p-4">
-                      <div>{String(lead.phone)}</div>
-                      <div className="text-slate-500 text-[11px]">{String(lead.email || '—')}</div>
-                    </td>
-                    <td className="p-4">{String(lead.source)}</td>
-                    <td className="p-4">{String(lead.assignedRepName || '—')}</td>
-                    <td className="p-4">
-                      <span className={`px-2 py-1 rounded-full text-[10px] font-bold ${statusBadgeClass(String(lead.status))}`}>
-                        {String(lead.status).charAt(0).toUpperCase() + String(lead.status).slice(1)}
-                      </span>
-                    </td>
-                    <td className="p-4 text-right">{formatCurrency(Number(lead.expectedValue || 0))}</td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
-      </div>
+        <AppTable
+          columns={leadColumns}
+          rows={leads}
+          emptyMessage="No leads found"
+          onRowClick={(row) => setDrawerId(String(row.id))}
+        />
       )}
 
       <ProfileDrawer

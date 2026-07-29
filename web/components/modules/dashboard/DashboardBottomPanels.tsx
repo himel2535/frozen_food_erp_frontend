@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useMemo } from 'react';
 import { Icon } from '@iconify/react';
+import { AppTable, type AppTableColumn } from '@/components/shared/AppTable';
 import { useAppStore } from '@/lib/state/app-store';
 import type { AppState } from '@/lib/state/types';
 
@@ -81,6 +82,38 @@ export function DashboardBottomPanels() {
     return rows.slice(0, 3);
   }, [appState.invoices]);
 
+  const topProductColumns = useMemo<AppTableColumn<(typeof TOP_PRODUCTS)[number]>[]>(() => [
+    {
+      key: 'name',
+      label: t('common.product'),
+      render: (row) => (
+        <div className="flex items-center gap-3">
+          <img src={row.image} className="h-7 w-7 rounded-md object-cover bg-slate-100 border border-slate-200" alt="" />
+          <span className="font-bold text-slate-950">{row.name}</span>
+        </div>
+      ),
+    },
+    {
+      key: 'category',
+      label: t('common.category'),
+      render: (row) => (
+        <span className="bg-blue-50 text-blue-600 text-[10px] font-bold px-2 py-0.5 rounded-lg">{row.category}</span>
+      ),
+    },
+    {
+      key: 'sold',
+      label: t('common.sold'),
+      render: (row) => <span className="font-bold text-slate-800">{row.sold}</span>,
+    },
+    {
+      key: 'revenue',
+      label: t('common.revenue'),
+      render: (row) => (
+        <span className="font-extrabold text-slate-950">${row.revenue.toLocaleString()}</span>
+      ),
+    },
+  ], [t]);
+
   return (
     <section className="grid grid-cols-1 lg:grid-cols-4 gap-2">
       <div className="premium-card p-4 premium-shadow lg:col-span-2 flex flex-col">
@@ -93,35 +126,12 @@ export function DashboardBottomPanels() {
             {t('dashboard.view_all')}
           </Link>
         </div>
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs font-medium text-slate-600">
-            <thead>
-              <tr className="text-[10px] uppercase font-bold text-slate-400/80 border-b border-slate-100">
-                <th className="pb-2.5">{t('common.product')}</th>
-                <th className="pb-2.5">{t('common.category')}</th>
-                <th className="pb-2.5 text-center">{t('common.sold')}</th>
-                <th className="pb-2.5 text-right">{t('common.revenue')}</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-150">
-              {TOP_PRODUCTS.map((row) => (
-                <tr key={row.name} className="hover:bg-slate-50/50 transition-colors">
-                  <td className="py-3">
-                    <div className="flex items-center gap-3">
-                      <img src={row.image} className="h-7 w-7 rounded-md object-cover bg-slate-100 border border-slate-200" alt="" />
-                      <span className="font-bold text-slate-950">{row.name}</span>
-                    </div>
-                  </td>
-                  <td className="py-3">
-                    <span className="bg-blue-50 text-blue-600 text-[10px] font-bold px-2 py-0.5 rounded-lg">{row.category}</span>
-                  </td>
-                  <td className="py-3 text-center font-bold text-slate-800">{row.sold}</td>
-                  <td className="py-3 text-right font-extrabold text-slate-950">${row.revenue.toLocaleString()}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <AppTable
+          className="app-table--embedded"
+          columns={topProductColumns}
+          rows={TOP_PRODUCTS}
+          rowKey={(row) => row.name}
+        />
       </div>
 
       <div className="premium-card p-4 premium-shadow lg:col-span-1 flex flex-col">

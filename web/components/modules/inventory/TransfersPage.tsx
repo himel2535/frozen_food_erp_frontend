@@ -1,9 +1,10 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { CheckCircle } from 'lucide-react';
 import { AdvancedDetailsToggle } from '@/components/shared/AdvancedDetailsToggle';
+import { AppTable, type AppTableColumn } from '@/components/shared/AppTable';
 import { StatusBadge } from '@/components/shared/StatusBadge';
+import { TableIconAction } from '@/components/shared/TableIconAction';
 import { InventoryFormLayout, InventoryListLayout, FilterBar, FilterSelect, SearchInput, INPUT_CLS, SELECT_CLS } from '@/components/modules/inventory/shared/inventory-ui';
 import { ProductSelect, WarehouseSelect } from '@/components/modules/inventory/shared/selects';
 import { useAppStore } from '@/lib/state/app-store';
@@ -62,6 +63,18 @@ export function TransfersPage() {
     saveAppState();
   };
 
+  const columns = useMemo<AppTableColumn<Record<string, unknown>>[]>(() => [
+    { key: 'id', label: 'ID', render: (row) => <span className="font-mono text-slate-600">{String(row.id)}</span> },
+    { key: 'product', label: 'Product', render: (row) => <span className="font-bold text-slate-800">{String(productName(row.productId))}</span> },
+    { key: 'from', label: 'From', render: (row) => getWarehouseName(appState, String(row.fromWarehouseId ?? row.fromWh)) },
+    { key: 'to', label: 'To', render: (row) => getWarehouseName(appState, String(row.toWarehouseId ?? row.toWh)) },
+    { key: 'qty', label: 'Qty', render: (row) => Number(row.qty ?? 0) },
+    { key: 'date', label: 'Date', render: (row) => String(row.date ?? '—') },
+    { key: 'notes', label: 'Notes', className: 'max-w-[120px] truncate', render: (row) => String(row.notes ?? '—') },
+    { key: 'status', label: 'Status', render: (row) => <StatusBadge status={String(row.status ?? 'Pending')} /> },
+    { key: 'created', label: 'Created', render: (row) => String(row.date ?? '—') },
+  ], [appState, products]);
+
   if (view === 'form') {
     return (
       <InventoryFormLayout title="Create Transfer" subtitle="Move stock between warehouses with from/to tracking." onBack={() => { setView('main'); resetForm(); }} onSubmit={handleSubmit} submitLabel="Save Transfer">
@@ -102,38 +115,16 @@ export function TransfersPage() {
         </FilterBar>
       }
     >
-      <div className="bg-white rounded-xl border border-slate-200/80 overflow-x-auto">
-        <table className="w-full text-left text-xs">
-          <thead className="bg-slate-50 text-slate-500 uppercase text-[10px] font-bold"><tr>
-            <th className="px-6 py-3">ID</th><th className="px-6 py-3">Product</th><th className="px-6 py-3">From</th>
-            <th className="px-6 py-3">To</th><th className="px-6 py-3">Qty</th><th className="px-6 py-3">Date</th>
-            <th className="px-6 py-3">Notes</th><th className="px-6 py-3">Status</th><th className="px-6 py-3">Created</th>
-            <th className="px-6 py-3 text-center">Actions</th>
-          </tr></thead>
-          <tbody>
-            {filtered.map((row) => (
-              <tr key={String(row.id)} className="border-b border-slate-100 hover:bg-slate-50/50">
-                <td className="px-6 py-4 font-mono text-slate-600">{String(row.id)}</td>
-                <td className="px-6 py-4 font-bold text-slate-800">{String(productName(row.productId))}</td>
-                <td className="px-6 py-4 text-slate-600">{getWarehouseName(appState, String(row.fromWarehouseId ?? row.fromWh))}</td>
-                <td className="px-6 py-4 text-slate-600">{getWarehouseName(appState, String(row.toWarehouseId ?? row.toWh))}</td>
-                <td className="px-6 py-4 text-slate-600">{Number(row.qty ?? 0)}</td>
-                <td className="px-6 py-4 text-slate-600">{String(row.date ?? '—')}</td>
-                <td className="px-6 py-4 text-slate-600 max-w-[120px] truncate">{String(row.notes ?? '—')}</td>
-                <td className="px-6 py-4"><StatusBadge status={String(row.status ?? 'Pending')} /></td>
-                <td className="px-6 py-4 text-slate-600">{String(row.date ?? '—')}</td>
-                <td className="px-6 py-4 text-center">
-                  {String(row.status) === 'Pending' && (
-                    <button type="button" onClick={() => handleComplete(String(row.id))} className="inline-flex items-center gap-1 px-3 py-1.5 text-blue-600 border border-blue-200 rounded-lg text-[11px] font-bold cursor-pointer hover:bg-blue-50">
-                      <CheckCircle className="w-3 h-3" /> Complete
-                    </button>
-                  )}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+      <AppTable
+        columns={columns}
+        rows={filtered}
+        emptyMessage="No transfer records found."
+        renderActions={(row) => (
+          String(row.status) === 'Pending' ? (
+            <TableIconAction variant="approve" label="Complete" onClick={() => handleComplete(String(row.id))} />
+          ) : null
+        )}
+      />
     </InventoryListLayout>
   );
 }

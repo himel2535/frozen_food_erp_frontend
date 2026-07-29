@@ -5,6 +5,7 @@ import { Plus } from 'lucide-react';
 import { Footer } from '@/components/layout/Footer';
 import { FormHeader } from '@/components/layout/FormHeader';
 import { AdvancedDetailsToggle } from '@/components/shared/AdvancedDetailsToggle';
+import { AppTable, type AppTableColumn } from '@/components/shared/AppTable';
 import { KanbanBoard, type KanbanCard } from '@/components/shared/KanbanBoard';
 import { useAppStore } from '@/lib/state/app-store';
 import {
@@ -78,6 +79,29 @@ export function DealsPage() {
         ),
     }));
   }, [deals]);
+
+  const dealListColumns = useMemo<AppTableColumn<Record<string, unknown>>[]>(() => [
+    {
+      key: 'title',
+      label: 'Deal',
+      render: (row) => (
+        <>
+          <div className="font-bold">{String(row.title)}</div>
+          <div className="text-slate-500">{String(row.company)}</div>
+        </>
+      ),
+    },
+    {
+      key: 'stage',
+      label: 'Stage',
+      render: (row) => DEAL_STAGE_LABELS[row.stage as keyof typeof DEAL_STAGE_LABELS] || String(row.stage),
+    },
+    {
+      key: 'value',
+      label: 'Value',
+      render: (row) => <span className="font-bold">{formatCurrency(Number(row.expectedValue || 0))}</span>,
+    },
+  ], []);
 
   const resetForm = () => {
     setForm({
@@ -287,22 +311,12 @@ export function DealsPage() {
       {layoutMode === 'kanban' ? (
         <KanbanBoard columns={columns} onStageChange={handleStageChange} onCardClick={(card) => setDetailId(card.id)} />
       ) : (
-        <div className="bg-white rounded-xl border border-slate-200 overflow-x-auto">
-          <table className="w-full text-xs">
-            <thead className="bg-slate-50 text-slate-500 uppercase text-[10px] font-bold">
-              <tr><th className="p-4 text-left">Deal</th><th className="p-4">Stage</th><th className="p-4 text-right">Value</th></tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
-              {deals.map((d) => (
-                <tr key={String(d.id)} className="hover:bg-slate-50 cursor-pointer" onClick={() => setDetailId(String(d.id))}>
-                  <td className="p-4"><div className="font-bold">{String(d.title)}</div><div className="text-slate-500">{String(d.company)}</div></td>
-                  <td className="p-4">{DEAL_STAGE_LABELS[d.stage as keyof typeof DEAL_STAGE_LABELS] || String(d.stage)}</td>
-                  <td className="p-4 text-right font-bold">{formatCurrency(Number(d.expectedValue || 0))}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <AppTable
+          columns={dealListColumns}
+          rows={deals}
+          emptyMessage="No deals found."
+          onRowClick={(row) => setDetailId(String(row.id))}
+        />
       )}
 
       <ProfileDrawer

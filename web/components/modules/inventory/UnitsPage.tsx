@@ -1,9 +1,10 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { Pencil, Trash2 } from 'lucide-react';
 import { AdvancedDetailsToggle } from '@/components/shared/AdvancedDetailsToggle';
+import { AppTable, type AppTableColumn } from '@/components/shared/AppTable';
 import { StatusBadge } from '@/components/shared/StatusBadge';
+import { TableIconAction } from '@/components/shared/TableIconAction';
 import { InventoryFormLayout, InventoryListLayout, FilterBar, FilterSelect, SearchInput, INPUT_CLS, SELECT_CLS } from '@/components/modules/inventory/shared/inventory-ui';
 import { useAppStore } from '@/lib/state/app-store';
 import {
@@ -70,6 +71,17 @@ export function UnitsPage() {
     saveAppState();
   };
 
+  const columns = useMemo<AppTableColumn<Record<string, unknown>>[]>(() => [
+    { key: 'name', label: 'Unit Name', render: (unit) => <span className="font-bold text-slate-800">{String(unit.name)}</span> },
+    { key: 'code', label: 'Code', render: (unit) => String(unit.code) },
+    { key: 'symbol', label: 'Symbol', render: (unit) => String(unit.symbol ?? unit.code) },
+    { key: 'baseUnit', label: 'Base Unit', render: (unit) => String(unit.baseUnit || '—') },
+    { key: 'conversionFactor', label: 'Conversion', render: (unit) => (unit.conversionFactor ? String(unit.conversionFactor) : '1') },
+    { key: 'productsUsing', label: 'Products Using', render: (unit) => countProductsUsingUnit(appState, unit) },
+    { key: 'description', label: 'Description', className: 'max-w-[160px] truncate', render: (unit) => String(unit.description || '—') },
+    { key: 'status', label: 'Status', render: (unit) => <StatusBadge status={String(unit.status ?? 'Active')} /> },
+  ], [appState]);
+
   if (view === 'form') {
     return (
       <InventoryFormLayout title={editingId ? 'Edit Unit' : 'Create Unit'} subtitle="Define measurement units and conversion rules." onBack={() => { setView('main'); resetForm(); }} onSubmit={handleSubmit} submitLabel="Save Unit">
@@ -109,33 +121,17 @@ export function UnitsPage() {
         </FilterBar>
       }
     >
-      <div className="bg-white rounded-xl border border-slate-200/80 overflow-x-auto">
-        <table className="w-full text-left text-xs">
-          <thead className="bg-slate-50 text-slate-500 uppercase text-[10px] font-bold"><tr>
-            <th className="px-6 py-3">Unit Name</th><th className="px-6 py-3">Code</th><th className="px-6 py-3">Symbol</th>
-            <th className="px-6 py-3">Base Unit</th><th className="px-6 py-3">Conversion</th><th className="px-6 py-3">Products Using</th>
-            <th className="px-6 py-3">Description</th><th className="px-6 py-3">Status</th><th className="px-6 py-3 text-center">Actions</th>
-          </tr></thead>
-          <tbody>
-            {filtered.map((unit) => (
-              <tr key={String(unit.id)} className="border-b border-slate-100 hover:bg-slate-50/50">
-                <td className="px-6 py-4 font-bold text-slate-800">{String(unit.name)}</td>
-                <td className="px-6 py-4 text-slate-600">{String(unit.code)}</td>
-                <td className="px-6 py-4 text-slate-600">{String(unit.symbol ?? unit.code)}</td>
-                <td className="px-6 py-4 text-slate-600">{String(unit.baseUnit || '—')}</td>
-                <td className="px-6 py-4 text-slate-600">{unit.conversionFactor ? String(unit.conversionFactor) : '1'}</td>
-                <td className="px-6 py-4 text-slate-600">{countProductsUsingUnit(appState, unit)}</td>
-                <td className="px-6 py-4 text-slate-600 max-w-[160px] truncate">{String(unit.description || '—')}</td>
-                <td className="px-6 py-4"><StatusBadge status={String(unit.status ?? 'Active')} /></td>
-                <td className="px-6 py-4 text-center flex justify-center gap-2">
-                  <button type="button" onClick={() => openEdit(unit)} className="p-1.5 text-blue-600 cursor-pointer"><Pencil className="w-4 h-4" /></button>
-                  <button type="button" onClick={() => handleDelete(String(unit.id))} className="p-1.5 text-red-500 cursor-pointer"><Trash2 className="w-4 h-4" /></button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+      <AppTable
+        columns={columns}
+        rows={filtered}
+        emptyMessage="No units found."
+        renderActions={(unit) => (
+          <>
+            <TableIconAction variant="edit" onClick={() => openEdit(unit)} />
+            <TableIconAction variant="delete" onClick={() => handleDelete(String(unit.id))} />
+          </>
+        )}
+      />
     </InventoryListLayout>
   );
 }

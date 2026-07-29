@@ -1,12 +1,13 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { Pencil, Trash2 } from 'lucide-react';
 import { Footer } from '@/components/layout/Footer';
 import { FormHeader } from '@/components/layout/FormHeader';
 import { KpiCards } from '@/components/shared/KpiCards';
 import { AdvancedDetailsToggle } from '@/components/shared/AdvancedDetailsToggle';
+import { AppTable, type AppTableColumn } from '@/components/shared/AppTable';
 import { StatusBadge } from '@/components/shared/StatusBadge';
+import { TableIconAction } from '@/components/shared/TableIconAction';
 import { useAppStore } from '@/lib/state/app-store';
 import {
   listInventory,
@@ -65,6 +66,46 @@ export function ProductsPage() {
   const metrics = useMemo(() => getProductMetrics(appState, allProducts), [appState, allProducts]);
   const paged = products.slice((page - 1) * pageSize, page * pageSize);
   const totalPages = Math.max(1, Math.ceil(products.length / pageSize));
+
+  const columns = useMemo<AppTableColumn<Record<string, unknown>>[]>(() => [
+    {
+      key: 'details',
+      label: 'Product Details',
+      render: (row) => (
+        <>
+          <div className="font-bold text-slate-800">{String(row.name)}</div>
+          <div className="text-[10px] text-slate-500">{String(row.sku)} · {String(row.uom ?? 'pcs')} · {String(row.productType ?? '')}</div>
+        </>
+      ),
+    },
+    {
+      key: 'category',
+      label: 'Category',
+      render: (row) => (
+        <span className="px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 font-semibold text-[10px]">{String(row.category ?? '—')}</span>
+      ),
+    },
+    {
+      key: 'totalStock',
+      label: 'Total Stock',
+      render: (row) => {
+        const ws = (row.warehouseStock as Record<string, number>) ?? {};
+        return (
+          <div className="space-y-0.5">
+            <div className="font-extrabold">{computeTotalStock(row).toLocaleString()}</div>
+            {Object.entries(ws).filter(([, v]) => Number(v) > 0).map(([whId, qty]) => (
+              <div key={whId} className="text-[10px] text-slate-400">{String(warehouses.find((w) => String(w.id) === whId)?.name ?? whId)}: {qty}</div>
+            ))}
+          </div>
+        );
+      },
+    },
+    { key: 'reserved', label: 'Reserved', render: (row) => <span className="font-semibold">{Number(row.reserved ?? 0)}</span> },
+    { key: 'available', label: 'Available', render: (row) => <span className="font-bold text-blue-600">{computeAvailableStock(row)}</span> },
+    { key: 'cost', label: 'Cost', render: (row) => formatMoney(Number(row.cost ?? 0)) },
+    { key: 'price', label: 'Selling Price', render: (row) => <span className="font-bold">{formatMoney(Number(row.price ?? 0))}</span> },
+    { key: 'status', label: 'Status', render: (row) => <StatusBadge status={getProductStockStatus(row)} /> },
+  ], [warehouses]);
 
   const resetForm = () => {
     const alloc = buildDefaultWarehouseAllocations(appState);
@@ -243,56 +284,32 @@ export function ProductsPage() {
         </div>
       </div>
 
-      <div className="bg-white rounded-xl border border-slate-200 overflow-x-auto">
-        <table className="w-full text-xs">
-          <thead className="bg-slate-50 text-slate-500 uppercase text-[10px] font-bold">
-            <tr>
-              <th className="px-4 py-3 text-left">Product Details</th>
-              <th className="px-4 py-3 text-left">Category</th>
-              <th className="px-4 py-3 text-right">Total Stock</th>
-              <th className="px-4 py-3 text-right">Reserved</th>
-              <th className="px-4 py-3 text-right">Available</th>
-              <th className="px-4 py-3 text-right">Cost</th>
-              <th className="px-4 py-3 text-right">Selling Price</th>
-              <th className="px-4 py-3">Status</th>
-              <th className="px-4 py-3 text-right">Actions</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-slate-100">
-            {paged.map((row) => {
-              const ws = (row.warehouseStock as Record<string, number>) ?? {};
-              const status = getProductStockStatus(row);
-              return (
-                <tr key={String(row.id)} className="hover:bg-slate-50">
-                  <td className="px-4 py-3">
-                    <div className="font-bold text-slate-800">{String(row.name)}</div>
-                    <div className="text-[10px] text-slate-500">{String(row.sku)} · {String(row.uom ?? 'pcs')} · {String(row.productType ?? '')}</div>
-                  </td>
-                  <td className="px-4 py-3"><span className="px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 font-semibold text-[10px]">{String(row.category ?? '—')}</span></td>
-                  <td className="px-4 py-3 text-right">
-                    <div className="font-extrabold">{computeTotalStock(row).toLocaleString()}</div>
-                    {Object.entries(ws).filter(([, v]) => Number(v) > 0).map(([whId, qty]) => (
-                      <div key={whId} className="text-[10px] text-slate-400">{String(warehouses.find((w) => String(w.id) === whId)?.name ?? whId)}: {qty}</div>
-                    ))}
-                  </td>
-                  <td className="px-4 py-3 text-right font-semibold">{Number(row.reserved ?? 0)}</td>
-                  <td className="px-4 py-3 text-right font-bold text-blue-600">{computeAvailableStock(row)}</td>
-                  <td className="px-4 py-3 text-right">{formatMoney(Number(row.cost ?? 0))}</td>
-                  <td className="px-4 py-3 text-right font-bold">{formatMoney(Number(row.price ?? 0))}</td>
-                  <td className="px-4 py-3"><StatusBadge status={status} /></td>
-                  <td className="px-4 py-3">
-                    <div className="flex justify-end gap-2">
-                      <button type="button" onClick={() => openEdit(row)} className="px-2 py-1 border border-slate-200 rounded-lg text-[10px] font-bold cursor-pointer hover:bg-slate-50"><Pencil className="w-3 h-3 inline" /> Edit</button>
-                      <button type="button" onClick={() => { toggleDiscontinued(appState, String(row.id)); saveAppState(); }} className="px-2 py-1 border border-slate-200 rounded-lg text-[10px] font-bold cursor-pointer hover:bg-slate-50">{row.discontinued ? 'Restore' : 'Discontinue'}</button>
-                      <button type="button" onClick={() => { if (window.confirm('Delete?')) { deleteProduct(appState, String(row.id)); saveAppState(); } }} className="px-2 py-1 border border-rose-200 text-rose-600 rounded-lg text-[10px] font-bold cursor-pointer hover:bg-rose-50"><Trash2 className="w-3 h-3 inline" /></button>
-                    </div>
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      </div>
+      <AppTable
+        columns={columns}
+        rows={paged}
+        emptyMessage="No products found."
+        renderActions={(row) => (
+          <>
+            <TableIconAction variant="edit" onClick={() => openEdit(row)} />
+            <TableIconAction
+              variant={row.discontinued ? 'restore' : 'discontinue'}
+              onClick={() => {
+                toggleDiscontinued(appState, String(row.id));
+                saveAppState();
+              }}
+            />
+            <TableIconAction
+              variant="delete"
+              onClick={() => {
+                if (window.confirm('Delete?')) {
+                  deleteProduct(appState, String(row.id));
+                  saveAppState();
+                }
+              }}
+            />
+          </>
+        )}
+      />
 
       <div className="flex items-center justify-between text-xs text-slate-500">
         <span>Showing {(page - 1) * pageSize + 1} to {Math.min(page * pageSize, products.length)} of {products.length} products</span>
