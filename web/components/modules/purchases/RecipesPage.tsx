@@ -1,15 +1,16 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { Layers, Package, Calculator } from 'lucide-react';
+import { Icon } from '@iconify/react';
+import { ArrowDown, ArrowUp, Calculator, Layers, Package, Paperclip } from 'lucide-react';
 import { Footer } from '@/components/layout/Footer';
 import { FormHeader } from '@/components/layout/FormHeader';
 import { ListToolbar } from '@/components/shared/ListToolbar';
-import { KpiCards } from '@/components/shared/KpiCards';
 import { AppTable, type AppTableColumn } from '@/components/shared/AppTable';
 import { StatusBadge } from '@/components/shared/StatusBadge';
 import { TableIconAction } from '@/components/shared/TableIconAction';
 import { BomMaterialForm, type BomMaterialFormValues } from '@/components/modules/purchases/BomMaterialForm';
+import { RecipeCard } from '@/components/modules/purchases/RecipeCard';
 import { useAppStore } from '@/lib/state/app-store';
 import {
   listRecipes,
@@ -18,29 +19,81 @@ import {
   getRecipeBomCost,
   getRecipeBomTotals,
   listMaterialOptions,
-  listFinishedProducts,
   listSupplierOptions,
   createRecipe,
   deleteRecipe,
   addMaterialToRecipe,
   updateMaterialInRecipe,
   removeMaterialFromRecipe,
+  reorderMaterialInRecipe,
   formatMoney,
   type Recipe,
   type BomMaterial,
 } from '@/lib/services/recipes-service';
 
 type View = 'main' | 'form' | 'bom';
+type RecipeListLayout = 'cards' | 'table';
+
+const RECIPES_LAYOUT_KEY = 'recipes-list-layout';
 
 const UNIT_OPTIONS = ['pcs', 'kg', 'liter', 'box', 'meter', 'set'];
 
-function MaterialCell({ name }: { name: string }) {
+const INPUT_CLS = 'w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-xs font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500/10';
+
+function MaterialCell({ name, attachmentName }: { name: string; attachmentName?: string }) {
   return (
     <div className="flex items-center gap-2.5 min-w-[140px]">
       <span className="w-8 h-8 rounded-lg bg-slate-100 text-slate-500 flex items-center justify-center shrink-0">
         <Package className="w-4 h-4" />
       </span>
-      <span className="font-semibold text-slate-800">{name}</span>
+      <span className="min-w-0">
+        <span className="font-semibold text-slate-800 block">{name}</span>
+        {attachmentName && (
+          <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-blue-600 mt-0.5">
+            <Paperclip className="w-3 h-3" /> {attachmentName}
+          </span>
+        )}
+      </span>
+    </div>
+  );
+}
+
+function BomSummaryStrip({
+  totals,
+}: {
+  totals: { totalMaterials: number; totalEffective: number; estimatedCost: number };
+}) {
+  return (
+    <div className="flex flex-wrap gap-2 shrink-0 xl:justify-end self-start">
+      <div className="flex items-center gap-2 rounded-xl bg-white/80 border border-slate-200 px-2.5 py-2 w-[168px]">
+        <span className="w-7 h-7 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
+          <Layers className="w-3.5 h-3.5" />
+        </span>
+        <div className="min-w-0">
+          <p className="text-sm font-extrabold text-slate-900 leading-tight">{totals.totalMaterials}</p>
+          <p className="text-[9px] font-bold text-slate-500 uppercase leading-tight">Total Materials</p>
+        </div>
+      </div>
+      <div className="flex items-center gap-2 rounded-xl bg-white/80 border border-slate-200 px-2.5 py-2 w-[168px]">
+        <span className="w-7 h-7 rounded-lg bg-violet-50 text-violet-600 flex items-center justify-center shrink-0">
+          <Package className="w-3.5 h-3.5" />
+        </span>
+        <div className="min-w-0">
+          <p className="text-sm font-extrabold text-slate-900 leading-tight truncate">
+            {totals.totalEffective.toLocaleString(undefined, { maximumFractionDigits: 2 })} pcs
+          </p>
+          <p className="text-[9px] font-bold text-slate-500 uppercase leading-tight">Total Effective Components</p>
+        </div>
+      </div>
+      <div className="flex items-center gap-2 rounded-xl bg-white/80 border border-emerald-200 px-2.5 py-2 w-[168px]">
+        <span className="w-7 h-7 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
+          <Calculator className="w-3.5 h-3.5" />
+        </span>
+        <div className="min-w-0">
+          <p className="text-sm font-extrabold text-emerald-700 leading-tight truncate">{formatMoney(totals.estimatedCost)}</p>
+          <p className="text-[9px] font-bold text-slate-500 uppercase leading-tight">Est. BOM Cost / Product</p>
+        </div>
+      </div>
     </div>
   );
 }
@@ -55,12 +108,21 @@ export function RecipesPage() {
   const [editingMaterialId, setEditingMaterialId] = useState<string | null>(null);
   const [materialFormKey, setMaterialFormKey] = useState(0);
   const [editMaterialInitial, setEditMaterialInitial] = useState<Partial<BomMaterialFormValues> | undefined>();
-  const [newRecipeProductId, setNewRecipeProductId] = useState('');
+  const [newRecipe, setNewRecipe] = useState({ product: '', model: '', recipeNumber: '' });
+  const [listLayout, setListLayout] = useState<RecipeListLayout>(() => {
+    if (typeof window === 'undefined') return 'cards';
+    const saved = window.localStorage.getItem(RECIPES_LAYOUT_KEY);
+    return saved === 'table' ? 'table' : 'cards';
+  });
+
+  const setListLayoutPersisted = (layout: RecipeListLayout) => {
+    setListLayout(layout);
+    window.localStorage.setItem(RECIPES_LAYOUT_KEY, layout);
+  };
 
   const recipes = useMemo(() => listRecipes(appState), [appState]);
   const materialOptions = useMemo(() => listMaterialOptions(appState), [appState]);
   const supplierOptions = useMemo(() => listSupplierOptions(appState), [appState]);
-  const finishedProducts = useMemo(() => listFinishedProducts(appState), [appState]);
 
   const filteredRecipes = useMemo(() => {
     if (!search.trim()) return recipes;
@@ -68,7 +130,8 @@ export function RecipesPage() {
     return recipes.filter(
       (r) =>
         r.product.toLowerCase().includes(q) ||
-        r.productSku.toLowerCase().includes(q) ||
+        r.model.toLowerCase().includes(q) ||
+        r.recipeNumber.toLowerCase().includes(q) ||
         r.id.toLowerCase().includes(q),
     );
   }, [recipes, search]);
@@ -83,70 +146,48 @@ export function RecipesPage() {
     [activeRecipe],
   );
 
-  const listColumns = useMemo<AppTableColumn<Recipe>[]>(
+  const bomColumns = useMemo<AppTableColumn<BomMaterial>[]>(
     () => [
-      { key: 'id', label: 'Recipe #' },
-      { key: 'productSku', label: 'Product SKU' },
-      { key: 'product', label: 'Product' },
+      { key: 'index', label: '#', render: (_row, index) => index + 1 },
+      { key: 'name', label: 'Material / Component', render: (row) => <MaterialCell name={row.name} attachmentName={row.attachmentName} /> },
+      { key: 'category', label: 'Category' },
+      { key: 'unit', label: 'Unit' },
+      { key: 'qtyPerProduct', label: 'Qty per Product', render: (row) => row.qtyPerProduct.toLocaleString(undefined, { maximumFractionDigits: 2 }) },
+      { key: 'effectiveQty', label: 'Effective Qty', render: (row) => <span className="font-bold text-emerald-700">{row.effectiveQty.toLocaleString(undefined, { maximumFractionDigits: 2 })}</span> },
+      { key: 'costPerProduct', label: 'Cost / Product (৳)', render: (row) => formatMoney(row.costPerProduct) },
+      { key: 'totalCostImpact', label: 'Total Cost Impact (৳)', render: (row) => formatMoney(row.costPerProduct) },
+    ],
+    [],
+  );
+
+  const recipeListColumns = useMemo<AppTableColumn<Recipe>[]>(
+    () => [
+      { key: 'product', label: 'Product', render: (row) => <span className="font-semibold text-slate-800">{row.product}</span> },
+      {
+        key: 'model',
+        label: 'Model',
+        render: (row) => (
+          <span className="inline-flex px-2 py-0.5 rounded-md bg-blue-50 text-blue-700 text-[10px] font-bold border border-blue-100">
+            {row.model}
+          </span>
+        ),
+      },
+      { key: 'recipeNumber', label: 'Recipe #' },
+      { key: 'version', label: 'Version' },
       {
         key: 'materials',
         label: 'Materials',
-        render: (row) => String(row.materials.length),
+        render: (row) => `${row.materials.length} item${row.materials.length === 1 ? '' : 's'}`,
       },
       {
-        key: 'cost',
-        label: 'Est. Cost',
+        key: 'bomCost',
+        label: 'Est. Cost / Product',
         render: (row) => formatMoney(getRecipeBomCost(row)),
       },
       {
         key: 'status',
         label: 'Status',
         render: (row) => <StatusBadge status={row.status} />,
-      },
-    ],
-    [],
-  );
-
-  const bomColumns = useMemo<AppTableColumn<BomMaterial>[]>(
-    () => [
-      {
-        key: 'index',
-        label: '#',
-        render: (_row, index) => index + 1,
-      },
-      {
-        key: 'name',
-        label: 'Material / Component',
-        render: (row) => <MaterialCell name={row.name} />,
-      },
-      { key: 'category', label: 'Category' },
-      { key: 'unit', label: 'Unit' },
-      {
-        key: 'qtyPerProduct',
-        label: 'Qty per Product',
-        render: (row) => row.qtyPerProduct.toLocaleString(undefined, { maximumFractionDigits: 2 }),
-      },
-      {
-        key: 'wastagePct',
-        label: 'Wastage (%)',
-        render: (row) => `${row.wastagePct}%`,
-      },
-      {
-        key: 'effectiveQty',
-        label: 'Effective Qty',
-        render: (row) => (
-          <span className="font-bold text-emerald-700">{row.effectiveQty.toLocaleString(undefined, { maximumFractionDigits: 2 })}</span>
-        ),
-      },
-      {
-        key: 'costPerProduct',
-        label: 'Cost / Product (৳)',
-        render: (row) => formatMoney(row.costPerProduct),
-      },
-      {
-        key: 'totalCostImpact',
-        label: 'Total Cost Impact (৳)',
-        render: (row) => formatMoney(row.costPerProduct),
       },
     ],
     [],
@@ -178,6 +219,8 @@ export function RecipesPage() {
       standardCost: values.standardCost,
       preferredSupplier: values.preferredSupplier || undefined,
       remarks: values.remarks || undefined,
+      attachmentName: values.attachmentName,
+      attachmentDataUrl: values.attachmentDataUrl,
     };
 
     const result = editingMaterialId
@@ -209,6 +252,8 @@ export function RecipesPage() {
       standardCost: material.standardCost,
       preferredSupplier: material.preferredSupplier ?? '',
       remarks: material.remarks ?? '',
+      attachmentName: material.attachmentName,
+      attachmentDataUrl: material.attachmentDataUrl,
     });
     setMaterialFormKey((k) => k + 1);
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -225,17 +270,17 @@ export function RecipesPage() {
     if (editingMaterialId === materialId) resetMaterialForm();
   };
 
+  const handleReorder = (materialId: string, direction: 'up' | 'down') => {
+    if (!bomRecipeId) return;
+    reorderMaterialInRecipe(appState, bomRecipeId, materialId, direction);
+    saveAppState();
+  };
+
   const handleCreateRecipe = () => {
-    const product = finishedProducts.find((p) => String(p.id) === newRecipeProductId);
-    if (!product) {
-      window.alert('Please select a product.');
-      return;
-    }
-    const sku = String(product.sku ?? product.id);
     const result = createRecipe(appState, {
-      productSku: sku,
-      product: String(product.name),
-      productId: product.id as string | number,
+      product: newRecipe.product,
+      model: newRecipe.model,
+      recipeNumber: newRecipe.recipeNumber || undefined,
       status: 'active',
     });
     if (!result.ok) {
@@ -243,9 +288,8 @@ export function RecipesPage() {
       return;
     }
     saveAppState();
-    openBom(result.id);
-    setNewRecipeProductId('');
-    setView('bom');
+    setNewRecipe({ product: '', model: '', recipeNumber: '' });
+    setView('main');
   };
 
   const handleDeleteRecipe = (id: string) => {
@@ -254,76 +298,52 @@ export function RecipesPage() {
     saveAppState();
   };
 
-  const bomFooter =
-    activeRecipe && bomTotals && activeRecipe.materials.length > 0 ? (
-      <tr>
-        <td colSpan={10} className="app-table-td !p-0 !border-0">
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 p-4 bg-slate-50/80 border-t border-slate-200">
-            <div className="flex items-center gap-3 rounded-xl bg-white/80 border border-slate-200 px-4 py-3">
-              <span className="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center">
-                <Layers className="w-5 h-5" />
-              </span>
-              <div>
-                <p className="text-lg font-extrabold text-slate-900">{bomTotals.totalMaterials}</p>
-                <p className="text-[11px] font-bold text-slate-500 uppercase">Total Materials</p>
-              </div>
-            </div>
-            <div className="flex items-center gap-3 rounded-xl bg-white/80 border border-slate-200 px-4 py-3">
-              <span className="w-10 h-10 rounded-xl bg-violet-50 text-violet-600 flex items-center justify-center">
-                <Package className="w-5 h-5" />
-              </span>
-              <div>
-                <p className="text-lg font-extrabold text-slate-900">
-                  {bomTotals.totalEffective.toLocaleString(undefined, { maximumFractionDigits: 2 })} pcs
-                </p>
-                <p className="text-[11px] font-bold text-slate-500 uppercase">Total Effective Components</p>
-              </div>
-            </div>
-            <div className="flex items-center gap-3 rounded-xl bg-white/80 border border-emerald-50 border-emerald-200 px-4 py-3">
-              <span className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
-                <Calculator className="w-5 h-5" />
-              </span>
-              <div>
-                <p className="text-lg font-extrabold text-emerald-700">{formatMoney(bomTotals.estimatedCost)}</p>
-                <p className="text-[11px] font-bold text-slate-500 uppercase">Estimated BOM Cost / Product</p>
-              </div>
-            </div>
-          </div>
-        </td>
-      </tr>
-    ) : null;
-
   if (view === 'form') {
     return (
       <div className="flex-1 overflow-y-auto p-6 md:p-8 space-y-6 bg-slate-50">
         <div className="max-w-xl mx-auto w-full space-y-6">
           <FormHeader
-            title="Add Recipe"
-            subtitle="Link a finished product to a new bill of materials."
+            title="Create Recipe"
+            subtitle="Phase 1 — enter product name, model, and recipe number only."
             onBack={() => setView('main')}
           />
           <div className="premium-card premium-shadow p-6 space-y-4">
             <div>
-              <label className="block mb-2 text-xs font-bold text-slate-600">Finished Product</label>
-              <select
-                value={newRecipeProductId}
-                onChange={(e) => setNewRecipeProductId(e.target.value)}
-                className="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-xs cursor-pointer"
-              >
-                <option value="">Select product...</option>
-                {finishedProducts.map((p) => (
-                  <option key={String(p.id)} value={String(p.id)}>
-                    {String(p.sku ?? p.id)} — {String(p.name)}
-                  </option>
-                ))}
-              </select>
+              <label className="block mb-2 text-xs font-bold text-slate-600">Product Name *</label>
+              <input
+                type="text"
+                value={newRecipe.product}
+                onChange={(e) => setNewRecipe((p) => ({ ...p, product: e.target.value }))}
+                className={INPUT_CLS}
+                placeholder="e.g. Kids Toy Car"
+              />
             </div>
-            <div className="flex justify-end gap-2">
+            <div>
+              <label className="block mb-2 text-xs font-bold text-slate-600">Model *</label>
+              <input
+                type="text"
+                value={newRecipe.model}
+                onChange={(e) => setNewRecipe((p) => ({ ...p, model: e.target.value }))}
+                className={INPUT_CLS}
+                placeholder="e.g. T101"
+              />
+            </div>
+            <div>
+              <label className="block mb-2 text-xs font-bold text-slate-600">Recipe Number</label>
+              <input
+                type="text"
+                value={newRecipe.recipeNumber}
+                onChange={(e) => setNewRecipe((p) => ({ ...p, recipeNumber: e.target.value }))}
+                className={INPUT_CLS}
+                placeholder="Auto-generated if blank (RCP-001)"
+              />
+            </div>
+            <div className="flex justify-end gap-2 pt-2">
               <button type="button" onClick={() => setView('main')} className="px-4 py-2.5 rounded-xl border border-slate-200 text-xs font-bold cursor-pointer">
                 Cancel
               </button>
               <button type="button" onClick={handleCreateRecipe} className="px-4 py-2.5 rounded-xl bg-blue-600 text-white text-xs font-bold cursor-pointer">
-                Create &amp; Manage BOM
+                Save Recipe
               </button>
             </div>
           </div>
@@ -334,23 +354,34 @@ export function RecipesPage() {
   }
 
   if (view === 'bom' && activeRecipe) {
+    const bomCost = getRecipeBomCost(activeRecipe);
     return (
       <div className="flex-1 overflow-y-auto p-6 md:p-8 space-y-6 flex flex-col">
-        <div className="space-y-1">
-          <FormHeader
-            title={`${activeRecipe.productSku} — ${activeRecipe.product}`}
-            subtitle={`Recipes (BOM) / ${activeRecipe.productSku} — ${activeRecipe.product}`}
-            onBack={() => {
-              setView('main');
-              setBomRecipeId(null);
-              resetMaterialForm();
-            }}
-          />
-          <StatusBadge status={activeRecipe.status} />
+        <div className="flex flex-col xl:flex-row xl:items-start xl:justify-between gap-3">
+          <div className="space-y-2 min-w-0 flex-1">
+            <p className="text-xs font-semibold text-slate-500">
+              Recipes (BOM) &gt; {activeRecipe.model} - {activeRecipe.product} &gt; Add Material
+            </p>
+            <div className="flex flex-wrap items-center gap-3 [&>div]:mb-0">
+              <FormHeader
+                title={`${activeRecipe.model} - ${activeRecipe.product}`}
+                subtitle={`BOM ${activeRecipe.version} • ${activeRecipe.materials.length} Materials • Est. Cost: ${formatMoney(bomCost)} / product`}
+                onBack={() => {
+                  setView('main');
+                  setBomRecipeId(null);
+                  resetMaterialForm();
+                }}
+              />
+              <StatusBadge status={activeRecipe.status} />
+            </div>
+          </div>
+
+          {bomTotals && activeRecipe.materials.length > 0 && <BomSummaryStrip totals={bomTotals} />}
         </div>
 
         <BomMaterialForm
           key={materialFormKey}
+          appState={appState}
           materialOptions={materialOptions}
           supplierOptions={supplierOptions}
           unitOptions={UNIT_OPTIONS}
@@ -361,18 +392,40 @@ export function RecipesPage() {
         />
 
         <div className="space-y-3">
-          <h3 className="text-sm font-extrabold text-slate-900">
-            Materials in {activeRecipe.productSku}
-          </h3>
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <h3 className="text-sm font-extrabold text-slate-900">
+              Materials in {activeRecipe.model} - {activeRecipe.product} ({activeRecipe.materials.length} items)
+            </h3>
+            <span className="text-xs font-bold text-slate-500">Use row arrows to reorder materials</span>
+          </div>
           <AppTable<BomMaterial>
             columns={bomColumns}
             rows={activeRecipe.materials}
             rowKey={(row) => row.id}
             emptyMessage="No materials in this BOM yet. Add your first material above."
-            footer={bomFooter}
-            renderActions={(row) => (
+            renderActions={(row, index) => (
               <>
                 <TableIconAction variant="edit" label="Edit material" onClick={() => handleEditMaterial(row)} />
+                <button
+                  type="button"
+                  onClick={() => handleReorder(row.id, 'up')}
+                  disabled={index === 0}
+                  className="inline-flex items-center justify-center w-8 h-8 rounded-lg border border-slate-200 bg-white text-slate-500 hover:bg-slate-50 disabled:opacity-40 cursor-pointer disabled:cursor-not-allowed"
+                  aria-label="Move up"
+                  title="Move up"
+                >
+                  <ArrowUp className="w-4 h-4" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleReorder(row.id, 'down')}
+                  disabled={index === activeRecipe.materials.length - 1}
+                  className="inline-flex items-center justify-center w-8 h-8 rounded-lg border border-slate-200 bg-white text-slate-500 hover:bg-slate-50 disabled:opacity-40 cursor-pointer disabled:cursor-not-allowed"
+                  aria-label="Move down"
+                  title="Move down"
+                >
+                  <ArrowDown className="w-4 h-4" />
+                </button>
                 <TableIconAction variant="delete" onClick={() => handleDeleteMaterial(row.id)} />
               </>
             )}
@@ -384,37 +437,108 @@ export function RecipesPage() {
   }
 
   return (
-    <div className="flex-1 overflow-y-auto p-6 md:p-8 space-y-6 flex flex-col">
+    <div className="flex-1 overflow-y-auto p-2 md:p-4 space-y-2 flex flex-col">
       <ListToolbar
         title="Recipes (BOM)"
-        subtitle="Bill of materials for purchased components."
+        subtitle="Create a recipe first, then build the bill of materials for each product."
         search={search}
         onSearchChange={setSearch}
-        searchPlaceholder="Search product or recipe..."
+        searchPlaceholder="Search product, model, or recipe..."
         onAdd={() => setView('form')}
-        addLabel="Add Recipe"
+        addLabel="Create Recipe"
+        filters={
+          <div className="inline-flex rounded-xl border border-slate-200 bg-slate-50 p-0.5 shrink-0">
+            <button
+              type="button"
+              onClick={() => setListLayoutPersisted('cards')}
+              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold cursor-pointer transition-colors ${
+                listLayout === 'cards' ? 'bg-white text-blue-700 shadow-sm' : 'text-slate-600 hover:text-slate-800'
+              }`}
+              aria-pressed={listLayout === 'cards'}
+            >
+              <Icon icon="flat-color-icons:grid" width={22} height={22} className="shrink-0" />
+              Cards
+            </button>
+            <button
+              type="button"
+              onClick={() => setListLayoutPersisted('table')}
+              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold cursor-pointer transition-colors ${
+                listLayout === 'table' ? 'bg-white text-blue-700 shadow-sm' : 'text-slate-600 hover:text-slate-800'
+              }`}
+              aria-pressed={listLayout === 'table'}
+            >
+              <Icon icon="flat-color-icons:list" width={22} height={22} className="shrink-0" />
+              Table
+            </button>
+          </div>
+        }
       />
 
-      <KpiCards
-        items={[
-          { key: 'total', label: 'Total Recipes', value: String(metrics.total) },
-          { key: 'active', label: 'Active', value: String(metrics.active) },
-          { key: 'avg', label: 'Avg BOM Cost', value: formatMoney(metrics.avgCost) },
-        ]}
-      />
+      <section className="grid grid-cols-2 md:grid-cols-3 gap-2">
+        <div className="premium-card premium-shadow p-3.5 flex items-center justify-between gap-3 transition-all hover:border-slate-300 hover:shadow-md min-h-[72px]">
+          <div className="min-w-0">
+            <span className="text-xs font-bold text-slate-500 tracking-wide block">Total Recipes</span>
+            <span className="text-lg font-extrabold text-slate-900 leading-tight">{metrics.total}</span>
+          </div>
+          <div className="flex items-center justify-center shrink-0">
+            <Icon icon="flat-color-icons:serial-tasks" width={38} height={38} className="shrink-0" />
+          </div>
+        </div>
+        <div className="premium-card premium-shadow p-3.5 flex items-center justify-between gap-3 transition-all hover:border-slate-300 hover:shadow-md min-h-[72px]">
+          <div className="min-w-0">
+            <span className="text-xs font-bold text-slate-500 tracking-wide block">Active</span>
+            <span className="text-lg font-extrabold text-slate-900 leading-tight">{metrics.active}</span>
+          </div>
+          <div className="flex items-center justify-center shrink-0">
+            <Icon icon="fluent-color:checkmark-circle-24" width={38} height={38} className="shrink-0" />
+          </div>
+        </div>
+        <div className="premium-card premium-shadow p-3.5 flex items-center justify-between gap-3 transition-all hover:border-slate-300 hover:shadow-md min-h-[72px] col-span-2 md:col-span-1">
+          <div className="min-w-0">
+            <span className="text-xs font-bold text-slate-500 tracking-wide block">Avg BOM Cost</span>
+            <span className="text-lg font-extrabold text-slate-900 leading-tight truncate">{formatMoney(metrics.avgCost)}</span>
+          </div>
+          <div className="flex items-center justify-center shrink-0">
+            <Icon icon="flat-color-icons:currency-exchange" width={38} height={38} className="shrink-0" />
+          </div>
+        </div>
+      </section>
 
-      <AppTable<Recipe>
-        columns={listColumns}
-        rows={filteredRecipes}
-        rowKey={(row) => row.id}
-        emptyMessage="No recipes found. Add a recipe to define a product BOM."
-        renderActions={(row) => (
-          <>
-            <TableIconAction variant="edit" label="Manage BOM" onClick={() => openBom(row.id)} />
-            <TableIconAction variant="delete" onClick={() => handleDeleteRecipe(row.id)} />
-          </>
-        )}
-      />
+      {filteredRecipes.length === 0 ? (
+        <div className="premium-card premium-shadow p-6 text-center">
+          <p className="text-sm font-semibold text-slate-500">No recipes found. Click Create Recipe to start.</p>
+        </div>
+      ) : listLayout === 'cards' ? (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2 md:gap-3">
+          {filteredRecipes.map((recipe) => (
+            <RecipeCard
+              key={recipe.id}
+              recipe={recipe}
+              onCreateBom={() => openBom(recipe.id)}
+              onDelete={() => handleDeleteRecipe(recipe.id)}
+            />
+          ))}
+        </div>
+      ) : (
+        <AppTable<Recipe>
+          columns={recipeListColumns}
+          rows={filteredRecipes}
+          rowKey={(row) => row.id}
+          emptyMessage="No recipes found. Click Create Recipe to start."
+          renderActions={(row) => (
+            <>
+              <button
+                type="button"
+                onClick={() => openBom(row.id)}
+                className="inline-flex items-center px-2.5 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-[11px] font-bold cursor-pointer whitespace-nowrap"
+              >
+                {row.materials.length > 0 ? 'Manage BOM' : 'Create BOM'}
+              </button>
+              <TableIconAction variant="delete" label="Delete recipe" onClick={() => handleDeleteRecipe(row.id)} />
+            </>
+          )}
+        />
+      )}
 
       <Footer />
     </div>

@@ -7,6 +7,33 @@ import {
   formatCurrency,
 } from '@/lib/services/domain-service';
 
+export type StockStatus = 'ok' | 'low' | 'out' | 'unknown';
+
+export type SupplierOffer = {
+  supplierId: string;
+  supplierName: string;
+  price: number;
+  availableQty: number;
+  canFulfill: boolean;
+};
+
+export type MaterialInsight = {
+  inInventory: boolean;
+  availability: number;
+  threshold: number;
+  unit: string;
+  stockStatus: StockStatus;
+  lastPrice: number;
+  category: string;
+  code: string;
+  suggestedSuppliers: string[];
+  requiredQty: number;
+  insufficientForBom: boolean;
+  showSupplierSuggestions: boolean;
+  supplierOffers: SupplierOffer[];
+  recommendedSupplier: string;
+};
+
 export type BomMaterial = {
   id: string;
   materialId: string;
@@ -20,12 +47,17 @@ export type BomMaterial = {
   costPerProduct: number;
   preferredSupplier?: string;
   remarks?: string;
+  attachmentName?: string;
+  attachmentDataUrl?: string;
 };
 
 export type Recipe = {
   id: string;
-  productSku: string;
+  recipeNumber: string;
   product: string;
+  model: string;
+  version: string;
+  productSku: string;
   productId?: string | number;
   status: 'active' | 'inactive';
   materials: BomMaterial[];
@@ -40,9 +72,22 @@ export type MaterialOption = {
   standardCost: number;
   availability: number;
   code: string;
+  threshold?: number;
+  supplierId?: string;
 };
 
 type Row = Record<string, unknown>;
+
+function nextRecipeId(state: AppState): string {
+  const rows = listFromState(state, 'recipes');
+  const nums = rows
+    .map((r) => String(r.id ?? r.recipeNumber ?? ''))
+    .filter((id) => id.startsWith('RCP'))
+    .map((id) => parseInt(id.replace(/\D/g, ''), 10))
+    .filter((n) => !Number.isNaN(n));
+  const max = nums.length ? Math.max(...nums) : 0;
+  return `RCP-${String(max + 1).padStart(3, '0')}`;
+}
 
 export function calcEffectiveQty(qtyPerProduct: number, wastagePct: number) {
   return qtyPerProduct * (1 + wastagePct / 100);
@@ -69,9 +114,206 @@ export function buildBomMaterial(payload: Partial<BomMaterial> & { name: string;
     effectiveQty: Number(effectiveQty.toFixed(2)),
     standardCost,
     costPerProduct: Number(costPerProduct.toFixed(2)),
-    preferredSupplier: payload.preferredSupplier,
-    remarks: payload.remarks,
+    preferredSupplier: payload.preferredSupplier ?? '',
+    remarks: payload.remarks ?? '',
+    attachmentName: payload.attachmentName ?? '',
+    attachmentDataUrl: payload.attachmentDataUrl ?? '',
   };
+}
+
+function resolveStockStatus(availability: number, threshold: number): StockStatus {
+  if (availability <= 0) return 'out';
+  if (threshold > 0 && availability <= threshold) return 'low';
+  return 'ok';
+}
+
+function findRawMaterial(state: AppState, nameOrId: string) {
+  const q = nameOrId.trim().toLowerCase();
+  if (!q) return null;
+  return listFromState(state, 'rawMaterials').find((r) => {
+    const id = String(r.id ?? '').toLowerCase();
+    const name = String(r.name ?? '').toLowerCase();
+    return id === q || name === q || name.includes(q) || q.includes(name);
+  }) ?? null;
+}
+
+function findInventoryMaterial(state: AppState, nameOrId: string) {
+  const q = nameOrId.trim().toLowerCase();
+  if (!q) return null;
+  return listFromState(state, 'inventory').find((p) => {
+    const sku = String(p.sku ?? '').toLowerCase();
+    const name = String(p.name ?? '').toLowerCase();
+    const id = String(p.id ?? '').toLowerCase();
+    return sku === q || name === q || id === q || name.includes(q) || q.includes(name);
+  }) ?? null;
+}
+
+function supplierName(state: AppState, supplierId: string) {
+  const suppliers = listFromState(state, 'purchasesSuppliers');
+  const match = suppliers.find((s) => String(s.id) === supplierId);
+  return match ? String(match.name ?? supplierId) : '';
+}
+
+type RawOfferRow = { supplierId?: string; price?: number; availableQty?: number };
+
+function parseSupplierOffers(state: AppState, raw: Row, requiredQty: number): SupplierOffer[] {
+  const offers: SupplierOffer[] = [];
+  const seen = new Set<string>();
+
+  const pushOffer = (supplierId: string, price: number, availableQty: number) => {
+    if (!supplierId || seen.has(supplierId)) return;
+    seen.add(supplierId);
+    offers.push({
+      supplierId,
+      supplierName: supplierName(state, supplierId),
+      price,
+      availableQty,
+      canFulfill: availableQty > 0 && (requiredQty <= 0 || availableQty >= requiredQty),
+    });
+  };
+
+  const extra = raw.supplierOffers;
+  if (Array.isArray(extra)) {
+    for (const row of extra as RawOfferRow[]) {
+      pushOffer(String(row.supplierId ?? ''), Number(row.price ?? 0), Number(row.availableQty ?? 0));
+    }
+  }
+
+  const primaryId = String(raw.supplierId ?? '');
+  if (primaryId) {
+    pushOffer(primaryId, Number(raw.price ?? 0), Number(raw.quantity ?? 0));
+  }
+
+  return offers.sort((a, b) => a.price - b.price || b.availableQty - a.availableQty);
+}
+
+function pickRecommendedSupplier(offers: SupplierOffer[]): string {
+  const withStock = offers.filter((o) => o.availableQty > 0);
+  if (!withStock.length) return '';
+  return withStock.sort((a, b) => a.price - b.price || b.availableQty - a.availableQty)[0]?.supplierName ?? '';
+}
+
+function shouldShowSupplierSuggestions(
+  inInventory: boolean,
+  insufficientForBom: boolean,
+  stockStatus: StockStatus,
+): boolean {
+  if (!inInventory) return true;
+  if (insufficientForBom) return true;
+  if (stockStatus === 'out') return true;
+  if (stockStatus === 'low') return true;
+  return false;
+}
+
+function buildInsightBase(
+  fields: Omit<
+    MaterialInsight,
+    'supplierOffers' | 'recommendedSupplier' | 'suggestedSuppliers' | 'showSupplierSuggestions'
+  >,
+  rawForOffers: Row | null,
+  requiredQty: number,
+  state: AppState,
+): MaterialInsight {
+  const showSupplierSuggestions = shouldShowSupplierSuggestions(
+    fields.inInventory,
+    fields.insufficientForBom,
+    fields.stockStatus,
+  );
+
+  let supplierOffers: SupplierOffer[] = [];
+  if (showSupplierSuggestions && rawForOffers) {
+    supplierOffers = parseSupplierOffers(state, rawForOffers, requiredQty);
+  }
+
+  const recommendedSupplier = showSupplierSuggestions ? pickRecommendedSupplier(supplierOffers) : '';
+  const suggestedSuppliers = supplierOffers.map((o) => o.supplierName).filter(Boolean);
+
+  return {
+    ...fields,
+    showSupplierSuggestions,
+    supplierOffers,
+    recommendedSupplier,
+    suggestedSuppliers,
+  };
+}
+
+export function getMaterialInsight(
+  state: AppState,
+  nameOrId: string,
+  materialId?: string,
+  requiredQty = 0,
+): MaterialInsight {
+  const raw = findRawMaterial(state, materialId || nameOrId);
+  if (raw) {
+    const availability = Number(raw.quantity ?? 0);
+    const threshold = Number(raw.threshold ?? 0);
+    const unit = String(raw.unit ?? 'pcs');
+    const inInventory = availability > 0;
+    const insufficientForBom = requiredQty > 0 && availability < requiredQty;
+
+    return buildInsightBase(
+      {
+        inInventory,
+        availability,
+        threshold,
+        unit,
+        stockStatus: resolveStockStatus(availability, threshold),
+        lastPrice: Number(raw.price ?? 0),
+        category: String(raw.category ?? 'Raw Materials'),
+        code: String(raw.id),
+        requiredQty,
+        insufficientForBom,
+      },
+      raw,
+      requiredQty,
+      state,
+    );
+  }
+
+  const inv = findInventoryMaterial(state, nameOrId);
+  if (inv) {
+    const availability = Number(inv.stock ?? 0);
+    const threshold = Number(inv.minStock ?? inv.reorderLevel ?? 0);
+    const unit = String(inv.uom ?? 'pcs');
+    const inInventory = availability > 0;
+    const insufficientForBom = requiredQty > 0 && availability < requiredQty;
+
+    return buildInsightBase(
+      {
+        inInventory,
+        availability,
+        threshold,
+        unit,
+        stockStatus: resolveStockStatus(availability, threshold),
+        lastPrice: Number(inv.cost ?? inv.price ?? 0),
+        category: String(inv.category ?? 'Inventory'),
+        code: String(inv.sku ?? inv.id),
+        requiredQty,
+        insufficientForBom,
+      },
+      null,
+      requiredQty,
+      state,
+    );
+  }
+
+  return buildInsightBase(
+    {
+      inInventory: false,
+      availability: 0,
+      threshold: 0,
+      unit: 'pcs',
+      stockStatus: 'unknown',
+      lastPrice: 0,
+      category: 'General',
+      code: '',
+      requiredQty,
+      insufficientForBom: requiredQty > 0,
+    },
+    null,
+    requiredQty,
+    state,
+  );
 }
 
 export function listRecipes(state: AppState): Recipe[] {
@@ -82,10 +324,15 @@ function normalizeRecipe(row: Row): Recipe {
   const materials = Array.isArray(row.materials)
     ? (row.materials as Row[]).map((m) => buildBomMaterial(m as Partial<BomMaterial> & { name: string; unit: string }))
     : [];
+  const id = String(row.id ?? row.recipeNumber ?? '');
+  const model = String(row.model ?? row.productSku ?? '');
   return {
-    id: String(row.id ?? ''),
-    productSku: String(row.productSku ?? row.product ?? ''),
+    id,
+    recipeNumber: String(row.recipeNumber ?? id),
     product: String(row.product ?? ''),
+    model,
+    version: String(row.version ?? 'v1.0'),
+    productSku: String(row.productSku ?? model),
     productId: row.productId as string | number | undefined,
     status: (row.status === 'inactive' ? 'inactive' : 'active') as Recipe['status'],
     materials,
@@ -94,7 +341,7 @@ function normalizeRecipe(row: Row): Recipe {
 }
 
 export function getRecipe(state: AppState, id: string): Recipe | null {
-  return listRecipes(state).find((r) => r.id === id) ?? null;
+  return listRecipes(state).find((r) => r.id === id || r.recipeNumber === id) ?? null;
 }
 
 export function getRecipeMetrics(recipes: Recipe[]) {
@@ -105,7 +352,7 @@ export function getRecipeMetrics(recipes: Recipe[]) {
 }
 
 export function getRecipeBomCost(recipe: Recipe) {
-  return recipe.materials.reduce((s, m) => s + m.costPerProduct, 0);
+  return Number(recipe.materials.reduce((s, m) => s + m.costPerProduct, 0).toFixed(2));
 }
 
 export function getRecipeBomTotals(recipe: Recipe) {
@@ -134,6 +381,8 @@ export function listMaterialOptions(state: AppState): MaterialOption[] {
     standardCost: Number(r.price ?? 0),
     availability: Number(r.quantity ?? 0),
     code: String(r.id),
+    threshold: Number(r.threshold ?? 0),
+    supplierId: String(r.supplierId ?? ''),
   }));
 
   const fromInv = inventory.map((p) => ({
@@ -144,6 +393,7 @@ export function listMaterialOptions(state: AppState): MaterialOption[] {
     standardCost: Number(p.cost ?? p.price ?? 0),
     availability: Number(p.stock ?? 0),
     code: String(p.sku ?? p.id),
+    threshold: Number(p.minStock ?? p.reorderLevel ?? 0),
   }));
 
   const seen = new Set<string>();
@@ -152,13 +402,6 @@ export function listMaterialOptions(state: AppState): MaterialOption[] {
     if (seen.has(key)) return false;
     seen.add(key);
     return m.name.length > 0;
-  });
-}
-
-export function listFinishedProducts(state: AppState) {
-  return listFromState(state, 'inventory').filter((p) => {
-    const type = String(p.productType ?? '').toLowerCase();
-    return type.includes('finished') || type.includes('semi');
   });
 }
 
@@ -171,14 +414,29 @@ export function listSupplierOptions(state: AppState) {
 
 export function createRecipe(
   state: AppState,
-  payload: { productSku: string; product: string; productId?: string | number; status?: string; notes?: string },
+  payload: { product: string; model: string; recipeNumber?: string; status?: string; notes?: string },
 ) {
-  const existing = listRecipes(state).find((r) => r.productSku === payload.productSku);
-  if (existing) return { ok: false as const, error: 'A recipe already exists for this product SKU' };
+  const model = payload.model.trim();
+  const product = payload.product.trim();
+  if (!product || !model) return { ok: false as const, error: 'Product name and model are required' };
+
+  const existing = listRecipes(state).find((r) => r.model.toLowerCase() === model.toLowerCase());
+  if (existing) return { ok: false as const, error: 'A recipe already exists for this model' };
+
+  const recipeNumber = payload.recipeNumber?.trim() || nextRecipeId(state);
+  const duplicateNumber = listRecipes(state).find((r) => r.recipeNumber === recipeNumber);
+  if (duplicateNumber) return { ok: false as const, error: 'Recipe number already in use' };
+
   return createInState(state, 'recipes', {
-    ...payload,
+    id: recipeNumber,
+    recipeNumber,
+    product,
+    model,
+    productSku: model,
+    version: 'v1.0',
     status: payload.status ?? 'active',
     materials: [],
+    notes: payload.notes ?? '',
   }, 'RCP');
 }
 
@@ -216,6 +474,18 @@ export function removeMaterialFromRecipe(state: AppState, recipeId: string, mate
   const recipe = getRecipe(state, recipeId);
   if (!recipe) return { ok: false as const, error: 'Recipe not found' };
   const materials = recipe.materials.filter((m) => m.id !== materialId);
+  return updateInState(state, 'recipes', recipeId, { materials });
+}
+
+export function reorderMaterialInRecipe(state: AppState, recipeId: string, materialId: string, direction: 'up' | 'down') {
+  const recipe = getRecipe(state, recipeId);
+  if (!recipe) return { ok: false as const, error: 'Recipe not found' };
+  const idx = recipe.materials.findIndex((m) => m.id === materialId);
+  if (idx < 0) return { ok: false as const, error: 'Material not found' };
+  const swapIdx = direction === 'up' ? idx - 1 : idx + 1;
+  if (swapIdx < 0 || swapIdx >= recipe.materials.length) return { ok: true as const };
+  const materials = [...recipe.materials];
+  [materials[idx], materials[swapIdx]] = [materials[swapIdx], materials[idx]];
   return updateInState(state, 'recipes', recipeId, { materials });
 }
 

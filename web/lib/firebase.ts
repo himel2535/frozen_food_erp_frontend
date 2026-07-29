@@ -16,6 +16,18 @@ const firebaseApp = getApps().length ? getApp() : initializeApp(firebaseConfig);
 const database = getDatabase(firebaseApp, firebaseConfig.databaseURL);
 const appStateRef = ref(database, 'toysfactory/appState');
 
+function stripUndefinedDeep<T>(value: T): T {
+  if (Array.isArray(value)) return value.map(stripUndefinedDeep) as T;
+  if (value && typeof value === 'object') {
+    return Object.fromEntries(
+      Object.entries(value as Record<string, unknown>)
+        .filter(([, v]) => v !== undefined)
+        .map(([k, v]) => [k, stripUndefinedDeep(v)]),
+    ) as T;
+  }
+  return value;
+}
+
 export function subscribeToRemoteAppState(callback: (state: Record<string, unknown> | null) => void) {
   return onValue(appStateRef, (snapshot) => {
     callback(snapshot.val() as Record<string, unknown> | null);
@@ -23,7 +35,7 @@ export function subscribeToRemoteAppState(callback: (state: Record<string, unkno
 }
 
 export async function saveRemoteAppState(state: Record<string, unknown>) {
-  await set(appStateRef, state);
+  await set(appStateRef, stripUndefinedDeep(state));
 }
 
 export { firebaseConfig };

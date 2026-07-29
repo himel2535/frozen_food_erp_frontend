@@ -131,10 +131,24 @@ export const DEFAULT_STATE: AppState = {
     { id: 'RM-009', name: 'Plastic Pellets (Blue)', category: 'Plastic', unit: 'kg', quantity: 850, price: 85.5, supplierId: 'SUP-002', threshold: 500, lastUpdated: '2026-07-21T14:35:00Z' },
     { id: 'RM-010', name: 'Steel Axles', category: 'Metal', unit: 'kg', quantity: 120, price: 350, supplierId: 'SUP-007', threshold: 150, lastUpdated: '2026-07-18T09:00:00Z' },
     { id: 'RM-011', name: 'Sticker Sheets', category: 'Packaging', unit: 'pcs', quantity: 15000, price: 2.5, supplierId: 'SUP-008', threshold: 5000, lastUpdated: '2026-07-22T08:00:00Z' },
-    { id: 'RM-012', name: 'Super Glue', category: 'Chemicals', unit: 'liter', quantity: 25, price: 850, supplierId: 'SUP-009', threshold: 10, lastUpdated: '2026-07-15T10:00:00Z' },
-    { id: 'RM-013', name: 'Nylon Thread', category: 'Textile', unit: 'meter', quantity: 10000, price: 5, supplierId: 'SUP-010', threshold: 2000, lastUpdated: '2026-07-16T12:00:00Z' },
-    { id: 'RM-014', name: 'Copper Wire', category: 'Electronics', unit: 'meter', quantity: 5000, price: 15, supplierId: 'SUP-005', threshold: 1000, lastUpdated: '2026-07-20T15:00:00Z' },
-    { id: 'RM-015', name: 'Springs', category: 'Metal', unit: 'pcs', quantity: 1200, price: 3.5, supplierId: 'SUP-007', threshold: 2000, lastUpdated: '2026-07-22T11:00:00Z' },
+    { id: 'RM-012', name: 'Super Glue', category: 'Chemicals', unit: 'liter', quantity: 25, price: 850, supplierId: 'SUP-009', threshold: 10, lastUpdated: '2026-07-15T10:00:00Z', supplierOffers: [
+      { supplierId: 'SUP-009', price: 850, availableQty: 500 },
+      { supplierId: 'SUP-003', price: 920, availableQty: 200 },
+      { supplierId: 'SUP-005', price: 780, availableQty: 150 },
+    ] },
+    { id: 'RM-013', name: 'Nylon Thread', category: 'Textile', unit: 'meter', quantity: 10000, price: 5, supplierId: 'SUP-010', threshold: 2000, lastUpdated: '2026-07-16T12:00:00Z', supplierOffers: [
+      { supplierId: 'SUP-010', price: 5, availableQty: 8000 },
+      { supplierId: 'SUP-001', price: 4.5, availableQty: 12000 },
+    ] },
+    { id: 'RM-014', name: 'Copper Wire', category: 'Electronics', unit: 'meter', quantity: 5000, price: 15, supplierId: 'SUP-005', threshold: 1000, lastUpdated: '2026-07-20T15:00:00Z', supplierOffers: [
+      { supplierId: 'SUP-005', price: 15, availableQty: 3000 },
+      { supplierId: 'SUP-008', price: 14, availableQty: 2500 },
+      { supplierId: 'SUP-007', price: 16.5, availableQty: 1800 },
+    ] },
+    { id: 'RM-016', name: 'Wheel', category: 'Plastic Parts', unit: 'pcs', quantity: 500, price: 8, supplierId: 'SUP-006', threshold: 200, lastUpdated: '2026-07-22T12:00:00Z', supplierOffers: [
+      { supplierId: 'SUP-006', price: 8, availableQty: 2000 },
+      { supplierId: 'SUP-002', price: 7.5, availableQty: 1500 },
+    ] },
   ],
   inventoryStockIn: [
     { id: 'SI-001', productId: 1, warehouseId: 'WH-001', qty: 300, unitCost: 8.5, date: '2026-06-20', sourceType: 'Purchase', refDocId: 'PO-1001', supplier: 'Global Yarn Dist', status: 'Approved', batchNumber: 'B-YRN-09A', approvedBy: 'Sarah Connor', notes: 'Standard purchase order receipt.' },
@@ -210,12 +224,15 @@ export const DEFAULT_STATE: AppState = {
   recipes: [
     {
       id: 'RCP-001',
+      recipeNumber: 'RCP-001',
       productSku: 'T101',
+      model: 'T101',
       product: 'Kids Toy Car',
+      version: 'v1.0',
       productId: 5,
       status: 'active',
       materials: [
-        { id: 'mat-1', materialId: 'RM-WHEEL', name: 'Wheel', category: 'Plastic Parts', unit: 'pcs', qtyPerProduct: 4, wastagePct: 2, effectiveQty: 4.08, standardCost: 10.15, costPerProduct: 41.41, preferredSupplier: 'ABC Parts Ltd.', remarks: '' },
+        { id: 'mat-1', materialId: 'RM-016', name: 'Wheel', category: 'Plastic Parts', unit: 'pcs', qtyPerProduct: 4, wastagePct: 2, effectiveQty: 4.08, standardCost: 8, costPerProduct: 32.64, preferredSupplier: 'RubberWorks BD', remarks: '' },
         { id: 'mat-2', materialId: 'RM-007', name: 'DC Motor (5V)', category: 'Electronics', unit: 'pcs', qtyPerProduct: 1, wastagePct: 1, effectiveQty: 1.01, standardCost: 60, costPerProduct: 60.6, preferredSupplier: 'ElectroComponents Ltd', remarks: '' },
         { id: 'mat-3', materialId: 'RM-CHASSIS', name: 'Chassis', category: 'Plastic Parts', unit: 'pcs', qtyPerProduct: 1, wastagePct: 0, effectiveQty: 1, standardCost: 35, costPerProduct: 35, preferredSupplier: 'ABC Parts Ltd.', remarks: '' },
         { id: 'mat-4', materialId: 'RM-006', name: 'Lithium Battery (AA)', category: 'Electronics', unit: 'pcs', qtyPerProduct: 1, wastagePct: 0, effectiveQty: 1, standardCost: 25, costPerProduct: 25, preferredSupplier: 'ElectroComponents Ltd', remarks: '' },

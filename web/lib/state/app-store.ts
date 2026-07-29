@@ -129,6 +129,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
     }),
 
   saveAppState: () => {
+    set((s) => ({ appState: { ...s.appState } }));
     const { appState, ignoreRemoteEcho, lastSyncedState, remoteListenerStarted } = get();
     const serialized = JSON.stringify(appState);
     localStorage.setItem(LOCAL_STORAGE_KEY, serialized);
