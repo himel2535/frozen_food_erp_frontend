@@ -114,6 +114,72 @@ body.lang-bn .uppercase {
   --glass-shell-tint: linear-gradient(145deg, rgba(239, 246, 255, 0.62) 0%, rgba(255, 255, 255, 0.48) 45%, rgba(236, 253, 245, 0.38) 100%);
   --glass-row-even: rgba(239, 246, 255, 0.35);
   --glass-row-odd: rgba(255, 255, 255, 0.12);
+  /* Modals — crisp white frost + subtle blue accents (no muddy green shell tint) */
+  --glass-modal-bg: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.94) 0%,
+    rgba(248, 250, 252, 0.86) 100%
+  );
+  --glass-modal-header-bg: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.98) 0%,
+    rgba(239, 246, 255, 0.9) 100%
+  );
+  --glass-modal-body-bg: rgba(255, 255, 255, 0.55);
+  --glass-modal-footer-bg: rgba(255, 255, 255, 0.88);
+  --glass-modal-border: rgba(191, 219, 254, 0.7);
+  --glass-modal-blur: blur(20px) saturate(160%);
+  --glass-modal-shadow:
+    0 20px 50px rgba(15, 23, 42, 0.12),
+    0 8px 24px rgba(59, 130, 246, 0.06),
+    inset 0 1.5px 1px rgba(255, 255, 255, 0.95),
+    inset 0 -1px 1px rgba(255, 255, 255, 0.5);
+  --glass-modal-accent: linear-gradient(
+    90deg,
+    rgba(59, 130, 246, 0.45),
+    rgba(99, 102, 241, 0.32),
+    rgba(59, 130, 246, 0.28)
+  );
+}
+
+/* Shared form modals — crisp white glass (AppFormModal) */
+.glass-modal {
+  position: relative;
+  background: var(--glass-modal-bg);
+  backdrop-filter: var(--glass-modal-blur);
+  -webkit-backdrop-filter: var(--glass-modal-blur);
+  border: 1px solid var(--glass-modal-border);
+  border-radius: 1.25rem;
+  box-shadow: var(--glass-modal-shadow);
+  overflow: hidden;
+}
+
+.glass-modal::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: var(--glass-modal-accent);
+  z-index: 5;
+  pointer-events: none;
+}
+
+.glass-modal-header {
+  background: var(--glass-modal-header-bg);
+  border-bottom: 1px solid rgba(191, 219, 254, 0.55);
+}
+
+.glass-modal-body {
+  background: var(--glass-modal-body-bg);
+}
+
+.glass-modal-footer {
+  background: var(--glass-modal-footer-bg);
+  backdrop-filter: blur(12px) saturate(150%);
+  -webkit-backdrop-filter: blur(12px) saturate(150%);
+  border-top: 1px solid rgba(191, 219, 254, 0.5);
 }
 
 .app-table {

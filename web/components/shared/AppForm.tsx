@@ -86,7 +86,7 @@ export function AppFormShell({
           <button
             type="button"
             onClick={onCancel}
-            className="p-2 rounded-xl border border-slate-200/90 text-slate-500 hover:bg-white/80 hover:text-slate-800 cursor-pointer shrink-0 transition-colors"
+            className="p-2.5 bg-white/60 hover:bg-white/90 border border-white/80 rounded-2xl shadow-xs text-slate-700 hover:text-slate-900 cursor-pointer shrink-0 transition-all"
             aria-label="Close"
           >
             <X className="w-4 h-4" />

@@ -25,18 +25,19 @@ export const FORM_MODAL_BACKDROP_CLS =
   'fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6';
 
 export const FORM_MODAL_BACKDROP_INNER_CLS =
-  'absolute inset-0 bg-slate-900/45 backdrop-blur-sm cursor-pointer';
+  'absolute inset-0 bg-slate-900/30 backdrop-blur-[2px] cursor-pointer';
 
 export const FORM_MODAL_PANEL_CLS =
-  'relative w-full premium-card premium-shadow flex flex-col max-h-[min(90vh,820px)] overflow-hidden';
+  'relative w-full glass-modal flex flex-col max-h-[min(90vh,820px)] overflow-hidden';
 
 export const FORM_MODAL_HEADER_CLS =
-  'flex items-start justify-between gap-3 px-6 pt-6 pb-4 border-b border-slate-100/80 shrink-0';
+  'glass-modal-header flex items-start justify-between gap-3 px-6 pt-6 pb-4 shrink-0';
 
-export const FORM_MODAL_BODY_CLS = 'overflow-y-auto flex-1 px-6 py-5 space-y-5 min-h-0';
+export const FORM_MODAL_BODY_CLS =
+  'glass-modal-body overflow-y-auto flex-1 px-6 py-5 space-y-5 min-h-0';
 
 export const FORM_MODAL_FOOTER_CLS =
-  'flex justify-end gap-3 px-6 py-4 border-t border-slate-100/80 bg-white/80 backdrop-blur-sm shrink-0';
+  'glass-modal-footer flex justify-end gap-3 px-6 py-4 shrink-0';
 
 export const FORM_MODAL_SIZE_CLS = {
   sm: 'max-w-md',
