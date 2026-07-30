@@ -2,17 +2,16 @@
 
 import { useMemo, useState } from 'react';
 import { Footer } from '@/components/layout/Footer';
-import { FormHeader } from '@/components/layout/FormHeader';
+import { AppFormFields, AppFormModal } from '@/components/shared/AppForm';
 import { ListToolbar } from '@/components/shared/ListToolbar';
 import { KpiCards, type KpiCardItem } from '@/components/shared/KpiCards';
-import { MODULE_FORM_SHELL, MODULE_LIST_SHELL } from '@/lib/ui/module-layout';
+import { MODULE_LIST_SHELL } from '@/lib/ui/module-layout';
 import { FilterTabs } from '@/components/shared/FilterTabs';
-import { AdvancedDetailsToggle } from '@/components/shared/AdvancedDetailsToggle';
 import { AppTable } from '@/components/shared/AppTable';
 import { StatusBadge } from '@/components/shared/StatusBadge';
 import { TableIconAction } from '@/components/shared/TableIconAction';
 import { useAppStore } from '@/lib/state/app-store';
-import type { PortField, PortModuleConfig } from '@/lib/modules/port-types';
+import type { PortModuleConfig } from '@/lib/modules/port-types';
 
 export interface DedicatedModuleConfig extends PortModuleConfig {
   kpi?: (rows: Record<string, unknown>[]) => KpiCardItem[];
@@ -20,28 +19,6 @@ export interface DedicatedModuleConfig extends PortModuleConfig {
   columnRender?: Record<string, (row: Record<string, unknown>) => React.ReactNode>;
   computedFields?: Record<string, (form: Record<string, string>) => string>;
   rowActions?: (row: Record<string, unknown>, ctx: { appState: import('@/lib/state/types').AppState; save: () => void }) => React.ReactNode;
-}
-
-function FieldInput({ field, value, onChange }: { field: PortField; value: string; onChange: (v: string) => void }) {
-  const cls = 'w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500';
-  if (field.type === 'select' && field.options) {
-    return (
-      <select value={value} onChange={(e) => onChange(e.target.value)} className={`${cls} cursor-pointer`}>
-        {field.placeholder && <option value="">{field.placeholder}</option>}
-        {field.options.map((opt) => <option key={opt} value={opt}>{opt}</option>)}
-      </select>
-    );
-  }
-  if (field.type === 'textarea') return <textarea rows={3} value={value} onChange={(e) => onChange(e.target.value)} className={cls} />;
-  return (
-    <input
-      type={field.type === 'number' ? 'number' : field.type === 'email' ? 'email' : field.type === 'date' ? 'date' : 'text'}
-      required={field.required}
-      value={value}
-      onChange={(e) => onChange(e.target.value)}
-      className={cls}
-    />
-  );
 }
 
 export function DedicatedModule({ config }: { config: DedicatedModuleConfig }) {
@@ -79,8 +56,6 @@ export function DedicatedModule({ config }: { config: DedicatedModuleConfig }) {
       { key: 'active', label: 'Active Records', value: String(rows.filter((r) => ['active', 'approved', 'paid', 'completed', 'received', 'present'].includes(String(r.status ?? '').toLowerCase())).length) },
     ];
   }, [config, rows]);
-  const basicFields = config.fields.filter((f) => !f.advanced);
-  const advancedFields = config.fields.filter((f) => f.advanced);
 
   const resetForm = () => {
     const initial = config.adapter.getInitialForm?.(appState) ?? {};
@@ -121,45 +96,17 @@ export function DedicatedModule({ config }: { config: DedicatedModuleConfig }) {
     resetForm();
   };
 
-  if (view === 'form') {
-    return (
-      <div className={MODULE_FORM_SHELL}>
-        <div className="max-w-4xl mx-auto w-full space-y-6">
-          <FormHeader title={editingId ? `Edit ${config.title.replace(/s$/, '')}` : `Create ${config.title.replace(/s$/, '')}`} subtitle={config.subtitle} onBack={() => { setView('main'); resetForm(); }} />
-          <form onSubmit={handleSubmit} className="bg-white rounded-xl border border-slate-200 p-6 space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs font-semibold text-slate-700">
-              {basicFields.map((field) => (
-                <div key={field.key} className={field.type === 'textarea' ? 'md:col-span-2' : ''}>
-                  <label className="block mb-2">{field.label}{field.required ? <span className="text-rose-500"> *</span> : null}</label>
-                  <FieldInput field={field} value={form[field.key] ?? ''} onChange={(v) => setField(field.key, v)} />
-                </div>
-              ))}
-            </div>
-            {advancedFields.length > 0 && <AdvancedDetailsToggle open={showAdvanced} onToggle={() => setShowAdvanced(!showAdvanced)} />}
-            {showAdvanced && advancedFields.length > 0 && (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4 border-t border-slate-100 text-xs font-semibold text-slate-700">
-                {advancedFields.map((field) => (
-                  <div key={field.key} className={field.type === 'textarea' ? 'md:col-span-2' : ''}>
-                    <label className="block mb-2">{field.label}</label>
-                    <FieldInput field={field} value={form[field.key] ?? ''} onChange={(v) => setField(field.key, v)} />
-                  </div>
-                ))}
-              </div>
-            )}
-            <div className="flex justify-end gap-3 pt-4 border-t border-slate-100">
-              <button type="button" onClick={() => { setView('main'); resetForm(); }} className="border border-slate-200 px-4 py-2.5 rounded-xl text-xs font-semibold cursor-pointer">Cancel</button>
-              <button type="submit" className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2.5 rounded-xl text-xs font-semibold cursor-pointer">Save</button>
-            </div>
-          </form>
-        </div>
-        <Footer />
-      </div>
-    );
-  }
+  const handleBack = () => {
+    setView('main');
+    resetForm();
+  };
+
+  const entityLabel = config.title.replace(/s$/, '');
 
   const tabs = config.statusTabs ?? [{ id: 'all', label: 'All' }, { id: 'active', label: 'Active' }, { id: 'pending', label: 'Pending' }];
 
   return (
+    <>
     <div className={MODULE_LIST_SHELL}>
       <ListToolbar
         title={config.title}
@@ -168,7 +115,7 @@ export function DedicatedModule({ config }: { config: DedicatedModuleConfig }) {
         onSearchChange={setSearch}
         searchPlaceholder={`Search ${config.title.toLowerCase()}...`}
         onAdd={() => { resetForm(); setView('form'); }}
-        addLabel={config.addLabel ?? `Add ${config.title.replace(/s$/, '')}`}
+        addLabel={config.addLabel ?? `Add ${entityLabel}`}
         filters={
           <>
             <FilterTabs tabs={tabs} active={statusFilter} onChange={setStatusFilter} />
@@ -213,5 +160,22 @@ export function DedicatedModule({ config }: { config: DedicatedModuleConfig }) {
       />
       <Footer />
     </div>
+    <AppFormModal
+      open={view === 'form'}
+      onClose={handleBack}
+      title={editingId ? `Edit ${entityLabel}` : `Create ${entityLabel}`}
+      subtitle={config.subtitle}
+      onSubmit={handleSubmit}
+      size="md"
+    >
+      <AppFormFields
+        fields={config.fields}
+        values={form}
+        onChange={setField}
+        showAdvanced={showAdvanced}
+        onToggleAdvanced={() => setShowAdvanced(!showAdvanced)}
+      />
+    </AppFormModal>
+    </>
   );
 }

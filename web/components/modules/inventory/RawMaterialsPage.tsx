@@ -1,13 +1,14 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { AdvancedDetailsToggle } from '@/components/shared/AdvancedDetailsToggle';
+import { AppFormFields, AppFormModal, FORM_GRID_CLS, FORM_LABEL_CLS } from '@/components/shared/AppForm';
 import { AppTable, type AppTableColumn } from '@/components/shared/AppTable';
 import { StatusBadge } from '@/components/shared/StatusBadge';
 import { TableIconAction } from '@/components/shared/TableIconAction';
-import { InventoryFormLayout, InventoryListLayout, FilterBar, SearchInput, PaginationBar, INPUT_CLS } from '@/components/modules/inventory/shared/inventory-ui';
+import { InventoryListLayout, FilterBar, SearchInput, PaginationBar } from '@/components/modules/inventory/shared/inventory-ui';
 import { SupplierSelect } from '@/components/modules/inventory/shared/selects';
 import { useAppStore } from '@/lib/state/app-store';
+import type { PortField } from '@/lib/modules/port-types';
 import { listSuppliers } from '@/lib/services/purchases-service';
 import {
   listRawMaterials,
@@ -18,6 +19,20 @@ import {
 } from '@/lib/services/inventory-service';
 
 const PAGE_SIZE = 15;
+
+const RAW_MATERIAL_BASIC_FIELDS: PortField[] = [
+  { key: 'name', label: 'Material Name', required: true },
+  { key: 'category', label: 'Category' },
+  { key: 'unit', label: 'Unit', required: true },
+  { key: 'quantity', label: 'Quantity', type: 'number', required: true },
+  { key: 'price', label: 'Unit Price (BDT)', type: 'number', required: true },
+  { key: 'threshold', label: 'Low Stock Threshold', type: 'number' },
+];
+
+const RAW_MATERIAL_ADVANCED_FIELDS: PortField[] = [
+  { key: 'supplierPrice', label: 'Supplier Price', type: 'number', advanced: true },
+  { key: 'notes', label: 'Notes', type: 'textarea', advanced: true },
+];
 
 export function RawMaterialsPage() {
   const appState = useAppStore((s) => s.appState);
@@ -109,31 +124,10 @@ export function RawMaterialsPage() {
     resetForm();
   };
 
-  if (view === 'form') {
-    return (
-      <InventoryFormLayout title={editingId ? 'Edit Raw Material' : 'Add Raw Material'} subtitle="Track raw material stock, pricing, and supplier links." onBack={() => { setView('main'); resetForm(); }} onSubmit={handleSubmit} submitLabel="Save Material">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div><label className="text-xs font-semibold text-slate-600">Material Name *</label><input required className={INPUT_CLS} value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} /></div>
-          <div><label className="text-xs font-semibold text-slate-600">Category</label><input className={INPUT_CLS} value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} /></div>
-          <div><label className="text-xs font-semibold text-slate-600">Unit *</label><input required className={INPUT_CLS} value={form.unit} onChange={(e) => setForm({ ...form, unit: e.target.value })} /></div>
-          <div><label className="text-xs font-semibold text-slate-600">Quantity *</label><input required type="number" min={0} className={INPUT_CLS} value={form.quantity} onChange={(e) => setForm({ ...form, quantity: e.target.value })} /></div>
-          <div><label className="text-xs font-semibold text-slate-600">Unit Price (BDT) *</label><input required type="number" min={0} step="0.01" className={INPUT_CLS} value={form.price} onChange={(e) => setForm({ ...form, price: e.target.value })} /></div>
-          <div><label className="text-xs font-semibold text-slate-600">Supplier</label><SupplierSelect state={appState} value={form.supplierId} onChange={(v) => setForm({ ...form, supplierId: v })} /></div>
-          <div><label className="text-xs font-semibold text-slate-600">Low Stock Threshold</label><input type="number" min={0} className={INPUT_CLS} value={form.threshold} onChange={(e) => setForm({ ...form, threshold: e.target.value })} /></div>
-          <div className="md:col-span-2 bg-slate-50 border border-slate-200 rounded-xl p-4"><span className="text-xs text-slate-500">Live Total Value</span><p className="text-lg font-bold text-emerald-600">{liveTotal.toFixed(2)} BDT</p></div>
-        </div>
-        <AdvancedDetailsToggle open={showAdvanced} onToggle={() => setShowAdvanced(!showAdvanced)} />
-        {showAdvanced && (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
-            <div><label className="text-xs font-semibold text-slate-600">Supplier Price</label><input type="number" min={0} step="0.01" className={INPUT_CLS} value={form.supplierPrice} onChange={(e) => setForm({ ...form, supplierPrice: e.target.value })} /></div>
-            <div className="md:col-span-2"><label className="text-xs font-semibold text-slate-600">Notes</label><textarea className={INPUT_CLS} rows={3} value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} /></div>
-          </div>
-        )}
-      </InventoryFormLayout>
-    );
-  }
+  const materialFields = [...RAW_MATERIAL_BASIC_FIELDS, ...RAW_MATERIAL_ADVANCED_FIELDS];
 
   return (
+    <>
     <InventoryListLayout
       title="Raw Materials"
       subtitle="Manage raw material inventory, suppliers, and stock levels."
@@ -155,5 +149,33 @@ export function RawMaterialsPage() {
         renderActions={(rm) => <TableIconAction variant="edit" onClick={() => openEdit(rm)} />}
       />
     </InventoryListLayout>
+    <AppFormModal
+      open={view === 'form'}
+      onClose={() => { setView('main'); resetForm(); }}
+      title={editingId ? 'Edit Raw Material' : 'Add Raw Material'}
+      subtitle="Track raw material stock, pricing, and supplier links."
+      onSubmit={handleSubmit}
+      submitLabel="Save Material"
+      size="lg"
+    >
+      <AppFormFields
+        fields={materialFields}
+        values={form}
+        onChange={(key, value) => setForm({ ...form, [key]: value })}
+        showAdvanced={showAdvanced}
+        onToggleAdvanced={() => setShowAdvanced(!showAdvanced)}
+      />
+      <div className={FORM_GRID_CLS}>
+        <div>
+          <label className={FORM_LABEL_CLS}>Supplier</label>
+          <SupplierSelect state={appState} value={form.supplierId} onChange={(v) => setForm({ ...form, supplierId: v })} />
+        </div>
+        <div className="md:col-span-2 bg-emerald-50/80 border border-emerald-200/80 rounded-xl p-4">
+          <span className="text-[11px] font-bold uppercase tracking-wide text-emerald-700">Live Total Value</span>
+          <p className="text-lg font-bold text-emerald-700 mt-1">{liveTotal.toFixed(2)} BDT</p>
+        </div>
+      </div>
+    </AppFormModal>
+    </>
   );
 }

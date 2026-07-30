@@ -2,12 +2,11 @@
 
 import { useMemo, useState } from 'react';
 import { Footer } from '@/components/layout/Footer';
-import { FormHeader } from '@/components/layout/FormHeader';
+import { AppFormFields, AppFormModal } from '@/components/shared/AppForm';
 import { ListToolbar } from '@/components/shared/ListToolbar';
 import { KpiCards, type KpiCardItem } from '@/components/shared/KpiCards';
-import { MODULE_FORM_SHELL, MODULE_LIST_SHELL } from '@/lib/ui/module-layout';
+import { MODULE_LIST_SHELL } from '@/lib/ui/module-layout';
 import { FilterTabs } from '@/components/shared/FilterTabs';
-import { AdvancedDetailsToggle } from '@/components/shared/AdvancedDetailsToggle';
 import { AppTable } from '@/components/shared/AppTable';
 import { TableIconAction } from '@/components/shared/TableIconAction';
 import { useAppStore } from '@/lib/state/app-store';
@@ -34,15 +33,6 @@ export interface InventoryMasterConfig {
   delete?: (appState: import('@/lib/state/types').AppState, id: string) => { ok: boolean };
 }
 
-function FieldInput({ field, value, onChange }: { field: PortField; value: string; onChange: (v: string) => void }) {
-  const cls = 'w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-xs cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500/10';
-  if (field.type === 'select' && field.options) {
-    return <select value={value} onChange={(e) => onChange(e.target.value)} className={cls}>{field.options.map((o) => <option key={o} value={o}>{o}</option>)}</select>;
-  }
-  if (field.type === 'textarea') return <textarea rows={3} value={value} onChange={(e) => onChange(e.target.value)} className={cls} />;
-  return <input type={field.type === 'number' ? 'number' : field.type === 'date' ? 'date' : 'text'} required={field.required} value={value} onChange={(e) => onChange(e.target.value)} className={cls} />;
-}
-
 export function InventoryMasterModule({ config }: { config: InventoryMasterConfig }) {
   const appState = useAppStore((s) => s.appState);
   const saveAppState = useAppStore((s) => s.saveAppState);
@@ -52,9 +42,6 @@ export function InventoryMasterModule({ config }: { config: InventoryMasterConfi
   const [editingId, setEditingId] = useState<string | null>(null);
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [form, setForm] = useState<Record<string, string>>({});
-
-  const basicFields = config.fields.filter((f) => !f.advanced);
-  const advancedFields = config.fields.filter((f) => f.advanced);
 
   const rows = useMemo(() => {
     let data = config.list(appState);
@@ -86,6 +73,10 @@ export function InventoryMasterModule({ config }: { config: InventoryMasterConfi
     setView('form');
   };
 
+  const setField = (key: string, value: string) => {
+    setForm({ ...form, [key]: value });
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const payload: Record<string, unknown> = { ...form };
@@ -97,45 +88,15 @@ export function InventoryMasterModule({ config }: { config: InventoryMasterConfi
     resetForm();
   };
 
-  if (view === 'form') {
-    return (
-      <div className={MODULE_FORM_SHELL}>
-        <div className="max-w-4xl mx-auto w-full space-y-6">
-          <FormHeader title={editingId ? `Edit ${config.title}` : `Create ${config.title}`} subtitle={config.subtitle} onBack={() => { setView('main'); resetForm(); }} />
-          <form onSubmit={handleSubmit} className="bg-white rounded-xl border border-slate-200 p-6 space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs font-semibold text-slate-700">
-              {basicFields.map((field) => (
-                <div key={field.key} className={field.type === 'textarea' ? 'md:col-span-2' : ''}>
-                  <label className="block mb-2">{field.label}{field.required ? <span className="text-rose-500"> *</span> : null}</label>
-                  <FieldInput field={field} value={form[field.key] ?? ''} onChange={(v) => setForm({ ...form, [field.key]: v })} />
-                </div>
-              ))}
-            </div>
-            {advancedFields.length > 0 && <AdvancedDetailsToggle open={showAdvanced} onToggle={() => setShowAdvanced(!showAdvanced)} />}
-            {showAdvanced && advancedFields.length > 0 && (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4 border-t border-slate-100 text-xs font-semibold text-slate-700">
-                {advancedFields.map((field) => (
-                  <div key={field.key} className={field.type === 'textarea' ? 'md:col-span-2' : ''}>
-                    <label className="block mb-2">{field.label}</label>
-                    <FieldInput field={field} value={form[field.key] ?? ''} onChange={(v) => setForm({ ...form, [field.key]: v })} />
-                  </div>
-                ))}
-              </div>
-            )}
-            <div className="flex justify-end gap-3 pt-4 border-t border-slate-100">
-              <button type="button" onClick={() => { setView('main'); resetForm(); }} className="border border-slate-200 px-4 py-2.5 rounded-xl text-xs font-semibold cursor-pointer">Cancel</button>
-              <button type="submit" className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2.5 rounded-xl text-xs font-semibold cursor-pointer">Save</button>
-            </div>
-          </form>
-        </div>
-        <Footer />
-      </div>
-    );
-  }
+  const handleBack = () => {
+    setView('main');
+    resetForm();
+  };
 
   const tabs = config.statusTabs ?? [{ id: 'all', label: 'All' }, { id: 'active', label: 'Active' }, { id: 'inactive', label: 'Inactive' }];
 
   return (
+    <>
     <div className={MODULE_LIST_SHELL}>
       <ListToolbar title={config.title} subtitle={config.subtitle} search={search} onSearchChange={setSearch} searchPlaceholder={`Search ${config.title.toLowerCase()}...`} onAdd={() => { resetForm(); setView('form'); }} addLabel={config.addLabel} filters={<FilterTabs tabs={tabs} active={statusFilter} onChange={setStatusFilter} />} />
       {kpis.length > 0 && <KpiCards items={kpis} />}
@@ -166,5 +127,22 @@ export function InventoryMasterModule({ config }: { config: InventoryMasterConfi
       />
       <Footer />
     </div>
+    <AppFormModal
+      open={view === 'form'}
+      onClose={handleBack}
+      title={editingId ? `Edit ${config.title}` : `Create ${config.title}`}
+      subtitle={config.subtitle}
+      onSubmit={handleSubmit}
+      size="md"
+    >
+      <AppFormFields
+        fields={config.fields}
+        values={form}
+        onChange={setField}
+        showAdvanced={showAdvanced}
+        onToggleAdvanced={() => setShowAdvanced(!showAdvanced)}
+      />
+    </AppFormModal>
+    </>
   );
 }

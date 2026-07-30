@@ -1,12 +1,13 @@
 'use client';
 
 import { useMemo, useState } from 'react';
+import { AppFormModal, FORM_GRID_CLS, FORM_INPUT_CLS, FORM_LABEL_CLS, FORM_SELECT_CLS } from '@/components/shared/AppForm';
 import { AdvancedDetailsToggle } from '@/components/shared/AdvancedDetailsToggle';
+import { ProductSelect, WarehouseSelect } from '@/components/modules/inventory/shared/selects';
 import { AppTable, type AppTableColumn } from '@/components/shared/AppTable';
 import { StatusBadge } from '@/components/shared/StatusBadge';
 import { TableIconAction } from '@/components/shared/TableIconAction';
-import { InventoryFormLayout, InventoryListLayout, FilterBar, FilterSelect, SearchInput, INPUT_CLS, SELECT_CLS } from '@/components/modules/inventory/shared/inventory-ui';
-import { ProductSelect, WarehouseSelect } from '@/components/modules/inventory/shared/selects';
+import { InventoryListLayout, FilterBar, FilterSelect, SearchInput } from '@/components/modules/inventory/shared/inventory-ui';
 import { useAppStore } from '@/lib/state/app-store';
 import {
   listStockOutRecords,
@@ -92,31 +93,8 @@ export function StockOutPage() {
     { key: 'status', label: 'Status', render: (row) => <StatusBadge status={String(row.status ?? 'Pending')} /> },
   ], [appState, products]);
 
-  if (view === 'form') {
-    return (
-      <InventoryFormLayout title="Create Stock Out" subtitle="Issue inventory with reason codes and warehouse tracking." onBack={() => { setView('main'); resetForm(); }} onSubmit={handleSubmit} submitLabel="Save Stock-Out">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div><label className="text-xs font-semibold text-slate-600">Product *</label><ProductSelect state={appState} value={form.productId} onChange={(v) => setForm({ ...form, productId: v })} required /></div>
-          <div><label className="text-xs font-semibold text-slate-600">Warehouse *</label><WarehouseSelect state={appState} value={form.warehouseId} onChange={(v) => setForm({ ...form, warehouseId: v })} required /></div>
-          <div><label className="text-xs font-semibold text-slate-600">Quantity *</label><input required type="number" min={1} className={INPUT_CLS} value={form.qty} onChange={(e) => setForm({ ...form, qty: e.target.value })} /></div>
-          <div><label className="text-xs font-semibold text-slate-600">Unit Value</label><input type="number" min={0} step="0.01" className={INPUT_CLS} value={form.unitValue} onChange={(e) => setForm({ ...form, unitValue: e.target.value })} /></div>
-          <div><label className="text-xs font-semibold text-slate-600">Date</label><input type="date" className={INPUT_CLS} value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })} /></div>
-          <div><label className="text-xs font-semibold text-slate-600">Reason Code *</label><select required className={SELECT_CLS} value={form.reasonCode} onChange={(e) => setForm({ ...form, reasonCode: e.target.value })}>{REASON_CODES.map((r) => <option key={r} value={r}>{r}</option>)}</select></div>
-          <div><label className="text-xs font-semibold text-slate-600">Source Type</label><select className={SELECT_CLS} value={form.sourceType} onChange={(e) => setForm({ ...form, sourceType: e.target.value })}><option>Production</option><option>Sales</option><option>Damage</option><option>Internal</option></select></div>
-        </div>
-        <AdvancedDetailsToggle open={showAdvanced} onToggle={() => setShowAdvanced(!showAdvanced)} />
-        {showAdvanced && (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
-            <div><label className="text-xs font-semibold text-slate-600">Reference Doc ID</label><input className={INPUT_CLS} value={form.refDocId} onChange={(e) => setForm({ ...form, refDocId: e.target.value })} /></div>
-            <div><label className="text-xs font-semibold text-slate-600">Status</label><select className={SELECT_CLS} value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value })}><option value="Pending">Pending</option><option value="Completed">Completed</option></select></div>
-            <div className="md:col-span-2"><label className="text-xs font-semibold text-slate-600">Notes</label><textarea className={INPUT_CLS} rows={2} value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} /></div>
-          </div>
-        )}
-      </InventoryFormLayout>
-    );
-  }
-
   return (
+    <>
     <InventoryListLayout
       title="Stock Out"
       subtitle="Track inventory issues, reasons, and fulfillment runs."
@@ -148,5 +126,33 @@ export function StockOutPage() {
         )}
       />
     </InventoryListLayout>
+    <AppFormModal
+      open={view === 'form'}
+      onClose={() => { setView('main'); resetForm(); }}
+      title="Create Stock Out"
+      subtitle="Issue inventory with reason codes and warehouse tracking."
+      onSubmit={handleSubmit}
+      submitLabel="Save Stock-Out"
+      size="lg"
+    >
+      <div className={FORM_GRID_CLS}>
+        <div><label className={FORM_LABEL_CLS}>Product *</label><ProductSelect state={appState} value={form.productId} onChange={(v) => setForm({ ...form, productId: v })} required /></div>
+        <div><label className={FORM_LABEL_CLS}>Warehouse *</label><WarehouseSelect state={appState} value={form.warehouseId} onChange={(v) => setForm({ ...form, warehouseId: v })} required /></div>
+        <div><label className={FORM_LABEL_CLS}>Quantity *</label><input required type="number" min={1} className={FORM_INPUT_CLS} value={form.qty} onChange={(e) => setForm({ ...form, qty: e.target.value })} /></div>
+        <div><label className={FORM_LABEL_CLS}>Unit Value</label><input type="number" min={0} step="0.01" className={FORM_INPUT_CLS} value={form.unitValue} onChange={(e) => setForm({ ...form, unitValue: e.target.value })} /></div>
+        <div><label className={FORM_LABEL_CLS}>Date</label><input type="date" className={`${FORM_INPUT_CLS} cursor-pointer`} value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })} /></div>
+        <div><label className={FORM_LABEL_CLS}>Reason Code *</label><select required className={FORM_SELECT_CLS} value={form.reasonCode} onChange={(e) => setForm({ ...form, reasonCode: e.target.value })}>{REASON_CODES.map((r) => <option key={r} value={r}>{r}</option>)}</select></div>
+        <div><label className={FORM_LABEL_CLS}>Source Type</label><select className={FORM_SELECT_CLS} value={form.sourceType} onChange={(e) => setForm({ ...form, sourceType: e.target.value })}><option>Production</option><option>Sales</option><option>Damage</option><option>Internal</option></select></div>
+      </div>
+      <AdvancedDetailsToggle open={showAdvanced} onToggle={() => setShowAdvanced(!showAdvanced)} />
+      {showAdvanced && (
+        <div className={`${FORM_GRID_CLS} pt-4 border-t border-slate-100/80`}>
+          <div><label className={FORM_LABEL_CLS}>Reference Doc ID</label><input className={FORM_INPUT_CLS} value={form.refDocId} onChange={(e) => setForm({ ...form, refDocId: e.target.value })} /></div>
+          <div><label className={FORM_LABEL_CLS}>Status</label><select className={FORM_SELECT_CLS} value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value })}><option value="Pending">Pending</option><option value="Completed">Completed</option></select></div>
+          <div className="md:col-span-2"><label className={FORM_LABEL_CLS}>Notes</label><textarea className={FORM_INPUT_CLS} rows={2} value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} /></div>
+        </div>
+      )}
+    </AppFormModal>
+    </>
   );
 }

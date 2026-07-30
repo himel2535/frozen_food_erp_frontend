@@ -1,14 +1,21 @@
 'use client';
 
+import type { FormEvent, ReactNode } from 'react';
 import { Footer } from '@/components/layout/Footer';
-import { FormHeader } from '@/components/layout/FormHeader';
+import { AppFormModal } from '@/components/shared/AppForm';
 import { KpiCards, type KpiCardItem } from '@/components/shared/KpiCards';
-import { MODULE_FORM_SHELL, MODULE_LIST_SHELL } from '@/lib/ui/module-layout';
+import { MODULE_LIST_SHELL } from '@/lib/ui/module-layout';
+import {
+  FORM_BTN_PRIMARY,
+  FORM_BTN_SECONDARY,
+  FORM_INPUT_CLS,
+  FORM_SELECT_CLS,
+} from '@/lib/ui/form-styles';
 
-export const INPUT_CLS = 'w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500/10';
-export const SELECT_CLS = `${INPUT_CLS} cursor-pointer`;
-export const BTN_PRIMARY = 'bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold px-4 py-2.5 rounded-xl cursor-pointer';
-export const BTN_SECONDARY = 'border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold px-4 py-2.5 rounded-xl cursor-pointer';
+export const INPUT_CLS = FORM_INPUT_CLS;
+export const SELECT_CLS = FORM_SELECT_CLS;
+export const BTN_PRIMARY = FORM_BTN_PRIMARY;
+export const BTN_SECONDARY = FORM_BTN_SECONDARY;
 
 export function InventoryListLayout({
   title,
@@ -48,34 +55,36 @@ export function InventoryListLayout({
 }
 
 export function InventoryFormLayout({
+  open,
   title,
   subtitle,
-  onBack,
+  onClose,
   onSubmit,
   submitLabel,
   children,
+  size = 'md',
 }: {
+  open: boolean;
   title: string;
   subtitle: string;
-  onBack: () => void;
-  onSubmit: (e: React.FormEvent) => void;
+  onClose: () => void;
+  onSubmit: (e: FormEvent) => void;
   submitLabel: string;
-  children: React.ReactNode;
+  children: ReactNode;
+  size?: 'sm' | 'md' | 'lg';
 }) {
   return (
-    <div className={MODULE_FORM_SHELL}>
-      <div className="max-w-4xl mx-auto w-full space-y-6">
-        <FormHeader title={title} subtitle={subtitle} onBack={onBack} />
-        <form onSubmit={onSubmit} className="bg-white rounded-xl border border-slate-200 p-6 space-y-6">
-          {children}
-          <div className="flex justify-end gap-3 pt-4 border-t border-slate-100">
-            <button type="button" onClick={onBack} className={BTN_SECONDARY}>Cancel</button>
-            <button type="submit" className={BTN_PRIMARY}>{submitLabel}</button>
-          </div>
-        </form>
-      </div>
-      <Footer />
-    </div>
+    <AppFormModal
+      open={open}
+      onClose={onClose}
+      title={title}
+      subtitle={subtitle}
+      onSubmit={onSubmit}
+      submitLabel={submitLabel}
+      size={size}
+    >
+      {children}
+    </AppFormModal>
   );
 }
 

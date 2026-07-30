@@ -3,8 +3,7 @@
 import { useMemo, useState } from 'react';
 import { Plus } from 'lucide-react';
 import { Footer } from '@/components/layout/Footer';
-import { FormHeader } from '@/components/layout/FormHeader';
-import { AdvancedDetailsToggle } from '@/components/shared/AdvancedDetailsToggle';
+import { AppFormFields, AppFormModal, FORM_GRID_CLS, FORM_LABEL_CLS, FORM_SELECT_CLS } from '@/components/shared/AppForm';
 import { AppTable, type AppTableColumn } from '@/components/shared/AppTable';
 import { KanbanBoard, type KanbanCard } from '@/components/shared/KanbanBoard';
 import { useAppStore } from '@/lib/state/app-store';
@@ -23,8 +22,23 @@ import {
   markDealLost,
 } from '@/lib/services/crm-service';
 import { KpiCards } from '@/components/shared/KpiCards';
-import { MODULE_FORM_SHELL, MODULE_LIST_SHELL } from '@/lib/ui/module-layout';
+import { MODULE_LIST_SHELL } from '@/lib/ui/module-layout';
+import type { PortField } from '@/lib/modules/port-types';
 import { ProfileDrawer } from '@/components/shared/ProfileDrawer';
+
+const DEAL_FORM_FIELDS: PortField[] = [
+  { key: 'title', label: 'Deal Title', required: true },
+  { key: 'company', label: 'Company', required: true },
+  { key: 'contactPerson', label: 'Contact Person' },
+  { key: 'phone', label: 'Phone', type: 'phone' },
+  { key: 'stage', label: 'Stage', type: 'select', options: [...DEAL_STAGES] },
+  { key: 'expectedValue', label: 'Expected Value', type: 'number' },
+  { key: 'probability', label: 'Probability %', type: 'number' },
+  { key: 'expectedCloseDate', label: 'Expected Close Date', type: 'date' },
+  { key: 'productsSummary', label: 'Products Summary' },
+  { key: 'competitor', label: 'Competitor', advanced: true },
+  { key: 'notes', label: 'Notes', type: 'textarea', advanced: true },
+];
 
 function formatCurrency(value: number) {
   return `৳${Number(value || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
@@ -196,90 +210,8 @@ export function DealsPage() {
     resetForm();
   };
 
-  if (view === 'form') {
-    return (
-      <div className={MODULE_FORM_SHELL}>
-        <div className="max-w-4xl mx-auto w-full space-y-6">
-          <FormHeader
-            title={editingId ? 'Edit Deal' : 'Create Deal'}
-            subtitle="Track deal stages, values, and follow-ups."
-            onBack={() => { setView('main'); resetForm(); }}
-          />
-          <form onSubmit={handleSubmit} className="bg-white rounded-xl border border-slate-200 p-6 space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs font-semibold text-slate-700">
-              <div>
-                <label className="block mb-2">Deal Title <span className="text-rose-500">*</span></label>
-                <input required value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} className="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50" />
-              </div>
-              <div>
-                <label className="block mb-2">Company <span className="text-rose-500">*</span></label>
-                <input required value={form.company} onChange={(e) => setForm({ ...form, company: e.target.value })} className="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50" />
-              </div>
-              <div>
-                <label className="block mb-2">Contact Person</label>
-                <input value={form.contactPerson} onChange={(e) => setForm({ ...form, contactPerson: e.target.value })} className="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50" />
-              </div>
-              <div>
-                <label className="block mb-2">Phone</label>
-                <input value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} className="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50" />
-              </div>
-              <div>
-                <label className="block mb-2">Stage</label>
-                <select value={form.stage} onChange={(e) => setForm({ ...form, stage: e.target.value })} className="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50 cursor-pointer">
-                  {DEAL_STAGES.map((s) => (
-                    <option key={s} value={s}>{DEAL_STAGE_LABELS[s as keyof typeof DEAL_STAGE_LABELS]}</option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label className="block mb-2">Expected Value</label>
-                <input type="number" value={form.expectedValue} onChange={(e) => setForm({ ...form, expectedValue: e.target.value })} className="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50" />
-              </div>
-              <div>
-                <label className="block mb-2">Probability %</label>
-                <input type="number" value={form.probability} onChange={(e) => setForm({ ...form, probability: e.target.value })} className="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50" />
-              </div>
-              <div>
-                <label className="block mb-2">Expected Close Date</label>
-                <input type="date" value={form.expectedCloseDate} onChange={(e) => setForm({ ...form, expectedCloseDate: e.target.value })} className="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50" />
-              </div>
-              <div>
-                <label className="block mb-2">Assigned Rep</label>
-                <select value={form.assignedRepId} onChange={(e) => setForm({ ...form, assignedRepId: e.target.value })} className="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50 cursor-pointer">
-                  {owners.map((o: { id: string; name: string }) => (
-                    <option key={o.id} value={o.id}>{o.name}</option>
-                  ))}
-                </select>
-              </div>
-              <div className="md:col-span-2">
-                <label className="block mb-2">Products Summary</label>
-                <input value={form.productsSummary} onChange={(e) => setForm({ ...form, productsSummary: e.target.value })} className="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50" />
-              </div>
-            </div>
-            <AdvancedDetailsToggle open={showAdvanced} onToggle={() => setShowAdvanced(!showAdvanced)} />
-            {showAdvanced && (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4 border-t border-slate-100 text-xs font-semibold text-slate-700">
-                <div>
-                  <label className="block mb-2">Competitor</label>
-                  <input value={form.competitor} onChange={(e) => setForm({ ...form, competitor: e.target.value })} className="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50" />
-                </div>
-                <div className="md:col-span-2">
-                  <label className="block mb-2">Notes</label>
-                  <textarea rows={3} value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} className="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50" />
-                </div>
-              </div>
-            )}
-            <div className="flex justify-end gap-3 pt-4 border-t border-slate-100">
-              <button type="button" onClick={() => { setView('main'); resetForm(); }} className="border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold px-4 py-2.5 rounded-xl cursor-pointer">Cancel</button>
-              <button type="submit" className="bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold px-4 py-2.5 rounded-xl cursor-pointer">Save Deal</button>
-            </div>
-          </form>
-        </div>
-      </div>
-    );
-  }
-
   return (
+    <>
     <div className={MODULE_LIST_SHELL}>
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
@@ -349,5 +281,37 @@ export function DealsPage() {
 
       <Footer />
     </div>
+    <AppFormModal
+      open={view === 'form'}
+      onClose={() => { setView('main'); resetForm(); }}
+      title={editingId ? 'Edit Deal' : 'Create Deal'}
+      subtitle="Track deal stages, values, and follow-ups."
+      onSubmit={handleSubmit}
+      submitLabel="Save Deal"
+      size="md"
+    >
+      <AppFormFields
+        fields={DEAL_FORM_FIELDS}
+        values={form}
+        onChange={(key, value) => setForm({ ...form, [key]: value })}
+        showAdvanced={showAdvanced}
+        onToggleAdvanced={() => setShowAdvanced(!showAdvanced)}
+      />
+      <div className={FORM_GRID_CLS}>
+        <div>
+          <label className={FORM_LABEL_CLS}>Assigned Rep</label>
+          <select
+            value={form.assignedRepId}
+            onChange={(e) => setForm({ ...form, assignedRepId: e.target.value })}
+            className={FORM_SELECT_CLS}
+          >
+            {owners.map((o: { id: string; name: string }) => (
+              <option key={o.id} value={o.id}>{o.name}</option>
+            ))}
+          </select>
+        </div>
+      </div>
+    </AppFormModal>
+    </>
   );
 }

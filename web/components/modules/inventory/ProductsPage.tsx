@@ -2,14 +2,14 @@
 
 import { useMemo, useState } from 'react';
 import { Footer } from '@/components/layout/Footer';
-import { FormHeader } from '@/components/layout/FormHeader';
+import { AppFormFields, AppFormPage, FORM_GRID_CLS, FORM_INPUT_CLS, FORM_LABEL_CLS, FORM_SELECT_CLS } from '@/components/shared/AppForm';
 import { KpiCards } from '@/components/shared/KpiCards';
-import { MODULE_FORM_SHELL, MODULE_LIST_SHELL } from '@/lib/ui/module-layout';
-import { AdvancedDetailsToggle } from '@/components/shared/AdvancedDetailsToggle';
+import { MODULE_LIST_SHELL } from '@/lib/ui/module-layout';
 import { AppTable, type AppTableColumn } from '@/components/shared/AppTable';
 import { StatusBadge } from '@/components/shared/StatusBadge';
 import { TableIconAction } from '@/components/shared/TableIconAction';
 import { useAppStore } from '@/lib/state/app-store';
+import type { PortField } from '@/lib/modules/port-types';
 import {
   listInventory,
   listCategories,
@@ -108,6 +108,38 @@ export function ProductsPage() {
     { key: 'status', label: 'Status', render: (row) => <StatusBadge status={getProductStockStatus(row)} /> },
   ], [warehouses]);
 
+  const productFields = useMemo<PortField[]>(() => [
+    { key: 'name', label: 'Product Name', required: true },
+    { key: 'sku', label: 'SKU Code', required: true },
+    { key: 'category', label: 'Category', required: true, type: 'select', options: categories.map((c) => String(c.name)) },
+    { key: 'productType', label: 'Product Type', required: true, type: 'select', options: [...PRODUCT_TYPES] },
+    { key: 'cost', label: 'Cost Price ($)', type: 'number', required: true },
+    { key: 'price', label: 'Selling Price ($)', type: 'number', required: true },
+    { key: 'uom', label: 'UoM (Unit of Measure)', type: 'select', options: ['', ...units.map((u) => String(u.code))], placeholder: 'Select Unit' },
+    { key: 'reserved', label: 'Opening Reserved Stock', type: 'number' },
+    { key: 'wholesalePrice', label: 'Wholesale Price', type: 'number', advanced: true },
+    { key: 'taxRate', label: 'Tax Rate %', type: 'number', advanced: true },
+    { key: 'minStock', label: 'Min Stock', type: 'number', advanced: true },
+    { key: 'reorderLevel', label: 'Reorder Level', type: 'number', advanced: true },
+    { key: 'description', label: 'Description', type: 'textarea', advanced: true },
+  ], [categories, units]);
+
+  const productFormValues: Record<string, string> = {
+    name: form.name,
+    sku: form.sku,
+    category: form.category,
+    productType: form.productType,
+    cost: form.cost,
+    price: form.price,
+    uom: form.uom,
+    reserved: form.reserved,
+    wholesalePrice: form.wholesalePrice,
+    taxRate: form.taxRate,
+    minStock: form.minStock,
+    reorderLevel: form.reorderLevel,
+    description: form.description,
+  };
+
   const resetForm = () => {
     const alloc = buildDefaultWarehouseAllocations(appState);
     const allocStr: Record<string, string> = {};
@@ -161,89 +193,63 @@ export function ProductsPage() {
 
   if (view === 'form') {
     return (
-      <div className={MODULE_FORM_SHELL}>
-        <div className="max-w-4xl mx-auto w-full space-y-6">
-          <FormHeader title={editingId ? 'Edit Product' : 'Create Product'} subtitle="Add a new item to your catalog." onBack={() => { setView('main'); resetForm(); }} />
-          <form onSubmit={handleSubmit} className="bg-white rounded-xl border border-slate-200 p-6 space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs font-semibold text-slate-700">
-              <div className="md:col-span-2">
-                <label className="block mb-2">Product Name <span className="text-rose-500">*</span></label>
-                <input required value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50" />
+      <AppFormPage
+        title={editingId ? 'Edit Product' : 'Create Product'}
+        subtitle="Add a new item to your catalog."
+        onBack={() => { setView('main'); resetForm(); }}
+        onSubmit={handleSubmit}
+        submitLabel="Save Product"
+      >
+        <AppFormFields
+          fields={productFields}
+          values={productFormValues}
+          onChange={(key, value) => setForm({ ...form, [key]: value })}
+          showAdvanced={showAdvanced}
+          onToggleAdvanced={() => setShowAdvanced(!showAdvanced)}
+        />
+        <div>
+          <h3 className="text-[11px] font-bold uppercase tracking-wide text-slate-500 mb-3">Warehouse Stock Allocation</h3>
+          <div className={FORM_GRID_CLS}>
+            {warehouses.map((wh) => (
+              <div key={String(wh.id)}>
+                <label className={FORM_LABEL_CLS}>{String(wh.name)} Stock</label>
+                <input
+                  type="number"
+                  value={warehouseStock[String(wh.id)] ?? '0'}
+                  onChange={(e) => setWarehouseStock({ ...warehouseStock, [String(wh.id)]: e.target.value })}
+                  className={FORM_INPUT_CLS}
+                />
               </div>
-              <div>
-                <label className="block mb-2">SKU Code <span className="text-rose-500">*</span></label>
-                <input required value={form.sku} onChange={(e) => setForm({ ...form, sku: e.target.value })} className="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50" />
-              </div>
-              <div>
-                <label className="block mb-2">Category <span className="text-rose-500">*</span></label>
-                <select required value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} className="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50 cursor-pointer">
-                  {categories.map((c) => <option key={String(c.id)} value={String(c.name)}>{String(c.name)}</option>)}
-                </select>
-              </div>
-              <div>
-                <label className="block mb-2">Product Type <span className="text-rose-500">*</span></label>
-                <select value={form.productType} onChange={(e) => setForm({ ...form, productType: e.target.value })} className="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50 cursor-pointer">
-                  {PRODUCT_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
-                </select>
-              </div>
-              <div>
-                <label className="block mb-2">Cost Price ($) <span className="text-rose-500">*</span></label>
-                <input required type="number" step="0.01" value={form.cost} onChange={(e) => setForm({ ...form, cost: e.target.value })} className="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50" />
-              </div>
-              <div>
-                <label className="block mb-2">Selling Price ($) <span className="text-rose-500">*</span></label>
-                <input required type="number" step="0.01" value={form.price} onChange={(e) => setForm({ ...form, price: e.target.value })} className="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50" />
-              </div>
-              <div>
-                <label className="block mb-2">UoM (Unit of Measure)</label>
-                <select value={form.uom} onChange={(e) => setForm({ ...form, uom: e.target.value })} className="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50 cursor-pointer">
-                  <option value="">Select Unit</option>
-                  {units.map((u) => <option key={String(u.id)} value={String(u.code)}>{String(u.name)} ({String(u.symbol)})</option>)}
-                </select>
-              </div>
-              <div>
-                <label className="block mb-2">Opening Reserved Stock</label>
-                <input type="number" value={form.reserved} onChange={(e) => setForm({ ...form, reserved: e.target.value })} className="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50" />
-              </div>
-            </div>
-            <div>
-              <h3 className="text-xs font-bold text-slate-800 mb-3">Warehouse Stock Allocation</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs font-semibold text-slate-700">
-                {warehouses.map((wh) => (
-                  <div key={String(wh.id)}>
-                    <label className="block mb-2">{String(wh.name)} Stock</label>
-                    <input type="number" value={warehouseStock[String(wh.id)] ?? '0'} onChange={(e) => setWarehouseStock({ ...warehouseStock, [String(wh.id)]: e.target.value })} className="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50" />
-                  </div>
-                ))}
-              </div>
-            </div>
-            <AdvancedDetailsToggle open={showAdvanced} onToggle={() => setShowAdvanced(!showAdvanced)} />
-            {showAdvanced && (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4 border-t border-slate-100 text-xs font-semibold text-slate-700">
-                <div><label className="block mb-2">Wholesale Price</label><input type="number" value={form.wholesalePrice} onChange={(e) => setForm({ ...form, wholesalePrice: e.target.value })} className="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50" /></div>
-                <div><label className="block mb-2">Tax Rate %</label><input type="number" value={form.taxRate} onChange={(e) => setForm({ ...form, taxRate: e.target.value })} className="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50" /></div>
-                <div><label className="block mb-2">Min Stock</label><input type="number" value={form.minStock} onChange={(e) => setForm({ ...form, minStock: e.target.value })} className="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50" /></div>
-                <div><label className="block mb-2">Reorder Level</label><input type="number" value={form.reorderLevel} onChange={(e) => setForm({ ...form, reorderLevel: e.target.value })} className="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50" /></div>
-                <div><label className="block mb-2">Default Warehouse</label>
-                  <select value={form.defaultWarehouse} onChange={(e) => setForm({ ...form, defaultWarehouse: e.target.value })} className="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50 cursor-pointer">
-                    {warehouses.map((wh) => <option key={String(wh.id)} value={String(wh.id)}>{String(wh.name)}</option>)}
-                  </select>
-                </div>
-                <div className="md:col-span-2 flex items-center gap-2">
-                  <input type="checkbox" id="discontinued" checked={form.discontinued} onChange={(e) => setForm({ ...form, discontinued: e.target.checked })} className="cursor-pointer" />
-                  <label htmlFor="discontinued" className="cursor-pointer">Discontinued</label>
-                </div>
-                <div className="md:col-span-2"><label className="block mb-2">Description</label><textarea rows={3} value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} className="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50" /></div>
-              </div>
-            )}
-            <div className="flex justify-end gap-3 pt-4 border-t border-slate-100">
-              <button type="button" onClick={() => { setView('main'); resetForm(); }} className="border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold px-4 py-2.5 rounded-xl cursor-pointer">Cancel</button>
-              <button type="submit" className="bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold px-4 py-2.5 rounded-xl cursor-pointer">Save Product</button>
-            </div>
-          </form>
+            ))}
+          </div>
         </div>
-        <Footer />
-      </div>
+        {showAdvanced && (
+          <div className={`${FORM_GRID_CLS} pt-4 border-t border-slate-100/80`}>
+            <div>
+              <label className={FORM_LABEL_CLS}>Default Warehouse</label>
+              <select
+                value={form.defaultWarehouse}
+                onChange={(e) => setForm({ ...form, defaultWarehouse: e.target.value })}
+                className={FORM_SELECT_CLS}
+              >
+                {warehouses.map((wh) => (
+                  <option key={String(wh.id)} value={String(wh.id)}>{String(wh.name)}</option>
+                ))}
+              </select>
+            </div>
+            <div className="md:col-span-2 flex items-center gap-2">
+              <input
+                type="checkbox"
+                id="discontinued"
+                checked={form.discontinued}
+                onChange={(e) => setForm({ ...form, discontinued: e.target.checked })}
+                className="cursor-pointer"
+              />
+              <label htmlFor="discontinued" className="cursor-pointer text-xs font-semibold text-slate-700">Discontinued</label>
+            </div>
+          </div>
+        )}
+      </AppFormPage>
     );
   }
 

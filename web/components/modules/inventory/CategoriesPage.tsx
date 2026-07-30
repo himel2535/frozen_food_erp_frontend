@@ -1,12 +1,13 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { AdvancedDetailsToggle } from '@/components/shared/AdvancedDetailsToggle';
+import { AppFormFields, AppFormModal, FORM_GRID_CLS, FORM_LABEL_CLS } from '@/components/shared/AppForm';
 import { AppTable, type AppTableColumn } from '@/components/shared/AppTable';
 import { StatusBadge } from '@/components/shared/StatusBadge';
 import { TableIconAction } from '@/components/shared/TableIconAction';
-import { InventoryFormLayout, InventoryListLayout, FilterBar, FilterSelect, SearchInput, INPUT_CLS, SELECT_CLS } from '@/components/modules/inventory/shared/inventory-ui';
+import { InventoryListLayout, FilterBar, FilterSelect, SearchInput, SELECT_CLS } from '@/components/modules/inventory/shared/inventory-ui';
 import { useAppStore } from '@/lib/state/app-store';
+import type { PortField } from '@/lib/modules/port-types';
 import {
   getCategoryMetrics,
   createCategory,
@@ -15,6 +16,20 @@ import {
   formatMoney,
   PRODUCT_TYPES,
 } from '@/lib/services/inventory-service';
+
+const CATEGORY_BASIC_FIELDS: PortField[] = [
+  { key: 'name', label: 'Category Name', required: true },
+  { key: 'code', label: 'Code' },
+  { key: 'type', label: 'Product Type', type: 'select', options: [...PRODUCT_TYPES] },
+  { key: 'status', label: 'Status', type: 'select', options: ['Active', 'Inactive'] },
+  { key: 'description', label: 'Description', type: 'textarea' },
+];
+
+const CATEGORY_ADVANCED_FIELDS: PortField[] = [
+  { key: 'defaultTaxRate', label: 'Default Tax Rate (%)', type: 'number', advanced: true },
+  { key: 'defaultUnitType', label: 'Default Unit Type', advanced: true, placeholder: 'kg, pcs, etc.' },
+  { key: 'stockPolicy', label: 'Stock Policy', type: 'select', options: ['FIFO', 'FEFO', 'LIFO'], advanced: true },
+];
 
 export function CategoriesPage() {
   const appState = useAppStore((s) => s.appState);
@@ -86,30 +101,15 @@ export function CategoriesPage() {
     { key: 'status', label: 'Status', render: (cat) => <StatusBadge status={String(cat.status ?? 'Active')} /> },
   ], []);
 
-  if (view === 'form') {
-    return (
-      <InventoryFormLayout title={editingId ? 'Edit Category' : 'Create Category'} subtitle="Organize products with hierarchy, tax defaults, and stock policies." onBack={() => { setView('main'); resetForm(); }} onSubmit={handleSubmit} submitLabel="Save Category">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div><label className="text-xs font-semibold text-slate-600">Category Name *</label><input required className={INPUT_CLS} value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} /></div>
-          <div><label className="text-xs font-semibold text-slate-600">Code</label><input className={INPUT_CLS} value={form.code} onChange={(e) => setForm({ ...form, code: e.target.value })} /></div>
-          <div><label className="text-xs font-semibold text-slate-600">Product Type</label><select className={SELECT_CLS} value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value })}>{PRODUCT_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}</select></div>
-          <div><label className="text-xs font-semibold text-slate-600">Status</label><select className={SELECT_CLS} value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value })}><option value="Active">Active</option><option value="Inactive">Inactive</option></select></div>
-          <div className="md:col-span-2"><label className="text-xs font-semibold text-slate-600">Description</label><textarea className={INPUT_CLS} rows={2} value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} /></div>
-        </div>
-        <AdvancedDetailsToggle open={showAdvanced} onToggle={() => setShowAdvanced(!showAdvanced)} />
-        {showAdvanced && (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
-            <div><label className="text-xs font-semibold text-slate-600">Parent Category</label><select className={SELECT_CLS} value={form.parentId} onChange={(e) => setForm({ ...form, parentId: e.target.value })}><option value="">None</option>{categories.filter((c) => String(c.id) !== editingId).map((c) => <option key={String(c.id)} value={String(c.id)}>{String(c.name)}</option>)}</select></div>
-            <div><label className="text-xs font-semibold text-slate-600">Default Tax Rate (%)</label><input type="number" className={INPUT_CLS} value={form.defaultTaxRate} onChange={(e) => setForm({ ...form, defaultTaxRate: e.target.value })} /></div>
-            <div><label className="text-xs font-semibold text-slate-600">Default Unit Type</label><input className={INPUT_CLS} value={form.defaultUnitType} onChange={(e) => setForm({ ...form, defaultUnitType: e.target.value })} placeholder="kg, pcs, etc." /></div>
-            <div><label className="text-xs font-semibold text-slate-600">Stock Policy</label><select className={SELECT_CLS} value={form.stockPolicy} onChange={(e) => setForm({ ...form, stockPolicy: e.target.value })}><option value="FIFO">FIFO</option><option value="FEFO">FEFO</option><option value="LIFO">LIFO</option></select></div>
-          </div>
-        )}
-      </InventoryFormLayout>
-    );
-  }
+  const categoryFields = useMemo(
+    () => [...CATEGORY_BASIC_FIELDS, ...CATEGORY_ADVANCED_FIELDS],
+    [],
+  );
+
+  const setField = (key: string, value: string) => setForm({ ...form, [key]: value });
 
   return (
+    <>
     <InventoryListLayout
       title="Categories"
       subtitle="Organize products with hierarchical categories and stock policies."
@@ -141,5 +141,36 @@ export function CategoriesPage() {
         )}
       />
     </InventoryListLayout>
+    <AppFormModal
+      open={view === 'form'}
+      onClose={() => { setView('main'); resetForm(); }}
+      title={editingId ? 'Edit Category' : 'Create Category'}
+      subtitle="Organize products with hierarchy, tax defaults, and stock policies."
+      onSubmit={handleSubmit}
+      submitLabel="Save Category"
+      size="md"
+    >
+      <AppFormFields
+        fields={categoryFields}
+        values={form}
+        onChange={setField}
+        showAdvanced={showAdvanced}
+        onToggleAdvanced={() => setShowAdvanced(!showAdvanced)}
+      />
+      {showAdvanced && (
+        <div className={`${FORM_GRID_CLS} pt-4 border-t border-slate-100/80`}>
+          <div>
+            <label className={FORM_LABEL_CLS}>Parent Category</label>
+            <select className={SELECT_CLS} value={form.parentId} onChange={(e) => setForm({ ...form, parentId: e.target.value })}>
+              <option value="">None</option>
+              {categories.filter((c) => String(c.id) !== editingId).map((c) => (
+                <option key={String(c.id)} value={String(c.id)}>{String(c.name)}</option>
+              ))}
+            </select>
+          </div>
+        </div>
+      )}
+    </AppFormModal>
+    </>
   );
 }

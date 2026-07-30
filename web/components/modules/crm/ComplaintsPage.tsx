@@ -2,13 +2,22 @@
 
 import { useMemo, useState } from 'react';
 import { Plus } from 'lucide-react';
+import { AppFormFields, AppFormModal } from '@/components/shared/AppForm';
 import { Footer } from '@/components/layout/Footer';
-import { FormHeader } from '@/components/layout/FormHeader';
 import { FilterTabs } from '@/components/shared/FilterTabs';
 import { StatusBadge } from '@/components/shared/StatusBadge';
 import { useAppStore } from '@/lib/state/app-store';
+import type { PortField } from '@/lib/modules/port-types';
+import { MODULE_LIST_SHELL } from '@/lib/ui/module-layout';
 import { createSupportTicket, ensureCrmState } from '@/lib/services/crm-service';
 import { listFromState, updateInState, deleteFromState } from '@/lib/services/domain-service';
+
+const COMPLAINT_FIELDS: PortField[] = [
+  { key: 'customer', label: 'Customer', required: true },
+  { key: 'subject', label: 'Subject', required: true },
+  { key: 'priority', label: 'Priority', type: 'select', options: ['normal', 'high'] },
+  { key: 'description', label: 'Description', type: 'textarea' },
+];
 
 const FOLDERS = [
   { id: 'all', label: 'All Tickets' },
@@ -58,29 +67,9 @@ export function ComplaintsPage() {
     saveAppState();
   };
 
-  if (view === 'form') {
-    return (
-      <div className="flex-1 overflow-y-auto p-6 md:p-8 bg-slate-50">
-        <div className="max-w-3xl mx-auto space-y-6">
-          <FormHeader title="Log Complaint" subtitle="Track customer complaints and resolutions." onBack={() => setView('main')} />
-          <form onSubmit={handleSubmit} className="bg-white rounded-xl border border-slate-200 p-6 space-y-4 text-xs">
-            <input required placeholder="Customer" value={form.customer} onChange={(e) => setForm({ ...form, customer: e.target.value })} className="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50" />
-            <input required placeholder="Subject" value={form.subject} onChange={(e) => setForm({ ...form, subject: e.target.value })} className="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50" />
-            <select value={form.priority} onChange={(e) => setForm({ ...form, priority: e.target.value })} className="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50 cursor-pointer">
-              <option value="normal">Normal</option>
-              <option value="high">High</option>
-            </select>
-            <textarea rows={4} placeholder="Description" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} className="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50" />
-            <button type="submit" className="bg-blue-600 text-white font-bold px-4 py-2.5 rounded-xl cursor-pointer">Save</button>
-          </form>
-        </div>
-        <Footer />
-      </div>
-    );
-  }
-
   return (
-    <div className="flex-1 overflow-y-auto p-6 md:p-8 space-y-4 flex flex-col">
+    <>
+    <div className={MODULE_LIST_SHELL}>
       <div className="flex justify-between items-start gap-4">
         <div>
           <h2 className="text-xl font-extrabold text-slate-900">Complaints</h2>
@@ -123,5 +112,21 @@ export function ComplaintsPage() {
       </div>
       <Footer />
     </div>
+    <AppFormModal
+      open={view === 'form'}
+      onClose={() => setView('main')}
+      title="Log Complaint"
+      subtitle="Track customer complaints and resolutions."
+      onSubmit={handleSubmit}
+      submitLabel="Save Complaint"
+      size="md"
+    >
+      <AppFormFields
+        fields={COMPLAINT_FIELDS}
+        values={form}
+        onChange={(key, value) => setForm({ ...form, [key]: value })}
+      />
+    </AppFormModal>
+    </>
   );
 }

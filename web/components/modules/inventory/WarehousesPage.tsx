@@ -1,12 +1,13 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { AdvancedDetailsToggle } from '@/components/shared/AdvancedDetailsToggle';
+import { AppFormFields, AppFormModal } from '@/components/shared/AppForm';
 import { AppTable, type AppTableColumn } from '@/components/shared/AppTable';
 import { StatusBadge } from '@/components/shared/StatusBadge';
 import { TableIconAction } from '@/components/shared/TableIconAction';
-import { InventoryFormLayout, InventoryListLayout, FilterBar, FilterSelect, SearchInput, INPUT_CLS, SELECT_CLS } from '@/components/modules/inventory/shared/inventory-ui';
+import { InventoryListLayout, FilterBar, FilterSelect, SearchInput } from '@/components/modules/inventory/shared/inventory-ui';
 import { useAppStore } from '@/lib/state/app-store';
+import type { PortField } from '@/lib/modules/port-types';
 import {
   getWarehouseMetrics,
   createWarehouse,
@@ -14,6 +15,18 @@ import {
   deleteWarehouse,
   formatMoney,
 } from '@/lib/services/inventory-service';
+
+const WAREHOUSE_FIELDS: PortField[] = [
+  { key: 'name', label: 'Warehouse Name', required: true },
+  { key: 'location', label: 'Location' },
+  { key: 'capacity', label: 'Capacity (units)', type: 'number' },
+  { key: 'type', label: 'Type', type: 'select', options: ['Main Warehouse', 'Regional Warehouse', 'Retail Storage', 'Production WH'] },
+  { key: 'manager', label: 'Manager' },
+  { key: 'contact', label: 'Contact' },
+  { key: 'status', label: 'Status', type: 'select', options: ['Active', 'Inactive'] },
+  { key: 'allowedProductTypes', label: 'Allowed Product Types', advanced: true },
+  { key: 'storageRules', label: 'Storage Rules', advanced: true },
+];
 
 export function WarehousesPage() {
   const appState = useAppStore((s) => s.appState);
@@ -86,30 +99,8 @@ export function WarehousesPage() {
     { key: 'status', label: 'Status', render: (wh) => <StatusBadge status={String(wh.status ?? 'Active')} /> },
   ], []);
 
-  if (view === 'form') {
-    return (
-      <InventoryFormLayout title={editingId ? 'Edit Warehouse' : 'Create Warehouse'} subtitle="Configure warehouse locations, capacity, and storage rules." onBack={() => { setView('main'); resetForm(); }} onSubmit={handleSubmit} submitLabel="Save Warehouse">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div><label className="text-xs font-semibold text-slate-600">Warehouse Name *</label><input required className={INPUT_CLS} value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} /></div>
-          <div><label className="text-xs font-semibold text-slate-600">Location</label><input className={INPUT_CLS} value={form.location} onChange={(e) => setForm({ ...form, location: e.target.value })} /></div>
-          <div><label className="text-xs font-semibold text-slate-600">Capacity (units)</label><input type="number" min={0} className={INPUT_CLS} value={form.capacity} onChange={(e) => setForm({ ...form, capacity: e.target.value })} /></div>
-          <div><label className="text-xs font-semibold text-slate-600">Type</label><select className={SELECT_CLS} value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value })}><option>Main Warehouse</option><option>Regional Warehouse</option><option>Retail Storage</option><option>Production WH</option></select></div>
-          <div><label className="text-xs font-semibold text-slate-600">Manager</label><input className={INPUT_CLS} value={form.manager} onChange={(e) => setForm({ ...form, manager: e.target.value })} /></div>
-          <div><label className="text-xs font-semibold text-slate-600">Contact</label><input className={INPUT_CLS} value={form.contact} onChange={(e) => setForm({ ...form, contact: e.target.value })} /></div>
-          <div><label className="text-xs font-semibold text-slate-600">Status</label><select className={SELECT_CLS} value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value })}><option value="Active">Active</option><option value="Inactive">Inactive</option></select></div>
-        </div>
-        <AdvancedDetailsToggle open={showAdvanced} onToggle={() => setShowAdvanced(!showAdvanced)} />
-        {showAdvanced && (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
-            <div><label className="text-xs font-semibold text-slate-600">Allowed Product Types</label><input className={INPUT_CLS} value={form.allowedProductTypes} onChange={(e) => setForm({ ...form, allowedProductTypes: e.target.value })} /></div>
-            <div><label className="text-xs font-semibold text-slate-600">Storage Rules</label><input className={INPUT_CLS} value={form.storageRules} onChange={(e) => setForm({ ...form, storageRules: e.target.value })} /></div>
-          </div>
-        )}
-      </InventoryFormLayout>
-    );
-  }
-
   return (
+    <>
     <InventoryListLayout
       title="Warehouses"
       subtitle="Manage warehouse facilities, capacity, and utilization."
@@ -139,5 +130,23 @@ export function WarehousesPage() {
         )}
       />
     </InventoryListLayout>
+    <AppFormModal
+      open={view === 'form'}
+      onClose={() => { setView('main'); resetForm(); }}
+      title={editingId ? 'Edit Warehouse' : 'Create Warehouse'}
+      subtitle="Configure warehouse locations, capacity, and storage rules."
+      onSubmit={handleSubmit}
+      submitLabel="Save Warehouse"
+      size="md"
+    >
+      <AppFormFields
+        fields={WAREHOUSE_FIELDS}
+        values={form}
+        onChange={(key, value) => setForm({ ...form, [key]: value })}
+        showAdvanced={showAdvanced}
+        onToggleAdvanced={() => setShowAdvanced(!showAdvanced)}
+      />
+    </AppFormModal>
+    </>
   );
 }

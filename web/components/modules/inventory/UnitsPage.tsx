@@ -1,12 +1,13 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { AdvancedDetailsToggle } from '@/components/shared/AdvancedDetailsToggle';
+import { AppFormFields, AppFormModal } from '@/components/shared/AppForm';
 import { AppTable, type AppTableColumn } from '@/components/shared/AppTable';
 import { StatusBadge } from '@/components/shared/StatusBadge';
 import { TableIconAction } from '@/components/shared/TableIconAction';
-import { InventoryFormLayout, InventoryListLayout, FilterBar, FilterSelect, SearchInput, INPUT_CLS, SELECT_CLS } from '@/components/modules/inventory/shared/inventory-ui';
+import { InventoryListLayout, FilterBar, FilterSelect, SearchInput } from '@/components/modules/inventory/shared/inventory-ui';
 import { useAppStore } from '@/lib/state/app-store';
+import type { PortField } from '@/lib/modules/port-types';
 import {
   getUnitMetrics,
   countProductsUsingUnit,
@@ -14,6 +15,16 @@ import {
   updateUnit,
   deleteUnit,
 } from '@/lib/services/inventory-service';
+
+const UNIT_FIELDS: PortField[] = [
+  { key: 'name', label: 'Unit Name', required: true },
+  { key: 'code', label: 'Code', required: true },
+  { key: 'symbol', label: 'Symbol' },
+  { key: 'status', label: 'Status', type: 'select', options: ['Active', 'Inactive'] },
+  { key: 'description', label: 'Description', type: 'textarea', advanced: true },
+  { key: 'baseUnit', label: 'Base Unit (for conversion)', advanced: true, placeholder: 'e.g. kg' },
+  { key: 'conversionFactor', label: 'Conversion Factor', type: 'number', advanced: true, placeholder: '1.0' },
+];
 
 export function UnitsPage() {
   const appState = useAppStore((s) => s.appState);
@@ -82,28 +93,8 @@ export function UnitsPage() {
     { key: 'status', label: 'Status', render: (unit) => <StatusBadge status={String(unit.status ?? 'Active')} /> },
   ], [appState]);
 
-  if (view === 'form') {
-    return (
-      <InventoryFormLayout title={editingId ? 'Edit Unit' : 'Create Unit'} subtitle="Define measurement units and conversion rules." onBack={() => { setView('main'); resetForm(); }} onSubmit={handleSubmit} submitLabel="Save Unit">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div><label className="text-xs font-semibold text-slate-600">Unit Name *</label><input required className={INPUT_CLS} value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} /></div>
-          <div><label className="text-xs font-semibold text-slate-600">Code *</label><input required className={INPUT_CLS} value={form.code} onChange={(e) => setForm({ ...form, code: e.target.value })} /></div>
-          <div><label className="text-xs font-semibold text-slate-600">Symbol</label><input className={INPUT_CLS} value={form.symbol} onChange={(e) => setForm({ ...form, symbol: e.target.value })} /></div>
-          <div><label className="text-xs font-semibold text-slate-600">Status</label><select className={SELECT_CLS} value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value })}><option value="Active">Active</option><option value="Inactive">Inactive</option></select></div>
-        </div>
-        <AdvancedDetailsToggle open={showAdvanced} onToggle={() => setShowAdvanced(!showAdvanced)} />
-        {showAdvanced && (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
-            <div><label className="text-xs font-semibold text-slate-600">Description</label><textarea className={INPUT_CLS} rows={2} value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} /></div>
-            <div><label className="text-xs font-semibold text-slate-600">Base Unit (for conversion)</label><input className={INPUT_CLS} value={form.baseUnit} onChange={(e) => setForm({ ...form, baseUnit: e.target.value })} placeholder="e.g. kg" /></div>
-            <div><label className="text-xs font-semibold text-slate-600">Conversion Factor</label><input type="number" step="0.0001" className={INPUT_CLS} value={form.conversionFactor} onChange={(e) => setForm({ ...form, conversionFactor: e.target.value })} placeholder="1.0" /></div>
-          </div>
-        )}
-      </InventoryFormLayout>
-    );
-  }
-
   return (
+    <>
     <InventoryListLayout
       title="Units of Measure"
       subtitle="Manage units used across products and inventory transactions."
@@ -133,5 +124,23 @@ export function UnitsPage() {
         )}
       />
     </InventoryListLayout>
+    <AppFormModal
+      open={view === 'form'}
+      onClose={() => { setView('main'); resetForm(); }}
+      title={editingId ? 'Edit Unit' : 'Create Unit'}
+      subtitle="Define measurement units and conversion rules."
+      onSubmit={handleSubmit}
+      submitLabel="Save Unit"
+      size="md"
+    >
+      <AppFormFields
+        fields={UNIT_FIELDS}
+        values={form}
+        onChange={(key, value) => setForm({ ...form, [key]: value })}
+        showAdvanced={showAdvanced}
+        onToggleAdvanced={() => setShowAdvanced(!showAdvanced)}
+      />
+    </AppFormModal>
+    </>
   );
 }

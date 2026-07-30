@@ -3,6 +3,7 @@
 import { useMemo, useState } from 'react';
 import { Footer } from '@/components/layout/Footer';
 import { FormHeader } from '@/components/layout/FormHeader';
+import { AppFormPage, FORM_GRID_CLS, FORM_INPUT_CLS, FORM_LABEL_CLS, FORM_SELECT_CLS, FORM_TEXTAREA_CLS } from '@/components/shared/AppForm';
 import { ListToolbar } from '@/components/shared/ListToolbar';
 import { KpiCards, type KpiCardItem } from '@/components/shared/KpiCards';
 import { MODULE_FORM_SHELL, MODULE_LIST_SHELL } from '@/lib/ui/module-layout';
@@ -175,47 +176,92 @@ export function SalesDocumentModule({ config }: { config: SalesDocumentConfig })
   }
 
   if (view === 'form') {
-    return (
-      <div className={MODULE_FORM_SHELL}>
-        <div className="max-w-4xl mx-auto w-full space-y-6">
-          <FormHeader title={editingId ? `Edit ${config.title}` : `Create ${config.title}`} subtitle={config.subtitle} onBack={() => { setView('main'); resetForm(); }} />
-          <form onSubmit={handleSubmit} className="bg-white rounded-xl border border-slate-200 p-6 space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs font-semibold text-slate-700">
-              {config.customerField !== false && (
+    const isDeliveryChallan = config.title === 'Delivery Challan';
+    const formTitle = editingId ? `Edit ${config.title}` : `Create ${config.title}`;
+
+    if (isDeliveryChallan) {
+      return (
+        <div className={MODULE_FORM_SHELL}>
+          <div className="max-w-4xl mx-auto w-full space-y-6">
+            <FormHeader title={formTitle} subtitle={config.subtitle} onBack={() => { setView('main'); resetForm(); }} />
+            <form onSubmit={handleSubmit} className="bg-white rounded-xl border border-slate-200 p-6 space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs font-semibold text-slate-700">
+                {config.customerField !== false && (
+                  <div>
+                    <label className="block mb-2">Customer <span className="text-rose-500">*</span></label>
+                    <input required value={form.customer} onChange={(e) => setForm({ ...form, customer: e.target.value })} className="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50" />
+                  </div>
+                )}
                 <div>
-                  <label className="block mb-2">Customer <span className="text-rose-500">*</span></label>
-                  <input required value={form.customer} onChange={(e) => setForm({ ...form, customer: e.target.value })} className="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50" />
+                  <label className="block mb-2">Date</label>
+                  <input type="date" value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })} className="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50 cursor-pointer" />
+                </div>
+                <div>
+                  <label className="block mb-2">Status</label>
+                  <select value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value })} className="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50 cursor-pointer">
+                    {config.statusOptions.map((s) => <option key={s} value={s}>{s}</option>)}
+                  </select>
+                </div>
+              </div>
+              {config.showLineItems && <LineItemsEditor items={lineItems} onChange={setLineItems} />}
+              {config.showLineItems && (
+                <div className="text-right text-sm font-extrabold text-slate-900">Total: {formatMoney(total)}</div>
+              )}
+              <AdvancedDetailsToggle open={showAdvanced} onToggle={() => setShowAdvanced(!showAdvanced)} />
+              {showAdvanced && (
+                <div>
+                  <label className="block mb-2 text-xs font-semibold">Notes</label>
+                  <textarea rows={3} value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} className="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50" />
                 </div>
               )}
-              <div>
-                <label className="block mb-2">Date</label>
-                <input type="date" value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })} className="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50 cursor-pointer" />
-              </div>
-              <div>
-                <label className="block mb-2">Status</label>
-                <select value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value })} className="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50 cursor-pointer">
-                  {config.statusOptions.map((s) => <option key={s} value={s}>{s}</option>)}
-                </select>
-              </div>
-            </div>
-            {config.showLineItems && <LineItemsEditor items={lineItems} onChange={setLineItems} />}
-            {config.showLineItems && (
-              <div className="text-right text-sm font-extrabold text-slate-900">Total: {formatMoney(total)}</div>
-            )}
-            <AdvancedDetailsToggle open={showAdvanced} onToggle={() => setShowAdvanced(!showAdvanced)} />
-            {showAdvanced && (
-              <div>
-                <label className="block mb-2 text-xs font-semibold">Notes</label>
-                <textarea rows={3} value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} className="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50" />
-              </div>
-            )}
-            <button type="submit" className="bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold px-6 py-2.5 rounded-xl cursor-pointer">
-              Save
-            </button>
-          </form>
+              <button type="submit" className="bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold px-6 py-2.5 rounded-xl cursor-pointer">
+                Save
+              </button>
+            </form>
+          </div>
+          <Footer />
         </div>
-        <Footer />
-      </div>
+      );
+    }
+
+    return (
+      <AppFormPage
+        title={formTitle}
+        subtitle={config.subtitle}
+        onBack={() => { setView('main'); resetForm(); }}
+        onSubmit={handleSubmit}
+        submitLabel="Save"
+      >
+        <div className={FORM_GRID_CLS}>
+          {config.customerField !== false && (
+            <div>
+              <label className={FORM_LABEL_CLS}>Customer <span className="text-rose-500">*</span></label>
+              <input required value={form.customer} onChange={(e) => setForm({ ...form, customer: e.target.value })} className={FORM_INPUT_CLS} />
+            </div>
+          )}
+          <div>
+            <label className={FORM_LABEL_CLS}>Date</label>
+            <input type="date" value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })} className={`${FORM_INPUT_CLS} cursor-pointer`} />
+          </div>
+          <div>
+            <label className={FORM_LABEL_CLS}>Status</label>
+            <select value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value })} className={FORM_SELECT_CLS}>
+              {config.statusOptions.map((s) => <option key={s} value={s}>{s}</option>)}
+            </select>
+          </div>
+        </div>
+        {config.showLineItems && <LineItemsEditor items={lineItems} onChange={setLineItems} />}
+        {config.showLineItems && (
+          <div className="text-right text-sm font-extrabold text-slate-900">Total: {formatMoney(total)}</div>
+        )}
+        <AdvancedDetailsToggle open={showAdvanced} onToggle={() => setShowAdvanced(!showAdvanced)} />
+        {showAdvanced && (
+          <div>
+            <label className={FORM_LABEL_CLS}>Notes</label>
+            <textarea rows={3} value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} className={FORM_TEXTAREA_CLS} />
+          </div>
+        )}
+      </AppFormPage>
     );
   }
 

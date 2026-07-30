@@ -5,6 +5,7 @@ import { Icon } from '@iconify/react';
 import { ArrowDown, ArrowUp, Calculator, Layers, Package, Paperclip } from 'lucide-react';
 import { Footer } from '@/components/layout/Footer';
 import { FormHeader } from '@/components/layout/FormHeader';
+import { AppFormFields, AppFormModal } from '@/components/shared/AppForm';
 import { ListToolbar } from '@/components/shared/ListToolbar';
 import { AppTable, type AppTableColumn } from '@/components/shared/AppTable';
 import { StatusBadge } from '@/components/shared/StatusBadge';
@@ -14,6 +15,7 @@ import { PlanProductionModal } from '@/components/modules/purchases/PlanProducti
 import { RecipeCard } from '@/components/modules/purchases/RecipeCard';
 import { RecipeProductionPlanView } from '@/components/modules/purchases/RecipeProductionPlanView';
 import { useAppStore } from '@/lib/state/app-store';
+import type { PortField } from '@/lib/modules/port-types';
 import {
   listRecipes,
   getRecipe,
@@ -39,6 +41,12 @@ type RecipeListLayout = 'cards' | 'table';
 const RECIPES_LAYOUT_KEY = 'recipes-list-layout';
 
 const UNIT_OPTIONS = ['pcs', 'kg', 'liter', 'box', 'meter', 'set'];
+
+const RECIPE_CREATE_FIELDS: PortField[] = [
+  { key: 'product', label: 'Product Name', required: true, placeholder: 'e.g. Kids Toy Car' },
+  { key: 'model', label: 'Model', required: true, placeholder: 'e.g. T101' },
+  { key: 'recipeNumber', label: 'Recipe Number', placeholder: 'Auto-generated if blank (RCP-001)' },
+];
 
 const INPUT_CLS = 'w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-xs font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500/10';
 
@@ -317,7 +325,8 @@ export function RecipesPage() {
     saveAppState();
   };
 
-  const handleCreateRecipe = () => {
+  const handleCreateRecipe = (e?: React.FormEvent) => {
+    e?.preventDefault();
     const result = createRecipe(appState, {
       product: newRecipe.product,
       model: newRecipe.model,
@@ -357,60 +366,6 @@ export function RecipesPage() {
     );
   }
 
-  if (view === 'form') {
-    return (
-      <div className="flex-1 overflow-y-auto p-6 md:p-8 space-y-6 bg-slate-50">
-        <div className="max-w-xl mx-auto w-full space-y-6">
-          <FormHeader
-            title="Create Recipe"
-            subtitle="Phase 1 — enter product name, model, and recipe number only."
-            onBack={() => setView('main')}
-          />
-          <div className="premium-card premium-shadow p-6 space-y-4">
-            <div>
-              <label className="block mb-2 text-xs font-bold text-slate-600">Product Name *</label>
-              <input
-                type="text"
-                value={newRecipe.product}
-                onChange={(e) => setNewRecipe((p) => ({ ...p, product: e.target.value }))}
-                className={INPUT_CLS}
-                placeholder="e.g. Kids Toy Car"
-              />
-            </div>
-            <div>
-              <label className="block mb-2 text-xs font-bold text-slate-600">Model *</label>
-              <input
-                type="text"
-                value={newRecipe.model}
-                onChange={(e) => setNewRecipe((p) => ({ ...p, model: e.target.value }))}
-                className={INPUT_CLS}
-                placeholder="e.g. T101"
-              />
-            </div>
-            <div>
-              <label className="block mb-2 text-xs font-bold text-slate-600">Recipe Number</label>
-              <input
-                type="text"
-                value={newRecipe.recipeNumber}
-                onChange={(e) => setNewRecipe((p) => ({ ...p, recipeNumber: e.target.value }))}
-                className={INPUT_CLS}
-                placeholder="Auto-generated if blank (RCP-001)"
-              />
-            </div>
-            <div className="flex justify-end gap-2 pt-2">
-              <button type="button" onClick={() => setView('main')} className="px-4 py-2.5 rounded-xl border border-slate-200 text-xs font-bold cursor-pointer">
-                Cancel
-              </button>
-              <button type="button" onClick={handleCreateRecipe} className="px-4 py-2.5 rounded-xl bg-blue-600 text-white text-xs font-bold cursor-pointer">
-                Save Recipe
-              </button>
-            </div>
-          </div>
-        </div>
-        <Footer />
-      </div>
-    );
-  }
 
   if (view === 'bom' && activeRecipe) {
     const bomCost = getRecipeBomCost(activeRecipe);
@@ -612,6 +567,22 @@ export function RecipesPage() {
 
       <Footer />
     </div>
+    <AppFormModal
+      open={view === 'form'}
+      onClose={() => setView('main')}
+      title="Create Recipe"
+      subtitle="Phase 1 — enter product name, model, and recipe number only."
+      onSubmit={handleCreateRecipe}
+      submitLabel="Save Recipe"
+      size="sm"
+    >
+      <AppFormFields
+        fields={RECIPE_CREATE_FIELDS}
+        values={newRecipe}
+        onChange={(key, value) => setNewRecipe((p) => ({ ...p, [key]: value }))}
+        columns={1}
+      />
+    </AppFormModal>
     {planModal}
     </>
   );
