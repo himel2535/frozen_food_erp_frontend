@@ -361,6 +361,7 @@ export const PORT_CONFIGS: Record<string, PortModuleConfig> = {
   'workflow-approvals': stateModule('workflow-approvals', 'approvals', 'APR', [
     { key: 'item', label: 'Item', type: 'text', required: true },
     { key: 'requester', label: 'Requester', type: 'text' },
+    { key: 'module', label: 'Module', type: 'text' },
     { key: 'status', label: 'Status', type: 'select', options: ['pending', 'approved', 'rejected'] },
     { key: 'notes', label: 'Notes', type: 'textarea', advanced: true },
   ]),

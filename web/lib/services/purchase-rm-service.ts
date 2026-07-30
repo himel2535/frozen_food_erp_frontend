@@ -38,6 +38,40 @@ export function listPurchaseRmOrders(state: AppState) {
   return listFromState(state, 'purchaseRmOrders');
 }
 
+export function listApprovals(state: AppState) {
+  return listFromState(state, 'approvals');
+}
+
+function markApprovalForOrder(state: AppState, refId: string, status: 'approved' | 'rejected') {
+  const linked = listApprovals(state).find(
+    (a) => String(a.refType) === 'purchase_rm_order' && String(a.refId) === refId,
+  );
+  if (linked) {
+    updateInState(state, 'approvals', String(linked.id), { status });
+  }
+}
+
+export function upsertPurchaseRmApproval(state: AppState, order: Row) {
+  const refId = String(order.id);
+  const item = `${refId} — ${String(order.supplierName ?? 'Supplier')}`;
+  const payload = {
+    item,
+    requester: String(order.createdBy ?? 'Sarah Connor'),
+    module: 'Purchase RM',
+    refType: 'purchase_rm_order',
+    refId,
+    status: 'pending',
+    notes: String(order.notes ?? ''),
+  };
+  const existing = listApprovals(state).find(
+    (a) => String(a.refType) === 'purchase_rm_order' && String(a.refId) === refId,
+  );
+  if (existing) {
+    return updateInState(state, 'approvals', String(existing.id), { ...payload, status: 'pending' });
+  }
+  return createInState(state, 'approvals', payload, 'APR');
+}
+
 export function previewPoNumber(state: AppState, dateStr?: string) {
   const year = dateStr ? new Date(`${dateStr}T00:00:00`).getFullYear() : new Date().getFullYear();
   const prefix = `PO-${year}-`;
@@ -243,12 +277,20 @@ export function createPurchaseRmOrder(state: AppState, payload: Row) {
   const id = String(payload.id ?? previewPoNumber(state, String(payload.date ?? '')));
   const status = String(payload.status ?? 'draft');
   const record = normalizeRecord({ ...payload, id, status });
-  return createInState(state, 'purchaseRmOrders', record, 'PO');
+  const result = createInState(state, 'purchaseRmOrders', record, 'PO');
+  if (result.ok && status === 'pending_approval') {
+    upsertPurchaseRmApproval(state, record);
+  }
+  return result;
 }
 
 export function updatePurchaseRmOrder(state: AppState, id: string, payload: Row) {
-  const record = normalizeRecord({ ...payload });
-  return updateInState(state, 'purchaseRmOrders', id, record);
+  const record = normalizeRecord({ ...payload, id });
+  const result = updateInState(state, 'purchaseRmOrders', id, record);
+  if (result.ok && String(record.status) === 'pending_approval') {
+    upsertPurchaseRmApproval(state, record);
+  }
+  return result;
 }
 
 export function deletePurchaseRmOrder(state: AppState, id: string) {
@@ -261,10 +303,13 @@ export function deletePurchaseRmOrder(state: AppState, id: string) {
 
 export function sendPurchaseRmOrder(state: AppState, id: string) {
   const row = listPurchaseRmOrders(state).find((r) => String(r.id) === id);
-  if (!row || !['draft', 'pending_approval'].includes(String(row.status))) {
-    return { ok: false, error: 'Only draft or pending orders can be sent' };
+  if (!row || String(row.status) !== 'draft') {
+    return { ok: false, error: 'Only draft orders can be sent for approval' };
   }
-  return updateInState(state, 'purchaseRmOrders', id, { status: 'sent' });
+  const result = updateInState(state, 'purchaseRmOrders', id, { status: 'pending_approval' });
+  if (!result.ok) return result;
+  upsertPurchaseRmApproval(state, { ...row, status: 'pending_approval' });
+  return { ok: true };
 }
 
 export function approvePurchaseRmOrder(state: AppState, id: string) {
@@ -272,7 +317,21 @@ export function approvePurchaseRmOrder(state: AppState, id: string) {
   if (!row || String(row.status) !== 'pending_approval') {
     return { ok: false, error: 'Only pending approval orders can be approved' };
   }
-  return updateInState(state, 'purchaseRmOrders', id, { status: 'sent' });
+  const result = updateInState(state, 'purchaseRmOrders', id, { status: 'sent' });
+  if (!result.ok) return result;
+  markApprovalForOrder(state, id, 'approved');
+  return { ok: true };
+}
+
+export function rejectPurchaseRmOrder(state: AppState, id: string) {
+  const row = listPurchaseRmOrders(state).find((r) => String(r.id) === id);
+  if (!row || String(row.status) !== 'pending_approval') {
+    return { ok: false, error: 'Only pending approval orders can be rejected' };
+  }
+  const result = updateInState(state, 'purchaseRmOrders', id, { status: 'draft' });
+  if (!result.ok) return result;
+  markApprovalForOrder(state, id, 'rejected');
+  return { ok: true };
 }
 
 export function receivePurchaseRmOrder(state: AppState, id: string, receiveQty?: number) {

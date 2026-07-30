@@ -19,6 +19,7 @@ export interface DedicatedModuleConfig extends PortModuleConfig {
   columnRender?: Record<string, (row: Record<string, unknown>) => React.ReactNode>;
   computedFields?: Record<string, (form: Record<string, string>) => string>;
   rowActions?: (row: Record<string, unknown>, ctx: { appState: import('@/lib/state/types').AppState; save: () => void }) => React.ReactNode;
+  hideDefaultRowActions?: (row: Record<string, unknown>) => boolean;
 }
 
 export function DedicatedModule({ config }: { config: DedicatedModuleConfig }) {
@@ -143,17 +144,21 @@ export function DedicatedModule({ config }: { config: DedicatedModuleConfig }) {
         renderActions={(row) => (
           <>
             {config.rowActions?.(row, { appState, save: saveAppState })}
-            <TableIconAction variant="edit" onClick={() => openEdit(row)} />
-            {config.adapter.delete && (
-              <TableIconAction
-                variant="delete"
-                onClick={() => {
-                  if (window.confirm('Delete?')) {
-                    config.adapter.delete!(appState, String(row.id));
-                    saveAppState();
-                  }
-                }}
-              />
+            {!config.hideDefaultRowActions?.(row) && (
+              <>
+                <TableIconAction variant="edit" onClick={() => openEdit(row)} />
+                {config.adapter.delete && (
+                  <TableIconAction
+                    variant="delete"
+                    onClick={() => {
+                      if (window.confirm('Delete?')) {
+                        config.adapter.delete!(appState, String(row.id));
+                        saveAppState();
+                      }
+                    }}
+                  />
+                )}
+              </>
             )}
           </>
         )}

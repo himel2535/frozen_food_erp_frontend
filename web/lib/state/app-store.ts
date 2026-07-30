@@ -20,6 +20,7 @@ function hydrateAppState(state: Partial<AppState> | null): AppState {
   if (!nextState.salesOrders) nextState.salesOrders = DEFAULT_STATE.salesOrders;
   if (!nextState.purchasesSuppliers) nextState.purchasesSuppliers = DEFAULT_STATE.purchasesSuppliers;
   if (!nextState.purchaseRmOrders) nextState.purchaseRmOrders = DEFAULT_STATE.purchaseRmOrders;
+  if (!nextState.approvals) nextState.approvals = DEFAULT_STATE.approvals;
   if (!nextState.lang) nextState.lang = 'en';
   ensureCrmState(nextState);
   return nextState;

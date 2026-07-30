@@ -1158,7 +1158,13 @@ Object.assign(LEGACY_PARITY_CONFIGS, {
     title: 'Workflow Approvals',
     subtitle: 'Pending approval requests.',
     addLabel: 'New Request',
-    searchKeys: ['item', 'requester'],
+    searchKeys: ['item', 'requester', 'module'],
+    statusTabs: [
+      { id: 'all', label: 'All' },
+      { id: 'pending', label: 'Pending' },
+      { id: 'approved', label: 'Approved' },
+      { id: 'rejected', label: 'Rejected' },
+    ],
     columns: [
       { key: 'item', label: 'Item' },
       { key: 'requester', label: 'Requester' },
@@ -1176,6 +1182,7 @@ Object.assign(LEGACY_PARITY_CONFIGS, {
       { key: 'pending', label: 'Pending', value: String(rows.filter((r) => r.status === 'pending').length) },
       { key: 'approved', label: 'Approved', value: String(rows.filter((r) => r.status === 'approved').length) },
     ],
+    hideDefaultRowActions: (row) => String(row.refType) === 'purchase_rm_order',
     adapter: adapter({ ...crudFactory('approvals', 'APR') }),
   },
   'notifications': {

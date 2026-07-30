@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { FileSpreadsheet, Filter, Plus, Package, History, FileText, Paperclip, MessageSquare } from 'lucide-react';
 import { Footer } from '@/components/layout/Footer';
 import { FilterTabs } from '@/components/shared/FilterTabs';
@@ -20,7 +21,6 @@ import {
 } from '@/components/modules/purchases/PurchaseRmForm';
 import type { PurchaseRmLineItem } from '@/components/modules/purchases/purchase-rm-form/prm-form-types';
 import {
-  approvePurchaseRmOrder,
   cancelPurchaseRmOrder,
   createPurchaseRmOrder,
   deletePurchaseRmOrder,
@@ -83,6 +83,7 @@ function deliveryBadge(expected: string) {
 }
 
 export function PurchaseRmPage() {
+  const router = useRouter();
   const appState = useAppStore((s) => s.appState);
   const saveAppState = useAppStore((s) => s.saveAppState);
   const [view, setView] = useState<'main' | 'form'>('main');
@@ -280,10 +281,16 @@ export function PurchaseRmPage() {
     const result = fn();
     if (!result.ok) {
       window.alert(result.error ?? 'Action failed');
-      return;
+      return false;
     }
     saveAppState();
     if (successMsg) window.alert(successMsg);
+    return true;
+  };
+
+  const handleSendForApproval = (id: string) => {
+    if (!runAction(() => sendPurchaseRmOrder(appState, id), 'Sent for approval.')) return;
+    router.push('/workflow-approvals');
   };
 
   if (view === 'form') {
@@ -368,11 +375,8 @@ export function PurchaseRmPage() {
             renderActions={(row) => (
               <>
                 {String(row.status) === 'draft' && <TableIconAction variant="edit" onClick={() => openEdit(row)} />}
-                {['draft', 'pending_approval'].includes(String(row.status)) && (
-                  <button type="button" title="Send" onClick={() => runAction(() => sendPurchaseRmOrder(appState, String(row.id)))} className="p-1.5 rounded-lg hover:bg-blue-50 text-blue-600 cursor-pointer text-[10px] font-bold">Send</button>
-                )}
-                {String(row.status) === 'pending_approval' && (
-                  <button type="button" title="Approve" onClick={() => runAction(() => approvePurchaseRmOrder(appState, String(row.id)))} className="p-1.5 rounded-lg hover:bg-emerald-50 text-emerald-600 cursor-pointer text-[10px] font-bold">Approve</button>
+                {String(row.status) === 'draft' && (
+                  <button type="button" title="Send" onClick={() => handleSendForApproval(String(row.id))} className="p-1.5 rounded-lg hover:bg-blue-50 text-blue-600 cursor-pointer text-[10px] font-bold">Send</button>
                 )}
                 {['sent', 'partially_received'].includes(String(row.status)) && (
                   <button type="button" title="Receive" onClick={() => runAction(() => receivePurchaseRmOrder(appState, String(row.id)), 'Goods received.')} className="p-1.5 rounded-lg hover:bg-violet-50 text-violet-600 cursor-pointer text-[10px] font-bold">Receive</button>

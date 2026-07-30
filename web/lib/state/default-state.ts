@@ -210,6 +210,19 @@ export const DEFAULT_STATE: AppState = {
       createdAt: '2026-07-30T10:00:00Z',
     },
   ],
+  approvals: [
+    {
+      id: 'APR-001',
+      item: 'PO-2026-00048 — Color Chem Bangladesh',
+      requester: 'Sarah Connor',
+      module: 'Purchase RM',
+      refType: 'purchase_rm_order',
+      refId: 'PO-2026-00048',
+      status: 'pending',
+      notes: 'Awaiting finance approval.',
+      createdAt: '2026-07-29T08:00:00Z',
+    },
+  ],
   accounting: [
     { ref: 'TXN-100245', date: '2026-06-14', account: 'Sales Revenue', desc: 'Invoice payment INV-00141', debit: 0.0, credit: 4125.0, balance: 12450.0 },
     { ref: 'TXN-100246', date: '2026-06-15', account: 'Office Expenses', desc: 'Internet monthly fiber fee', debit: 120.0, credit: 0.0, balance: 12330.0 },
