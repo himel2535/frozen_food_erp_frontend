@@ -7,11 +7,12 @@ interface FormHeaderProps {
   subtitle?: string;
   onBack: () => void;
   titleId?: string;
+  compact?: boolean;
 }
 
-export function FormHeader({ title, subtitle, onBack, titleId }: FormHeaderProps) {
+export function FormHeader({ title, subtitle, onBack, titleId, compact = false }: FormHeaderProps) {
   return (
-    <div className="flex items-center gap-4 mb-6">
+    <div className={`flex items-center gap-4 ${compact ? 'mb-3' : 'mb-6'}`}>
       <button
         type="button"
         onClick={onBack}

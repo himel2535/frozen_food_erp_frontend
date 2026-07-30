@@ -1409,7 +1409,10 @@ export function createCustomer(state, payload) {
     status: payload.status || 'active',
     companyType: payload.companyType || 'Distributor',
     taxVatNumber: payload.taxVatNumber || '',
+    tinNumber: payload.tinNumber || '',
     tradeLicenseNumber: payload.tradeLicenseNumber || '',
+    businessRegistrationNo: payload.businessRegistrationNo || '',
+    openingBalance: Number(payload.openingBalance || 0),
     category: payload.category || 'Standard',
     tagIds,
     creditLimit: Number(payload.creditLimit || 0),
@@ -1440,6 +1443,7 @@ export function createCustomer(state, payload) {
     name: payload.contactName || payload.name,
     designation: payload.contactDesignation || 'Primary Contact',
     phone: payload.phone || '',
+    alternativePhone: payload.alternativePhone || '',
     email: payload.email || '',
     whatsappEnabled: Boolean(payload.whatsappEnabled),
     primary: true
@@ -1450,6 +1454,7 @@ export function createCustomer(state, payload) {
     customerId,
     type: 'billing',
     line1: payload.billingAddress || '',
+    area: payload.billingArea || '',
     city: payload.billingCity || '',
     region: payload.billingRegion || '',
     postalCode: payload.billingPostalCode || '',
@@ -1461,6 +1466,7 @@ export function createCustomer(state, payload) {
     customerId,
     type: 'shipping',
     line1: payload.shippingAddress || payload.billingAddress || '',
+    area: payload.shippingArea || payload.billingArea || '',
     city: payload.shippingCity || payload.billingCity || '',
     region: payload.shippingRegion || payload.billingRegion || '',
     postalCode: payload.shippingPostalCode || payload.billingPostalCode || '',
@@ -1512,7 +1518,10 @@ export function updateCustomer(state, customerId, payload) {
     status: payload.status,
     companyType: payload.companyType,
     taxVatNumber: payload.taxVatNumber,
+    tinNumber: payload.tinNumber,
     tradeLicenseNumber: payload.tradeLicenseNumber,
+    businessRegistrationNo: payload.businessRegistrationNo,
+    openingBalance: Number(payload.openingBalance || 0),
     category: payload.category,
     creditLimit: Number(payload.creditLimit || 0),
     paymentTerms: payload.paymentTerms,
@@ -1536,6 +1545,7 @@ export function updateCustomer(state, customerId, payload) {
       name: payload.contactName,
       designation: payload.contactDesignation,
       phone: payload.phone,
+      alternativePhone: payload.alternativePhone,
       email: payload.email,
       whatsappEnabled: Boolean(payload.whatsappEnabled)
     });
@@ -1546,6 +1556,7 @@ export function updateCustomer(state, customerId, payload) {
   if (billing) {
     Object.assign(billing, {
       line1: payload.billingAddress,
+      area: payload.billingArea,
       city: payload.billingCity,
       region: payload.billingRegion,
       postalCode: payload.billingPostalCode,
@@ -1555,6 +1566,7 @@ export function updateCustomer(state, customerId, payload) {
   if (shipping) {
     Object.assign(shipping, {
       line1: payload.shippingAddress,
+      area: payload.shippingArea,
       city: payload.shippingCity,
       region: payload.shippingRegion,
       postalCode: payload.shippingPostalCode,

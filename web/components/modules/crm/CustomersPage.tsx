@@ -3,16 +3,22 @@
 import { useMemo, useState } from 'react';
 import { Download, Upload, Printer } from 'lucide-react';
 import { Footer } from '@/components/layout/Footer';
-import { FormHeader } from '@/components/layout/FormHeader';
 import { KpiCards } from '@/components/shared/KpiCards';
-import { MODULE_FORM_SHELL, MODULE_LIST_SHELL } from '@/lib/ui/module-layout';
+import { MODULE_LIST_SHELL } from '@/lib/ui/module-layout';
 import { FilterTabs } from '@/components/shared/FilterTabs';
 import { ProfileDrawer } from '@/components/shared/ProfileDrawer';
 import { BulkActionBar } from '@/components/shared/BulkActionBar';
-import { AdvancedDetailsToggle } from '@/components/shared/AdvancedDetailsToggle';
 import { AppTable, type AppTableColumn } from '@/components/shared/AppTable';
 import { StatusBadge } from '@/components/shared/StatusBadge';
 import { TableIconAction } from '@/components/shared/TableIconAction';
+import {
+  CustomerForm,
+  EMPTY_CUSTOMER_FORM,
+  normalizePaymentTerms,
+  type CustomerFormPayload,
+  type CustomerFormValues,
+} from '@/components/modules/crm/CustomerForm';
+import type { CustomerSaveAction } from '@/components/modules/crm/customer-form/CustomerFormFooter';
 import { useAppStore } from '@/lib/state/app-store';
 import {
   getCustomerList,
@@ -53,6 +59,66 @@ const STATUS_TABS = [
   { id: 'enterprise', label: 'Enterprise' },
 ];
 
+function buildEmptyFormValues(ownerId: string): CustomerFormValues {
+  return { ...EMPTY_CUSTOMER_FORM, ownerId };
+}
+
+function buildFormValuesFromProfile(
+  profile: NonNullable<ReturnType<typeof getCustomerProfile>>,
+  ownerIdFallback: string,
+): CustomerFormValues {
+  const customer = profile.customer as Record<string, unknown>;
+  const contacts = (profile.contacts ?? []) as Array<Record<string, unknown>>;
+  const addresses = (profile.addresses ?? []) as Array<Record<string, unknown>>;
+  const primary = contacts.find((c) => c.primary) ?? contacts[0];
+  const billing = addresses.find((a) => a.type === 'billing') ?? addresses[0];
+  const shipping = addresses.find((a) => a.type === 'shipping') ?? addresses[1];
+
+  const billingAddress = String(billing?.line1 ?? '');
+  const billingArea = String(billing?.area ?? '');
+  const billingCity = String(billing?.city ?? '');
+  const billingDistrict = String(billing?.region ?? '');
+  const shippingAddress = String(shipping?.line1 ?? '');
+  const shippingArea = String(shipping?.area ?? '');
+  const shippingCity = String(shipping?.city ?? '');
+  const shippingDistrict = String(shipping?.region ?? '');
+
+  const sameAsBilling =
+    billingAddress === shippingAddress &&
+    billingArea === shippingArea &&
+    billingCity === shippingCity &&
+    billingDistrict === shippingDistrict;
+
+  return {
+    companyName: String(customer.company ?? ''),
+    customerType: String(customer.companyType ?? ''),
+    contactPerson: String(primary?.name ?? customer.name ?? ''),
+    altPhone: String(primary?.alternativePhone ?? ''),
+    mobile: String(primary?.phone ?? ''),
+    status: String(customer.status ?? 'active'),
+    email: String(primary?.email ?? ''),
+    billingAddress,
+    billingArea,
+    billingCity,
+    billingDistrict,
+    shippingAddress,
+    shippingArea,
+    shippingCity,
+    shippingDistrict,
+    sameAsBilling,
+    binVat: String(customer.taxVatNumber ?? ''),
+    tin: String(customer.tinNumber ?? ''),
+    tradeLicense: String(customer.tradeLicenseNumber ?? ''),
+    businessReg: String(customer.businessRegistrationNo ?? ''),
+    openingBalance: String(customer.openingBalance ?? '0'),
+    creditLimit: String(customer.creditLimit ?? '0'),
+    paymentTerms: normalizePaymentTerms(String(customer.paymentTerms ?? '')),
+    priceLevel: String(customer.pricingTier ?? 'Standard'),
+    ownerId: String(customer.ownerId ?? ownerIdFallback),
+    notes: String(customer.notes ?? ''),
+  };
+}
+
 export function CustomersPage() {
   const appState = useAppStore((s) => s.appState);
   const saveAppState = useAppStore((s) => s.saveAppState);
@@ -64,12 +130,8 @@ export function CustomersPage() {
   const [drawerId, setDrawerId] = useState<string | null>(null);
   const [drawerTab, setDrawerTab] = useState('overview');
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [showAdvanced, setShowAdvanced] = useState(false);
-  const [form, setForm] = useState({
-    name: '', company: '', phone: '', email: '', status: 'active', category: 'Standard',
-    companyType: 'Distributor', creditLimit: '0', paymentTerms: 'Net 30', ownerId: '',
-    billingAddress: '', billingCity: '', shippingAddress: '', shippingCity: '', notes: '',
-  });
+  const [formValues, setFormValues] = useState<CustomerFormValues>(EMPTY_CUSTOMER_FORM);
+  const [formKey, setFormKey] = useState(0);
 
   const owners = useMemo(() => getOwnerOptions(appState), [appState]);
 
@@ -109,31 +171,42 @@ export function CustomersPage() {
   }, [appState, owners.length]);
 
   const resetForm = () => {
-    setForm({
-      name: '', company: '', phone: '', email: '', status: 'active', category: 'Standard',
-      companyType: 'Distributor', creditLimit: '0', paymentTerms: 'Net 30', ownerId: owners[0]?.id ?? '',
-      billingAddress: '', billingCity: '', shippingAddress: '', shippingCity: '', notes: '',
-    });
+    setFormValues(buildEmptyFormValues(owners[0]?.id ?? ''));
     setEditingId(null);
-    setShowAdvanced(false);
+    setFormKey((k) => k + 1);
   };
 
-  const openEdit = (row: Record<string, unknown>) => {
-    setEditingId(String(row.id));
-    setForm({
-      name: String(row.name ?? ''), company: String(row.company ?? ''), phone: String(row.phone ?? ''),
-      email: String(row.email ?? ''), status: String(row.status ?? 'active'), category: String(row.category ?? 'Standard'),
-      companyType: String(row.companyType ?? 'Distributor'), creditLimit: String(row.creditLimit ?? '0'),
-      paymentTerms: String(row.paymentTerms ?? 'Net 30'), ownerId: String(row.ownerId ?? owners[0]?.id ?? ''),
-      billingAddress: '', billingCity: '', shippingAddress: '', shippingCity: '', notes: String(row.notes ?? ''),
-    });
+  const openCreate = () => {
+    resetForm();
     setView('form');
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    const owner = owners.find((o: { id: string; name: string }) => o.id === form.ownerId) || owners[0];
-    const payload = { ...form, ownerName: owner?.name, contactName: form.name };
+  const openEdit = (row: Record<string, unknown>) => {
+    const id = String(row.id);
+    const customerProfile = getCustomerProfile(appState, id);
+    setEditingId(id);
+    if (customerProfile) {
+      setFormValues(buildFormValuesFromProfile(customerProfile, owners[0]?.id ?? ''));
+    } else {
+      setFormValues({
+        ...buildEmptyFormValues(String(row.ownerId ?? owners[0]?.id ?? '')),
+        companyName: String(row.company ?? ''),
+        contactPerson: String(row.name ?? ''),
+        customerType: String(row.companyType ?? ''),
+        mobile: String(row.phone ?? ''),
+        email: String(row.email ?? ''),
+        status: String(row.status ?? 'active'),
+        creditLimit: String(row.creditLimit ?? '0'),
+        paymentTerms: normalizePaymentTerms(String(row.paymentTerms ?? '')),
+        priceLevel: String(row.pricingTier ?? 'Standard'),
+        notes: String(row.notes ?? ''),
+      });
+    }
+    setFormKey((k) => k + 1);
+    setView('form');
+  };
+
+  const handleSave = (payload: CustomerFormPayload, action: CustomerSaveAction) => {
     const result = editingId
       ? updateCustomer(appState, editingId, payload)
       : createCustomer(appState, payload);
@@ -142,6 +215,12 @@ export function CustomersPage() {
       return;
     }
     saveAppState();
+    if (action === 'save-and-add') {
+      setEditingId(null);
+      setFormValues(buildEmptyFormValues(owners[0]?.id ?? ''));
+      setFormKey((k) => k + 1);
+      return;
+    }
     setView('main');
     resetForm();
   };
@@ -236,33 +315,14 @@ export function CustomersPage() {
 
   if (view === 'form') {
     return (
-      <div className={MODULE_FORM_SHELL}>
-        <div className="max-w-4xl mx-auto w-full space-y-6">
-          <FormHeader title={editingId ? 'Edit Customer' : 'Add Customer'} subtitle="Customer master records, commercial terms, and profile." onBack={() => { setView('main'); resetForm(); }} />
-          <form onSubmit={handleSubmit} className="bg-white rounded-xl border border-slate-200 p-6 space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs font-semibold text-slate-700">
-              <div><label className="block mb-2">Name <span className="text-rose-500">*</span></label><input required value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50" /></div>
-              <div><label className="block mb-2">Company <span className="text-rose-500">*</span></label><input required value={form.company} onChange={(e) => setForm({ ...form, company: e.target.value })} className="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50" /></div>
-              <div><label className="block mb-2">Phone <span className="text-rose-500">*</span></label><input required value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} className="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50" /></div>
-              <div><label className="block mb-2">Email</label><input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} className="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50" /></div>
-              <div><label className="block mb-2">Status</label><select value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value })} className="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50 cursor-pointer">{['active', 'inactive', 'overdue', 'credit-hold'].map((s) => <option key={s} value={s}>{s}</option>)}</select></div>
-              <div><label className="block mb-2">Assigned rep</label><select value={form.ownerId} onChange={(e) => setForm({ ...form, ownerId: e.target.value })} className="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50 cursor-pointer">{owners.map((o: { id: string; name: string }) => <option key={o.id} value={o.id}>{o.name}</option>)}</select></div>
-            </div>
-            <AdvancedDetailsToggle open={showAdvanced} onToggle={() => setShowAdvanced(!showAdvanced)} />
-            {showAdvanced && (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs font-semibold text-slate-700 pt-4 border-t border-slate-100">
-                <div><label className="block mb-2">Category</label><input value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} className="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50" /></div>
-                <div><label className="block mb-2">Credit limit</label><input type="number" value={form.creditLimit} onChange={(e) => setForm({ ...form, creditLimit: e.target.value })} className="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50" /></div>
-                <div><label className="block mb-2">Payment terms</label><input value={form.paymentTerms} onChange={(e) => setForm({ ...form, paymentTerms: e.target.value })} className="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50" /></div>
-                <div><label className="block mb-2">Billing city</label><input value={form.billingCity} onChange={(e) => setForm({ ...form, billingCity: e.target.value })} className="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50" /></div>
-                <div className="md:col-span-2"><label className="block mb-2">Notes</label><textarea rows={3} value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} className="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50" /></div>
-              </div>
-            )}
-            <button type="submit" className="bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold px-6 py-2.5 rounded-xl cursor-pointer">Save Customer</button>
-          </form>
-        </div>
-        <Footer />
-      </div>
+      <CustomerForm
+        key={formKey}
+        mode={editingId ? 'edit' : 'create'}
+        initialValues={formValues}
+        owners={owners}
+        onCancel={() => { setView('main'); resetForm(); }}
+        onSave={handleSave}
+      />
     );
   }
 
@@ -273,7 +333,7 @@ export function CustomersPage() {
           <h2 className="text-xl font-extrabold text-slate-900">Customers</h2>
           <p className="text-xs text-slate-500 mt-1">Customer master records, commercial terms, profile drawers, and activity logs.</p>
         </div>
-        <button type="button" onClick={() => { resetForm(); setView('form'); }} className="bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold px-4 py-2.5 rounded-xl cursor-pointer self-start">
+        <button type="button" onClick={openCreate} className="bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold px-4 py-2.5 rounded-xl cursor-pointer self-start">
           + Add Customer
         </button>
       </div>
