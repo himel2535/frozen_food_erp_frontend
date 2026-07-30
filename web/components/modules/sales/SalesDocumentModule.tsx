@@ -176,53 +176,7 @@ export function SalesDocumentModule({ config }: { config: SalesDocumentConfig })
   }
 
   if (view === 'form') {
-    const isDeliveryChallan = config.title === 'Delivery Challan';
     const formTitle = editingId ? `Edit ${config.title}` : `Create ${config.title}`;
-
-    if (isDeliveryChallan) {
-      return (
-        <div className={MODULE_FORM_SHELL}>
-          <div className="max-w-4xl mx-auto w-full space-y-6">
-            <FormHeader title={formTitle} subtitle={config.subtitle} onBack={() => { setView('main'); resetForm(); }} />
-            <form onSubmit={handleSubmit} className="bg-white rounded-xl border border-slate-200 p-6 space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs font-semibold text-slate-700">
-                {config.customerField !== false && (
-                  <div>
-                    <label className="block mb-2">Customer <span className="text-rose-500">*</span></label>
-                    <input required value={form.customer} onChange={(e) => setForm({ ...form, customer: e.target.value })} className="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50" />
-                  </div>
-                )}
-                <div>
-                  <label className="block mb-2">Date</label>
-                  <input type="date" value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })} className="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50 cursor-pointer" />
-                </div>
-                <div>
-                  <label className="block mb-2">Status</label>
-                  <select value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value })} className="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50 cursor-pointer">
-                    {config.statusOptions.map((s) => <option key={s} value={s}>{s}</option>)}
-                  </select>
-                </div>
-              </div>
-              {config.showLineItems && <LineItemsEditor items={lineItems} onChange={setLineItems} />}
-              {config.showLineItems && (
-                <div className="text-right text-sm font-extrabold text-slate-900">Total: {formatMoney(total)}</div>
-              )}
-              <AdvancedDetailsToggle open={showAdvanced} onToggle={() => setShowAdvanced(!showAdvanced)} />
-              {showAdvanced && (
-                <div>
-                  <label className="block mb-2 text-xs font-semibold">Notes</label>
-                  <textarea rows={3} value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} className="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50" />
-                </div>
-              )}
-              <button type="submit" className="bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold px-6 py-2.5 rounded-xl cursor-pointer">
-                Save
-              </button>
-            </form>
-          </div>
-          <Footer />
-        </div>
-      );
-    }
 
     return (
       <AppFormPage

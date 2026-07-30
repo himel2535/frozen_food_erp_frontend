@@ -713,3 +713,37 @@ body.dashboard-page .text-3xl { font-size: 2rem; }        /* 32px */
     background: linear-gradient(135deg, var(--color-blue-500), var(--color-blue-700)) !important;
   }
 }
+
+@page {
+  size: A4 portrait;
+  margin: 8mm;
+}
+
+@media print {
+  body.print-challan-active > *:not(.delivery-challan-print-root) {
+    display: none !important;
+  }
+
+  body.print-challan-active .delivery-challan-print-root {
+    display: block !important;
+    position: static !important;
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: visible !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  body.print-challan-active .delivery-challan-print-root * {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  .dc-print-section,
+  .dc-print-signatures,
+  .dc-print-footer {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+}

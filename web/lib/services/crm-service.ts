@@ -857,6 +857,35 @@ function buildLegacyMigration(state) {
     amount: 2100,
     status: 'processing'
   };
+  crmData.salesOrdersById['SO-0003'] = {
+    id: 'SO-0003',
+    customerId: 'CUST-0002',
+    customer: 'Marie Curie',
+    date: '2026-06-17',
+    total: 1200,
+    amount: 1200,
+    status: 'confirmed',
+    items: [
+      { productId: 'TB-S-PNK', name: 'Teddy Bear Small (Pink)', sku: 'TB-S-PNK', qty: 100, unit: 'Pcs', imageUrl: '/images/logo-toys.png' },
+    ],
+  };
+  crmData.salesOrdersById['SO-2026-07-0158'] = {
+    id: 'SO-2026-07-0158',
+    customerId: 'CUST-0005',
+    customer: 'Sobuz Hossain (Shoppy)',
+    date: '2026-07-28',
+    total: 45000,
+    amount: 45000,
+    status: 'confirmed',
+    deliveryAddress: 'House # 45, Road # 12, Block # C, Bashundhara R/A, Dhaka-1229, Bangladesh',
+    contactPerson: 'Sobuz Hossain',
+    contactPhone: '01911110476',
+    items: [
+      { productId: 'TB-L-BRN', name: 'Teddy Bear Large (Brown)', sku: 'TB-L-BRN', qty: 500, unit: 'Pcs', imageUrl: '/images/logo-toys.png' },
+      { productId: 'TB-M-WHT', name: 'Teddy Bear Medium (White)', sku: 'TB-M-WHT', qty: 600, unit: 'Pcs', imageUrl: '/images/logo-toys.png' },
+      { productId: 'TB-S-PNK', name: 'Teddy Bear Small (Pink)', sku: 'TB-S-PNK', qty: 300, unit: 'Pcs', imageUrl: '/images/logo-toys.png' },
+    ],
+  };
 
   crmData.refundsById['REF-0001'] = {
     id: 'REF-0001',

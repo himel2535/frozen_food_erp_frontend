@@ -1,6 +1,6 @@
 /** Sales domain — quotations, orders, deliveries, dispatch, returns */
 import type { AppState } from '@/lib/state/types';
-import { ensureCrmState } from '@/lib/services/crm-service';
+import { ensureCrmState, getCustomerList, getCustomerProfile } from '@/lib/services/crm-service';
 import { listFromState, createInState, updateInState, deleteFromState } from '@/lib/services/domain-service';
 
 type Row = Record<string, unknown>;
@@ -177,13 +177,201 @@ export function convertQuotationToOrder(state: AppState, quotationId: string) {
 }
 
 export function createDelivery(state: AppState, payload: Row) {
-  const key = listFromState(state, 'salesDeliveries').length >= 0 ? 'salesDeliveries' : 'deliveries';
-  return createInState(state, key, payload, 'DC');
+  const key = 'salesDeliveries';
+  const id = String(payload.id ?? previewChallanNumber(state, String(payload.date ?? '')));
+  const items = Array.isArray(payload.items) ? payload.items : [];
+  const record = normalizeDeliveryRecord(state, { ...payload, id, items });
+  return createInState(state, key, record, 'DC');
 }
 
 export function updateDelivery(state: AppState, id: string, payload: Row) {
-  const key = listFromState(state, 'salesDeliveries').length ? 'salesDeliveries' : 'deliveries';
-  return updateInState(state, key, id, payload);
+  const key = 'salesDeliveries';
+  const items = Array.isArray(payload.items) ? payload.items : undefined;
+  const record = normalizeDeliveryRecord(state, { ...payload, ...(items ? { items } : {}) });
+  return updateInState(state, key, id, record);
+}
+
+function getChallanPeriod(date = new Date()) {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  return `${y}-${m}`;
+}
+
+function formatCustomerDisplayName(customer: { name?: unknown; company?: unknown }): string {
+  const name = String(customer.name ?? '').trim();
+  const company = String(customer.company ?? '').trim();
+  if (!name) return company;
+  return company ? `${name} (${company})` : name;
+}
+
+function resolveChallanCustomerName(state: AppState, row: Row): string {
+  const direct = String(row.customerName ?? row.customer ?? '').trim();
+  if (direct) return direct;
+
+  const customerId = String(row.customerId ?? '');
+  if (customerId) {
+    const customer = getCustomerList(state).find((c) => String(c.id) === customerId);
+    if (customer) return formatCustomerDisplayName(customer);
+  }
+
+  const orderId = String(row.orderId ?? '');
+  if (orderId) {
+    const order = listSalesOrders(state).find((o) => String(o.id) === orderId);
+    const orderCustomer = String(order?.customer ?? order?.customerName ?? '').trim();
+    if (orderCustomer) return orderCustomer;
+  }
+
+  return '';
+}
+
+export function resolveChallanCustomerLabel(state: AppState, row: Row): string {
+  return resolveChallanCustomerName(state, row) || '—';
+}
+
+function normalizeDeliveryRecord(state: AppState, payload: Row): Row {
+  const items = (Array.isArray(payload.items) ? payload.items : []) as Row[];
+  const activeItems = items.filter((item) => String(item.productName ?? item.name ?? '').trim());
+  const totalDeliverQty = activeItems.reduce((sum, item) => sum + Number(item.deliverNow ?? item.qty ?? 0), 0);
+  const resolvedCustomerName = resolveChallanCustomerName(state, payload);
+  return {
+    ...payload,
+    customer: resolvedCustomerName || String(payload.customer ?? payload.customerName ?? ''),
+    customerName: resolvedCustomerName || String(payload.customerName ?? payload.customer ?? ''),
+    orderId: payload.orderId ?? '',
+    items: activeItems,
+    totalDeliverQty,
+    totalItems: activeItems.length,
+    total: Number(payload.total ?? totalDeliverQty),
+  };
+}
+
+export function previewChallanNumber(state: AppState, dateStr?: string) {
+  const period = getChallanPeriod(dateStr ? new Date(`${dateStr}T00:00:00`) : new Date());
+  const prefix = `DC-${period}-`;
+  const deliveries = listDeliveries(state);
+  const nums = deliveries
+    .map((row) => String(row.id ?? ''))
+    .filter((id) => id.startsWith(prefix))
+    .map((id) => parseInt(id.slice(prefix.length), 10))
+    .filter((n) => !Number.isNaN(n));
+  const next = (nums.length ? Math.max(...nums) : 0) + 1;
+  return `${prefix}${String(next).padStart(4, '0')}`;
+}
+
+export function getDeliveredQtyBySku(state: AppState, orderId: string, excludeChallanId?: string) {
+  const totals = new Map<string, number>();
+  listDeliveries(state)
+    .filter((row) => String(row.orderId) === orderId && String(row.id) !== String(excludeChallanId ?? ''))
+    .forEach((row) => {
+      const items = Array.isArray(row.items) ? row.items : [];
+      items.forEach((item) => {
+        const sku = String((item as Row).sku ?? (item as Row).productId ?? '');
+        if (!sku) return;
+        totals.set(sku, (totals.get(sku) ?? 0) + Number((item as Row).deliverNow ?? (item as Row).qty ?? 0));
+      });
+    });
+  return totals;
+}
+
+export function buildChallanItemsFromOrder(state: AppState, orderId: string, excludeChallanId?: string): Row[] {
+  const order = listSalesOrders(state).find((row) => String(row.id) === orderId);
+  if (!order) return [];
+  const deliveredBySku = getDeliveredQtyBySku(state, orderId, excludeChallanId);
+  const items = Array.isArray(order.items) ? order.items : [];
+  return items.map((raw, index) => {
+    const item = raw as Row;
+    const sku = String(item.sku ?? item.productId ?? `SKU-${index + 1}`);
+    const orderedQty = Number(item.qty ?? item.quantity ?? 0);
+    const previouslyDelivered = deliveredBySku.get(sku) ?? 0;
+    const deliverNow = Math.max(0, orderedQty - previouslyDelivered);
+    return {
+      id: `line-${index + 1}`,
+      productId: String(item.productId ?? sku),
+      productName: String(item.name ?? item.description ?? item.productName ?? 'Product'),
+      sku,
+      imageUrl: String(item.imageUrl ?? '/images/logo-toys.png'),
+      orderedQty,
+      previouslyDelivered,
+      deliverNow,
+      remainingQty: Math.max(0, orderedQty - previouslyDelivered - deliverNow),
+      unit: String(item.unit ?? 'Pcs'),
+    };
+  });
+}
+
+export function getCustomerDeliveryDefaults(state: AppState, customerId: string) {
+  const profile = getCustomerProfile(state, customerId);
+  if (!profile) {
+    return { deliveryAddress: '', contactPerson: '', contactPhone: '' };
+  }
+  const customer = profile.customer as Row;
+  const contacts = (profile.contacts ?? []) as Row[];
+  const addresses = (profile.addresses ?? []) as Row[];
+  const primary = contacts.find((c) => c.primary) ?? contacts[0];
+  const shipping = addresses.find((a) => a.type === 'shipping') ?? addresses[0];
+  const line1 = String(shipping?.line1 ?? '');
+  const city = String(shipping?.city ?? '');
+  const region = String(shipping?.region ?? '');
+  const postal = String(shipping?.postalCode ?? '');
+  const country = String(shipping?.country ?? '');
+  const deliveryAddress = [line1, city, region, postal, country].filter(Boolean).join(', ');
+  return {
+    deliveryAddress,
+    contactPerson: String(primary?.name ?? customer.name ?? ''),
+    contactPhone: String(primary?.phone ?? ''),
+  };
+}
+
+function normalizeMatchText(value: string) {
+  return value.trim().toLowerCase();
+}
+
+function orderMatchesCustomer(
+  order: Row,
+  customerId: string,
+  customerName?: string,
+  companyName?: string,
+) {
+  if (customerId && String(order.customerId) === customerId) return true;
+
+  const orderCustomer = normalizeMatchText(String(order.customer ?? order.customerName ?? ''));
+  if (!orderCustomer) return false;
+
+  const name = normalizeMatchText(customerName ?? '');
+  const company = normalizeMatchText(companyName ?? '');
+  const displayLabel = [name, company].filter(Boolean).join(' ');
+
+  if (name && (orderCustomer.includes(name) || name.includes(orderCustomer.split('(')[0]?.trim() ?? ''))) {
+    return true;
+  }
+  if (company && orderCustomer.includes(company)) return true;
+  if (displayLabel && (orderCustomer.includes(displayLabel) || displayLabel.includes(orderCustomer))) {
+    return true;
+  }
+
+  return false;
+}
+
+export function getSalesOrdersForCustomer(
+  state: AppState,
+  customerId: string,
+  customerName?: string,
+  companyName?: string,
+) {
+  if (!customerId) return [];
+
+  const byId = new Map<string, Row>();
+  listSalesOrders(state)
+    .filter((order) => orderMatchesCustomer(order, customerId, customerName, companyName))
+    .forEach((order) => byId.set(String(order.id), order));
+
+  const profile = getCustomerProfile(state, customerId);
+  (profile?.salesOrders ?? []).forEach((order) => {
+    const row = order as Row;
+    byId.set(String(row.id), row);
+  });
+
+  return [...byId.values()].sort((a, b) => String(b.date ?? '').localeCompare(String(a.date ?? '')));
 }
 
 export function createDispatch(state: AppState, payload: Row) {
