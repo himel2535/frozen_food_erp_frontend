@@ -1,9 +1,8 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { Plus, Search, ChevronDown } from 'lucide-react';
+import { Plus, Search } from 'lucide-react';
 import { Footer } from '@/components/layout/Footer';
-import { FormHeader } from '@/components/layout/FormHeader';
 import { useAppStore } from '@/lib/state/app-store';
 import { getLeadList, getOwnerOptions, createLead, updateLead, convertLeadToCustomer, getLeadActivities } from '@/lib/services/crm-service';
 import { AppTable, type AppTableColumn } from '@/components/shared/AppTable';
@@ -11,10 +10,45 @@ import { StatusBadge } from '@/components/shared/StatusBadge';
 import { KanbanBoard, type KanbanCard } from '@/components/shared/KanbanBoard';
 import { ProfileDrawer } from '@/components/shared/ProfileDrawer';
 import { KpiCards } from '@/components/shared/KpiCards';
-import { MODULE_FORM_SHELL, MODULE_LIST_SHELL } from '@/lib/ui/module-layout';
+import { MODULE_LIST_SHELL } from '@/lib/ui/module-layout';
+import {
+  LeadForm,
+  EMPTY_LEAD_FORM,
+  splitFollowUpAt,
+  type LeadFormPayload,
+  type LeadFormValues,
+} from '@/components/modules/crm/LeadForm';
+import { LEAD_SOURCE_OPTIONS } from '@/components/modules/crm/lead-form/lead-form-options';
 
 function formatCurrency(value: number) {
   return `৳${Number(value || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+}
+
+function buildEmptyLeadValues(ownerId: string): LeadFormValues {
+  return { ...EMPTY_LEAD_FORM, assignedRepId: ownerId };
+}
+
+function leadRecordToFormValues(lead: Record<string, unknown>, ownerIdFallback: string): LeadFormValues {
+  const followUp = splitFollowUpAt(lead.nextFollowUpAt as string | null | undefined);
+  return {
+    name: String(lead.name ?? ''),
+    phone: String(lead.phone ?? ''),
+    alternativePhone: String(lead.alternativePhone ?? ''),
+    company: String(lead.company ?? ''),
+    email: String(lead.email ?? ''),
+    interestedProduct: String(lead.interestedProduct ?? ''),
+    customerRequirement: String(lead.customerRequirement ?? ''),
+    source: String(lead.source ?? ''),
+    campaign: String(lead.campaign ?? ''),
+    adCreative: String(lead.adCreative ?? ''),
+    assignedRepId: String(lead.assignedRepId ?? ownerIdFallback),
+    status: String(lead.status ?? 'new'),
+    priority: String(lead.priority ?? 'warm'),
+    followUpDate: followUp.date,
+    followUpTime: followUp.time,
+    expectedValue: lead.expectedValue != null && lead.expectedValue !== '' ? String(lead.expectedValue) : '',
+    notes: String(lead.notes ?? ''),
+  };
 }
 
 export function LeadsPage() {
@@ -28,21 +62,8 @@ export function LeadsPage() {
   const [layoutMode, setLayoutMode] = useState<'table' | 'kanban'>('table');
   const [drawerId, setDrawerId] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [showAdvanced, setShowAdvanced] = useState(false);
-  const [form, setForm] = useState({
-    name: '',
-    company: '',
-    email: '',
-    phone: '',
-    source: 'Trade Show',
-    status: 'new',
-    assignedRepId: '',
-    priority: 'warm',
-    expectedValue: '',
-    probability: '',
-    nextFollowUpAt: '',
-    notes: '',
-  });
+  const [formKey, setFormKey] = useState(0);
+  const [formValues, setFormValues] = useState<LeadFormValues>(EMPTY_LEAD_FORM);
 
   const owners = useMemo(() => getOwnerOptions(appState), [appState]);
 
@@ -110,22 +131,9 @@ export function LeadsPage() {
   ], []);
 
   const resetForm = () => {
-    setForm({
-      name: '',
-      company: '',
-      email: '',
-      phone: '',
-      source: 'Trade Show',
-      status: 'new',
-      assignedRepId: owners[0]?.id ?? '',
-      priority: 'warm',
-      expectedValue: '',
-      probability: '',
-      nextFollowUpAt: '',
-      notes: '',
-    });
+    setFormValues(buildEmptyLeadValues(owners[0]?.id ?? ''));
     setEditingId(null);
-    setShowAdvanced(false);
+    setFormKey((k) => k + 1);
   };
 
   const openCreate = () => {
@@ -133,16 +141,15 @@ export function LeadsPage() {
     setView('form');
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    const owner = owners.find((o: { id: string; name: string }) => o.id === form.assignedRepId);
-    const payload = {
-      ...form,
-      assignedRepName: owner?.name ?? '',
-      expectedValue: Number(form.expectedValue || 0),
-      probability: Number(form.probability || 0),
-    };
+  const openEdit = (lead: Record<string, unknown>) => {
+    setEditingId(String(lead.id));
+    setFormValues(leadRecordToFormValues(lead, owners[0]?.id ?? ''));
+    setFormKey((k) => k + 1);
+    setView('form');
+    setDrawerId(null);
+  };
 
+  const handleSave = (payload: LeadFormPayload) => {
     if (editingId) {
       updateLead(appState, editingId, payload);
     } else {
@@ -153,104 +160,25 @@ export function LeadsPage() {
     resetForm();
   };
 
+  const sourceFilterOptions = useMemo(() => {
+    const fromData = new Set(leads.map((l) => String(l.source)).filter(Boolean));
+    LEAD_SOURCE_OPTIONS.forEach((source) => fromData.add(source));
+    return Array.from(fromData).sort();
+  }, [leads]);
+
   if (view === 'form') {
     return (
-      <div className={MODULE_FORM_SHELL}>
-        <div className="max-w-4xl mx-auto w-full space-y-6">
-          <FormHeader
-            title={editingId ? 'Edit lead' : 'Create lead'}
-            subtitle="Capture basic lead info and assigned rep."
-            onBack={() => {
-              setView('main');
-              resetForm();
-            }}
-          />
-          <form onSubmit={handleSubmit} className="bg-white rounded-xl border border-slate-200 p-6 space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs font-semibold text-slate-700">
-              <div>
-                <label className="block mb-2">Lead name <span className="text-rose-500">*</span></label>
-                <input required value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-xs focus:outline-none" />
-              </div>
-              <div>
-                <label className="block mb-2">Company <span className="text-rose-500">*</span></label>
-                <input required value={form.company} onChange={(e) => setForm({ ...form, company: e.target.value })} className="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-xs focus:outline-none" />
-              </div>
-              <div>
-                <label className="block mb-2">Email</label>
-                <input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} className="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-xs focus:outline-none" />
-              </div>
-              <div>
-                <label className="block mb-2">Phone <span className="text-rose-500">*</span></label>
-                <input required value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} className="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-xs focus:outline-none" />
-              </div>
-              <div>
-                <label className="block mb-2">Source <span className="text-rose-500">*</span></label>
-                <select required value={form.source} onChange={(e) => setForm({ ...form, source: e.target.value })} className="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-xs focus:outline-none cursor-pointer">
-                  {['Trade Show', 'Website', 'Referral', 'Facebook', 'Walk-in'].map((s) => (
-                    <option key={s} value={s}>{s}</option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label className="block mb-2">Status</label>
-                <select value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value })} className="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-xs focus:outline-none cursor-pointer">
-                  {['new', 'contacted', 'qualified', 'lost'].map((s) => (
-                    <option key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1)}</option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label className="block mb-2">Assigned rep</label>
-                <select value={form.assignedRepId} onChange={(e) => setForm({ ...form, assignedRepId: e.target.value })} className="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-xs focus:outline-none cursor-pointer">
-                  {owners.map((o: { id: string; name: string }) => (
-                    <option key={o.id} value={o.id}>{o.name}</option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label className="block mb-2">Priority</label>
-                <select value={form.priority} onChange={(e) => setForm({ ...form, priority: e.target.value })} className="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-xs focus:outline-none cursor-pointer">
-                  <option value="hot">Hot</option>
-                  <option value="warm">Warm</option>
-                  <option value="cold">Cold</option>
-                </select>
-              </div>
-            </div>
-            <div>
-              <button type="button" onClick={() => setShowAdvanced(!showAdvanced)} className="flex items-center gap-2 text-blue-600 hover:text-blue-700 text-xs font-bold transition-colors cursor-pointer">
-                <ChevronDown className={`w-4 h-4 transition-transform ${showAdvanced ? 'rotate-180' : ''}`} />
-                Show Advanced Details
-              </button>
-            </div>
-            {showAdvanced && (
-              <div className="space-y-6 pt-4 border-t border-slate-100">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs font-semibold text-slate-700">
-                  <div>
-                    <label className="block mb-2">Expected value</label>
-                    <input type="number" min={0} value={form.expectedValue} onChange={(e) => setForm({ ...form, expectedValue: e.target.value })} className="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-xs focus:outline-none" />
-                  </div>
-                  <div>
-                    <label className="block mb-2">Probability (%)</label>
-                    <input type="number" min={0} max={100} value={form.probability} onChange={(e) => setForm({ ...form, probability: e.target.value })} className="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-xs focus:outline-none" />
-                  </div>
-                  <div>
-                    <label className="block mb-2">Next follow-up</label>
-                    <input type="date" value={form.nextFollowUpAt} onChange={(e) => setForm({ ...form, nextFollowUpAt: e.target.value })} className="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-xs focus:outline-none" />
-                  </div>
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-2">Notes</label>
-                  <textarea rows={3} value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} className="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-xs focus:outline-none" />
-                </div>
-              </div>
-            )}
-            <div className="flex justify-end gap-3 pt-4 border-t border-slate-100">
-              <button type="button" onClick={() => { setView('main'); resetForm(); }} className="border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold px-4 py-2.5 rounded-xl cursor-pointer">Cancel</button>
-              <button type="submit" className="bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold px-4 py-2.5 rounded-xl cursor-pointer">Save lead</button>
-            </div>
-          </form>
-        </div>
-      </div>
+      <LeadForm
+        key={formKey}
+        mode={editingId ? 'edit' : 'create'}
+        initialValues={formValues}
+        owners={owners}
+        onCancel={() => {
+          setView('main');
+          resetForm();
+        }}
+        onSave={handleSave}
+      />
     );
   }
 
@@ -299,7 +227,7 @@ export function LeadsPage() {
             </select>
             <select value={sourceFilter} onChange={(e) => setSourceFilter(e.target.value)} className="bg-slate-50 border border-slate-200 text-xs font-semibold text-slate-700 rounded-xl px-3 py-2 focus:outline-none cursor-pointer">
               <option value="all">All sources</option>
-              {['Trade Show', 'Website', 'Referral', 'Facebook', 'Walk-in'].map((s) => (
+              {sourceFilterOptions.map((s) => (
                 <option key={s} value={s}>{s}</option>
               ))}
             </select>
@@ -341,7 +269,10 @@ export function LeadsPage() {
             <ul className="space-y-2">{(drawerActivities as Array<Record<string, unknown>>).map((a) => (
               <li key={String(a.id)}>{String(a.summary ?? a.type)}</li>
             ))}</ul>
-            <div className="flex gap-2 pt-4">
+            <div className="flex flex-wrap gap-2 pt-4">
+              <button type="button" className="px-3 py-2 bg-blue-600 text-white font-bold rounded-xl cursor-pointer" onClick={() => openEdit(drawerLead)}>
+                Edit Lead
+              </button>
               <button type="button" className="px-3 py-2 bg-emerald-600 text-white font-bold rounded-xl cursor-pointer" onClick={() => {
                 const r = convertLeadToCustomer(appState, String(drawerLead.id), {});
                 if (r.ok) { saveAppState(); window.alert('Converted to customer'); setDrawerId(null); }
