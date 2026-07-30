@@ -190,9 +190,11 @@ export function AppTable<T extends object = Record<string, unknown>>({
                 const extraRowClass = typeof rowClassName === 'function'
                   ? rowClassName(row, index)
                   : (rowClassName ?? '');
+                const rowId = rowKey ? rowKey(row, index) : String((row as Record<string, unknown>).id ?? (row as Record<string, unknown>).ref ?? (row as Record<string, unknown>).sku ?? (row as Record<string, unknown>).name ?? index);
                 return (
                 <tr
-                  key={rowKey ? rowKey(row, index) : String((row as Record<string, unknown>).id ?? (row as Record<string, unknown>).ref ?? (row as Record<string, unknown>).sku ?? (row as Record<string, unknown>).name ?? index)}
+                  key={rowId}
+                  data-row-id={rowId}
                   className={`app-table-tr ${onRowClick ? 'cursor-pointer' : ''} ${extraRowClass}`.trim()}
                   onClick={onRowClick ? () => onRowClick(row, index) : undefined}
                 >
@@ -215,7 +217,11 @@ export function AppTable<T extends object = Record<string, unknown>>({
                     );
                   })}
                   {renderActions && (
-                    <td data-align="center" className="app-table-td app-table-td-actions app-table-align-center">
+                    <td
+                      data-align="center"
+                      className="app-table-td app-table-td-actions app-table-align-center"
+                      onClick={(e) => e.stopPropagation()}
+                    >
                       <div className={cellInnerClass('center')}>
                         <div className="app-table-actions">{renderActions(row, index)}</div>
                       </div>

@@ -20,6 +20,9 @@ export interface DedicatedModuleConfig extends PortModuleConfig {
   computedFields?: Record<string, (form: Record<string, string>) => string>;
   rowActions?: (row: Record<string, unknown>, ctx: { appState: import('@/lib/state/types').AppState; save: () => void }) => React.ReactNode;
   hideDefaultRowActions?: (row: Record<string, unknown>) => boolean;
+  onRowClick?: (row: Record<string, unknown>) => void;
+  rowClassName?: string | ((row: Record<string, unknown>, index: number) => string);
+  rowSort?: (a: Record<string, unknown>, b: Record<string, unknown>) => number;
 }
 
 export function DedicatedModule({ config }: { config: DedicatedModuleConfig }) {
@@ -46,6 +49,9 @@ export function DedicatedModule({ config }: { config: DedicatedModuleConfig }) {
     });
     if (statusFilter !== 'all') {
       data = data.filter((row) => String(row.status ?? '').toLowerCase() === statusFilter.toLowerCase());
+    }
+    if (config.rowSort) {
+      data = [...data].sort(config.rowSort);
     }
     return data;
   }, [appState, config, search, filterValues, statusFilter]);
@@ -141,6 +147,8 @@ export function DedicatedModule({ config }: { config: DedicatedModuleConfig }) {
         }))}
         rows={rows}
         emptyMessage="No records yet"
+        onRowClick={config.onRowClick}
+        rowClassName={config.rowClassName}
         renderActions={(row) => (
           <>
             {config.rowActions?.(row, { appState, save: saveAppState })}

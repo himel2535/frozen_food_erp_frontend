@@ -1,5 +1,7 @@
 'use client';
 
+import { useMemo } from 'react';
+import { useRouter } from 'next/navigation';
 import { DedicatedModule } from '@/components/modules/shared/DedicatedModule';
 import { getLegacyParityConfig } from '@/lib/modules/legacy-parity-configs';
 import { PORT_CONFIGS } from '@/lib/modules/port-configs';
@@ -65,6 +67,18 @@ export function SettingsAuditLogsPage() { return <DedicatedModule config={PORT_C
 export function SettingsProfilePage() { return <DedicatedModule config={cfg('settings-profile')} />; }
 export function ProjectsPage() { return <DedicatedModule config={cfg('projects')} />; }
 export function AssetManagementPage() { return <DedicatedModule config={cfg('asset-management')} />; }
-export function WorkflowApprovalsPage() { return <DedicatedModule config={workflowApprovalsConfig()} />; }
+export function WorkflowApprovalsPage() {
+  const router = useRouter();
+  const config = useMemo(() => ({
+    ...workflowApprovalsConfig(),
+    rowSort: (a: Record<string, unknown>, b: Record<string, unknown>) =>
+      String(b.createdAt ?? '').localeCompare(String(a.createdAt ?? '')),
+    onRowClick: (row: Record<string, unknown>) => {
+      if (String(row.refType) !== 'purchase_rm_order') return;
+      router.push(`/purchases/purchase-rm?focus=${encodeURIComponent(String(row.refId))}&from=approval`);
+    },
+  }), [router]);
+  return <DedicatedModule config={config} />;
+}
 export function CrmActivitiesPage() { return <DedicatedModule config={cfg('crm-activities')} />; }
 export function SalesWholesalePage() { return <DedicatedModule config={cfg('sales-wholesale')} />; }

@@ -34,6 +34,49 @@ export type PurchaseRmTotals = {
   grandTotal: number;
 };
 
+export type PurchaseRmReceiveProofItem = {
+  productName: string;
+  sku: string;
+  qty: number;
+  unit: string;
+  unitPrice: number;
+  discountPct: number;
+  taxPct: number;
+  lineTotal: number;
+};
+
+export type PurchaseRmReceiveProof = {
+  id: string;
+  date: string;
+  poId: string;
+  supplierName: string;
+  warehouseName: string;
+  receivedBy: string;
+  qty: number;
+  note: string;
+  proofType?: string;
+  proofNote?: string;
+  attachments?: Array<{ type: string; name: string; dataUrl: string }>;
+  items: PurchaseRmReceiveProofItem[];
+  subTotal: number;
+  vat: number;
+  ait: number;
+  grandTotal: number;
+};
+
+export type PurchaseRmReceiveAttachment = {
+  type: string;
+  name: string;
+  dataUrl: string;
+};
+
+export type PurchaseRmReceiveOpts = {
+  receiveQty?: number;
+  proofType?: string;
+  proofNote?: string;
+  attachments?: PurchaseRmReceiveAttachment[];
+};
+
 export function listPurchaseRmOrders(state: AppState) {
   return listFromState(state, 'purchaseRmOrders');
 }
@@ -81,6 +124,31 @@ export function previewPoNumber(state: AppState, dateStr?: string) {
     .map((id) => parseInt(id.slice(prefix.length), 10))
     .filter((n) => !Number.isNaN(n));
   const next = (nums.length ? Math.max(...nums) : 50) + 1;
+  return `${prefix}${String(next).padStart(5, '0')}`;
+}
+
+export function previewBillNumber(state: AppState, dateStr?: string) {
+  const year = dateStr ? new Date(`${dateStr}T00:00:00`).getFullYear() : new Date().getFullYear();
+  const prefix = `BILL-${year}-`;
+  const nums = listFromState(state, 'vendorBills')
+    .map((r) => String(r.id ?? ''))
+    .filter((billId) => billId.startsWith(prefix))
+    .map((billId) => parseInt(billId.slice(prefix.length), 10))
+    .filter((n) => !Number.isNaN(n));
+  const next = (nums.length ? Math.max(...nums) : 0) + 1;
+  return `${prefix}${String(next).padStart(5, '0')}`;
+}
+
+export function previewGrnNumber(state: AppState, dateStr?: string) {
+  const year = dateStr ? new Date(`${dateStr}T00:00:00`).getFullYear() : new Date().getFullYear();
+  const prefix = `GRN-${year}-`;
+  const nums = listPurchaseRmOrders(state)
+    .flatMap((r) => (Array.isArray(r.receiveHistory) ? r.receiveHistory : []))
+    .map((h) => String((h as Row).id ?? ''))
+    .filter((grnId) => grnId.startsWith(prefix))
+    .map((grnId) => parseInt(grnId.slice(prefix.length), 10))
+    .filter((n) => !Number.isNaN(n));
+  const next = (nums.length ? Math.max(...nums) : 0) + 1;
   return `${prefix}${String(next).padStart(5, '0')}`;
 }
 
@@ -334,20 +402,30 @@ export function rejectPurchaseRmOrder(state: AppState, id: string) {
   return { ok: true };
 }
 
-export function receivePurchaseRmOrder(state: AppState, id: string, receiveQty?: number) {
+export function receivePurchaseRmOrder(
+  state: AppState,
+  id: string,
+  opts?: PurchaseRmReceiveOpts | number,
+) {
+  const options: PurchaseRmReceiveOpts = typeof opts === 'number' ? { receiveQty: opts } : (opts ?? {});
+  if (!options.attachments?.length) {
+    return { ok: false as const, error: 'Upload at least one proof file (receipt or bank transaction).' };
+  }
+
   const row = listPurchaseRmOrders(state).find((r) => String(r.id) === id);
   if (!row || !['sent', 'partially_received'].includes(String(row.status))) {
-    return { ok: false, error: 'Only sent or partially received orders can be received' };
+    return { ok: false as const, error: 'Only sent or partially received orders can be received' };
   }
 
   const items = normalizeItems(row.items);
   const totalOrdered = items.reduce((s, i) => s + Number(i.qty || 0), 0);
   const totalReceived = items.reduce((s, i) => s + Number(i.receivedQty || 0), 0);
   const remaining = totalOrdered - totalReceived;
-  const qtyToReceive = receiveQty ?? remaining;
+  const qtyToReceive = options.receiveQty ?? remaining;
 
-  if (qtyToReceive <= 0) return { ok: false, error: 'Nothing left to receive' };
+  if (qtyToReceive <= 0) return { ok: false as const, error: 'Nothing left to receive' };
 
+  const proofItems: PurchaseRmReceiveProofItem[] = [];
   let allocated = 0;
   const updatedItems = items.map((item) => {
     if (allocated >= qtyToReceive) return item;
@@ -355,6 +433,16 @@ export function receivePurchaseRmOrder(state: AppState, id: string, receiveQty?:
     if (itemRemaining <= 0) return item;
     const take = Math.min(itemRemaining, qtyToReceive - allocated);
     allocated += take;
+    proofItems.push({
+      productName: item.productName,
+      sku: item.sku,
+      qty: take,
+      unit: item.unit,
+      unitPrice: item.unitPrice,
+      discountPct: item.discountPct,
+      taxPct: item.taxPct,
+      lineTotal: computeLineTotal({ ...item, qty: take }),
+    });
     const materialId = item.materialId;
     if (materialId) {
       const rms = listFromState(state, 'rawMaterials');
@@ -370,21 +458,78 @@ export function receivePurchaseRmOrder(state: AppState, id: string, receiveQty?:
 
   const newProgress = calcProgress(updatedItems);
   const newStatus = newProgress >= 100 ? 'completed' : 'partially_received';
+  const orderTotals = row.totals as Row | undefined;
+  const vatPct = Number(orderTotals?.vatPct ?? row.vatPct ?? 15);
+  const aitPct = Number(orderTotals?.aitPct ?? row.aitPct ?? 1);
+  const proofLineItems: PurchaseRmLineItem[] = proofItems.map((p, index) => ({
+    id: `proof-${index}`,
+    materialId: '',
+    productName: p.productName,
+    sku: p.sku,
+    category: '',
+    imageUrl: '',
+    currentStock: 0,
+    unit: p.unit,
+    qty: p.qty,
+    unitPrice: p.unitPrice,
+    discountPct: p.discountPct,
+    taxPct: p.taxPct,
+    lineTotal: p.lineTotal,
+    receivedQty: 0,
+  }));
+  const proofTotals = computePoTotals(proofLineItems, { vatPct, aitPct, otherCharges: 0 });
+  const proofId = previewGrnNumber(state);
+  const receiveDate = new Date().toISOString().slice(0, 10);
+  const proofType = options.proofType ?? 'receipt';
+  const proofNote = options.proofNote ?? '';
   const history = Array.isArray(row.receiveHistory) ? [...row.receiveHistory] : [];
   history.push({
-    date: new Date().toISOString().slice(0, 10),
+    id: proofId,
+    date: receiveDate,
+    poId: id,
+    supplierName: String(row.supplierName ?? ''),
+    warehouseName: String(row.warehouseName ?? ''),
+    receivedBy: String(row.createdBy ?? 'Sarah Connor'),
     qty: allocated,
-    note: `Received ${allocated} units`,
+    note: proofNote || `Received ${allocated} units`,
+    proofType,
+    proofNote,
+    attachments: options.attachments,
+    items: proofItems,
+    subTotal: proofTotals.subTotal,
+    vat: proofTotals.vat,
+    ait: proofTotals.ait,
+    grandTotal: proofTotals.grandTotal,
   });
 
-  return updateInState(state, 'purchaseRmOrders', id, {
+  let billId = String(row.billId ?? '');
+  if (newStatus === 'completed') {
+    const dueBase = String(row.expectedDelivery ?? receiveDate);
+    const dueDate = dueBase >= receiveDate
+      ? dueBase
+      : new Date(Date.now() + 30 * 86400000).toISOString().slice(0, 10);
+    const billResult = createInState(state, 'vendorBills', {
+      supplier: String(row.supplierName ?? ''),
+      amount: Number(row.grandTotal ?? row.total ?? proofTotals.grandTotal),
+      dueDate,
+      status: 'draft',
+      ref: id,
+      notes: `Auto-created from RM order ${id}`,
+    }, 'BILL');
+    if (billResult.ok) billId = billResult.id;
+  }
+
+  const result = updateInState(state, 'purchaseRmOrders', id, {
     items: updatedItems,
     progress: newProgress,
     status: newStatus,
     paymentStatus: newStatus === 'completed' ? 'paid' : 'partial',
     paidPercent: newStatus === 'completed' ? 100 : Math.max(50, newProgress),
     receiveHistory: history,
+    ...(billId ? { billId } : {}),
   });
+  if (!result.ok) return result;
+  return { ok: true as const, proofId };
 }
 
 export function cancelPurchaseRmOrder(state: AppState, id: string) {

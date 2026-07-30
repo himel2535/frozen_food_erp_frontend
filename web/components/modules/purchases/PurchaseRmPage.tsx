@@ -1,8 +1,8 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { FileSpreadsheet, Filter, Plus, Package, History, FileText, Paperclip, MessageSquare } from 'lucide-react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { FileSpreadsheet, Filter, Plus, Package, History, FileText, Paperclip, MessageSquare, X } from 'lucide-react';
 import { Footer } from '@/components/layout/Footer';
 import { FilterTabs } from '@/components/shared/FilterTabs';
 import { KpiCards } from '@/components/shared/KpiCards';
@@ -20,6 +20,9 @@ import {
   type PurchaseRmSaveAction,
 } from '@/components/modules/purchases/PurchaseRmForm';
 import type { PurchaseRmLineItem } from '@/components/modules/purchases/purchase-rm-form/prm-form-types';
+import Link from 'next/link';
+import { historyEntryToProof, PurchaseRmReceiveProofCard } from '@/components/modules/purchases/purchase-rm-form/PurchaseRmReceiveProof';
+import { PurchaseRmReceiveModal, type PurchaseRmReceiveSubmitPayload } from '@/components/modules/purchases/purchase-rm-form/PurchaseRmReceiveModal';
 import {
   cancelPurchaseRmOrder,
   createPurchaseRmOrder,
@@ -33,6 +36,7 @@ import {
   sendPurchaseRmOrder,
   updatePurchaseRmOrder,
 } from '@/lib/services/purchase-rm-service';
+import { listVendorBills } from '@/lib/services/purchases-service';
 import { listSupplierOptions } from '@/lib/services/recipes-service';
 
 const STATUS_TABS = [
@@ -82,10 +86,32 @@ function deliveryBadge(expected: string) {
   );
 }
 
+function getApprovalFocusSubtitle(status: string): string {
+  if (['sent', 'partially_received'].includes(status)) {
+    return 'Use Receive in Actions to record goods.';
+  }
+  if (status === 'pending_approval') {
+    return 'Awaiting approval — approve in Approvals first.';
+  }
+  if (status === 'draft') {
+    return 'Order is back in draft — review or resend.';
+  }
+  return 'Review this RM order below.';
+}
+
+const PROOF_TYPE_LABELS: Record<string, string> = {
+  receipt: 'Receipt (Roshid)',
+  bank: 'Bank Transaction',
+  other: 'Other',
+};
+
 export function PurchaseRmPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const appState = useAppStore((s) => s.appState);
   const saveAppState = useAppStore((s) => s.saveAppState);
+  const focusPoId = searchParams.get('focus');
+  const fromApproval = searchParams.get('from') === 'approval';
   const [view, setView] = useState<'main' | 'form'>('main');
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
@@ -100,6 +126,10 @@ export function PurchaseRmPage() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [formKey, setFormKey] = useState(0);
   const [formValues, setFormValues] = useState<PurchaseRmFormValues>(EMPTY_PURCHASE_RM_FORM);
+  const skipSelectionResetRef = useRef(false);
+  const [focusNotFound, setFocusNotFound] = useState(false);
+  const [activeProofId, setActiveProofId] = useState<string | null>(null);
+  const [receiveModalPoId, setReceiveModalPoId] = useState<string | null>(null);
 
   const suppliers = useMemo(() => listSupplierOptions(appState), [appState]);
   const warehouses = useMemo(
@@ -130,10 +160,16 @@ export function PurchaseRmPage() {
         return items.some((i) => Number((i as Record<string, unknown>).currentStock ?? 999) <= 100);
       });
     }
-    return data.sort((a, b) => String(b.date).localeCompare(String(a.date)));
+    return data.sort((a, b) =>
+      String(b.createdAt ?? b.date ?? '').localeCompare(String(a.createdAt ?? a.date ?? '')),
+    );
   }, [appState, search, statusFilter, supplierFilter, warehouseFilter, paymentFilter, dateFrom, dateTo, lowStockOnly]);
 
   useEffect(() => {
+    if (skipSelectionResetRef.current) {
+      skipSelectionResetRef.current = false;
+      return;
+    }
     if (!rows.length) {
       setSelectedPoId(null);
       return;
@@ -143,7 +179,75 @@ export function PurchaseRmPage() {
     }
   }, [rows, selectedPoId]);
 
+  useEffect(() => {
+    if (!fromApproval || !focusPoId) {
+      setFocusNotFound(false);
+      return;
+    }
+    const order = listPurchaseRmOrders(appState).find((r) => String(r.id) === focusPoId);
+    if (!order) {
+      setFocusNotFound(true);
+      return;
+    }
+    setFocusNotFound(false);
+    setSearch('');
+    setSupplierFilter('');
+    setWarehouseFilter('');
+    setPaymentFilter('');
+    setDateFrom('');
+    setDateTo('');
+    setLowStockOnly(false);
+    setStatusFilter('all');
+    skipSelectionResetRef.current = true;
+    setSelectedPoId(focusPoId);
+    requestAnimationFrame(() => {
+      const receivable = ['sent', 'partially_received'].includes(String(order.status));
+      const receiveCue = document.querySelector('[data-receive-cue="true"]');
+      if (receivable && receiveCue) {
+        receiveCue.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+        return;
+      }
+      document.querySelector(`[data-row-id="${focusPoId}"]`)?.scrollIntoView({ block: 'nearest' });
+    });
+  }, [fromApproval, focusPoId, appState]);
+
+  const dismissApprovalFocus = () => {
+    router.replace('/purchases/purchase-rm');
+  };
+
   const selectedPo = rows.find((r) => String(r.id) === selectedPoId) ?? null;
+  const activeProof = useMemo(() => {
+    if (!activeProofId || !selectedPo) return null;
+    const history = Array.isArray(selectedPo.receiveHistory) ? selectedPo.receiveHistory : [];
+    const entry = history.find((h) => String((h as Record<string, unknown>).id) === activeProofId);
+    return entry ? historyEntryToProof(entry as Record<string, unknown>) : null;
+  }, [activeProofId, selectedPo]);
+  const receiveModalOrder = useMemo(() => {
+    if (!receiveModalPoId) return null;
+    return listPurchaseRmOrders(appState).find((r) => String(r.id) === receiveModalPoId) ?? null;
+  }, [appState, receiveModalPoId]);
+  const linkedBill = useMemo(() => {
+    if (!selectedPo?.billId) return null;
+    return listVendorBills(appState).find((b) => String(b.id) === String(selectedPo.billId)) ?? null;
+  }, [appState, selectedPo]);
+  const proofDocuments = useMemo(() => {
+    const history = Array.isArray(selectedPo?.receiveHistory) ? selectedPo.receiveHistory : [];
+    return history.flatMap((entry) => {
+      const proof = historyEntryToProof(entry as Record<string, unknown>);
+      if (!proof?.attachments?.length) return [];
+      return proof.attachments.map((file) => ({
+        grnId: proof.id,
+        date: proof.date,
+        proofType: proof.proofType ?? file.type,
+        name: file.name,
+        dataUrl: file.dataUrl,
+      }));
+    });
+  }, [selectedPo]);
+  const focusedOrder = useMemo(() => {
+    if (!focusPoId) return null;
+    return listPurchaseRmOrders(appState).find((r) => String(r.id) === focusPoId) ?? null;
+  }, [appState, focusPoId]);
   const selectedSupplier = selectedPo ? getSupplierProfile(appState, String(selectedPo.supplierId)) : null;
   const kpis = useMemo(() => getPurchaseRmMetrics(appState), [appState]);
   const poPreviewId = useMemo(
@@ -233,6 +337,16 @@ export function PurchaseRmPage() {
     },
   ], []);
 
+  const resetListFilters = () => {
+    setSearch('');
+    setSupplierFilter('');
+    setWarehouseFilter('');
+    setPaymentFilter('');
+    setDateFrom('');
+    setDateTo('');
+    setLowStockOnly(false);
+  };
+
   const resetForm = () => {
     setFormValues({ ...EMPTY_PURCHASE_RM_FORM, warehouseId: defaultWarehouseId, expectedDelivery: new Date(Date.now() + 7 * 86400000).toISOString().slice(0, 10) });
     setEditingId(null);
@@ -272,6 +386,9 @@ export function PurchaseRmPage() {
   const handleSave = (payload: PurchaseRmPayload, action: PurchaseRmSaveAction) => {
     const savedId = persistPo(payload, action);
     if (!savedId) return;
+    resetListFilters();
+    setStatusFilter(action === 'complete' ? 'pending_approval' : 'draft');
+    skipSelectionResetRef.current = true;
     setView('main');
     setSelectedPoId(savedId);
     resetForm();
@@ -291,6 +408,25 @@ export function PurchaseRmPage() {
   const handleSendForApproval = (id: string) => {
     if (!runAction(() => sendPurchaseRmOrder(appState, id), 'Sent for approval.')) return;
     router.push('/workflow-approvals');
+  };
+
+  const handleReceiveSubmit = (poId: string, payload: PurchaseRmReceiveSubmitPayload) => {
+    const result = receivePurchaseRmOrder(appState, poId, {
+      proofType: payload.proofType,
+      proofNote: payload.proofNote,
+      attachments: payload.attachments,
+    });
+    if (!result.ok) {
+      window.alert(result.error ?? 'Receive failed');
+      return;
+    }
+    saveAppState();
+    setReceiveModalPoId(null);
+    if ('proofId' in result && result.proofId) {
+      setSelectedPoId(poId);
+      setActiveProofId(result.proofId);
+      setBottomTab('history');
+    }
   };
 
   if (view === 'form') {
@@ -353,7 +489,7 @@ export function PurchaseRmPage() {
             <option value="partial">Partial</option>
             <option value="paid">Paid</option>
           </select>
-          <button type="button" onClick={() => { setSearch(''); setSupplierFilter(''); setWarehouseFilter(''); setPaymentFilter(''); setDateFrom(''); setDateTo(''); setLowStockOnly(false); }} className="inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl border border-slate-200 bg-white text-xs font-semibold text-slate-600 hover:bg-slate-50 cursor-pointer">
+          <button type="button" onClick={() => { resetListFilters(); setLowStockOnly(false); }} className="inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl border border-slate-200 bg-white text-xs font-semibold text-slate-600 hover:bg-slate-50 cursor-pointer">
             <Filter className="w-3.5 h-3.5" /> Reset
           </button>
         </div>
@@ -364,6 +500,40 @@ export function PurchaseRmPage() {
         <FilterTabs tabs={STATUS_TABS} active={statusFilter} onChange={setStatusFilter} />
       </div>
 
+      {fromApproval && focusPoId && !focusNotFound && (
+        <div className="flex items-center justify-between gap-3 rounded-xl border border-blue-200/80 bg-blue-50/90 px-4 py-2.5">
+          <div className="flex items-start gap-2.5 min-w-0">
+            <Package className="w-4 h-4 text-blue-600 shrink-0 mt-0.5" />
+            <div className="min-w-0">
+              <p className="text-[11px] font-extrabold text-blue-800">Opened from Approvals</p>
+              <p className="text-[11px] font-semibold text-blue-700/90 mt-0.5 leading-relaxed">
+                {focusPoId} — {getApprovalFocusSubtitle(String(focusedOrder?.status ?? ''))}
+              </p>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={dismissApprovalFocus}
+            className="inline-flex items-center gap-1 rounded-lg p-1 px-2 text-blue-600 hover:bg-blue-100 cursor-pointer shrink-0"
+          >
+            <X className="w-3.5 h-3.5" /> Dismiss
+          </button>
+        </div>
+      )}
+
+      {fromApproval && focusPoId && focusNotFound && (
+        <div className="flex items-center justify-between gap-3 rounded-xl border border-rose-200 bg-rose-50 px-4 py-2.5 text-xs font-semibold text-rose-900">
+          <span>Order {focusPoId} not found.</span>
+          <button
+            type="button"
+            onClick={dismissApprovalFocus}
+            className="inline-flex items-center gap-1 rounded-lg px-2 py-1 text-rose-800 hover:bg-rose-100 cursor-pointer"
+          >
+            <X className="w-3.5 h-3.5" /> Dismiss
+          </button>
+        </div>
+      )}
+
       <div className="grid grid-cols-1 xl:grid-cols-[1fr_300px] gap-4 items-start">
         <div className="bg-white rounded-xl border border-slate-200/80 premium-shadow overflow-hidden">
           <AppTable
@@ -371,15 +541,55 @@ export function PurchaseRmPage() {
             rows={rows as Record<string, unknown>[]}
             emptyMessage="No RM orders found."
             onRowClick={(row) => setSelectedPoId(String(row.id))}
-            rowClassName={(row) => String(row.id) === selectedPoId ? 'bg-blue-50/70' : ''}
-            renderActions={(row) => (
+            rowClassName={(row) => {
+              const classes: string[] = [];
+              const isFocusedFromApproval = fromApproval && focusPoId && String(row.id) === focusPoId;
+              const isSelected = String(row.id) === selectedPoId;
+              if (isSelected || isFocusedFromApproval) {
+                classes.push(isFocusedFromApproval ? 'bg-blue-50/90' : 'bg-blue-50/70');
+              }
+              if (isFocusedFromApproval) {
+                classes.push('ring-2 ring-blue-500/25 ring-inset');
+              }
+              return classes.join(' ');
+            }}
+            renderActions={(row) => {
+              const showReceiveCue = fromApproval
+                && focusPoId
+                && String(row.id) === focusPoId
+                && ['sent', 'partially_received'].includes(String(row.status));
+              const receiveButton = (
+                <button
+                  type="button"
+                  title="Receive"
+                  {...(showReceiveCue ? { 'data-receive-cue': 'true' } : {})}
+                  onClick={() => setReceiveModalPoId(String(row.id))}
+                  className={`p-1.5 rounded-lg hover:bg-violet-50 text-violet-600 cursor-pointer text-[10px] font-bold${
+                    showReceiveCue ? ' ring-2 ring-violet-400/80 ring-offset-1 shadow-sm shadow-violet-500/20' : ''
+                  }`}
+                >
+                  Receive
+                </button>
+              );
+
+              return (
               <>
                 {String(row.status) === 'draft' && <TableIconAction variant="edit" onClick={() => openEdit(row)} />}
                 {String(row.status) === 'draft' && (
                   <button type="button" title="Send" onClick={() => handleSendForApproval(String(row.id))} className="p-1.5 rounded-lg hover:bg-blue-50 text-blue-600 cursor-pointer text-[10px] font-bold">Send</button>
                 )}
                 {['sent', 'partially_received'].includes(String(row.status)) && (
-                  <button type="button" title="Receive" onClick={() => runAction(() => receivePurchaseRmOrder(appState, String(row.id)), 'Goods received.')} className="p-1.5 rounded-lg hover:bg-violet-50 text-violet-600 cursor-pointer text-[10px] font-bold">Receive</button>
+                  showReceiveCue ? (
+                    <span className="relative inline-flex items-center">
+                      <span
+                        aria-hidden
+                        className="absolute -top-5 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-md bg-violet-600 text-white text-[9px] font-bold px-2 py-0.5 shadow-sm pointer-events-none"
+                      >
+                        Receive here
+                      </span>
+                      {receiveButton}
+                    </span>
+                  ) : receiveButton
                 )}
                 {!['completed', 'cancelled'].includes(String(row.status)) && (
                   <button type="button" title="Cancel" onClick={() => runAction(() => cancelPurchaseRmOrder(appState, String(row.id)))} className="p-1.5 rounded-lg hover:bg-rose-50 text-rose-500 cursor-pointer text-[10px] font-bold">Cancel</button>
@@ -388,7 +598,8 @@ export function PurchaseRmPage() {
                   <TableIconAction variant="delete" onClick={() => { if (window.confirm('Delete this RM order?')) runAction(() => deletePurchaseRmOrder(appState, String(row.id))); }} />
                 )}
               </>
-            )}
+              );
+            }}
           />
         </div>
 
@@ -429,6 +640,13 @@ export function PurchaseRmPage() {
           </div>
         )}
       </div>
+
+      {selectedPo && activeProof && (
+        <PurchaseRmReceiveProofCard
+          proof={activeProof}
+          onDismiss={() => setActiveProofId(null)}
+        />
+      )}
 
       {selectedPo && (
         <div className="bg-white rounded-xl border border-slate-200/80 premium-shadow">
@@ -475,14 +693,43 @@ export function PurchaseRmPage() {
                   <p className="flex justify-between"><span>Total Qty</span><strong>{Number(selectedTotals?.totalQty ?? 0).toLocaleString()}</strong></p>
                   <p className="flex justify-between"><span>Sub Total</span><strong>{formatPoMoney(Number(selectedTotals?.subTotal ?? 0))}</strong></p>
                   <p className="flex justify-between"><span>VAT</span><strong>{formatPoMoney(Number(selectedTotals?.vat ?? 0))}</strong></p>
+                  {Number(selectedTotals?.ait ?? 0) > 0 && (
+                    <p className="flex justify-between"><span>AIT ({Number(selectedTotals?.aitPct ?? 1)}%)</span><strong>{formatPoMoney(Number(selectedTotals?.ait ?? 0))}</strong></p>
+                  )}
+                  {Number(selectedTotals?.otherCharges ?? 0) > 0 && (
+                    <p className="flex justify-between"><span>Other Charges</span><strong>{formatPoMoney(Number(selectedTotals?.otherCharges ?? 0))}</strong></p>
+                  )}
                   <p className="flex justify-between font-extrabold text-blue-700 pt-2 border-t border-slate-200"><span>Total</span><span>{formatPoMoney(Number(selectedTotals?.grandTotal ?? selectedPo.grandTotal ?? 0))}</span></p>
                 </div>
               </div>
             )}
             {bottomTab === 'history' && (
               <div className="space-y-2 text-xs">
-                {receiveHistory.length === 0 ? <p className="text-slate-400">No receive history yet.</p> : receiveHistory.map((h, i) => {
+                {receiveHistory.length === 0 ? (
+                  <p className="text-slate-400">No receive history yet.</p>
+                ) : receiveHistory.map((h, i) => {
                   const entry = h as Record<string, unknown>;
+                  const proofId = entry.id ? String(entry.id) : null;
+                  const isActive = proofId && proofId === activeProofId;
+                  if (proofId) {
+                    return (
+                      <button
+                        key={proofId}
+                        type="button"
+                        onClick={() => setActiveProofId(proofId)}
+                        className={`w-full flex items-center justify-between rounded-lg border px-3 py-2 cursor-pointer transition-colors text-left ${
+                          isActive
+                            ? 'border-blue-200 bg-blue-50/80'
+                            : 'border-slate-100 hover:bg-slate-50'
+                        }`}
+                      >
+                        <span className="font-bold text-blue-700">{proofId}</span>
+                        <span>{String(entry.date)}</span>
+                        <span className="font-bold">{Number(entry.qty).toLocaleString()} units</span>
+                        <span className="text-slate-500">{formatPoMoney(Number(entry.grandTotal ?? 0))}</span>
+                      </button>
+                    );
+                  }
                   return (
                     <div key={i} className="flex justify-between rounded-lg border border-slate-100 px-3 py-2">
                       <span>{String(entry.date)}</span>
@@ -494,10 +741,50 @@ export function PurchaseRmPage() {
               </div>
             )}
             {bottomTab === 'bills' && (
-              <p className="text-xs text-slate-500">Vendor bill {String(selectedPo.id).replace('PO', 'BILL')} — pending (placeholder).</p>
+              <div className="space-y-3 text-xs">
+                {linkedBill ? (
+                  <>
+                    <div className="rounded-xl border border-slate-200 bg-slate-50/80 p-3 grid grid-cols-1 sm:grid-cols-2 gap-2">
+                      <p><span className="font-bold text-slate-500">Bill #:</span> {String(linkedBill.id)}</p>
+                      <p><span className="font-bold text-slate-500">Supplier:</span> {String(linkedBill.supplier ?? '—')}</p>
+                      <p><span className="font-bold text-slate-500">Amount:</span> {formatPoMoney(Number(linkedBill.amount ?? 0))}</p>
+                      <p><span className="font-bold text-slate-500">Due Date:</span> {String(linkedBill.dueDate ?? '—')}</p>
+                      <p><span className="font-bold text-slate-500">Status:</span> {String(linkedBill.status ?? 'draft')}</p>
+                      <p><span className="font-bold text-slate-500">Reference:</span> {String(linkedBill.ref ?? selectedPo.id)}</p>
+                    </div>
+                    <Link href="/purchases/bills" className="inline-flex text-blue-700 font-bold hover:underline cursor-pointer">
+                      Open in Vendor Bills
+                    </Link>
+                  </>
+                ) : ['sent', 'partially_received'].includes(String(selectedPo.status)) ? (
+                  <p className="text-slate-500">Bill will be created when this order is fully received.</p>
+                ) : (
+                  <p className="text-slate-500">No vendor bill linked yet.</p>
+                )}
+              </div>
             )}
             {bottomTab === 'documents' && (
-              <p className="text-xs text-slate-500">RM order document pack for {String(selectedPo.id)} — no files attached yet.</p>
+              <div className="space-y-2 text-xs">
+                {proofDocuments.length === 0 ? (
+                  <p className="text-slate-400">No proof documents yet — upload when receiving goods.</p>
+                ) : proofDocuments.map((doc, index) => (
+                  <div key={`${doc.grnId}-${doc.name}-${index}`} className="flex items-center justify-between gap-2 rounded-lg border border-slate-100 px-3 py-2">
+                    <div>
+                      <p className="font-bold text-blue-700">{doc.grnId}</p>
+                      <p className="text-slate-600">{doc.name}</p>
+                      <p className="text-[10px] text-slate-500">{doc.date} · {PROOF_TYPE_LABELS[doc.proofType] ?? doc.proofType}</p>
+                    </div>
+                    <a
+                      href={doc.dataUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="px-2 py-1 rounded-lg bg-blue-50 text-blue-700 font-bold hover:bg-blue-100 cursor-pointer shrink-0"
+                    >
+                      View
+                    </a>
+                  </div>
+                ))}
+              </div>
             )}
             {bottomTab === 'remarks' && (
               <p className="text-xs text-slate-700">{String(selectedPo.notes || 'No remarks.')}</p>
@@ -507,6 +794,15 @@ export function PurchaseRmPage() {
       )}
 
       <Footer />
+
+      <PurchaseRmReceiveModal
+        open={Boolean(receiveModalPoId && receiveModalOrder)}
+        order={receiveModalOrder}
+        onClose={() => setReceiveModalPoId(null)}
+        onSubmit={(payload) => {
+          if (receiveModalPoId) handleReceiveSubmit(receiveModalPoId, payload);
+        }}
+      />
     </div>
   );
 }

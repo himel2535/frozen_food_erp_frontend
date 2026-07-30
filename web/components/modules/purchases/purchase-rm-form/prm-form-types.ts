@@ -3,9 +3,12 @@ import {
   computePoTotals,
   type PurchaseRmLineItem,
   type PurchaseRmTotals,
+  type PurchaseRmReceiveProof,
+  type PurchaseRmReceiveProofItem,
+  type PurchaseRmReceiveAttachment,
 } from '@/lib/services/purchase-rm-service';
 
-export type { PurchaseRmLineItem, PurchaseRmTotals };
+export type { PurchaseRmLineItem, PurchaseRmTotals, PurchaseRmReceiveProof, PurchaseRmReceiveProofItem, PurchaseRmReceiveAttachment };
 
 export type PurchaseRmFormValues = {
   date: string;

@@ -1,5 +1,10 @@
+import { Suspense } from 'react';
 import { PurchaseRmPage } from '@/components/modules/purchases/PurchaseRmPage';
 
 export default function Page() {
-  return <PurchaseRmPage />;
+  return (
+    <Suspense fallback={null}>
+      <PurchaseRmPage />
+    </Suspense>
+  );
 }
