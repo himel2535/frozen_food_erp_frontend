@@ -1,8 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import { Search, Trash2 } from 'lucide-react';
-import { CF_INPUT_CLS } from '@/components/modules/crm/customer-form/customer-form-styles';
+import { ChevronDown, Plus, Search, Trash2 } from 'lucide-react';
+import { CF_BTN_PRIMARY, CF_INPUT_CLS } from '@/components/modules/crm/customer-form/customer-form-styles';
 import {
   createEmptyLineItem,
   recalcLineItem,
@@ -52,20 +52,24 @@ export function PurchaseRmProductsTable({
               className={`${CF_INPUT_CLS} pl-9 w-48`}
             />
           </div>
-          <select
-            className={`${CF_INPUT_CLS} w-44 cursor-pointer`}
-            defaultValue=""
-            onChange={(e) => {
-              const mat = productOptions.find((p) => p.id === e.target.value);
-              if (mat) addProduct(mat);
-              e.target.value = '';
-            }}
-          >
-            <option value="">+ Add Product</option>
-            {filtered.slice(0, 20).map((p) => (
-              <option key={p.id} value={p.id}>{p.name}</option>
-            ))}
-          </select>
+          <div className="relative inline-flex items-center">
+            <Plus className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-white pointer-events-none z-10" />
+            <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white pointer-events-none" />
+            <select
+              className={`${CF_BTN_PRIMARY} appearance-none pl-9 pr-9 min-w-[148px] cursor-pointer`}
+              defaultValue=""
+              onChange={(e) => {
+                const mat = productOptions.find((p) => p.id === e.target.value);
+                if (mat) addProduct(mat);
+                e.target.value = '';
+              }}
+            >
+              <option value="" className="bg-white text-slate-800">Add Product</option>
+              {filtered.slice(0, 20).map((p) => (
+                <option key={p.id} value={p.id} className="bg-white text-slate-800">{p.name}</option>
+              ))}
+            </select>
+          </div>
         </div>
       </div>
 
