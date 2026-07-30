@@ -30,6 +30,7 @@ export interface AppState {
   manufacturing: Array<Record<string, unknown>>;
   productionOrders?: Array<Record<string, unknown>>;
   purchasesSuppliers?: Array<Record<string, unknown>>;
+  purchaseRmOrders?: Array<Record<string, unknown>>;
   salesOrders?: Array<Record<string, unknown>>;
   currentUser?: Record<string, unknown>;
   crmUi?: Record<string, unknown>;

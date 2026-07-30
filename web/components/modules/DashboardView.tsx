@@ -93,7 +93,7 @@ const QUICK_ACTIONS: { href: string; labelKey: string; icon: string; className: 
     className: 'bg-rose-50 text-rose-900 border border-rose-200/80 hover:bg-rose-100/80 shadow-xs',
   },
   {
-    href: '/purchases/orders',
+    href: '/purchases/purchase-rm',
     labelKey: 'dashboard.purchase_rm',
     icon: 'fluent-color:document-add-24',
     className: 'bg-violet-50 text-violet-900 border border-violet-200/80 hover:bg-violet-100/80 shadow-xs',

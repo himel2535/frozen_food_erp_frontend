@@ -1,0 +1,508 @@
+'use client';
+
+import { useEffect, useMemo, useState } from 'react';
+import { FileSpreadsheet, Filter, Plus, Package, History, FileText, Paperclip, MessageSquare } from 'lucide-react';
+import { Footer } from '@/components/layout/Footer';
+import { FilterTabs } from '@/components/shared/FilterTabs';
+import { KpiCards } from '@/components/shared/KpiCards';
+import { StatusBadge } from '@/components/shared/StatusBadge';
+import { TableIconAction } from '@/components/shared/TableIconAction';
+import { AppTable, type AppTableColumn } from '@/components/shared/AppTable';
+import { MODULE_LIST_SHELL } from '@/lib/ui/module-layout';
+import { CF_BTN_OUTLINE, CF_BTN_PRIMARY } from '@/components/modules/crm/customer-form/customer-form-styles';
+import { useAppStore } from '@/lib/state/app-store';
+import {
+  PurchaseRmForm,
+  EMPTY_PURCHASE_RM_FORM,
+  type PurchaseRmFormValues,
+  type PurchaseRmPayload,
+  type PurchaseRmSaveAction,
+} from '@/components/modules/purchases/PurchaseRmForm';
+import type { PurchaseRmLineItem } from '@/components/modules/purchases/purchase-rm-form/prm-form-types';
+import {
+  approvePurchaseRmOrder,
+  cancelPurchaseRmOrder,
+  createPurchaseRmOrder,
+  deletePurchaseRmOrder,
+  formatPoMoney,
+  getPurchaseRmMetrics,
+  getSupplierProfile,
+  listPurchaseRmOrders,
+  previewPoNumber,
+  receivePurchaseRmOrder,
+  sendPurchaseRmOrder,
+  updatePurchaseRmOrder,
+} from '@/lib/services/purchase-rm-service';
+import { listSupplierOptions } from '@/lib/services/recipes-service';
+
+const STATUS_TABS = [
+  { id: 'all', label: 'All Orders' },
+  { id: 'draft', label: 'Draft' },
+  { id: 'pending_approval', label: 'Pending Approval' },
+  { id: 'sent', label: 'Sent' },
+  { id: 'partially_received', label: 'Partially Received' },
+  { id: 'completed', label: 'Completed' },
+  { id: 'cancelled', label: 'Cancelled' },
+];
+
+const BOTTOM_TABS = [
+  { id: 'items', label: 'Items', icon: Package },
+  { id: 'history', label: 'Receive History', icon: History },
+  { id: 'bills', label: 'Bills', icon: FileText },
+  { id: 'documents', label: 'Documents', icon: Paperclip },
+  { id: 'remarks', label: 'Remarks', icon: MessageSquare },
+];
+
+function recordToFormValues(record: Record<string, unknown>): PurchaseRmFormValues {
+  const items = (Array.isArray(record.items) ? record.items : []) as PurchaseRmLineItem[];
+  const totals = record.totals as Record<string, unknown> | undefined;
+  return {
+    date: String(record.date ?? new Date().toISOString().slice(0, 10)),
+    expectedDelivery: String(record.expectedDelivery ?? ''),
+    supplierId: String(record.supplierId ?? ''),
+    supplierName: String(record.supplierName ?? ''),
+    warehouseId: String(record.warehouseId ?? ''),
+    warehouseName: String(record.warehouseName ?? ''),
+    notes: String(record.notes ?? ''),
+    vatPct: Number(totals?.vatPct ?? record.vatPct ?? 15),
+    aitPct: Number(totals?.aitPct ?? record.aitPct ?? 1),
+    otherCharges: Number(totals?.otherCharges ?? record.otherCharges ?? 0),
+    status: String(record.status ?? 'draft'),
+    items,
+  };
+}
+
+function deliveryBadge(expected: string) {
+  if (!expected) return null;
+  const late = new Date(`${expected}T00:00:00`) < new Date();
+  return (
+    <span className={`text-[10px] font-bold ${late ? 'text-rose-600' : 'text-emerald-600'}`}>
+      {late ? 'Late' : 'On Time'}
+    </span>
+  );
+}
+
+export function PurchaseRmPage() {
+  const appState = useAppStore((s) => s.appState);
+  const saveAppState = useAppStore((s) => s.saveAppState);
+  const [view, setView] = useState<'main' | 'form'>('main');
+  const [search, setSearch] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [supplierFilter, setSupplierFilter] = useState('');
+  const [warehouseFilter, setWarehouseFilter] = useState('');
+  const [paymentFilter, setPaymentFilter] = useState('');
+  const [dateFrom, setDateFrom] = useState('');
+  const [dateTo, setDateTo] = useState('');
+  const [lowStockOnly, setLowStockOnly] = useState(false);
+  const [selectedPoId, setSelectedPoId] = useState<string | null>(null);
+  const [bottomTab, setBottomTab] = useState('items');
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [formKey, setFormKey] = useState(0);
+  const [formValues, setFormValues] = useState<PurchaseRmFormValues>(EMPTY_PURCHASE_RM_FORM);
+
+  const suppliers = useMemo(() => listSupplierOptions(appState), [appState]);
+  const warehouses = useMemo(
+    () => (appState.inventoryWarehouses ?? []).map((w) => ({ id: String(w.id), name: String(w.name) })),
+    [appState.inventoryWarehouses],
+  );
+  const defaultWarehouseId = warehouses.find((w) => w.name.toLowerCase().includes('main'))?.id ?? warehouses[0]?.id ?? '';
+
+  const rows = useMemo(() => {
+    let data = listPurchaseRmOrders(appState);
+    if (search) {
+      const q = search.toLowerCase();
+      data = data.filter((row) => {
+        const items = Array.isArray(row.items) ? row.items : [];
+        const itemNames = items.map((i) => String((i as Record<string, unknown>).productName ?? '')).join(' ');
+        return `${row.id} ${row.supplierName} ${itemNames}`.toLowerCase().includes(q);
+      });
+    }
+    if (statusFilter !== 'all') data = data.filter((r) => String(r.status) === statusFilter);
+    if (supplierFilter) data = data.filter((r) => String(r.supplierId) === supplierFilter);
+    if (warehouseFilter) data = data.filter((r) => String(r.warehouseId) === warehouseFilter);
+    if (paymentFilter) data = data.filter((r) => String(r.paymentStatus) === paymentFilter);
+    if (dateFrom) data = data.filter((r) => String(r.date) >= dateFrom);
+    if (dateTo) data = data.filter((r) => String(r.date) <= dateTo);
+    if (lowStockOnly) {
+      data = data.filter((row) => {
+        const items = Array.isArray(row.items) ? row.items : [];
+        return items.some((i) => Number((i as Record<string, unknown>).currentStock ?? 999) <= 100);
+      });
+    }
+    return data.sort((a, b) => String(b.date).localeCompare(String(a.date)));
+  }, [appState, search, statusFilter, supplierFilter, warehouseFilter, paymentFilter, dateFrom, dateTo, lowStockOnly]);
+
+  useEffect(() => {
+    if (!rows.length) {
+      setSelectedPoId(null);
+      return;
+    }
+    if (!selectedPoId || !rows.some((r) => String(r.id) === selectedPoId)) {
+      setSelectedPoId(String(rows[0].id));
+    }
+  }, [rows, selectedPoId]);
+
+  const selectedPo = rows.find((r) => String(r.id) === selectedPoId) ?? null;
+  const selectedSupplier = selectedPo ? getSupplierProfile(appState, String(selectedPo.supplierId)) : null;
+  const kpis = useMemo(() => getPurchaseRmMetrics(appState), [appState]);
+  const poPreviewId = useMemo(
+    () => (editingId ? editingId : previewPoNumber(appState, formValues.date)),
+    [appState, editingId, formValues.date],
+  );
+
+  const rmOrderColumns = useMemo<AppTableColumn<Record<string, unknown>>[]>(() => [
+    {
+      key: 'id',
+      label: 'RM Order ID',
+      render: (row) => (
+        <>
+          <div className="font-bold text-slate-900">{String(row.id)}</div>
+          <div className="text-slate-500 text-[11px]">{String(row.date)}</div>
+        </>
+      ),
+    },
+    {
+      key: 'supplierName',
+      label: 'Supplier',
+      render: (row) => (
+        <>
+          <div className="font-semibold text-slate-800">{String(row.supplierName ?? '—')}</div>
+          <div className="text-slate-500 text-[11px]">Last order: {String(row.id).slice(-5)}</div>
+        </>
+      ),
+    },
+    {
+      key: 'items',
+      label: 'Items',
+      render: (row) => {
+        const items = Array.isArray(row.items) ? row.items : [];
+        const firstItem = items[0] as Record<string, unknown> | undefined;
+        return (
+          <>
+            <div className="font-medium text-slate-700">{String(firstItem?.productName ?? '—')}</div>
+            {items.length > 1 && (
+              <div className="text-blue-600 text-[11px] font-semibold">+{items.length - 1} more</div>
+            )}
+          </>
+        );
+      },
+    },
+    {
+      key: 'warehouseName',
+      label: 'Warehouse',
+      render: (row) => String(row.warehouseName ?? '—'),
+    },
+    {
+      key: 'expectedDelivery',
+      label: 'Expected Delivery',
+      render: (row) => (
+        <>
+          <div>{String(row.expectedDelivery ?? '—')}</div>
+          {deliveryBadge(String(row.expectedDelivery ?? ''))}
+        </>
+      ),
+    },
+    {
+      key: 'progress',
+      label: 'Progress',
+      render: (row) => (
+        <div className="min-w-[100px]">
+          <div className="h-2 rounded-full bg-slate-100 overflow-hidden">
+            <div className="h-full bg-blue-600 rounded-full" style={{ width: `${Number(row.progress ?? 0)}%` }} />
+          </div>
+          <p className="text-[10px] text-slate-500 mt-1">{Number(row.progress ?? 0)}%</p>
+        </div>
+      ),
+    },
+    {
+      key: 'status',
+      label: 'Status',
+      render: (row) => <StatusBadge status={String(row.status).replace(/_/g, ' ')} />,
+    },
+    {
+      key: 'grandTotal',
+      label: 'Total',
+      align: 'right',
+      render: (row) => (
+        <>
+          <div className="font-bold text-slate-900">{formatPoMoney(Number(row.grandTotal ?? row.total ?? 0))}</div>
+          <div className="text-slate-500 text-[11px]">Paid {Number(row.paidPercent ?? 0)}%</div>
+        </>
+      ),
+    },
+  ], []);
+
+  const resetForm = () => {
+    setFormValues({ ...EMPTY_PURCHASE_RM_FORM, warehouseId: defaultWarehouseId, expectedDelivery: new Date(Date.now() + 7 * 86400000).toISOString().slice(0, 10) });
+    setEditingId(null);
+    setFormKey((k) => k + 1);
+  };
+
+  const openCreate = () => {
+    resetForm();
+    setView('form');
+  };
+
+  const openEdit = (row: Record<string, unknown>) => {
+    setEditingId(String(row.id));
+    setFormValues(recordToFormValues(row));
+    setFormKey((k) => k + 1);
+    setView('form');
+  };
+
+  const persistPo = (payload: PurchaseRmPayload, action: PurchaseRmSaveAction) => {
+    const record = {
+      ...payload,
+      id: editingId ?? undefined,
+      grandTotal: payload.totals.grandTotal,
+      total: payload.totals.grandTotal,
+    };
+    const result = editingId
+      ? updatePurchaseRmOrder(appState, editingId, record)
+      : createPurchaseRmOrder(appState, record);
+    if (!result.ok) {
+      window.alert('error' in result ? result.error : 'Save failed');
+      return null;
+    }
+    saveAppState();
+    return editingId ?? ('id' in result ? result.id : previewPoNumber(appState, payload.date));
+  };
+
+  const handleSave = (payload: PurchaseRmPayload, action: PurchaseRmSaveAction) => {
+    const savedId = persistPo(payload, action);
+    if (!savedId) return;
+    setView('main');
+    setSelectedPoId(savedId);
+    resetForm();
+  };
+
+  const runAction = (fn: () => { ok: boolean; error?: string }, successMsg?: string) => {
+    const result = fn();
+    if (!result.ok) {
+      window.alert(result.error ?? 'Action failed');
+      return;
+    }
+    saveAppState();
+    if (successMsg) window.alert(successMsg);
+  };
+
+  if (view === 'form') {
+    return (
+      <PurchaseRmForm
+        key={formKey}
+        mode={editingId ? 'edit' : 'create'}
+        initialValues={formValues}
+        poPreviewId={poPreviewId}
+        appState={appState}
+        suppliers={suppliers}
+        warehouses={warehouses}
+        onCancel={() => { setView('main'); resetForm(); }}
+        onSave={handleSave}
+      />
+    );
+  }
+
+  const selectedItems = (Array.isArray(selectedPo?.items) ? selectedPo.items : []) as PurchaseRmLineItem[];
+  const selectedTotals = selectedPo?.totals as Record<string, unknown> | undefined;
+  const receiveHistory = Array.isArray(selectedPo?.receiveHistory) ? selectedPo.receiveHistory : [];
+  const timeline = Array.isArray(selectedPo?.timeline) ? selectedPo.timeline : [];
+
+  return (
+    <div className={MODULE_LIST_SHELL}>
+      <div className="flex flex-col xl:flex-row xl:items-center xl:justify-between gap-4">
+        <div>
+          <h2 className="text-xl font-extrabold text-slate-900 tracking-tight">Purchase RM</h2>
+          <p className="text-xs text-slate-500 mt-1 font-medium">Raw material RM orders — create, track, and receive.</p>
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <button type="button" onClick={() => window.alert('Import Excel — coming soon.')} className={CF_BTN_OUTLINE}>
+            <FileSpreadsheet className="w-4 h-4" /> Import Excel
+          </button>
+          <button type="button" onClick={() => setLowStockOnly((v) => !v)} className={`${CF_BTN_OUTLINE} ${lowStockOnly ? 'ring-2 ring-blue-300' : ''}`}>
+            Low Stock
+          </button>
+          <button type="button" onClick={openCreate} className={CF_BTN_PRIMARY}>
+            <Plus className="w-4 h-4" /> Create RM Order
+          </button>
+        </div>
+      </div>
+
+      <KpiCards items={kpis} />
+
+      <div className="bg-white p-4 rounded-xl border border-slate-200/80 premium-shadow space-y-3">
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-6 gap-2">
+          <input type="text" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="RM order ID, supplier, product..." className="xl:col-span-2 w-full px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-blue-500/10" />
+          <select value={supplierFilter} onChange={(e) => setSupplierFilter(e.target.value)} className="px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 text-xs font-medium cursor-pointer">
+            <option value="">All Suppliers</option>
+            {suppliers.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
+          </select>
+          <select value={warehouseFilter} onChange={(e) => setWarehouseFilter(e.target.value)} className="px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 text-xs font-medium cursor-pointer">
+            <option value="">All Warehouses</option>
+            {warehouses.map((w) => <option key={w.id} value={w.id}>{w.name}</option>)}
+          </select>
+          <select value={paymentFilter} onChange={(e) => setPaymentFilter(e.target.value)} className="px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 text-xs font-medium cursor-pointer">
+            <option value="">Payment Status</option>
+            <option value="unpaid">Unpaid</option>
+            <option value="partial">Partial</option>
+            <option value="paid">Paid</option>
+          </select>
+          <button type="button" onClick={() => { setSearch(''); setSupplierFilter(''); setWarehouseFilter(''); setPaymentFilter(''); setDateFrom(''); setDateTo(''); setLowStockOnly(false); }} className="inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl border border-slate-200 bg-white text-xs font-semibold text-slate-600 hover:bg-slate-50 cursor-pointer">
+            <Filter className="w-3.5 h-3.5" /> Reset
+          </button>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} className="px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 text-xs font-medium" />
+          <input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} className="px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 text-xs font-medium" />
+        </div>
+        <FilterTabs tabs={STATUS_TABS} active={statusFilter} onChange={setStatusFilter} />
+      </div>
+
+      <div className="grid grid-cols-1 xl:grid-cols-[1fr_300px] gap-4 items-start">
+        <div className="bg-white rounded-xl border border-slate-200/80 premium-shadow overflow-hidden">
+          <AppTable
+            columns={rmOrderColumns}
+            rows={rows as Record<string, unknown>[]}
+            emptyMessage="No RM orders found."
+            onRowClick={(row) => setSelectedPoId(String(row.id))}
+            rowClassName={(row) => String(row.id) === selectedPoId ? 'bg-blue-50/70' : ''}
+            renderActions={(row) => (
+              <>
+                {String(row.status) === 'draft' && <TableIconAction variant="edit" onClick={() => openEdit(row)} />}
+                {['draft', 'pending_approval'].includes(String(row.status)) && (
+                  <button type="button" title="Send" onClick={() => runAction(() => sendPurchaseRmOrder(appState, String(row.id)))} className="p-1.5 rounded-lg hover:bg-blue-50 text-blue-600 cursor-pointer text-[10px] font-bold">Send</button>
+                )}
+                {String(row.status) === 'pending_approval' && (
+                  <button type="button" title="Approve" onClick={() => runAction(() => approvePurchaseRmOrder(appState, String(row.id)))} className="p-1.5 rounded-lg hover:bg-emerald-50 text-emerald-600 cursor-pointer text-[10px] font-bold">Approve</button>
+                )}
+                {['sent', 'partially_received'].includes(String(row.status)) && (
+                  <button type="button" title="Receive" onClick={() => runAction(() => receivePurchaseRmOrder(appState, String(row.id)), 'Goods received.')} className="p-1.5 rounded-lg hover:bg-violet-50 text-violet-600 cursor-pointer text-[10px] font-bold">Receive</button>
+                )}
+                {!['completed', 'cancelled'].includes(String(row.status)) && (
+                  <button type="button" title="Cancel" onClick={() => runAction(() => cancelPurchaseRmOrder(appState, String(row.id)))} className="p-1.5 rounded-lg hover:bg-rose-50 text-rose-500 cursor-pointer text-[10px] font-bold">Cancel</button>
+                )}
+                {['draft', 'cancelled'].includes(String(row.status)) && (
+                  <TableIconAction variant="delete" onClick={() => { if (window.confirm('Delete this RM order?')) runAction(() => deletePurchaseRmOrder(appState, String(row.id))); }} />
+                )}
+              </>
+            )}
+          />
+        </div>
+
+        {selectedPo && (
+          <div className="bg-white rounded-xl border border-slate-200/80 premium-shadow p-4 space-y-4 xl:sticky xl:top-4">
+            <div>
+              <div className="flex items-center justify-between gap-2">
+                <h3 className="font-extrabold text-slate-900">{String(selectedPo.id)}</h3>
+                <StatusBadge status={String(selectedPo.status).replace(/_/g, ' ')} />
+              </div>
+              <p className="text-[10px] text-slate-500 mt-1">Created {String(selectedPo.createdAt ?? selectedPo.date).slice(0, 10)} by {String(selectedPo.createdBy ?? 'Sarah Connor')}</p>
+            </div>
+            {selectedSupplier && (
+              <div className="rounded-xl border border-slate-100 bg-slate-50/80 p-3 space-y-1 text-xs">
+                <p className="font-bold text-slate-800">{selectedSupplier.name}</p>
+                <p className="text-slate-600">{selectedSupplier.phone}</p>
+                <p className="text-slate-600">{selectedSupplier.email}</p>
+                <p className="text-slate-500">{selectedSupplier.address}</p>
+                <p className="text-rose-600 font-semibold">Outstanding: {formatPoMoney(selectedSupplier.outstanding)}</p>
+                <p className="text-slate-500">Credit: {formatPoMoney(selectedSupplier.creditLimit)}</p>
+              </div>
+            )}
+            <div className="space-y-2">
+              <p className="text-[10px] font-bold uppercase text-slate-500">Timeline</p>
+              {timeline.map((entry, i) => {
+                const e = entry as Record<string, unknown>;
+                return (
+                  <div key={i} className="flex gap-2 text-xs">
+                    <div className="w-2 h-2 rounded-full bg-blue-500 mt-1.5 shrink-0" />
+                    <div>
+                      <p className="font-semibold text-slate-800">{String(e.label ?? '')}</p>
+                      <p className="text-[10px] text-slate-500">{String(e.at ?? '').slice(0, 10)} {e.by ? `· ${String(e.by)}` : ''}</p>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+      </div>
+
+      {selectedPo && (
+        <div className="bg-white rounded-xl border border-slate-200/80 premium-shadow">
+          <div className="flex flex-wrap gap-1 p-2 border-b border-slate-100">
+            {BOTTOM_TABS.map((tab) => (
+              <button
+                key={tab.id}
+                type="button"
+                onClick={() => setBottomTab(tab.id)}
+                className={`inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold cursor-pointer transition-colors ${bottomTab === tab.id ? 'bg-blue-50 text-blue-700' : 'text-slate-500 hover:bg-slate-50'}`}
+              >
+                <tab.icon className="w-3.5 h-3.5" /> {tab.label}
+              </button>
+            ))}
+          </div>
+          <div className="p-4">
+            {bottomTab === 'items' && (
+              <div className="grid grid-cols-1 lg:grid-cols-[1fr_240px] gap-4">
+                <div className="overflow-x-auto">
+                  <table className="w-full text-xs">
+                    <thead>
+                      <tr className="text-[10px] font-bold uppercase text-slate-500">
+                        <th className="py-2 text-left">Product</th>
+                        <th className="py-2 text-left">Warehouse</th>
+                        <th className="py-2 text-right">Qty</th>
+                        <th className="py-2 text-right">Unit Cost</th>
+                        <th className="py-2 text-right">Total</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {selectedItems.map((item) => (
+                        <tr key={item.id} className="border-t border-slate-100">
+                          <td className="py-2 font-semibold">{item.productName}</td>
+                          <td className="py-2">{String(selectedPo.warehouseName)}</td>
+                          <td className="py-2 text-right">{item.qty.toLocaleString()} {item.unit}</td>
+                          <td className="py-2 text-right">{formatPoMoney(item.unitPrice)}</td>
+                          <td className="py-2 text-right font-bold">{formatPoMoney(item.lineTotal)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+                <div className="rounded-xl border border-slate-200 bg-slate-50/80 p-3 text-xs space-y-1">
+                  <p className="flex justify-between"><span>Total Qty</span><strong>{Number(selectedTotals?.totalQty ?? 0).toLocaleString()}</strong></p>
+                  <p className="flex justify-between"><span>Sub Total</span><strong>{formatPoMoney(Number(selectedTotals?.subTotal ?? 0))}</strong></p>
+                  <p className="flex justify-between"><span>VAT</span><strong>{formatPoMoney(Number(selectedTotals?.vat ?? 0))}</strong></p>
+                  <p className="flex justify-between font-extrabold text-blue-700 pt-2 border-t border-slate-200"><span>Total</span><span>{formatPoMoney(Number(selectedTotals?.grandTotal ?? selectedPo.grandTotal ?? 0))}</span></p>
+                </div>
+              </div>
+            )}
+            {bottomTab === 'history' && (
+              <div className="space-y-2 text-xs">
+                {receiveHistory.length === 0 ? <p className="text-slate-400">No receive history yet.</p> : receiveHistory.map((h, i) => {
+                  const entry = h as Record<string, unknown>;
+                  return (
+                    <div key={i} className="flex justify-between rounded-lg border border-slate-100 px-3 py-2">
+                      <span>{String(entry.date)}</span>
+                      <span className="font-bold">{Number(entry.qty).toLocaleString()} units</span>
+                      <span className="text-slate-500">{String(entry.note ?? '')}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+            {bottomTab === 'bills' && (
+              <p className="text-xs text-slate-500">Vendor bill {String(selectedPo.id).replace('PO', 'BILL')} — pending (placeholder).</p>
+            )}
+            {bottomTab === 'documents' && (
+              <p className="text-xs text-slate-500">RM order document pack for {String(selectedPo.id)} — no files attached yet.</p>
+            )}
+            {bottomTab === 'remarks' && (
+              <p className="text-xs text-slate-700">{String(selectedPo.notes || 'No remarks.')}</p>
+            )}
+          </div>
+        </div>
+      )}
+
+      <Footer />
+    </div>
+  );
+}

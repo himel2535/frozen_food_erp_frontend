@@ -10,6 +10,7 @@ function cfg(id: string) {
 
 export function SuppliersPage() { return <DedicatedModule config={cfg('purchases-suppliers')} />; }
 export function PurchaseOrdersPage() { return <DedicatedModule config={cfg('purchases-orders')} />; }
+export { PurchaseRmPage } from '@/components/modules/purchases/PurchaseRmPage';
 export function GoodsReceivedPage() { return <DedicatedModule config={cfg('purchases-goods-received')} />; }
 export function BillsPage() { return <DedicatedModule config={cfg('purchases-bills')} />; }
 export function PurchasePaymentsPage() { return <DedicatedModule config={cfg('purchases-payments')} />; }

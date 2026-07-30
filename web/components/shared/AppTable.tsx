@@ -23,7 +23,7 @@ export type AppTableProps<T = Record<string, unknown>> = {
   getCellValue?: (row: T, column: AppTableColumn<T>) => ReactNode;
   footer?: ReactNode;
   onRowClick?: (row: T, index: number) => void;
-  rowClassName?: string;
+  rowClassName?: string | ((row: T, index: number) => string);
 };
 
 const CENTER_ALIGN_KEYS = new Set([
@@ -186,10 +186,14 @@ export function AppTable<T extends object = Record<string, unknown>>({
                 </td>
               </tr>
             ) : (
-              rows.map((row, index) => (
+              rows.map((row, index) => {
+                const extraRowClass = typeof rowClassName === 'function'
+                  ? rowClassName(row, index)
+                  : (rowClassName ?? '');
+                return (
                 <tr
                   key={rowKey ? rowKey(row, index) : String((row as Record<string, unknown>).id ?? (row as Record<string, unknown>).ref ?? (row as Record<string, unknown>).sku ?? (row as Record<string, unknown>).name ?? index)}
-                  className={`app-table-tr ${onRowClick ? 'cursor-pointer' : ''} ${rowClassName ?? ''}`.trim()}
+                  className={`app-table-tr ${onRowClick ? 'cursor-pointer' : ''} ${extraRowClass}`.trim()}
                   onClick={onRowClick ? () => onRowClick(row, index) : undefined}
                 >
                   {columns.map((col) => {
@@ -218,7 +222,8 @@ export function AppTable<T extends object = Record<string, unknown>>({
                     </td>
                   )}
                 </tr>
-              ))
+              );
+              })
             )}
           </tbody>
           {footer ? <tfoot>{footer}</tfoot> : null}

@@ -54,6 +54,7 @@ export const TENANT_SIDEBAR_SECTIONS: SidebarSection[] = [
     items: [
       { label: 'Suppliers', href: '/purchases/suppliers', view: 'suppliers', imageIcon: '/images/sidebar/purchases/suppliers.png', iconifyIcon: 'fluent-color:building-store-24' },
       { label: 'Purchase Orders', href: '/purchases/orders', view: 'orders', imageIcon: '/images/sidebar/purchases/orders.png', iconifyIcon: 'fluent-color:document-add-24' },
+      { label: 'Purchase RM', href: '/purchases/purchase-rm', view: 'purchase-rm', imageIcon: '/images/sidebar/inventory/products.png', iconifyIcon: 'flat-color-icons:tree-structure' },
       { label: 'Goods Received', href: '/purchases/goods-received', view: 'goods-received', imageIcon: '/images/sidebar/purchases/goods-received.png', iconifyIcon: 'fluent-color:arrow-square-down-24' },
       { label: 'Vendor Bills', href: '/purchases/bills', view: 'bills', imageIcon: '/images/sidebar/purchases/bills.png', iconifyIcon: 'fluent-color:notebook-24' },
       { label: 'Payments', href: '/purchases/payments', view: 'payments', imageIcon: '/images/sidebar/purchases/payments.png', iconifyIcon: 'flat-color-icons:paid' },
