@@ -228,6 +228,18 @@ export const DEFAULT_STATE: AppState = {
     { ref: 'TXN-100246', date: '2026-06-15', account: 'Office Expenses', desc: 'Internet monthly fiber fee', debit: 120.0, credit: 0.0, balance: 12330.0 },
     { ref: 'TXN-100247', date: '2026-06-16', account: 'Cost of Goods Sold', desc: 'Purchase apex yarn batch PO-00041', debit: 3125.0, credit: 0.0, balance: 9205.0 },
   ],
+  trialBalance: [
+    { id: 'TB-001', accountCode: '1001', accountName: 'Cash in Hand', parentAccount: 'Assets', debit: 50000, credit: 0, active: true },
+    { id: 'TB-002', accountCode: '1002', accountName: 'Cash at Bank', parentAccount: 'Assets', debit: 75000, credit: 0, active: true },
+    { id: 'TB-003', accountCode: '1100', accountName: 'Accounts Receivable', parentAccount: 'Assets', debit: 15000, credit: 0, active: true },
+    { id: 'TB-004', accountCode: '1200', accountName: 'Inventory', parentAccount: 'Assets', debit: 755000, credit: 0, active: true },
+    { id: 'TB-005', accountCode: '2001', accountName: 'Accounts Payable', parentAccount: 'Liabilities', debit: 0, credit: 120000, active: true },
+    { id: 'TB-006', accountCode: '2100', accountName: 'Bank Loan', parentAccount: 'Liabilities', debit: 0, credit: 200000, active: true },
+    { id: 'TB-007', accountCode: '3001', accountName: 'Capital', parentAccount: 'Equity', debit: 0, credit: 500000, active: true },
+    { id: 'TB-008', accountCode: '4001', accountName: 'Sales Revenue', parentAccount: 'Income', debit: 0, credit: 430000, active: true },
+    { id: 'TB-009', accountCode: '5001', accountName: 'Purchase Expense', parentAccount: 'Expenses', debit: 275000, credit: 0, active: true },
+    { id: 'TB-010', accountCode: '5100', accountName: 'Salary Expense', parentAccount: 'Expenses', debit: 80000, credit: 0, active: true },
+  ],
   cashboxEntries: [
     { id: 'CB-001', type: 'cash_in', description: 'Petty cash top-up', category: 'Other Income', party: 'Petty Cash', paymentMethod: 'Cash', reference: '', note: 'Monthly petty cash replenishment', datetime: '2026-01-05T09:00:00', amount: 5000, cashIn: 5000, cashOut: 0, balance: 52500 },
     { id: 'CB-002', type: 'transfer', description: 'Cash transfer to bank', category: 'Transfer', party: 'Bank Account', paymentMethod: 'Bank', reference: 'TRF-001', note: 'End of day deposit', datetime: '2026-01-06T16:30:00', amount: 10000, cashIn: 0, cashOut: 10000, balance: 42500 },
