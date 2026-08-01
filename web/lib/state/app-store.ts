@@ -15,6 +15,7 @@ function hydrateAppState(state: Partial<AppState> | null): AppState {
   if (!nextState.accounting) nextState.accounting = DEFAULT_STATE.accounting;
   if (!nextState.cashboxEntries) nextState.cashboxEntries = DEFAULT_STATE.cashboxEntries;
   if (!nextState.dueEntries) nextState.dueEntries = DEFAULT_STATE.dueEntries;
+  if (!nextState.purchasePayments) nextState.purchasePayments = DEFAULT_STATE.purchasePayments;
   if (!nextState.payroll) nextState.payroll = DEFAULT_STATE.payroll;
   if (!nextState.projects) nextState.projects = DEFAULT_STATE.projects;
   if (!nextState.manufacturing) nextState.manufacturing = DEFAULT_STATE.manufacturing;
