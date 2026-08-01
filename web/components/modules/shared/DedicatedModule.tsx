@@ -23,6 +23,7 @@ export interface DedicatedModuleConfig extends PortModuleConfig {
   onRowClick?: (row: Record<string, unknown>) => void;
   rowClassName?: string | ((row: Record<string, unknown>, index: number) => string);
   rowSort?: (a: Record<string, unknown>, b: Record<string, unknown>) => number;
+  kpiGridClassName?: string;
 }
 
 export function DedicatedModule({ config }: { config: DedicatedModuleConfig }) {
@@ -135,7 +136,12 @@ export function DedicatedModule({ config }: { config: DedicatedModuleConfig }) {
           </>
         }
       />
-      {kpis.length > 0 && <KpiCards items={kpis} />}
+      {kpis.length > 0 && (
+        <KpiCards
+          items={kpis}
+          gridClassName={config.kpiGridClassName ?? 'grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2'}
+        />
+      )}
       <AppTable
         columns={config.columns.map((col) => ({
           key: col.key,

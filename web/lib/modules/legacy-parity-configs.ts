@@ -778,6 +778,8 @@ Object.assign(LEGACY_PARITY_CONFIGS, {
         { key: 'total', label: 'Total Employees', value: String(m.total) },
         { key: 'active', label: 'Active', value: String(m.active) },
         { key: 'leave', label: 'On Leave', value: String(m.onLeave) },
+        { key: 'inactive', label: 'Inactive', value: String(m.inactive) },
+        { key: 'payroll', label: 'Monthly Payroll', value: money(m.monthlyPayroll), sub: 'Active staff only' },
       ];
     },
     adapter: adapter({ list: listEmployees, create: createEmployee, update: updateEmployee, delete: deleteEmployee, getInitialForm: () => ({ joiningDate: new Date().toISOString().split('T')[0], status: 'active' }) }),

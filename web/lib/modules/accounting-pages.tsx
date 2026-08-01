@@ -5,6 +5,8 @@ import { DueManagementPage } from '@/components/modules/accounting/DueManagement
 import { CustomerDuePage } from '@/components/modules/accounting/CustomerDuePage';
 import { SupplierDuePage } from '@/components/modules/accounting/SupplierDuePage';
 import { TrialBalancePage } from '@/components/modules/accounting/TrialBalancePage';
+import { ProfitLossPage } from '@/components/modules/accounting/ProfitLossPage';
+import { BalanceSheetPage } from '@/components/modules/accounting/BalanceSheetPage';
 import { getLegacyParityConfig } from '@/lib/modules/legacy-parity-configs';
 
 function cfg(id: string) {
@@ -21,6 +23,8 @@ export function JournalsPage() { return <DedicatedModule config={cfg('accounting
 export function LedgerPage() { return <DedicatedModule config={cfg('accounting-ledger')} />; }
 export function TrialPage() { return <TrialBalancePage />; }
 export { TrialBalancePage };
-export function PlPage() { return <DedicatedModule config={cfg('accounting-pl')} />; }
-export function BalancePage() { return <DedicatedModule config={cfg('accounting-balance')} />; }
+export function PlPage() { return <ProfitLossPage />; }
+export { ProfitLossPage };
+export function BalancePage() { return <BalanceSheetPage />; }
+export { BalanceSheetPage };
 export { CashboxPage } from '@/components/modules/accounting/CashboxPage';

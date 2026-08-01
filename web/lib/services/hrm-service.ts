@@ -3,8 +3,37 @@ import { listFromState, createInState, updateInState, deleteFromState, formatCur
 
 type Row = Record<string, unknown>;
 
+export interface EmployeeDetailMetrics {
+  tenureMonths: number;
+  tenureLabel: string;
+  attendancePresentRate: number;
+  lastPayrollNet: number;
+  lastPayrollDate: string;
+  assignedProjects: number;
+}
+
+export interface EmployeeProfile {
+  employee: Row;
+  attendance: Row[];
+  payrollSlips: Row[];
+  projects: Row[];
+  departmentInfo: Row | null;
+}
+
+const AVATAR_COLORS = [
+  'bg-blue-100 text-blue-700',
+  'bg-emerald-100 text-emerald-700',
+  'bg-violet-100 text-violet-700',
+  'bg-amber-100 text-amber-700',
+  'bg-rose-100 text-rose-700',
+];
+
 export function listEmployees(state: AppState) {
   return listFromState(state, 'employees');
+}
+
+export function getEmployeeById(state: AppState, id: string) {
+  return listEmployees(state).find((row) => String(row.id) === id) ?? null;
 }
 
 export function listDepartments(state: AppState) {
@@ -35,6 +64,104 @@ export function listPayrollSlips(state: AppState) {
   return listFromState(state, 'payroll');
 }
 
+export function employeeInitials(name: string) {
+  const parts = String(name || '').trim().split(/\s+/).filter(Boolean);
+  if (!parts.length) return '?';
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+}
+
+export function employeeAvatarClass(name: string) {
+  const code = String(name).split('').reduce((s, c) => s + c.charCodeAt(0), 0);
+  return AVATAR_COLORS[code % AVATAR_COLORS.length];
+}
+
+export function employeeStatusLabel(status: unknown) {
+  const value = String(status ?? 'active').toLowerCase();
+  if (value === 'on-leave') return 'On Leave';
+  if (value === 'inactive') return 'Inactive';
+  return 'Active';
+}
+
+export function formatTenure(joiningDate: unknown) {
+  if (!joiningDate) return '—';
+  const start = new Date(String(joiningDate));
+  if (Number.isNaN(start.getTime())) return '—';
+  const now = new Date();
+  const months = Math.max(0, (now.getFullYear() - start.getFullYear()) * 12 + (now.getMonth() - start.getMonth()));
+  if (months < 12) return `${months} month${months === 1 ? '' : 's'}`;
+  const years = Math.floor(months / 12);
+  const rem = months % 12;
+  if (!rem) return `${years} year${years === 1 ? '' : 's'}`;
+  return `${years}y ${rem}m`;
+}
+
+export function monthsSinceJoining(joiningDate: unknown) {
+  if (!joiningDate) return 0;
+  const start = new Date(String(joiningDate));
+  if (Number.isNaN(start.getTime())) return 0;
+  const now = new Date();
+  return Math.max(0, (now.getFullYear() - start.getFullYear()) * 12 + (now.getMonth() - start.getMonth()));
+}
+
+export function formatEmployeeDate(value: unknown) {
+  if (!value) return '—';
+  const d = new Date(String(value));
+  if (Number.isNaN(d.getTime())) return String(value);
+  return d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+}
+
+function getEmployeePayrollSlips(state: AppState, employee: Row) {
+  const id = String(employee.id ?? '');
+  const name = String(employee.name ?? '');
+  return listPayrollSlips(state)
+    .filter((row) => String(row.employeeId ?? '') === id || String(row.name ?? '') === name)
+    .sort((a, b) => String(b.date ?? '').localeCompare(String(a.date ?? '')));
+}
+
+export function getEmployeeProfile(state: AppState, id: string): EmployeeProfile | null {
+  const employee = getEmployeeById(state, id);
+  if (!employee) return null;
+
+  const attendance = listAttendance(state)
+    .filter((row) => String(row.employeeId) === id)
+    .sort((a, b) => String(b.date ?? '').localeCompare(String(a.date ?? '')));
+
+  const payrollSlips = getEmployeePayrollSlips(state, employee);
+
+  const projects = listFromState(state, 'projects')
+    .filter((row) => String(row.lead ?? '') === String(employee.name ?? ''));
+
+  const departmentInfo = listDepartments(state)
+    .find((row) => String(row.name ?? '') === String(employee.department ?? '')) ?? null;
+
+  return { employee, attendance, payrollSlips, projects, departmentInfo };
+}
+
+export function getEmployeeDetailMetrics(state: AppState, id: string): EmployeeDetailMetrics | null {
+  const profile = getEmployeeProfile(state, id);
+  if (!profile) return null;
+
+  const { employee, attendance, payrollSlips, projects } = profile;
+  const tenureMonths = monthsSinceJoining(employee.joiningDate);
+  const presentCount = attendance.filter((row) =>
+    ['present', 'late'].includes(String(row.status ?? '').toLowerCase()),
+  ).length;
+  const attendancePresentRate = attendance.length
+    ? Math.round((presentCount / attendance.length) * 100)
+    : 0;
+  const lastPayroll = payrollSlips[0];
+
+  return {
+    tenureMonths,
+    tenureLabel: formatTenure(employee.joiningDate),
+    attendancePresentRate,
+    lastPayrollNet: Number(lastPayroll?.net ?? employee.salary ?? 0),
+    lastPayrollDate: String(lastPayroll?.date ?? '—'),
+    assignedProjects: projects.length,
+  };
+}
+
 export function createEmployee(state: AppState, payload: Row) {
   return createInState(state, 'employees', {
     ...payload,
@@ -54,7 +181,11 @@ export function deleteEmployee(state: AppState, id: string) {
 export function getEmployeeMetrics(rows: Row[]) {
   const active = rows.filter((r) => String(r.status).toLowerCase() === 'active').length;
   const onLeave = rows.filter((r) => String(r.status).toLowerCase() === 'on-leave').length;
-  return { total: rows.length, active, onLeave };
+  const inactive = rows.filter((r) => String(r.status).toLowerCase() === 'inactive').length;
+  const monthlyPayroll = rows
+    .filter((r) => String(r.status).toLowerCase() === 'active')
+    .reduce((sum, r) => sum + Number(r.salary ?? 0), 0);
+  return { total: rows.length, active, onLeave, inactive, monthlyPayroll };
 }
 
 export function crudHrm(stateKey: string, prefix: string) {
