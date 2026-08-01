@@ -63,9 +63,8 @@ export const TENANT_SIDEBAR_SECTIONS: SidebarSection[] = [
     ],
   },
   {
-    id: 'factory', label: 'Factory', href: '/manufacturing/orders', imageIcon: '/images/sidebar/factory.png', iconifyIcon: 'flat-color-icons:factory', color: 'text-rose-600',
+    id: 'factory', label: 'Factory', href: '/manufacturing/bom', imageIcon: '/images/sidebar/factory.png', iconifyIcon: 'flat-color-icons:factory', color: 'text-rose-600',
     items: [
-      { label: 'Production', href: '/manufacturing/orders', view: 'orders', imageIcon: '/images/sidebar/factory/orders.png', iconifyIcon: 'flat-color-icons:serial-tasks' },
       { label: 'Raw Materials BOM', href: '/manufacturing/bom', view: 'bom', imageIcon: '/images/sidebar/factory/bom.png', iconifyIcon: 'flat-color-icons:tree-structure' },
       { label: 'Machine Maintenance', href: '/manufacturing/machine-maintenance', view: 'machine-maintenance', imageIcon: '/images/sidebar/factory/machine-maintenance.png', iconifyIcon: 'fluent-color:wrench-24' },
       { label: 'Mold Management', href: '/manufacturing/mold-management', view: 'mold-management', imageIcon: '/images/sidebar/factory/mold-management.png', iconifyIcon: 'fluent-color:puzzle-piece-24' },

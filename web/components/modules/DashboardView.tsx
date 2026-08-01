@@ -87,12 +87,6 @@ const QUICK_ACTIONS: { href: string; labelKey: string; icon: string; className: 
     className: 'bg-sky-50 text-sky-900 border border-sky-200/80 hover:bg-sky-100/80 shadow-xs',
   },
   {
-    href: '/manufacturing/orders',
-    labelKey: 'dashboard.new_production',
-    icon: 'flat-color-icons:serial-tasks',
-    className: 'bg-rose-50 text-rose-900 border border-rose-200/80 hover:bg-rose-100/80 shadow-xs',
-  },
-  {
     href: '/purchases/purchase-rm',
     labelKey: 'dashboard.purchase_rm',
     icon: 'fluent-color:document-add-24',

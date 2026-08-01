@@ -33,7 +33,7 @@ const htmlRedirects = [
   ['purchases-payments.html', '/purchases/payments'],
   ['purchases-returns.html', '/purchases/returns'],
   ['purchases-recipes.html', '/purchases/recipes'],
-  ['manufacturing-orders.html', '/manufacturing/orders'],
+  ['manufacturing-orders.html', '/manufacturing/bom'],
   ['manufacturing-bom.html', '/manufacturing/bom'],
   ['manufacturing-machine-maintenance.html', '/manufacturing/machine-maintenance'],
   ['manufacturing-mold-management.html', '/manufacturing/mold-management'],
@@ -93,9 +93,12 @@ const nextConfig: NextConfig = {
     formats: ['image/avif', 'image/webp'],
   },
   async redirects() {
-    return htmlRedirects.flatMap(([html, destination]) => [
-      { source: `/${html}`, destination, permanent: false },
-    ]);
+    return [
+      ...htmlRedirects.flatMap(([html, destination]) => [
+        { source: `/${html}`, destination, permanent: false },
+      ]),
+      { source: '/manufacturing/orders', destination: '/manufacturing/bom', permanent: false },
+    ];
   },
 };
 
