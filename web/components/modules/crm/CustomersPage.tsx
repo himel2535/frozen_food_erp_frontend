@@ -1,12 +1,12 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { Suspense, useEffect, useMemo, useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { Download, Upload, Printer } from 'lucide-react';
 import { Footer } from '@/components/layout/Footer';
 import { KpiCards } from '@/components/shared/KpiCards';
 import { MODULE_LIST_SHELL } from '@/lib/ui/module-layout';
 import { FilterTabs } from '@/components/shared/FilterTabs';
-import { ProfileDrawer } from '@/components/shared/ProfileDrawer';
 import { BulkActionBar } from '@/components/shared/BulkActionBar';
 import { AppTable, type AppTableColumn } from '@/components/shared/AppTable';
 import { StatusBadge } from '@/components/shared/StatusBadge';
@@ -120,6 +120,16 @@ function buildFormValuesFromProfile(
 }
 
 export function CustomersPage() {
+  return (
+    <Suspense fallback={<div className="flex-1 p-6 text-xs text-slate-500">Loading customers…</div>}>
+      <CustomersPageContent />
+    </Suspense>
+  );
+}
+
+function CustomersPageContent() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const appState = useAppStore((s) => s.appState);
   const saveAppState = useAppStore((s) => s.saveAppState);
   const [view, setView] = useState<'main' | 'form'>('main');
@@ -127,13 +137,24 @@ export function CustomersPage() {
   const [statusTab, setStatusTab] = useState('all');
   const [sortKey, setSortKey] = useState('name-asc');
   const [selected, setSelected] = useState<Set<string>>(new Set());
-  const [drawerId, setDrawerId] = useState<string | null>(null);
-  const [drawerTab, setDrawerTab] = useState('overview');
   const [editingId, setEditingId] = useState<string | null>(null);
   const [formValues, setFormValues] = useState<CustomerFormValues>(EMPTY_CUSTOMER_FORM);
   const [formKey, setFormKey] = useState(0);
 
   const owners = useMemo(() => getOwnerOptions(appState), [appState]);
+
+  useEffect(() => {
+    const editId = searchParams.get('edit');
+    if (!editId) return;
+    const customerProfile = getCustomerProfile(appState, editId);
+    if (customerProfile) {
+      setEditingId(editId);
+      setFormValues(buildFormValuesFromProfile(customerProfile, owners[0]?.id ?? ''));
+      setFormKey((k) => k + 1);
+      setView('form');
+    }
+    router.replace('/crm/customers');
+  }, [searchParams, appState, owners, router]);
 
   const customers = useMemo(() => {
     let rows = getCustomerList(appState) as Array<Record<string, unknown>>;
@@ -153,8 +174,6 @@ export function CustomersPage() {
     });
     return rows;
   }, [appState, search, statusTab, sortKey]);
-
-  const profile = useMemo(() => (drawerId ? getCustomerProfile(appState, drawerId) : null), [appState, drawerId]);
 
   const kpis = useMemo(() => {
     const all = getCustomerList(appState) as Array<Record<string, unknown>>;
@@ -331,7 +350,7 @@ export function CustomersPage() {
       <div className="flex flex-col xl:flex-row xl:items-center xl:justify-between gap-4">
         <div>
           <h2 className="text-xl font-extrabold text-slate-900">Customers</h2>
-          <p className="text-xs text-slate-500 mt-1">Customer master records, commercial terms, profile drawers, and activity logs.</p>
+          <p className="text-xs text-slate-500 mt-1">Customer master records, commercial terms, detail profiles, and activity logs.</p>
         </div>
         <button type="button" onClick={openCreate} className="bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold px-4 py-2.5 rounded-xl cursor-pointer self-start">
           + Add Customer
@@ -375,10 +394,7 @@ export function CustomersPage() {
           <>
             <TableIconAction
               variant="view"
-              onClick={() => {
-                setDrawerId(String(row.id));
-                setDrawerTab('overview');
-              }}
+              onClick={() => router.push(`/crm/customers/${String(row.id)}`)}
             />
             <TableIconAction variant="edit" onClick={() => openEdit(row)} />
             <TableIconAction
@@ -393,57 +409,6 @@ export function CustomersPage() {
           </>
         )}
       />
-
-      <ProfileDrawer
-        open={!!drawerId && !!profile}
-        title={String(profile?.customer?.name ?? 'Customer')}
-        subtitle={String(profile?.customer?.company ?? '')}
-        onClose={() => setDrawerId(null)}
-        tabs={[
-          { id: 'overview', label: 'Overview' },
-          { id: 'contacts', label: 'Contacts' },
-          { id: 'sales', label: 'Sales' },
-          { id: 'activity', label: 'Activity' },
-        ]}
-        activeTab={drawerTab}
-        onTabChange={setDrawerTab}
-      >
-        {profile && drawerTab === 'overview' && (
-          <div className="space-y-4 text-xs">
-            <div className="grid grid-cols-2 gap-3">
-              <div><span className="text-slate-500">Status</span><div className="mt-1"><StatusBadge status={String(profile.customer.status)} /></div></div>
-              <div><span className="text-slate-500">Payment terms</span><div className="mt-1 font-bold">{String(profile.customer.paymentTerms)}</div></div>
-              <div><span className="text-slate-500">Total sales</span><div className="mt-1 font-bold">{formatMoney(Number(profile.financialSummary?.totalSales ?? 0))}</div></div>
-              <div><span className="text-slate-500">Total due</span><div className="mt-1 font-bold text-rose-600">{formatMoney(Number(profile.financialSummary?.totalDue ?? 0))}</div></div>
-            </div>
-            <p className="text-slate-600">{String(profile.customer.notes || 'No notes.')}</p>
-          </div>
-        )}
-        {profile && drawerTab === 'contacts' && (
-          <ul className="space-y-3 text-xs">{(profile.contacts as Array<Record<string, unknown>>).map((c) => (
-            <li key={String(c.id)} className="p-3 rounded-xl border border-slate-100">
-              <div className="font-bold">{String(c.name)}</div>
-              <div className="text-slate-500">{String(c.phone)} • {String(c.email)}</div>
-            </li>
-          ))}</ul>
-        )}
-        {profile && drawerTab === 'sales' && (
-          <div className="space-y-3 text-xs">
-            <div className="font-bold">Invoices ({profile.invoices?.length ?? 0})</div>
-            {(profile.invoices as Array<Record<string, unknown>> ?? []).slice(0, 5).map((inv) => (
-              <div key={String(inv.id)} className="flex justify-between border-b border-slate-100 py-2">
-                <span>{String(inv.id)}</span>
-                <span className="font-bold">{formatMoney(Number(inv.amount ?? 0))}</span>
-              </div>
-            ))}
-          </div>
-        )}
-        {profile && drawerTab === 'activity' && (
-          <ul className="space-y-2 text-xs">{((profile.activities ?? []) as Array<Record<string, unknown>>).slice(0, 8).map((a) => (
-            <li key={String(a.id)} className="text-slate-600"><span className="font-bold text-slate-800">{String(a.type)}</span> — {String(a.summary)}</li>
-          ))}</ul>
-        )}
-      </ProfileDrawer>
 
       <Footer />
     </div>

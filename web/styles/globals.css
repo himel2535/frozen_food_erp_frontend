@@ -806,6 +806,26 @@ body.dashboard-page .text-3xl { font-size: 2rem; }        /* 32px */
     print-color-adjust: exact;
   }
 
+  body.print-invoice-active > *:not(.invoice-print-root) {
+    display: none !important;
+  }
+
+  body.print-invoice-active .invoice-print-root {
+    display: block !important;
+    position: static !important;
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: visible !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  body.print-invoice-active .invoice-print-root * {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
   .dc-print-section,
   .dc-print-signatures,
   .dc-print-footer {

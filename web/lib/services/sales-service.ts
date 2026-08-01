@@ -1,6 +1,17 @@
 /** Sales domain — quotations, orders, deliveries, dispatch, returns */
 import type { AppState } from '@/lib/state/types';
-import { ensureCrmState, getCustomerList, getCustomerProfile } from '@/lib/services/crm-service';
+import {
+  ensureCrmState,
+  getCustomerList,
+  getCustomerProfile,
+  syncInvoiceBalances,
+  transitionInvoiceLifecycle,
+} from '@/lib/services/crm-service';
+import { listInvoices } from '@/lib/modules/sales-configs';
+import {
+  computeInvoiceTotalsFromItems,
+  type InvoiceLineItem,
+} from '@/components/modules/sales/invoice-form/inv-form-types';
 import { listFromState, createInState, updateInState, deleteFromState } from '@/lib/services/domain-service';
 
 type Row = Record<string, unknown>;
@@ -392,6 +403,185 @@ export function updateReturn(state: AppState, id: string, payload: Row) {
 
 export function formatMoney(value: number) {
   return `৳${Number(value || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+}
+
+function addDaysToIso(date: string, days: number) {
+  const base = new Date(`${date}T00:00:00`);
+  base.setDate(base.getDate() + Number(days || 0));
+  return base.toISOString().slice(0, 10);
+}
+
+function getTermDays(terms: string) {
+  const match = String(terms || '').match(/(\d+)/);
+  return match ? Number(match[1]) : 30;
+}
+
+function getInvoiceYear(dateStr?: string) {
+  const date = dateStr ? new Date(`${dateStr}T00:00:00`) : new Date();
+  return date.getFullYear();
+}
+
+export function previewInvoiceNumber(state: AppState, dateStr?: string, excludeId?: string) {
+  const year = getInvoiceYear(dateStr);
+  const prefix = `INV-${year}-`;
+  const nums = listInvoices(state)
+    .map((row) => String(row.id ?? ''))
+    .filter((id) => id.startsWith(prefix) && id !== String(excludeId ?? ''))
+    .map((id) => parseInt(id.slice(prefix.length), 10))
+    .filter((n) => !Number.isNaN(n));
+  const next = (nums.length ? Math.max(...nums) : 0) + 1;
+  return `${prefix}${String(next).padStart(4, '0')}`;
+}
+
+export function listInventoryProductOptions(state: AppState) {
+  const inventory = Array.isArray(state.inventory) ? state.inventory : [];
+  return inventory.map((raw) => {
+    const product = raw as Row;
+    return {
+      id: String(product.id ?? product.sku ?? ''),
+      name: String(product.name ?? 'Product'),
+      sku: String(product.sku ?? ''),
+      price: Number(product.price ?? product.sellingPrice ?? product.rate ?? 0),
+    };
+  });
+}
+
+export function getCustomerBillingDefaults(state: AppState, customerId: string, issueDate?: string) {
+  const profile = getCustomerProfile(state, customerId);
+  if (!profile) {
+    return { billingAddress: '', paymentTerms: 'Net 30', dueDate: '' };
+  }
+  const customer = profile.customer as Row;
+  const addresses = (profile.addresses ?? []) as Row[];
+  const billing = addresses.find((a) => a.type === 'billing')
+    ?? addresses.find((a) => a.type === 'shipping')
+    ?? addresses[0];
+  const line1 = String(billing?.line1 ?? '');
+  const city = String(billing?.city ?? '');
+  const region = String(billing?.region ?? '');
+  const postal = String(billing?.postalCode ?? '');
+  const country = String(billing?.country ?? '');
+  const billingAddress = [line1, city, region, postal, country].filter(Boolean).join(', ');
+  const paymentTerms = String(customer.paymentTerms ?? 'Net 30');
+  const baseDate = issueDate || new Date().toISOString().slice(0, 10);
+  const dueDate = addDaysToIso(baseDate, getTermDays(paymentTerms));
+  return { billingAddress, paymentTerms, dueDate };
+}
+
+export function computeInvoiceTotals(
+  items: InvoiceLineItem[],
+  overrides?: { docDiscountOverride?: number | null; docTaxOverride?: number | null },
+) {
+  return computeInvoiceTotalsFromItems(items, overrides);
+}
+
+function normalizeInvoiceItems(items: InvoiceLineItem[]) {
+  return items
+    .filter((item) => item.description.trim() || item.productId)
+    .map((item) => ({
+      id: item.id,
+      productId: item.productId,
+      description: item.description,
+      name: item.description,
+      qty: item.qty,
+      quantity: item.qty,
+      rate: item.rate,
+      price: item.rate,
+      discountPct: item.discountPct,
+      taxLabel: item.taxLabel,
+      total: item.amount,
+      amount: item.amount,
+    }));
+}
+
+export function createInvoice(state: AppState, payload: Row) {
+  ensureCrmState(state);
+  const items = normalizeInvoiceItems((payload.items ?? []) as InvoiceLineItem[]);
+  const id = String(payload.id ?? previewInvoiceNumber(state, String(payload.issueDate ?? payload.date ?? '')));
+  const totals = computeInvoiceTotalsFromItems((payload.items ?? []) as InvoiceLineItem[], {
+    docDiscountOverride: payload.docDiscountOverride as number | null | undefined,
+    docTaxOverride: payload.docTaxOverride as number | null | undefined,
+  });
+  const record: Row = {
+    ...payload,
+    id,
+    items,
+    issueDate: payload.issueDate ?? payload.date,
+    date: payload.issueDate ?? payload.date,
+    subtotal: totals.subtotal,
+    discountAmount: totals.discountAmount,
+    discount: totals.discountAmount,
+    taxAmount: totals.taxAmount,
+    tax: totals.taxAmount,
+    total: totals.total,
+    amount: totals.total,
+    status: payload.status || 'draft',
+    billingAddress: payload.billingAddress ?? '',
+    notes: payload.notes ?? '',
+    terms: payload.terms ?? payload.paymentTerms ?? 'Net 30',
+  };
+  state.invoices = [...listInvoices(state), record];
+  syncInvoiceBalances(state);
+  return { ok: true as const, id };
+}
+
+export function updateInvoice(state: AppState, id: string, payload: Row) {
+  ensureCrmState(state);
+  const rows = listInvoices(state);
+  const idx = rows.findIndex((r) => String(r.id) === id);
+  if (idx < 0) return { ok: false as const, error: 'Not found' };
+  const items = normalizeInvoiceItems((payload.items ?? rows[idx].items ?? []) as InvoiceLineItem[]);
+  const totals = computeInvoiceTotalsFromItems((payload.items ?? []) as InvoiceLineItem[], {
+    docDiscountOverride: payload.docDiscountOverride as number | null | undefined,
+    docTaxOverride: payload.docTaxOverride as number | null | undefined,
+  });
+  rows[idx] = {
+    ...rows[idx],
+    ...payload,
+    id,
+    items,
+    issueDate: payload.issueDate ?? payload.date ?? rows[idx].issueDate,
+    date: payload.issueDate ?? payload.date ?? rows[idx].date,
+    subtotal: totals.subtotal,
+    discountAmount: totals.discountAmount,
+    discount: totals.discountAmount,
+    taxAmount: totals.taxAmount,
+    tax: totals.taxAmount,
+    total: totals.total,
+    amount: totals.total,
+    billingAddress: payload.billingAddress ?? rows[idx].billingAddress,
+    notes: payload.notes ?? rows[idx].notes,
+    terms: payload.terms ?? rows[idx].terms,
+  };
+  state.invoices = rows;
+  syncInvoiceBalances(state);
+  return { ok: true as const };
+}
+
+export function deleteInvoice(state: AppState, id: string) {
+  state.invoices = listInvoices(state).filter((r) => String(r.id) !== id);
+  syncInvoiceBalances(state);
+  return { ok: true as const };
+}
+
+export function markInvoiceSent(state: AppState, id: string) {
+  return transitionInvoiceLifecycle(state, id, 'sent');
+}
+
+export function resolveInvoiceCustomerLabel(state: AppState, row: Row): string {
+  const direct = String(row.customerName ?? row.customer ?? '').trim();
+  if (direct) return direct;
+  const customerId = String(row.customerId ?? '');
+  if (customerId) {
+    const customer = getCustomerList(state).find((c) => String(c.id) === customerId);
+    if (customer) {
+      const name = String(customer.name ?? '').trim();
+      const company = String(customer.company ?? '').trim();
+      if (!name) return company;
+      return company ? `${name} (${company})` : name;
+    }
+  }
+  return '—';
 }
 
 export function posCheckout(state: AppState, payload: { customer: string; cart: Row[]; total: number }) {

@@ -1357,6 +1357,141 @@ export function getCustomerProfile(state, customerId) {
   };
 }
 
+function normalizeMatchText(value) {
+  return String(value || '').trim().toLowerCase();
+}
+
+function recordMatchesCustomer(record, customerId, customerName, companyName) {
+  if (customerId && String(record.customerId) === customerId) return true;
+  const orderCustomer = normalizeMatchText(record.customer ?? record.customerName ?? '');
+  if (!orderCustomer) return false;
+  const name = normalizeMatchText(customerName ?? '');
+  const company = normalizeMatchText(companyName ?? '');
+  const displayLabel = [name, company].filter(Boolean).join(' ');
+  if (name && (orderCustomer.includes(name) || name.includes(orderCustomer.split('(')[0]?.trim() ?? ''))) return true;
+  if (company && orderCustomer.includes(company)) return true;
+  if (displayLabel && (orderCustomer.includes(displayLabel) || displayLabel.includes(orderCustomer))) return true;
+  return false;
+}
+
+function listDeliveriesFromState(state) {
+  const sales = state.salesDeliveries || [];
+  if (sales.length) return sales;
+  return state.deliveries || [];
+}
+
+function listReturnsFromState(state) {
+  return state.salesReturns || [];
+}
+
+export function getCustomerDeliveries(state, customerId) {
+  const profile = getCustomerProfile(state, customerId);
+  if (!profile) return [];
+  const customer = profile.customer;
+  return listDeliveriesFromState(state)
+    .filter((row) => recordMatchesCustomer(row, customerId, customer.name, customer.company))
+    .sort((a, b) => String(b.date ?? b.createdAt ?? '').localeCompare(String(a.date ?? a.createdAt ?? '')));
+}
+
+export function getCustomerReturns(state, customerId) {
+  const profile = getCustomerProfile(state, customerId);
+  if (!profile) return [];
+  const customer = profile.customer;
+  return listReturnsFromState(state)
+    .filter((row) => recordMatchesCustomer(row, customerId, customer.name, customer.company))
+    .sort((a, b) => String(b.date ?? b.createdAt ?? '').localeCompare(String(a.date ?? a.createdAt ?? '')));
+}
+
+export function getCustomerTransactions(state, customerId) {
+  const profile = getCustomerProfile(state, customerId);
+  if (!profile) return [];
+
+  const rows = [];
+
+  (profile.invoices || []).forEach((inv) => {
+    rows.push({
+      id: `inv-${inv.id}`,
+      type: 'Invoice',
+      docNo: inv.id,
+      date: inv.date || inv.issueDate,
+      amount: Number(inv.amount ?? inv.total ?? 0),
+      paid: Number(inv.paid ?? inv.paidAmount ?? 0),
+      due: Number(inv.due ?? inv.dueAmount ?? 0),
+      status: inv.status || 'pending',
+    });
+  });
+
+  (profile.salesOrders || []).forEach((order) => {
+    rows.push({
+      id: `so-${order.id}`,
+      type: 'Order',
+      docNo: order.id,
+      date: order.date,
+      amount: Number(order.total ?? order.amount ?? 0),
+      paid: 0,
+      due: Number(order.total ?? order.amount ?? 0),
+      status: order.status || 'pending',
+    });
+  });
+
+  (profile.payments || []).forEach((payment) => {
+    rows.push({
+      id: `pay-${payment.id}`,
+      type: 'Payment',
+      docNo: payment.id,
+      date: payment.date,
+      amount: Number(payment.amount ?? 0),
+      paid: Number(payment.amount ?? 0),
+      due: 0,
+      status: payment.status || 'paid',
+    });
+  });
+
+  (profile.quotations || []).forEach((quote) => {
+    rows.push({
+      id: `qt-${quote.id}`,
+      type: 'Quote',
+      docNo: quote.id,
+      date: quote.date,
+      amount: Number(quote.total ?? quote.amount ?? 0),
+      paid: 0,
+      due: Number(quote.total ?? quote.amount ?? 0),
+      status: quote.status || 'draft',
+    });
+  });
+
+  return rows.sort((a, b) => String(b.date).localeCompare(String(a.date)));
+}
+
+export function getCustomerDetailMetrics(state, customerId) {
+  const profile = getCustomerProfile(state, customerId);
+  if (!profile) return null;
+  const summary = profile.financialSummary || getCustomerFinancialSummary(state, customerId);
+  const orderCount = summary.salesOrderCount || profile.salesOrders?.length || 0;
+  const totalSales = Number(summary.totalSales ?? 0);
+  const creditLimit = Number(summary.creditLimit ?? 0);
+  const creditUsed = Number(summary.creditUsed ?? summary.totalDue ?? 0);
+  const avgOrderValue = orderCount > 0 ? totalSales / orderCount : totalSales;
+
+  return {
+    totalSales,
+    totalPaid: Number(summary.totalPaid ?? 0),
+    totalDue: Number(summary.totalDue ?? 0),
+    totalOrders: orderCount,
+    avgOrderValue,
+    creditLimit,
+    creditRemaining: Math.max(creditLimit - creditUsed, 0),
+    creditUsedPercent: creditLimit > 0 ? Math.min((creditUsed / creditLimit) * 100, 100) : 0,
+    overdueAmount: Number(summary.overdueReceivables ?? 0),
+    lastPaymentDate: summary.lastPaymentDate,
+    lastPurchaseDate: summary.lastPurchaseDate,
+    customerSince: profile.customer.createdAt,
+    lastActivityDate: getLastActivityDate(state, customerId),
+    invoiceCount: summary.invoiceCount ?? profile.invoices?.length ?? 0,
+    paymentCount: summary.paymentCount ?? profile.payments?.length ?? 0,
+  };
+}
+
 export function getLeadList(state) {
   ensureCrmState(state);
   const user = getUserContext(state);
