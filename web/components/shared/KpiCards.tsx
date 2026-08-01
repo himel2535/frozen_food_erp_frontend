@@ -13,9 +13,15 @@ export interface KpiCardItem {
   iconify?: string;
 }
 
-export function KpiCards({ items }: { items: KpiCardItem[] }) {
+export function KpiCards({
+  items,
+  gridClassName = 'grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2',
+}: {
+  items: KpiCardItem[];
+  gridClassName?: string;
+}) {
   return (
-    <section className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
+    <section className={gridClassName}>
       {items.map((item) => {
         const iconId = item.iconify ?? resolveKpiIcon(item.key, item.label);
         return (

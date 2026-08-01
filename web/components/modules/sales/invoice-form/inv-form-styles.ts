@@ -11,7 +11,7 @@ export const INV_BTN_GHOST =
   'inline-flex items-center gap-2 border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold px-5 py-2.5 rounded-xl cursor-pointer transition-all';
 
 export const INV_FOOTER_CLS =
-  'sticky bottom-0 z-10 flex flex-col sm:flex-row sm:items-center sm:justify-end gap-3 px-4 py-4 -mx-2 md:-mx-4 mt-6 border-t border-slate-200/80 bg-white/85 backdrop-blur-md';
+  'sticky bottom-0 z-10 flex flex-col sm:flex-row sm:items-center sm:justify-end gap-3 px-4 py-4 -mx-2 md:-mx-4 mt-3 border-t border-slate-200/80 bg-white/85 backdrop-blur-md';
 
 export const INV_STATUS_CARD_CLS =
   'rounded-xl border border-slate-200/90 bg-white/70 p-4 space-y-3 h-full';

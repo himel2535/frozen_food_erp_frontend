@@ -53,6 +53,93 @@ function lineTotal(items: Row[]) {
   return items.reduce((sum, row) => sum + Number(row.qty || 0) * Number(row.rate ?? row.price ?? 0), 0);
 }
 
+export type SoOrderTotals = {
+  subtotal: number;
+  lineDiscount: number;
+  discountAmount: number;
+  taxAmount: number;
+  total: number;
+};
+
+export function previewSalesOrderId(state: AppState): string {
+  const year = new Date().getFullYear();
+  const rows = listSalesOrders(state);
+  const nums = rows
+    .map((r) => parseInt(String(r.id).replace(/\D/g, ''), 10))
+    .filter((n) => !Number.isNaN(n));
+  const next = (nums.length ? Math.max(...nums) : 0) + 1;
+  return `SO-${year}-${String(next).padStart(4, '0')}`;
+}
+
+export function getSalesPersonOptions(state: AppState) {
+  const employees = listFromState(state, 'employees');
+  if (employees.length) {
+    return employees.map((e) => ({
+      id: String(e.id),
+      name: String(e.name ?? e.fullName ?? e.id),
+    }));
+  }
+  return [
+    { id: 'admin', name: 'Admin Super Admin' },
+    { id: 'sales', name: 'Sales Team' },
+  ];
+}
+
+export function computeSoOrderTotals(
+  items: InvoiceLineItem[],
+  overrides?: { docDiscountOverride?: number | null; docTaxOverride?: number | null },
+): SoOrderTotals {
+  return computeInvoiceTotalsFromItems(items, overrides);
+}
+
+function normalizeSoLineItems(items: Row[]): Row[] {
+  return items.map((item) => ({
+    ...item,
+    id: item.id,
+    productId: item.productId ?? '',
+    description: String(item.description ?? item.name ?? ''),
+    name: String(item.description ?? item.name ?? ''),
+    unit: String(item.unit ?? 'pcs'),
+    qty: Number(item.qty ?? item.quantity ?? 0),
+    rate: Number(item.rate ?? item.price ?? 0),
+    price: Number(item.rate ?? item.price ?? 0),
+    discountPct: Number(item.discountPct ?? 0),
+    taxLabel: String(item.taxLabel ?? 'No Tax'),
+    amount: Number(item.amount ?? item.total ?? 0),
+  }));
+}
+
+function normalizeSalesOrderRecord(payload: Row): Row {
+  const items = Array.isArray(payload.items) ? normalizeSoLineItems(payload.items as Row[]) : [];
+  const totals = payload.totals as SoOrderTotals | undefined;
+  const total = Number(totals?.total ?? payload.total ?? lineTotal(items));
+  const paidAmount = Number(payload.paidAmount ?? 0);
+  const balanceDue = Number(payload.balanceDue ?? Math.max(0, total - paidAmount));
+
+  return {
+    ...payload,
+    items,
+    subtotal: Number(totals?.subtotal ?? payload.subtotal ?? 0),
+    discountAmount: Number(totals?.discountAmount ?? payload.discountAmount ?? 0),
+    taxAmount: Number(totals?.taxAmount ?? payload.taxAmount ?? 0),
+    total,
+    paidAmount,
+    balanceDue,
+    paymentStatus: payload.paymentStatus ?? 'unpaid',
+    customer: payload.customer ?? payload.customerName,
+    customerName: payload.customerName ?? payload.customer,
+    deliveryAddress: payload.deliveryAddress ?? payload.shippingAddress,
+  };
+}
+
+export function deleteSalesOrder(state: AppState, id: string) {
+  ensureCrmState(state);
+  const maps = getCrmMaps(state);
+  delete maps.salesOrdersById[id];
+  setCrmMaps(state, maps);
+  return deleteFromState(state, 'salesOrders', id);
+}
+
 export function listQuotations(state: AppState): Row[] {
   ensureCrmState(state);
   return mapValues(getCrmMaps(state).quotationsById).sort((a, b) => String(b.date).localeCompare(String(a.date)));
@@ -134,18 +221,14 @@ export function updateQuotation(state: AppState, id: string, payload: Row) {
 export function createSalesOrder(state: AppState, payload: Row) {
   ensureCrmState(state);
   if (!state.crmData) return { ok: false as const, error: 'CRM not initialized' };
+  const normalized = normalizeSalesOrderRecord(payload);
   const maps = getCrmMaps(state);
-  const ids = Object.keys(maps.salesOrdersById);
-  const id = String(payload.id ?? nextCrmId(state, 'SO', ids));
-  const items = Array.isArray(payload.items) ? payload.items : [];
-  const total = Number(payload.total ?? lineTotal(items as Row[]));
+  const id = String(normalized.id ?? previewSalesOrderId(state));
   const record = {
-    ...payload,
+    ...normalized,
     id,
-    items,
-    total,
-    status: payload.status || 'draft',
-    date: payload.date || new Date().toISOString().slice(0, 10),
+    status: normalized.status || 'draft',
+    date: normalized.date || new Date().toISOString().slice(0, 10),
     createdAt: new Date().toISOString(),
   };
   maps.salesOrdersById[id] = record;
@@ -156,14 +239,14 @@ export function createSalesOrder(state: AppState, payload: Row) {
 
 export function updateSalesOrder(state: AppState, id: string, payload: Row) {
   ensureCrmState(state);
+  const normalized = normalizeSalesOrderRecord({ ...payload, id });
   const maps = getCrmMaps(state);
   const existing = maps.salesOrdersById[id];
   if (existing) {
-    const items = Array.isArray(payload.items) ? payload.items : existing.items;
-    maps.salesOrdersById[id] = { ...existing, ...payload, items, total: Number(payload.total ?? lineTotal(items as Row[])) };
+    maps.salesOrdersById[id] = { ...existing, ...normalized };
     setCrmMaps(state, maps);
   }
-  return updateInState(state, 'salesOrders', id, payload);
+  return updateInState(state, 'salesOrders', id, normalized);
 }
 
 export function convertQuotationToOrder(state: AppState, quotationId: string) {

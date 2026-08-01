@@ -2630,7 +2630,7 @@ export function getSalesDashboardSummary(state) {
   const monthlySales = invoices
     .filter((invoice) => String(invoice.issueDate || invoice.date).startsWith(currentMonth))
     .reduce((sum, invoice) => sum + Number(invoice.total || 0), 0);
-  const collectedThisMonth = payments
+  const collectedThisMonth: number = payments
     .filter((payment) => String(payment.date).startsWith(currentMonth))
     .reduce((sum, payment) => sum + Number(payment.amount || 0), 0);
   const openReceivables = invoices

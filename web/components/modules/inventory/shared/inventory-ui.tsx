@@ -23,6 +23,7 @@ export function InventoryListLayout({
   addLabel,
   onAdd,
   kpis,
+  kpiGridClassName,
   filters,
   children,
   pagination,
@@ -32,6 +33,7 @@ export function InventoryListLayout({
   addLabel: string;
   onAdd: () => void;
   kpis: KpiCardItem[];
+  kpiGridClassName?: string;
   filters?: React.ReactNode;
   children: React.ReactNode;
   pagination?: React.ReactNode;
@@ -45,7 +47,11 @@ export function InventoryListLayout({
         </div>
         <button type="button" onClick={onAdd} className={BTN_PRIMARY}>+ {addLabel}</button>
       </div>
-      {kpis.length > 0 && <KpiCards items={kpis} />}
+      {kpis.length > 0 && (
+        kpiGridClassName
+          ? <KpiCards gridClassName={kpiGridClassName} items={kpis} />
+          : <KpiCards items={kpis} />
+      )}
       {filters}
       {children}
       {pagination}

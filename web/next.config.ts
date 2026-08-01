@@ -39,6 +39,7 @@ const htmlRedirects = [
   ['manufacturing-mold-management.html', '/manufacturing/mold-management'],
   ['manufacturing-wastage.html', '/manufacturing/wastage'],
   ['manufacturing-packing.html', '/manufacturing/packing'],
+  ['accounting-cashbox.html', '/accounting/cashbox'],
   ['accounting-dues.html', '/accounting/dues'],
   ['accounting-receivables.html', '/accounting/receivables'],
   ['accounting-payables.html', '/accounting/payables'],

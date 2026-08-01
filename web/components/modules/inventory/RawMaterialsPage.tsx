@@ -133,10 +133,13 @@ export function RawMaterialsPage() {
       subtitle="Manage raw material inventory, suppliers, and stock levels."
       addLabel="Add Raw Material"
       onAdd={() => { resetForm(); setView('form'); }}
+      kpiGridClassName="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-2"
       kpis={[
         { key: 'count', label: 'Total Materials', value: String(metrics.count) },
-        { key: 'value', label: 'Total Inventory Value', value: formatMoney(metrics.totalValue) },
+        { key: 'stock', label: 'Total Stock Qty', value: `${metrics.totalQuantity.toLocaleString()} units` },
         { key: 'low', label: 'Low Stock Alerts', value: String(metrics.lowStock), alert: metrics.lowStock > 0 },
+        { key: 'oos', label: 'Out of Stock', value: String(metrics.outOfStock), alert: metrics.outOfStock > 0 },
+        { key: 'value', label: 'Total Inventory Value', value: formatMoney(metrics.totalValue) },
       ]}
       filters={<FilterBar><SearchInput value={search} onChange={(v) => { setSearch(v); setPage(1); }} placeholder="Search materials, suppliers, categories..." /></FilterBar>}
       pagination={<PaginationBar page={page} pageSize={PAGE_SIZE} total={filtered.length} onPageChange={setPage} />}

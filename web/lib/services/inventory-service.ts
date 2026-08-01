@@ -85,6 +85,17 @@ export function buildDefaultWarehouseAllocations(state: AppState) {
   return allocations;
 }
 
+export function previewProductSku(state: AppState): string {
+  const rows = listInventory(state, { excludeRaw: false });
+  const nums = rows
+    .map((r) => String(r.sku ?? ''))
+    .filter((sku) => /^TOY-\d+$/i.test(sku))
+    .map((sku) => parseInt(sku.replace(/\D/g, ''), 10))
+    .filter((n) => !Number.isNaN(n));
+  const max = nums.length ? Math.max(...nums) : 0;
+  return `TOY-${String(max + 1).padStart(6, '0')}`;
+}
+
 export function createProduct(state: AppState, payload: Row) {
   const allocations = (payload.warehouseStock as Record<string, number>) ?? buildDefaultWarehouseAllocations(state);
   const synced = syncWarehouseStock(allocations);
@@ -298,8 +309,10 @@ export function listRawMaterials(state: AppState) {
 export function getRawMaterialMetrics(state: AppState) {
   const items = listRawMaterials(state);
   const totalValue = items.reduce((s, r) => s + Number(r.quantity ?? 0) * Number(r.price ?? 0), 0);
+  const totalQuantity = items.reduce((s, r) => s + Number(r.quantity ?? 0), 0);
   const lowStock = items.filter((r) => Number(r.quantity ?? 0) < Number(r.threshold ?? 100)).length;
-  return { count: items.length, totalValue, lowStock };
+  const outOfStock = items.filter((r) => Number(r.quantity ?? 0) <= 0).length;
+  return { count: items.length, totalValue, totalQuantity, lowStock, outOfStock };
 }
 
 export function createRawMaterial(state: AppState, payload: Row) {

@@ -25,6 +25,8 @@ export interface AppState {
   purchases: Array<Record<string, unknown>>;
   purchasesFilter?: string;
   accounting: Array<Record<string, unknown>>;
+  cashboxEntries?: Array<Record<string, unknown>>;
+  dueEntries?: Array<Record<string, unknown>>;
   payroll: Array<Record<string, unknown>>;
   projects: Array<Record<string, unknown>>;
   manufacturing: Array<Record<string, unknown>>;

@@ -1,18 +1,16 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
-import { createPortal } from 'react-dom';
-import { Plus } from 'lucide-react';
+import { useMemo, useState } from 'react';
+import { Download, Plus } from 'lucide-react';
 import { Footer } from '@/components/layout/Footer';
 import { FilterTabs } from '@/components/shared/FilterTabs';
-import { KpiCards } from '@/components/shared/KpiCards';
 import { AppTable, type AppTableColumn } from '@/components/shared/AppTable';
 import { StatusBadge } from '@/components/shared/StatusBadge';
 import { TableIconAction } from '@/components/shared/TableIconAction';
 import { MODULE_LIST_SHELL } from '@/lib/ui/module-layout';
 import { useAppStore } from '@/lib/state/app-store';
-import { getCustomerList, approveInvoice } from '@/lib/services/crm-service';
-import { INVOICES_CONFIG, listInvoices } from '@/lib/modules/sales-configs';
+import { getCustomerList, approveInvoice, getSalesDashboardSummary } from '@/lib/services/crm-service';
+import { listInvoices } from '@/lib/modules/sales-configs';
 import {
   createInvoice,
   deleteInvoice,
@@ -31,7 +29,14 @@ import {
 } from '@/components/modules/sales/invoice-form/InvoiceForm';
 import type { InvoiceFormValues, InvoiceLineItem } from '@/components/modules/sales/invoice-form/inv-form-types';
 import { createEmptyLineItem, recalcLineItem } from '@/components/modules/sales/invoice-form/inv-form-types';
-import { InvoicePrint } from '@/components/modules/sales/invoice-form/InvoicePrint';
+import { InvoicePrintPreview } from '@/components/modules/sales/invoice-form/InvoicePrintPreview';
+import { InvoiceDashboardMetrics } from '@/components/modules/sales/invoice-list/InvoiceDashboardMetrics';
+import { InvoiceAgingSnapshot } from '@/components/modules/sales/invoice-list/InvoiceAgingSnapshot';
+import {
+  buildPrintPayloadFromRow,
+  enrichPrintPayload,
+  exportInvoicesCsv,
+} from '@/components/modules/sales/invoice-list/invoice-list-utils';
 
 const STATUS_TABS = [
   { id: 'all', label: 'All' },
@@ -131,7 +136,7 @@ export function InvoicesPage() {
     return data;
   }, [appState, search, statusFilter]);
 
-  const kpis = useMemo(() => INVOICES_CONFIG.kpi?.(rows) ?? [], [rows]);
+  const dashboardSummary = useMemo(() => getSalesDashboardSummary(appState), [appState]);
 
   const invoicePreviewNo = useMemo(
     () => (editingId ? editingId : previewInvoiceNumber(appState, formValues.issueDate)),
@@ -224,34 +229,22 @@ export function InvoicesPage() {
   };
 
   const handlePreview = (payload: InvoicePayload) => {
-    setPrintPayload({ id: invoicePreviewNo, data: payload });
+    setPrintPayload({
+      id: invoicePreviewNo,
+      data: enrichPrintPayload(appState, { ...payload, invoiceNo: invoicePreviewNo }),
+    });
   };
 
-  useEffect(() => {
-    if (!printPayload) return;
-    document.body.classList.add('print-invoice-active');
-    let cancelled = false;
-    const runPrint = async () => {
-      try {
-        await document.fonts.ready;
-      } catch {
-        /* fonts API unavailable */
-      }
-      await new Promise((resolve) => window.setTimeout(resolve, 300));
-      if (!cancelled) window.print();
-    };
-    void runPrint();
-    const onAfterPrint = () => {
-      document.body.classList.remove('print-invoice-active');
-      setPrintPayload(null);
-    };
-    window.addEventListener('afterprint', onAfterPrint);
-    return () => {
-      cancelled = true;
-      window.removeEventListener('afterprint', onAfterPrint);
-      document.body.classList.remove('print-invoice-active');
-    };
-  }, [printPayload]);
+  const handleExport = () => {
+    const csv = exportInvoicesCsv(rows, (row) => resolveInvoiceCustomerLabel(appState, row));
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'invoices.csv';
+    a.click();
+    URL.revokeObjectURL(url);
+  };
 
   const handleDelete = (id: string) => {
     if (!window.confirm('Delete this invoice?')) return;
@@ -259,15 +252,13 @@ export function InvoicesPage() {
     saveAppState();
   };
 
-  const printPortal =
-    printPayload && typeof document !== 'undefined'
-      ? createPortal(
-          <div className="invoice-print-root hidden print:block bg-white">
-            <InvoicePrint invoiceNo={printPayload.id} data={printPayload.data} />
-          </div>,
-          document.body,
-        )
-      : null;
+  const printPreview = printPayload ? (
+    <InvoicePrintPreview
+      invoiceNo={printPayload.id}
+      data={printPayload.data}
+      onClose={() => setPrintPayload(null)}
+    />
+  ) : null;
 
   if (view === 'form') {
     return (
@@ -284,7 +275,7 @@ export function InvoicesPage() {
           onSave={handleSave}
           onPreview={handlePreview}
         />
-        {printPortal}
+        {printPreview}
       </>
     );
   }
@@ -295,18 +286,30 @@ export function InvoicesPage() {
         <div className="flex flex-col xl:flex-row xl:items-center xl:justify-between gap-4">
           <div>
             <h2 className="text-xl font-extrabold text-slate-900 tracking-tight">Invoices</h2>
-            <p className="text-xs text-slate-500 mt-1 font-medium">Manage invoices, approvals, and payment collection.</p>
+            <p className="text-xs text-slate-500 mt-1 font-medium max-w-2xl">
+              Invoice lifecycle, collections, credit exposure, recurring billing, and AR visibility in one operating screen.
+            </p>
           </div>
-          <button
-            type="button"
-            onClick={openCreate}
-            className="bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold px-4 py-2.5 rounded-xl transition-colors flex items-center gap-2 cursor-pointer self-start"
-          >
-            <Plus className="w-4 h-4" /> New Invoice
-          </button>
+          <div className="flex flex-wrap items-center gap-2 self-start">
+            <button
+              type="button"
+              onClick={handleExport}
+              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl border border-slate-200 text-xs font-bold text-slate-600 hover:bg-slate-50 cursor-pointer"
+            >
+              <Download className="w-4 h-4" /> Export CSV
+            </button>
+            <button
+              type="button"
+              onClick={openCreate}
+              className="bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold px-4 py-2.5 rounded-xl transition-colors flex items-center gap-2 cursor-pointer"
+            >
+              <Plus className="w-4 h-4" /> Create Invoice
+            </button>
+          </div>
         </div>
 
-        <KpiCards items={kpis} />
+        <InvoiceDashboardMetrics summary={dashboardSummary} />
+        <InvoiceAgingSnapshot aging={dashboardSummary.aging} />
 
         <div className="bg-white p-4 rounded-xl border border-slate-200/80 premium-shadow space-y-4">
           <FilterTabs tabs={STATUS_TABS} active={statusFilter} onChange={setStatusFilter} />
@@ -328,23 +331,7 @@ export function InvoicesPage() {
               <TableIconAction variant="edit" onClick={() => openEdit(row)} />
               <TableIconAction
                 variant="view"
-                onClick={() => {
-                  const data = recordToFormValues(row);
-                  setPrintPayload({
-                    id: String(row.id),
-                    data: {
-                      ...data,
-                      invoiceNo: String(row.id),
-                      totals: {
-                        subtotal: Number(row.subtotal ?? 0),
-                        lineDiscount: Number(row.discountAmount ?? row.discount ?? 0),
-                        discountAmount: Number(row.discountAmount ?? row.discount ?? 0),
-                        taxAmount: Number(row.taxAmount ?? row.tax ?? 0),
-                        total: Number(row.total ?? row.amount ?? 0),
-                      },
-                    },
-                  });
-                }}
+                onClick={() => setPrintPayload(buildPrintPayloadFromRow(appState, row))}
               />
               <TableIconAction variant="delete" onClick={() => handleDelete(String(row.id))} />
             </>
@@ -354,7 +341,7 @@ export function InvoicesPage() {
         <Footer />
       </div>
 
-      {printPortal}
+      {printPreview}
     </>
   );
 }

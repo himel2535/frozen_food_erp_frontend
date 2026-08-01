@@ -76,6 +76,7 @@ export const TENANT_SIDEBAR_SECTIONS: SidebarSection[] = [
   {
     id: 'accounts', label: 'Accounts', href: '/accounting/receivables', imageIcon: '/images/sidebar/accounts.png', iconifyIcon: 'flat-color-icons:money-transfer', color: 'text-indigo-600',
     items: [
+      { label: 'Cashbox', href: '/accounting/cashbox', view: 'cashbox', imageIcon: '/images/sidebar/accounts/cashbox.png', iconifyIcon: 'flat-color-icons:safe' },
       { label: 'Due Management', href: '/accounting/dues', view: 'dues', imageIcon: '/images/sidebar/accounts/dues.png', iconifyIcon: 'fluent-color:alert-badge-24' },
       { label: 'Customer Due (Cash)', href: '/accounting/receivables', view: 'receivables', imageIcon: '/images/sidebar/accounts/receivables.png', iconifyIcon: 'flat-color-icons:positive-dynamic' },
       { label: 'Supplier Due (Bank)', href: '/accounting/payables', view: 'payables', imageIcon: '/images/sidebar/accounts/payables.png', iconifyIcon: 'flat-color-icons:negative-dynamic' },

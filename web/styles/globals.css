@@ -806,24 +806,46 @@ body.dashboard-page .text-3xl { font-size: 2rem; }        /* 32px */
     print-color-adjust: exact;
   }
 
-  body.print-invoice-active > *:not(.invoice-print-root) {
+  body.print-invoice-active > *:not(.invoice-print-preview-root) {
     display: none !important;
   }
 
-  body.print-invoice-active .invoice-print-root {
+  body.print-invoice-active .invoice-print-preview-root {
     display: block !important;
     position: static !important;
     width: 100% !important;
     margin: 0 !important;
     padding: 0 !important;
     overflow: visible !important;
+    background: white !important;
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
   }
 
-  body.print-invoice-active .invoice-print-root * {
+  body.print-invoice-active .invoice-print-preview-root .invoice-print-root {
+    display: block !important;
+    position: static !important;
+    width: 100% !important;
+    max-width: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    box-shadow: none !important;
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
+  }
+
+  body.print-invoice-active .invoice-print-preview-root * {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  .inv-print-section,
+  .inv-print-signatures,
+  .inv-print-footer,
+  .inv-print-bottom,
+  .inv-print-footer-strip {
+    break-inside: avoid;
+    page-break-inside: avoid;
   }
 
   .dc-print-section,

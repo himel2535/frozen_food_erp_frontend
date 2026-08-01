@@ -9,6 +9,7 @@ import {
   MapPin,
   Package,
   Plus,
+  Printer,
   Save,
   User,
 } from 'lucide-react';
@@ -26,6 +27,7 @@ import {
 import {
   INV_ADD_ITEM_BTN_CLS,
   INV_BTN_GHOST,
+  INV_BTN_OUTLINE,
   INV_BTN_PRIMARY,
   INV_FOOTER_CLS,
   INV_INPUT_CLS,
@@ -168,14 +170,15 @@ export function InvoiceForm({
           </button>
         </div>
 
-        <div className="flex flex-col gap-4 flex-1">
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 items-start">
+        <div className="flex flex-col gap-2 flex-1">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-2 items-start">
             <InvoiceFormSectionCard
+              compact
               title="Customer Details"
               icon={<User className="w-4 h-4" />}
               className="lg:col-span-2"
             >
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-stretch">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 items-stretch">
                 <div id="inv-field-customerId" className="flex flex-col">
                   <InvoiceCustomerSearch
                     customers={customers}
@@ -207,7 +210,7 @@ export function InvoiceForm({
               </div>
             </InvoiceFormSectionCard>
 
-            <InvoiceFormSectionCard title="Invoice Details" icon={<Calendar className="w-4 h-4" />}>
+            <InvoiceFormSectionCard compact title="Invoice Details" icon={<Calendar className="w-4 h-4" />}>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-3 gap-y-3">
                 <IconInput
                   label="Invoice Date"
@@ -255,6 +258,7 @@ export function InvoiceForm({
           </div>
 
           <InvoiceFormSectionCard
+            compact
             title="Invoice Items"
             icon={<Package className="w-4 h-4" />}
             headerAction={(
@@ -274,8 +278,9 @@ export function InvoiceForm({
             </div>
           </InvoiceFormSectionCard>
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 items-stretch">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-2 items-stretch">
             <InvoiceFormSectionCard
+              compact
               title="Additional Details"
               icon={<FileText className="w-4 h-4" />}
               className="lg:col-span-2"
@@ -313,6 +318,13 @@ export function InvoiceForm({
         <div className={INV_FOOTER_CLS}>
           <button type="button" onClick={onCancel} className={`${INV_BTN_GHOST} sm:mr-auto`}>
             Cancel
+          </button>
+          <button
+            type="button"
+            onClick={() => onPreview(toPayload())}
+            className={INV_BTN_OUTLINE}
+          >
+            <Printer className="w-4 h-4" /> Print Invoice
           </button>
           <div className="relative inline-flex">
             <button

@@ -37,6 +37,12 @@ export type InvoicePayload = InvoiceFormValues & {
   id?: string;
   invoiceNo: string;
   totals: InvoiceTotals;
+  paidAmount?: number;
+  balanceDue?: number;
+  approvalStatus?: string;
+  shippingAddress?: string;
+  customerEmail?: string;
+  customerPhone?: string;
 };
 
 export const EMPTY_INVOICE_FORM: InvoiceFormValues = {
