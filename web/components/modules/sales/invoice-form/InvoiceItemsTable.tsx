@@ -18,11 +18,13 @@ export function InvoiceItemsTable({
   items,
   productOptions,
   onChange,
+  onAddItem,
   error,
 }: {
   items: InvoiceLineItem[];
   productOptions: Array<{ id: string; name: string; sku?: string; price?: number }>;
   onChange: (items: InvoiceLineItem[]) => void;
+  onAddItem?: () => void;
   error?: string;
 }) {
   const updateItem = (id: string, patch: Partial<InvoiceLineItem>) => {
@@ -47,7 +49,13 @@ export function InvoiceItemsTable({
     onChange(next);
   };
 
-  const addRow = () => onChange([...items, createEmptyLineItem()]);
+  const addRow = () => {
+    if (onAddItem) {
+      onAddItem();
+      return;
+    }
+    onChange([...items, createEmptyLineItem()]);
+  };
 
   const pickProduct = (id: string, productId: string) => {
     const product = productOptions.find((p) => p.id === productId);
@@ -61,13 +69,6 @@ export function InvoiceItemsTable({
 
   return (
     <div>
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
-        <div />
-        <button type="button" onClick={addRow} className="inline-flex items-center gap-2 text-xs font-bold text-blue-600 hover:text-blue-700 cursor-pointer self-end">
-          <Plus className="w-4 h-4" /> Add Item
-        </button>
-      </div>
-
       <div className="overflow-x-auto rounded-xl border border-slate-200">
         <table className="w-full text-xs min-w-[960px]">
           <thead>
@@ -198,11 +199,13 @@ export function InvoiceItemsTable({
             })}
           </tbody>
         </table>
-      </div>
 
-      <button type="button" onClick={addRow} className={`${INV_ADD_ROW_CLS} mt-3`}>
-        <Plus className="w-4 h-4 mr-1.5" /> Add Another Item
-      </button>
+        <div className="px-3 py-2 border-t border-slate-100 bg-white">
+          <button type="button" onClick={addRow} className={INV_ADD_ROW_CLS}>
+            <Plus className="w-3.5 h-3.5 mr-1" /> Add Another Item
+          </button>
+        </div>
+      </div>
 
       {error ? <p className="mt-2 text-[10px] font-semibold text-rose-600">{error}</p> : null}
     </div>

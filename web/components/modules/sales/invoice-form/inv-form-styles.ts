@@ -23,10 +23,13 @@ export const INV_INPUT_CLS =
   'w-full px-3 py-2 rounded-xl border border-slate-200/90 bg-white text-xs font-medium focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500';
 
 export const INV_TABLE_HEAD_CLS =
-  'bg-slate-50 text-[10px] font-bold uppercase tracking-wide text-slate-500';
+  'bg-blue-50/90 text-[10px] font-bold uppercase tracking-wide text-slate-600';
 
 export const INV_ADD_ROW_CLS =
-  'flex items-center justify-center w-full py-3 border-2 border-dashed border-slate-200 rounded-xl text-xs font-bold text-blue-600 hover:bg-blue-50/50 hover:border-blue-200 cursor-pointer transition-all';
+  'flex items-center justify-center w-full py-2 rounded-lg border border-dashed border-blue-300/80 bg-blue-50/70 text-[11px] font-bold text-blue-600 hover:bg-blue-100/80 hover:border-blue-400 cursor-pointer transition-all';
+
+export const INV_ADD_ITEM_BTN_CLS =
+  'inline-flex items-center gap-1.5 text-xs font-bold text-blue-600 hover:text-blue-700 cursor-pointer transition-colors';
 
 export const INV_PREVIEW_BTN_CLS =
   'inline-flex items-center gap-2 border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold px-4 py-2.5 rounded-xl cursor-pointer transition-all shrink-0';

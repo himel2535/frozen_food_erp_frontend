@@ -8,6 +8,7 @@ import {
   FileText,
   MapPin,
   Package,
+  Plus,
   Save,
   User,
 } from 'lucide-react';
@@ -23,12 +24,13 @@ import {
   INVOICE_TERMS_OPTIONS,
 } from '@/components/modules/sales/invoice-form/inv-form-options';
 import {
+  INV_ADD_ITEM_BTN_CLS,
   INV_BTN_GHOST,
   INV_BTN_PRIMARY,
   INV_FOOTER_CLS,
+  INV_INPUT_CLS,
   INV_LABEL_CLS,
   INV_PREVIEW_BTN_CLS,
-  INV_STATUS_CARD_CLS,
 } from '@/components/modules/sales/invoice-form/inv-form-styles';
 import {
   validateInvoiceForm,
@@ -36,6 +38,7 @@ import {
 } from '@/components/modules/sales/invoice-form/inv-form-validation';
 import {
   computeInvoiceTotalsFromItems,
+  createEmptyLineItem,
   EMPTY_INVOICE_FORM,
   recalcLineItem,
   type InvoiceFormValues,
@@ -138,6 +141,14 @@ export function InvoiceForm({
     updateForm({ docTaxOverride: value });
   };
 
+  const addInvoiceItem = () => {
+    updateForm({
+      items: [...form.items, createEmptyLineItem()],
+      docDiscountOverride: null,
+      docTaxOverride: null,
+    });
+  };
+
   return (
     <div className={MODULE_LIST_SHELL}>
       <form ref={formRef} onSubmit={handleSubmit} noValidate className="w-full flex flex-col min-h-full pb-4">
@@ -164,8 +175,8 @@ export function InvoiceForm({
               icon={<User className="w-4 h-4" />}
               className="lg:col-span-2"
             >
-              <div className="space-y-3">
-                <div id="inv-field-customerId">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-stretch">
+                <div id="inv-field-customerId" className="flex flex-col">
                   <InvoiceCustomerSearch
                     customers={customers}
                     customerId={form.customerId}
@@ -187,7 +198,8 @@ export function InvoiceForm({
                   label="Billing Address"
                   icon={MapPin}
                   fieldId="inv-billing"
-                  rows={3}
+                  className="h-full"
+                  rows={4}
                   value={form.billingAddress}
                   onChange={(e) => updateForm({ billingAddress: e.target.value })}
                   placeholder="Billing address will appear here"
@@ -196,7 +208,7 @@ export function InvoiceForm({
             </InvoiceFormSectionCard>
 
             <InvoiceFormSectionCard title="Invoice Details" icon={<Calendar className="w-4 h-4" />}>
-              <div className="space-y-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-3 gap-y-3">
                 <IconInput
                   label="Invoice Date"
                   icon={Calendar}
@@ -220,17 +232,17 @@ export function InvoiceForm({
                     type="text"
                     readOnly
                     value={invoicePreviewNo}
-                    className="w-full px-3 py-2 rounded-xl border border-slate-200/90 bg-slate-50 text-xs font-bold text-slate-700"
+                    className={`${INV_INPUT_CLS} bg-slate-50 font-bold text-slate-700`}
                   />
                 </div>
-                <div className={INV_STATUS_CARD_CLS}>
+                <div>
                   <label className={INV_LABEL_CLS}>Status</label>
                   <div className="relative">
                     <span className={`absolute left-3 top-1/2 -translate-y-1/2 w-2.5 h-2.5 rounded-full ${statusMeta.dotClass}`} />
                     <select
                       value={form.status}
                       onChange={(e) => updateForm({ status: e.target.value })}
-                      className="w-full pl-8 pr-4 py-2 rounded-xl border border-slate-200/90 bg-white text-xs font-semibold cursor-pointer appearance-none"
+                      className={`${INV_INPUT_CLS} pl-8 font-semibold cursor-pointer appearance-none`}
                     >
                       {INVOICE_STATUS_OPTIONS.map((status) => (
                         <option key={status.value} value={status.value}>{status.label}</option>
@@ -245,12 +257,18 @@ export function InvoiceForm({
           <InvoiceFormSectionCard
             title="Invoice Items"
             icon={<Package className="w-4 h-4" />}
+            headerAction={(
+              <button type="button" onClick={addInvoiceItem} className={INV_ADD_ITEM_BTN_CLS}>
+                <Plus className="w-4 h-4" /> Add Item
+              </button>
+            )}
           >
             <div id="inv-field-items">
               <InvoiceItemsTable
                 items={form.items}
                 productOptions={productOptions}
                 onChange={(items) => updateForm({ items, docDiscountOverride: null, docTaxOverride: null })}
+                onAddItem={addInvoiceItem}
                 error={errors.items}
               />
             </div>
