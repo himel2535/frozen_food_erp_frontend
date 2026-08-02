@@ -7,6 +7,20 @@ import { getLegacyParityConfig } from '@/lib/modules/legacy-parity-configs';
 import { PORT_CONFIGS } from '@/lib/modules/port-configs';
 import type { DedicatedModuleConfig } from '@/components/modules/shared/DedicatedModule';
 import { approvePurchaseRmOrder, rejectPurchaseRmOrder } from '@/lib/services/purchase-rm-service';
+import { employeeAvatarClass, employeeInitials } from '@/lib/services/hrm-service';
+import {
+  formatProjectDeadline,
+  formatProjectMoney,
+  isProjectOverdue,
+  projectBudget,
+  projectHealthClass,
+  projectSetupLabel,
+  projectStatus,
+} from '@/lib/services/projects-service';
+import {
+  PRIORITY_BADGE_CLS,
+  PRIORITY_DOT_CLS,
+} from '@/components/modules/projects/project-form/project-form-types';
 
 function cfg(id: string): DedicatedModuleConfig {
   return getLegacyParityConfig(id);
@@ -65,7 +79,115 @@ export function SettingsDocumentsPage() { return <DedicatedModule config={cfg('s
 export function SettingsCompanyPage() { return <DedicatedModule config={cfg('settings-company')} />; }
 export function SettingsAuditLogsPage() { return <DedicatedModule config={PORT_CONFIGS['settings-audit-logs'] as DedicatedModuleConfig} />; }
 export function SettingsProfilePage() { return <DedicatedModule config={cfg('settings-profile')} />; }
-export function ProjectsPage() { return <DedicatedModule config={cfg('projects')} />; }
+export function ProjectsPage() {
+  const router = useRouter();
+  const config = useMemo(() => ({
+    ...cfg('projects'),
+    kpiGridClassName: 'grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2',
+    hideInlineForm: true,
+    onAdd: () => router.push('/projects/new'),
+    rowSort: (a: Record<string, unknown>, b: Record<string, unknown>) => {
+      const statusOrder = (row: Record<string, unknown>) => {
+        const status = projectStatus(row);
+        if (status === 'active') return 0;
+        if (status === 'draft') return 1;
+        return 2;
+      };
+      const orderDiff = statusOrder(a) - statusOrder(b);
+      if (orderDiff !== 0) return orderDiff;
+      return String(a.deadline ?? a.expectedDeliveryDate ?? '').localeCompare(
+        String(b.deadline ?? b.expectedDeliveryDate ?? ''),
+      );
+    },
+    columnRender: {
+      name: (row: Record<string, unknown>) => {
+        const name = String(row.name ?? '—');
+        const projectId = String(row.projectId ?? row.id ?? '');
+        const customer = String(row.customerName ?? '');
+        const setupStep = Number(row.setupStep ?? 0);
+        return (
+          <span className="inline-flex flex-col min-w-0 max-w-[220px]">
+            <span className="font-semibold text-slate-800 truncate">{name}</span>
+            {projectId ? (
+              <span className="text-[10px] text-slate-400 font-medium truncate">{projectId}</span>
+            ) : null}
+            {customer ? (
+              <span className="text-[10px] text-blue-600 font-semibold truncate">{customer}</span>
+            ) : null}
+            {setupStep > 1 ? (
+              <span className="text-[10px] text-violet-600 font-bold mt-0.5">
+                Step {setupStep}: {projectSetupLabel(setupStep)}
+              </span>
+            ) : null}
+          </span>
+        );
+      },
+      lead: (row: Record<string, unknown>) => {
+        const name = String(row.lead ?? row.salesPersonName ?? '—');
+        return (
+          <span className="inline-flex items-center gap-2 min-w-0">
+            <span className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold shrink-0 ${employeeAvatarClass(name)}`}>
+              {employeeInitials(name)}
+            </span>
+            <span className="font-semibold text-slate-800 truncate">{name}</span>
+          </span>
+        );
+      },
+      progress: (row: Record<string, unknown>) => {
+        const pct = Math.min(100, Math.max(0, Number(row.progress ?? 0)));
+        return (
+          <span className="inline-flex flex-col gap-1 min-w-[88px]">
+            <span className="text-xs font-extrabold text-slate-800">{pct}%</span>
+            <span className="h-1.5 rounded-full bg-slate-100 overflow-hidden">
+              <span
+                className="block h-full rounded-full bg-gradient-to-r from-blue-500 to-blue-600"
+                style={{ width: `${pct}%` }}
+              />
+            </span>
+          </span>
+        );
+      },
+      health: (row: Record<string, unknown>) => {
+        const health = String(row.health ?? 'On Track');
+        return (
+          <span className={`inline-flex items-center px-2.5 py-1 rounded-lg border text-[11px] font-bold ${projectHealthClass(health)}`}>
+            {health}
+          </span>
+        );
+      },
+      priority: (row: Record<string, unknown>) => {
+        const priority = String(row.priority ?? '');
+        if (!priority) return <span className="text-slate-400">—</span>;
+        return (
+          <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-[11px] font-bold ${PRIORITY_BADGE_CLS[priority] ?? 'bg-slate-50 text-slate-600 border-slate-100'}`}>
+            <span className={`w-1.5 h-1.5 rounded-full ${PRIORITY_DOT_CLS[priority] ?? 'bg-slate-400'}`} />
+            {priority}
+          </span>
+        );
+      },
+      deadline: (row: Record<string, unknown>) => {
+        const raw = row.deadline ?? row.expectedDeliveryDate;
+        const overdue = isProjectOverdue(raw);
+        return (
+          <span className="inline-flex flex-col min-w-0">
+            <span className={`text-xs font-semibold ${overdue ? 'text-rose-600' : 'text-slate-800'}`}>
+              {formatProjectDeadline(raw)}
+            </span>
+            {overdue ? (
+              <span className="text-[10px] font-bold text-rose-500">Overdue</span>
+            ) : null}
+          </span>
+        );
+      },
+      budget: (row: Record<string, unknown>) => (
+        <span className="text-xs font-extrabold text-blue-700 whitespace-nowrap">
+          {formatProjectMoney(projectBudget(row))}
+        </span>
+      ),
+    },
+  }), [router]);
+  return <DedicatedModule config={config} />;
+}
 export function AssetManagementPage() { return <DedicatedModule config={cfg('asset-management')} />; }
 export function WorkflowApprovalsPage() {
   const router = useRouter();

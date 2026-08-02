@@ -30,6 +30,7 @@ import {
   listSalaryStructures, listPayrollRuns, listPayrollSlips, crudHrm,
 } from '@/lib/services/hrm-service';
 import { getSalaryStructureMetrics, formatMoney as payrollMoney } from '@/lib/services/payroll-service';
+import { summarizeProjects } from '@/lib/services/projects-service';
 import { listFromState, createInState, updateInState, deleteFromState } from '@/lib/services/domain-service';
 import { crmActivityAdapter } from '@/lib/modules/port-adapters';
 import type { AppState } from '@/lib/state/types';
@@ -1128,15 +1129,22 @@ Object.assign(LEGACY_PARITY_CONFIGS, {
   'projects': {
     id: 'projects',
     title: 'Projects',
-    subtitle: 'Project tracking and milestones.',
+    subtitle: 'Track customer orders, production setup, and delivery milestones.',
     addLabel: 'New Project',
-    searchKeys: ['name', 'lead'],
+    searchKeys: ['name', 'lead', 'customerName', 'projectId'],
+    statusTabs: [
+      { id: 'all', label: 'All' },
+      { id: 'active', label: 'Active' },
+      { id: 'draft', label: 'Draft' },
+    ],
     columns: [
       { key: 'name', label: 'Project' },
       { key: 'lead', label: 'Lead' },
-      { key: 'progress', label: 'Progress %' },
+      { key: 'progress', label: 'Progress' },
       { key: 'health', label: 'Health' },
+      { key: 'priority', label: 'Priority' },
       { key: 'deadline', label: 'Deadline' },
+      { key: 'budget', label: 'Value' },
     ],
     fields: [
       { key: 'name', label: 'Project Name', type: 'text', required: true },
@@ -1147,12 +1155,12 @@ Object.assign(LEGACY_PARITY_CONFIGS, {
       { key: 'budget', label: 'Budget', type: 'number', advanced: true },
       { key: 'notes', label: 'Notes', type: 'textarea', advanced: true },
     ],
-    kpi: (rows) => [
-      { key: 'total', label: 'Active Projects', value: String(rows.length) },
-      { key: 'risk', label: 'At Risk', value: String(rows.filter((r) => String(r.health).includes('Risk') || r.health === 'amber').length) },
-    ],
+    kpi: (rows) => summarizeProjects(rows),
     adapter: adapter({
-      list: (s) => listFromState(s, 'projects'),
+      list: (s) => listFromState(s, 'projects').map((row) => ({
+        ...row,
+        status: row.status ?? 'active',
+      })),
       create: (s, p) => createInState(s, 'projects', p, 'PRJ'),
       update: (s, id, p) => updateInState(s, 'projects', id, p),
       delete: (s, id) => deleteFromState(s, 'projects', id),

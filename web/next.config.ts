@@ -73,6 +73,7 @@ const htmlRedirects = [
   ['settings-audit-logs.html', '/settings/audit-logs'],
   ['settings-profile.html', '/settings/profile'],
   ['projects.html', '/projects'],
+  ['projects-new.html', '/projects/new'],
   ['asset-management.html', '/asset-management'],
   ['workflow-approvals.html', '/workflow-approvals'],
   ['notifications.html', '/notifications'],

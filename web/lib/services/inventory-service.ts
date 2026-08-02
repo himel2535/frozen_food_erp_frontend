@@ -308,11 +308,43 @@ export function listRawMaterials(state: AppState) {
 
 export function getRawMaterialMetrics(state: AppState) {
   const items = listRawMaterials(state);
-  const totalValue = items.reduce((s, r) => s + Number(r.quantity ?? 0) * Number(r.price ?? 0), 0);
+  const totalValue = items.reduce((s, r) => s + getRawMaterialTotalValue(r), 0);
   const totalQuantity = items.reduce((s, r) => s + Number(r.quantity ?? 0), 0);
-  const lowStock = items.filter((r) => Number(r.quantity ?? 0) < Number(r.threshold ?? 100)).length;
-  const outOfStock = items.filter((r) => Number(r.quantity ?? 0) <= 0).length;
+  const lowStock = items.filter((r) => getRawMaterialStockStatus(r) === 'Low Stock').length;
+  const outOfStock = items.filter((r) => getRawMaterialStockStatus(r) === 'Out of Stock').length;
   return { count: items.length, totalValue, totalQuantity, lowStock, outOfStock };
+}
+
+export function getRawMaterialStockStatus(rm: Row): 'In Stock' | 'Low Stock' | 'Out of Stock' {
+  const qty = Number(rm.quantity ?? 0);
+  const threshold = Number(rm.threshold ?? 100);
+  if (qty <= 0) return 'Out of Stock';
+  if (qty < threshold) return 'Low Stock';
+  return 'In Stock';
+}
+
+export function getRawMaterialTotalValue(rm: Row) {
+  return Number(rm.quantity ?? 0) * Number(rm.price ?? 0);
+}
+
+export function getRawMaterialLocationLabel(state: AppState, rm: Row) {
+  const whId = String(rm.warehouseId ?? 'WH-001');
+  const whName = getWarehouseName(state, whId);
+  const bin = String(rm.location ?? '').trim();
+  return bin ? `${whName} · ${bin}` : whName;
+}
+
+export function listRawMaterialCategories(state: AppState) {
+  const cats = new Set(
+    listRawMaterials(state).map((r) => String(r.category ?? 'Uncategorized').trim() || 'Uncategorized'),
+  );
+  return Array.from(cats).sort((a, b) => a.localeCompare(b));
+}
+
+export function rawMaterialStockStatusClass(status: string) {
+  if (status === 'Out of Stock') return 'text-rose-600';
+  if (status === 'Low Stock') return 'text-amber-600';
+  return 'text-emerald-600';
 }
 
 export function createRawMaterial(state: AppState, payload: Row) {
@@ -322,6 +354,7 @@ export function createRawMaterial(state: AppState, payload: Row) {
     price: Number(payload.price ?? 0),
     threshold: Number(payload.threshold ?? 0),
     supplierPrice: Number(payload.supplierPrice ?? 0),
+    status: payload.status ?? 'active',
     lastUpdated: new Date().toISOString(),
   }, 'RM');
 }

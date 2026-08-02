@@ -519,38 +519,40 @@ export const DEFAULT_STATE: AppState = {
   stockTransfers: [],
   stockAdjustments: [],
   rawMaterials: [
-    { id: 'RM-001', name: 'Injection Mold', category: 'Equipment', unit: 'pcs', quantity: 5, price: 15000, supplierId: 'SUP-001', threshold: 2, lastUpdated: '2026-07-20T10:00:00Z' },
-    { id: 'RM-002', name: 'Plastic Pellets (Red)', category: 'Plastic', unit: 'kg', quantity: 1200, price: 85.5, supplierId: 'SUP-002', threshold: 500, lastUpdated: '2026-07-21T14:30:00Z' },
-    { id: 'RM-003', name: 'Small Screws (2mm)', category: 'Hardware', unit: 'box', quantity: 15, price: 250, supplierId: 'SUP-003', threshold: 50, lastUpdated: '2026-07-22T09:00:00Z' },
-    { id: 'RM-004', name: 'Cardboard Box (Small)', category: 'Packaging', unit: 'pcs', quantity: 5000, price: 12, supplierId: 'SUP-004', threshold: 2000, lastUpdated: '2026-07-21T09:00:00Z' },
-    { id: 'RM-005', name: 'Cardboard Box (Large)', category: 'Packaging', unit: 'pcs', quantity: 2000, price: 25, supplierId: 'SUP-004', threshold: 1000, lastUpdated: '2026-07-21T09:15:00Z' },
-    { id: 'RM-006', name: 'Lithium Battery (AA)', category: 'Electronics', unit: 'pcs', quantity: 800, price: 45, supplierId: 'SUP-005', threshold: 1000, lastUpdated: '2026-07-22T10:00:00Z' },
-    { id: 'RM-007', name: 'DC Motor (5V)', category: 'Electronics', unit: 'pcs', quantity: 350, price: 120, supplierId: 'SUP-005', threshold: 200, lastUpdated: '2026-07-20T11:00:00Z' },
-    { id: 'RM-008', name: 'Rubber Tires (Mini)', category: 'Rubber', unit: 'pcs', quantity: 4500, price: 8.5, supplierId: 'SUP-006', threshold: 1000, lastUpdated: '2026-07-19T14:00:00Z' },
-    { id: 'RM-009', name: 'Plastic Pellets (Blue)', category: 'Plastic', unit: 'kg', quantity: 850, price: 85.5, supplierId: 'SUP-002', threshold: 500, lastUpdated: '2026-07-21T14:35:00Z' },
-    { id: 'RM-010', name: 'Steel Axles', category: 'Metal', unit: 'kg', quantity: 120, price: 350, supplierId: 'SUP-007', threshold: 150, lastUpdated: '2026-07-18T09:00:00Z' },
-    { id: 'RM-011', name: 'Sticker Sheets', category: 'Packaging', unit: 'pcs', quantity: 15000, price: 2.5, supplierId: 'SUP-008', threshold: 5000, lastUpdated: '2026-07-22T08:00:00Z' },
-    { id: 'RM-012', name: 'Super Glue', category: 'Chemicals', unit: 'liter', quantity: 25, price: 850, supplierId: 'SUP-009', threshold: 10, lastUpdated: '2026-07-15T10:00:00Z', supplierOffers: [
+    { id: 'RM-001', name: 'Injection Mold', category: 'Equipment', unit: 'pcs', quantity: 5, price: 15000, supplierId: 'SUP-001', threshold: 2, warehouseId: 'WH-001', location: 'A-01-01', status: 'active', lastUpdated: '2026-07-20T10:00:00Z' },
+    { id: 'RM-002', name: 'Plastic Pellets (Red)', category: 'Plastic', unit: 'kg', quantity: 1200, price: 85.5, supplierId: 'SUP-002', threshold: 500, warehouseId: 'WH-001', location: 'A-02-03', status: 'active', lastUpdated: '2026-07-21T14:30:00Z' },
+    { id: 'RM-003', name: 'Small Screws (2mm)', category: 'Hardware', unit: 'box', quantity: 15, price: 250, supplierId: 'SUP-003', threshold: 50, warehouseId: 'WH-002', location: 'B-01-02', status: 'active', lastUpdated: '2026-07-22T09:00:00Z' },
+    { id: 'RM-004', name: 'Cardboard Box (Small)', category: 'Packaging', unit: 'pcs', quantity: 5000, price: 12, supplierId: 'SUP-004', threshold: 2000, warehouseId: 'WH-001', location: 'C-01-01', status: 'active', lastUpdated: '2026-07-21T09:00:00Z' },
+    { id: 'RM-005', name: 'Cardboard Box (Large)', category: 'Packaging', unit: 'pcs', quantity: 2000, price: 25, supplierId: 'SUP-004', threshold: 1000, warehouseId: 'WH-001', location: 'C-01-02', status: 'active', lastUpdated: '2026-07-21T09:15:00Z' },
+    { id: 'RM-006', name: 'Lithium Battery (AA)', category: 'Electronics', unit: 'pcs', quantity: 800, price: 45, supplierId: 'SUP-005', threshold: 1000, warehouseId: 'WH-002', location: 'D-02-01', status: 'active', lastUpdated: '2026-07-22T10:00:00Z' },
+    { id: 'RM-007', name: 'DC Motor (5V)', category: 'Electronics', unit: 'pcs', quantity: 350, price: 120, supplierId: 'SUP-005', threshold: 200, warehouseId: 'WH-002', location: 'D-02-04', status: 'active', lastUpdated: '2026-07-20T11:00:00Z' },
+    { id: 'RM-008', name: 'Rubber Tires (Mini)', category: 'Rubber', unit: 'pcs', quantity: 4500, price: 8.5, supplierId: 'SUP-006', threshold: 1000, warehouseId: 'WH-001', location: 'E-01-01', status: 'active', lastUpdated: '2026-07-19T14:00:00Z' },
+    { id: 'RM-009', name: 'Plastic Pellets (Blue)', category: 'Plastic', unit: 'kg', quantity: 850, price: 85.5, supplierId: 'SUP-002', threshold: 500, warehouseId: 'WH-001', location: 'A-02-04', status: 'active', lastUpdated: '2026-07-21T14:35:00Z' },
+    { id: 'RM-010', name: 'Steel Axles', category: 'Metal', unit: 'kg', quantity: 120, price: 350, supplierId: 'SUP-007', threshold: 150, warehouseId: 'WH-003', location: 'F-01-01', status: 'active', lastUpdated: '2026-07-18T09:00:00Z' },
+    { id: 'RM-011', name: 'Sticker Sheets', category: 'Packaging', unit: 'pcs', quantity: 15000, price: 2.5, supplierId: 'SUP-008', threshold: 5000, warehouseId: 'WH-001', location: 'C-02-01', status: 'active', lastUpdated: '2026-07-22T08:00:00Z' },
+    { id: 'RM-012', name: 'Super Glue', category: 'Chemicals', unit: 'liter', quantity: 25, price: 850, supplierId: 'SUP-009', threshold: 10, warehouseId: 'WH-002', location: 'G-01-01', status: 'active', lastUpdated: '2026-07-15T10:00:00Z', supplierOffers: [
       { supplierId: 'SUP-009', price: 850, availableQty: 500 },
       { supplierId: 'SUP-003', price: 920, availableQty: 200 },
       { supplierId: 'SUP-005', price: 780, availableQty: 150 },
     ] },
-    { id: 'RM-013', name: 'Nylon Thread', category: 'Textile', unit: 'meter', quantity: 10000, price: 5, supplierId: 'SUP-010', threshold: 2000, lastUpdated: '2026-07-16T12:00:00Z', supplierOffers: [
+    { id: 'RM-013', name: 'Nylon Thread', category: 'Textile', unit: 'meter', quantity: 10000, price: 5, supplierId: 'SUP-010', threshold: 2000, warehouseId: 'WH-001', location: 'H-01-01', status: 'active', lastUpdated: '2026-07-16T12:00:00Z', supplierOffers: [
       { supplierId: 'SUP-010', price: 5, availableQty: 8000 },
       { supplierId: 'SUP-001', price: 4.5, availableQty: 12000 },
     ] },
-    { id: 'RM-014', name: 'Copper Wire', category: 'Electronics', unit: 'meter', quantity: 5000, price: 15, supplierId: 'SUP-005', threshold: 1000, lastUpdated: '2026-07-20T15:00:00Z', supplierOffers: [
+    { id: 'RM-014', name: 'Copper Wire', category: 'Electronics', unit: 'meter', quantity: 5000, price: 15, supplierId: 'SUP-005', threshold: 1000, warehouseId: 'WH-002', location: 'D-03-01', status: 'active', lastUpdated: '2026-07-20T15:00:00Z', supplierOffers: [
       { supplierId: 'SUP-005', price: 15, availableQty: 3000 },
       { supplierId: 'SUP-008', price: 14, availableQty: 2500 },
       { supplierId: 'SUP-007', price: 16.5, availableQty: 1800 },
     ] },
-    { id: 'RM-016', name: 'Wheel', category: 'Plastic Parts', unit: 'pcs', quantity: 500, price: 8, supplierId: 'SUP-006', threshold: 200, lastUpdated: '2026-07-22T12:00:00Z', supplierOffers: [
+    { id: 'RM-015', name: 'Silicone Sealant', category: 'Chemicals', unit: 'liter', quantity: 0, price: 620, supplierId: 'SUP-009', threshold: 20, warehouseId: 'WH-003', location: 'G-02-01', status: 'active', lastUpdated: '2026-07-25T10:00:00Z' },
+    { id: 'RM-016', name: 'Wheel', category: 'Plastic Parts', unit: 'pcs', quantity: 500, price: 8, supplierId: 'SUP-006', threshold: 200, warehouseId: 'WH-001', location: 'E-02-01', status: 'active', lastUpdated: '2026-07-22T12:00:00Z', supplierOffers: [
       { supplierId: 'SUP-006', price: 8, availableQty: 2000 },
       { supplierId: 'SUP-002', price: 7.5, availableQty: 1500 },
     ] },
-    { id: 'RM-017', name: 'Cotton Yarn 30s', category: 'Textile', unit: 'kg', quantity: 3200, price: 58, supplierId: 'SUP-001', threshold: 1000, lastUpdated: '2026-07-28T09:00:00Z' },
-    { id: 'RM-018', name: 'Poly Yarn 75D', category: 'Textile', unit: 'kg', quantity: 1800, price: 72, supplierId: 'SUP-001', threshold: 800, lastUpdated: '2026-07-28T09:00:00Z' },
-    { id: 'RM-019', name: 'Button White', category: 'Hardware', unit: 'pcs', quantity: 12000, price: 2.5, supplierId: 'SUP-009', threshold: 5000, lastUpdated: '2026-07-27T11:00:00Z' },
+    { id: 'RM-017', name: 'Cotton Yarn 30s', category: 'Textile', unit: 'kg', quantity: 3200, price: 58, supplierId: 'SUP-001', threshold: 1000, warehouseId: 'WH-001', location: 'H-02-01', status: 'active', lastUpdated: '2026-07-28T09:00:00Z' },
+    { id: 'RM-018', name: 'Poly Yarn 75D', category: 'Textile', unit: 'kg', quantity: 1800, price: 72, supplierId: 'SUP-001', threshold: 800, warehouseId: 'WH-001', location: 'H-02-02', status: 'active', lastUpdated: '2026-07-28T09:00:00Z' },
+    { id: 'RM-019', name: 'Button White', category: 'Hardware', unit: 'pcs', quantity: 12000, price: 2.5, supplierId: 'SUP-009', threshold: 5000, warehouseId: 'WH-002', location: 'B-02-01', status: 'active', lastUpdated: '2026-07-27T11:00:00Z' },
+    { id: 'RM-020', name: 'LED Strip 5V', category: 'Electronics', unit: 'meter', quantity: 0, price: 35, supplierId: 'SUP-008', threshold: 100, warehouseId: 'WH-002', location: 'D-04-02', status: 'active', lastUpdated: '2026-07-29T11:00:00Z' },
   ],
   inventoryStockIn: [
     { id: 'SI-001', productId: 1, warehouseId: 'WH-001', qty: 300, unitCost: 8.5, date: '2026-06-20', sourceType: 'Purchase', refDocId: 'PO-1001', supplier: 'Global Yarn Dist', status: 'Approved', batchNumber: 'B-YRN-09A', approvedBy: 'Sarah Connor', notes: 'Standard purchase order receipt.' },
