@@ -1,5 +1,7 @@
 'use client';
 
+import { toast } from '@/lib/ui/feedback';
+
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Calendar, ChevronDown, Info, Upload } from 'lucide-react';
 import { Footer } from '@/components/layout/Footer';
@@ -104,7 +106,7 @@ export function MonthlySalarySheetPage() {
   const handleUpdate = useCallback((entryId: string, patch: Record<string, unknown>) => {
     const result = updateSheetEntry(appState, entryId, patch);
     if (!result.ok) {
-      window.alert(result.error ?? 'Update failed');
+      toast.error('Operation failed', { module: 'Salary Sheet', description: String(result.error ?? 'Update failed') });
       return;
     }
     saveAppState();
@@ -132,13 +134,13 @@ export function MonthlySalarySheetPage() {
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <button type="button" className={SS_BTN_OUTLINE} onClick={() => window.alert('Import Excel coming soon.')}>
+          <button type="button" className={SS_BTN_OUTLINE} onClick={() => toast.info('Feature coming soon', { module: 'Salary Sheet', description: "Import Excel coming soon." })}>
             <Upload className="w-3.5 h-3.5 inline mr-1" /> Import Excel
           </button>
-          <button type="button" className={SS_BTN_OUTLINE} onClick={() => window.alert('More actions coming soon.')}>
+          <button type="button" className={SS_BTN_OUTLINE} onClick={() => toast.info('Feature coming soon', { module: 'Salary Sheet', description: "More actions coming soon." })}>
             More Actions <ChevronDown className="w-3.5 h-3.5 inline ml-1" />
           </button>
-          <button type="button" className={SS_BTN_PRIMARY} onClick={() => window.alert('Summary overview coming soon.')}>
+          <button type="button" className={SS_BTN_PRIMARY} onClick={() => toast.info('Feature coming soon', { module: 'Salary Sheet', description: "Summary overview coming soon." })}>
             Summary Overview
           </button>
         </div>

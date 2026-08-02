@@ -1,5 +1,7 @@
 'use client';
 
+import { toast } from '@/lib/ui/feedback';
+
 import { useMemo } from 'react';
 import {
   Calendar,
@@ -121,7 +123,7 @@ export function LeadDetailPanel({
               key={label}
               type="button"
               title={label}
-              onClick={() => window.alert(`${label} — coming soon.`)}
+              onClick={() => toast.info('Feature coming soon', { module: 'Leads', description: "${label} — coming soon." })}
               className="inline-flex items-center gap-1 text-[10px] font-bold text-slate-600 border border-slate-200 rounded-lg px-2 py-1.5 hover:bg-slate-50 cursor-pointer"
             >
               <Icon className="w-3.5 h-3.5" />
@@ -153,14 +155,14 @@ export function LeadDetailPanel({
           <div className="flex gap-2 mt-3">
             <button
               type="button"
-              onClick={() => window.alert('Mark complete — coming soon.')}
+              onClick={() => toast.info('Feature coming soon', { module: 'Leads', description: "Mark complete" })}
               className="text-[10px] font-bold text-blue-700 border border-blue-200 bg-white rounded-lg px-2.5 py-1.5 cursor-pointer hover:bg-blue-50"
             >
               Mark Complete
             </button>
             <button
               type="button"
-              onClick={() => window.alert('Reschedule — coming soon.')}
+              onClick={() => toast.info('Feature coming soon', { module: 'Leads', description: "Reschedule" })}
               className="text-[10px] font-bold text-slate-600 border border-slate-200 bg-white rounded-lg px-2.5 py-1.5 cursor-pointer hover:bg-slate-50"
             >
               Reschedule
@@ -205,7 +207,7 @@ export function LeadDetailPanel({
             {timeline.length > 0 ? (
               <button
                 type="button"
-                onClick={() => window.alert('All activities — coming soon.')}
+                onClick={() => toast.info('Feature coming soon', { module: 'Leads', description: "All activities" })}
                 className="text-xs font-bold text-blue-600 hover:text-blue-700 cursor-pointer mt-2"
               >
                 View All Activities

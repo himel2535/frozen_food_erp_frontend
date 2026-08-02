@@ -1,5 +1,7 @@
 'use client';
 
+import { toast } from '@/lib/ui/feedback';
+
 import { useMemo, useState } from 'react';
 import { Plus } from 'lucide-react';
 import { Footer } from '@/components/layout/Footer';
@@ -109,7 +111,7 @@ export function ProfitLossPage() {
       ? updateProfitLossLine(appState, editingId, payload)
       : createProfitLossLine(appState, payload);
     if (!result.ok) {
-      window.alert('error' in result ? result.error : 'Failed to save line');
+      toast.error('Operation failed', { module: 'Profit & Loss', description: 'error' in result ? String(result.error) : 'Failed to save line' });
       return;
     }
     saveAppState();
@@ -142,7 +144,7 @@ export function ProfitLossPage() {
         <ProfitLossPeriodBar
           period={period}
           onPeriodChange={setPeriod}
-          onExport={() => window.alert('Export coming soon.')}
+          onExport={() => toast.info('Feature coming soon', { module: 'Profit & Loss', description: "Export coming soon." })}
         />
 
         <div className="space-y-3 min-w-0">

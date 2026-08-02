@@ -1,5 +1,7 @@
 'use client';
 
+import { toast } from '@/lib/ui/feedback';
+
 import Link from 'next/link';
 import { useMemo, useRef, useState, type FormEvent } from 'react';
 import {
@@ -116,7 +118,7 @@ export function ProductForm({
           />
           <button
             type="button"
-            onClick={() => window.alert('Import Excel — coming soon.')}
+            onClick={() => toast.info('Feature coming soon', { module: 'Inventory', description: "Import Excel" })}
             className={`${CF_BTN_OUTLINE} self-start`}
           >
             <FileSpreadsheet className="w-4 h-4" /> Import from Excel

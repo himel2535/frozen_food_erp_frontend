@@ -1,5 +1,7 @@
 'use client';
 
+import { toast } from '@/lib/ui/feedback';
+
 import { Info, ChevronRight } from 'lucide-react';
 
 export function DueInfoBanner() {
@@ -14,7 +16,7 @@ export function DueInfoBanner() {
       <button
         type="button"
         className="inline-flex items-center gap-1 font-bold text-sky-700 hover:text-sky-900 cursor-pointer shrink-0"
-        onClick={() => window.alert('Reports coming soon.')}
+        onClick={() => toast.info('Feature coming soon', { module: 'Due Management', description: "Reports coming soon." })}
       >
         View Reports
         <ChevronRight className="w-3.5 h-3.5" />

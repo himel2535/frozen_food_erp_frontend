@@ -1,5 +1,7 @@
 'use client';
 
+import { toast } from '@/lib/ui/feedback';
+
 import { useMemo, useState } from 'react';
 import { Plus, CreditCard } from 'lucide-react';
 import { Footer } from '@/components/layout/Footer';
@@ -125,7 +127,7 @@ export function SupplierDuePage() {
     const supplierId = supplierIdByLabel[addPayableForm.supplier] ?? addPayableForm.supplier;
     const result = createSupplierPayable(appState, { ...addPayableForm, supplier: supplierId });
     if (!result.ok) {
-      window.alert('error' in result ? result.error : 'Failed to save payable');
+      toast.error('Operation failed', { module: 'Accounting', description: 'error' in result ? String(result.error) : 'Failed to save payable' });
       return;
     }
     saveAppState();
@@ -149,7 +151,7 @@ export function SupplierDuePage() {
       paymentBillIds,
     );
     if (!result.ok) {
-      window.alert(result.error ?? 'Failed to record payment');
+      toast.error('Operation failed', { module: 'Accounting', description: String(result.error ?? 'Failed to record payment') });
       return;
     }
     saveAppState();
@@ -183,7 +185,7 @@ export function SupplierDuePage() {
                 if (target) {
                   openPay(target, selectedBillIds.length ? selectedBillIds : undefined);
                 } else {
-                  window.alert('Select a supplier with outstanding due first.');
+                  toast.error('Action required', { module: 'Accounting', description: "Select a supplier with outstanding due first." });
                 }
               }}
               className="bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold px-4 py-2.5 rounded-xl transition-colors flex items-center gap-2 cursor-pointer"

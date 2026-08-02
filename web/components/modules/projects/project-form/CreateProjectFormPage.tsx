@@ -1,5 +1,7 @@
 'use client';
 
+import { toast } from '@/lib/ui/feedback';
+
 import { useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { CreateProjectForm } from '@/components/modules/projects/project-form/CreateProjectForm';
@@ -23,13 +25,13 @@ export function CreateProjectFormPage() {
   const handleSave = (form: import('@/components/modules/projects/project-form/project-form-types').ProjectFormValues, action: ProjectSaveAction) => {
     const result = createProject(appState, form, action);
     if (!result.ok) {
-      window.alert('error' in result ? result.error : 'Save failed');
+      toast.error('Operation failed', { module: 'Projects', description: 'error' in result ? String(result.error) : 'Save failed' });
       return;
     }
     saveAppState();
 
     if (action === 'create') {
-      window.alert('BOM / Recipe setup coming soon.');
+      toast.info('Feature coming soon', { module: 'Projects', description: "BOM / Recipe setup coming soon." });
     }
 
     router.push('/projects');

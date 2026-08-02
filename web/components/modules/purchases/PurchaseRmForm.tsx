@@ -1,5 +1,7 @@
 'use client';
 
+import { toast } from '@/lib/ui/feedback';
+
 import { useMemo, useRef, useState, type FormEvent } from 'react';
 import {
   Building2,
@@ -85,15 +87,15 @@ export function PurchaseRmForm({
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
     if (!form.supplierId) {
-      window.alert('Please select a supplier.');
+      toast.error('Action required', { module: 'Purchases', description: "Please select a supplier." });
       return;
     }
     if (!form.warehouseId) {
-      window.alert('Please select a warehouse.');
+      toast.error('Action required', { module: 'Purchases', description: "Please select a warehouse." });
       return;
     }
     if (!form.items.some((i) => i.productName.trim() && i.qty > 0)) {
-      window.alert('Add at least one product with quantity.');
+      toast.error('Action required', { module: 'Purchases', description: "Add at least one product with quantity." });
       return;
     }
     const action = saveActionRef.current;

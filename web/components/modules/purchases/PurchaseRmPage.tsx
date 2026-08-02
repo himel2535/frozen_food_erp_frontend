@@ -1,5 +1,7 @@
 'use client';
 
+import { toast, confirmAction } from '@/lib/ui/feedback';
+
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { FileSpreadsheet, Filter, Plus, Package, History, FileText, Paperclip, MessageSquare, X } from 'lucide-react';
@@ -376,7 +378,7 @@ export function PurchaseRmPage() {
       ? updatePurchaseRmOrder(appState, editingId, record)
       : createPurchaseRmOrder(appState, record);
     if (!result.ok) {
-      window.alert('error' in result ? result.error : 'Save failed');
+      toast.error('Operation failed', { module: 'Purchases', description: 'error' in result ? String(result.error) : 'Save failed' });
       return null;
     }
     saveAppState();
@@ -397,11 +399,11 @@ export function PurchaseRmPage() {
   const runAction = (fn: () => { ok: boolean; error?: string }, successMsg?: string) => {
     const result = fn();
     if (!result.ok) {
-      window.alert(result.error ?? 'Action failed');
+      toast.error('Operation failed', { module: 'Purchases', description: String(result.error ?? 'Action failed') });
       return false;
     }
     saveAppState();
-    if (successMsg) window.alert(successMsg);
+    if (successMsg) toast.success('Success', { module: 'Purchases', description: successMsg });
     return true;
   };
 
@@ -417,7 +419,7 @@ export function PurchaseRmPage() {
       attachments: payload.attachments,
     });
     if (!result.ok) {
-      window.alert(result.error ?? 'Receive failed');
+      toast.error('Operation failed', { module: 'Purchases', description: String(result.error ?? 'Receive failed') });
       return;
     }
     saveAppState();
@@ -458,7 +460,7 @@ export function PurchaseRmPage() {
           <p className="text-xs text-slate-500 mt-1 font-medium">Raw material RM orders — create, track, and receive.</p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <button type="button" onClick={() => window.alert('Import Excel — coming soon.')} className={CF_BTN_OUTLINE}>
+          <button type="button" onClick={() => toast.info('Feature coming soon', { module: 'Purchases', description: "Import Excel" })} className={CF_BTN_OUTLINE}>
             <FileSpreadsheet className="w-4 h-4" /> Import Excel
           </button>
           <button type="button" onClick={() => setLowStockOnly((v) => !v)} className={`${CF_BTN_OUTLINE} ${lowStockOnly ? 'ring-2 ring-blue-300' : ''}`}>
@@ -595,7 +597,14 @@ export function PurchaseRmPage() {
                   <button type="button" title="Cancel" onClick={() => runAction(() => cancelPurchaseRmOrder(appState, String(row.id)))} className="p-1.5 rounded-lg hover:bg-rose-50 text-rose-500 cursor-pointer text-[10px] font-bold">Cancel</button>
                 )}
                 {['draft', 'cancelled'].includes(String(row.status)) && (
-                  <TableIconAction variant="delete" onClick={() => { if (window.confirm('Delete this RM order?')) runAction(() => deletePurchaseRmOrder(appState, String(row.id))); }} />
+                  <TableIconAction
+                    variant="delete"
+                    onClick={() => {
+                      confirmAction({ title: 'Delete RM order', message: 'Delete this RM order?', confirmLabel: 'Delete', tone: 'danger', module: 'Purchase RM' }).then((__ok) => {
+                        if (__ok) runAction(() => deletePurchaseRmOrder(appState, String(row.id)));
+                      });
+                    }}
+                  />
                 )}
               </>
               );

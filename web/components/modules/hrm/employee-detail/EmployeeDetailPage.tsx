@@ -1,5 +1,7 @@
 'use client';
 
+import { toast } from '@/lib/ui/feedback';
+
 import { useMemo, useState, type FormEvent } from 'react';
 import { useParams } from 'next/navigation';
 import { ArrowLeft } from 'lucide-react';
@@ -68,7 +70,7 @@ export function EmployeeDetailPage() {
     });
     const result = updateEmployee(appState, employeeId, payload);
     if (!result.ok) {
-      window.alert(result.error ?? 'Save failed');
+      toast.error('Operation failed', { module: 'HRM', description: String(result.error ?? 'Save failed') });
       return;
     }
     saveAppState();

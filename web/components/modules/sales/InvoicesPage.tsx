@@ -1,5 +1,7 @@
 'use client';
 
+import { toast, confirmAction } from '@/lib/ui/feedback';
+
 import { useMemo, useState } from 'react';
 import { Download, Plus } from 'lucide-react';
 import { Footer } from '@/components/layout/Footer';
@@ -203,7 +205,7 @@ export function InvoicesPage() {
       : createInvoice(appState, { ...record, id: payload.invoiceNo });
 
     if (!result.ok) {
-      window.alert('error' in result ? result.error : 'Save failed');
+      toast.error('Operation failed', { module: 'Invoices', description: 'error' in result ? String(result.error) : 'Save failed' });
       return null;
     }
 
@@ -213,7 +215,7 @@ export function InvoicesPage() {
       approveInvoice(appState, savedId);
       const sentResult = markInvoiceSent(appState, savedId);
       if (!sentResult.ok) {
-        window.alert('error' in sentResult ? sentResult.error : 'Could not mark invoice as sent.');
+        toast.error('Operation failed', { module: 'Invoices', description: 'error' in sentResult ? String(sentResult.error) : 'Could not mark invoice as sent.' });
       }
     }
 
@@ -246,8 +248,8 @@ export function InvoicesPage() {
     URL.revokeObjectURL(url);
   };
 
-  const handleDelete = (id: string) => {
-    if (!window.confirm('Delete this invoice?')) return;
+  const handleDelete = async (id: string) => {
+    const __ok = await confirmAction({ title: "Delete this invoice", message: "Delete this invoice?", confirmLabel: 'Delete', tone: 'danger', module: 'Invoices' }); if (!__ok) return;
     deleteInvoice(appState, id);
     saveAppState();
   };

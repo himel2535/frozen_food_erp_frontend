@@ -1,5 +1,7 @@
 'use client';
 
+import { confirmAction, toast } from '@/lib/ui/feedback';
+
 import { useMemo, useState } from 'react';
 import { Footer } from '@/components/layout/Footer';
 import { FormHeader } from '@/components/layout/FormHeader';
@@ -117,7 +119,7 @@ export function SalesDocumentModule({ config }: { config: SalesDocumentConfig })
     };
     const result = editingId ? config.update(appState, editingId, payload) : config.create(appState, payload);
     if (!result.ok) {
-      window.alert('error' in result ? result.error : 'Save failed');
+      toast.error('Operation failed', { module: 'Sales', description: 'error' in result ? String(result.error) : 'Save failed' });
       return;
     }
     saveAppState();
@@ -125,8 +127,16 @@ export function SalesDocumentModule({ config }: { config: SalesDocumentConfig })
     resetForm();
   };
 
-  const handleDelete = (id: string) => {
-    if (!config.delete || !window.confirm('Delete this record?')) return;
+  const handleDelete = async (id: string) => {
+    if (!config.delete) return;
+    const ok = await confirmAction({
+      title: 'Delete record',
+      message: 'Delete this record?',
+      confirmLabel: 'Delete',
+      tone: 'danger',
+      module: 'Sales',
+    });
+    if (!ok) return;
     config.delete(appState, id);
     saveAppState();
   };
@@ -148,8 +158,8 @@ export function SalesDocumentModule({ config }: { config: SalesDocumentConfig })
                   className="px-3 py-2 bg-emerald-600 text-white text-xs font-bold rounded-xl cursor-pointer"
                   onClick={() => {
                     const r = config.onConvert!(appState, String(detailRow.id));
-                    if (r.ok) { saveAppState(); window.alert(`Created ${r.id}`); }
-                    else window.alert(r.error ?? 'Failed');
+                    if (r.ok) { saveAppState(); toast.info('Notice', { module: 'Sales', description: `Created ${r.id}` }); }
+                    else toast.error('Operation failed', { module: 'Sales', description: String(r.error ?? 'Failed') });
                   }}
                 >
                   {config.convertLabel ?? 'Convert'}

@@ -1,5 +1,7 @@
 'use client';
 
+import { toast } from '@/lib/ui/feedback';
+
 import { ClipboardList, Layers, Package, Palette, Upload } from 'lucide-react';
 import { IconSelect, IconTextarea } from '@/components/modules/crm/customer-form/IconField';
 import {
@@ -82,7 +84,7 @@ export function ProjectRequirementsSection({
         </label>
         <button
           type="button"
-          onClick={() => window.alert('File upload — coming soon.')}
+          onClick={() => toast.info('Feature coming soon', { module: 'Projects', description: "File upload" })}
           className={`${PJ_UPLOAD_CLS} w-full cursor-pointer`}
         >
           <Upload className="w-5 h-5 text-blue-500 mx-auto mb-1.5" />

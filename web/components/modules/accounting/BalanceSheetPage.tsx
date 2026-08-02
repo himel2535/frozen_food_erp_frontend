@@ -1,5 +1,7 @@
 'use client';
 
+import { toast, confirmAction } from '@/lib/ui/feedback';
+
 import { useMemo, useState } from 'react';
 import { ChevronDown, Download, Plus } from 'lucide-react';
 import { Footer } from '@/components/layout/Footer';
@@ -123,13 +125,13 @@ export function BalanceSheetPage() {
     setShowModal(true);
   };
 
-  const handleDelete = (sourceId: string) => {
+  const handleDelete = async (sourceId: string) => {
     const line = allLines.find((l) => l.id === sourceId);
     if (!line) return;
-    if (!window.confirm(`Delete "${line.lineItem}"?`)) return;
+    const __ok = await confirmAction({ title: 'Confirm action', message: `Delete "${line.lineItem}"?`, confirmLabel: 'Confirm', tone: 'danger', module: 'Balance Sheet' }); if (!__ok) return;
     const result = deleteBalanceSheetLine(appState, sourceId);
     if (!result.ok) {
-      window.alert(result.error ?? 'Failed to delete line');
+      toast.error('Operation failed', { module: 'Balance Sheet', description: String(result.error ?? 'Failed to delete line') });
       return;
     }
     saveAppState();
@@ -144,7 +146,7 @@ export function BalanceSheetPage() {
       ? updateBalanceSheetLine(appState, editingId, payload)
       : createBalanceSheetLine(appState, payload);
     if (!result.ok) {
-      window.alert('error' in result ? result.error : 'Failed to save line');
+      toast.error('Operation failed', { module: 'Balance Sheet', description: 'error' in result ? String(result.error) : 'Failed to save line' });
       return;
     }
     saveAppState();
@@ -186,7 +188,7 @@ export function BalanceSheetPage() {
             />
             <button
               type="button"
-              onClick={() => window.alert('Export coming soon.')}
+              onClick={() => toast.info('Feature coming soon', { module: 'Balance Sheet', description: "Export coming soon." })}
               className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 cursor-pointer"
             >
               <Download className="w-4 h-4" />

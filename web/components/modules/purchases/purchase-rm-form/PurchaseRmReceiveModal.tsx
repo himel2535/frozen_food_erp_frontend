@@ -1,5 +1,7 @@
 'use client';
 
+import { toast } from '@/lib/ui/feedback';
+
 import { useEffect, useState, type FormEvent } from 'react';
 import { CloudUpload, X } from 'lucide-react';
 import { AppFormModal } from '@/components/shared/AppForm';
@@ -50,12 +52,12 @@ export function PurchaseRmReceiveModal({
       return;
     }
     if (file.size > 2 * 1024 * 1024) {
-      window.alert('File must be 2MB or smaller.');
+      toast.error('Action required', { module: 'Purchase RM', description: "File must be 2MB or smaller." });
       return;
     }
     const allowed = ['image/jpeg', 'image/png', 'application/pdf'];
     if (!allowed.includes(file.type)) {
-      window.alert('Only JPG, PNG, and PDF files are allowed.');
+      toast.error('Action required', { module: 'Purchase RM', description: "Only JPG, PNG, and PDF files are allowed." });
       return;
     }
     const reader = new FileReader();
@@ -69,7 +71,7 @@ export function PurchaseRmReceiveModal({
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
     if (!attachmentName || !attachmentDataUrl) {
-      window.alert('Please upload a proof file (receipt or bank transaction).');
+      toast.error('Action required', { module: 'Purchase RM', description: "Please upload a proof file (receipt or bank transaction)." });
       return;
     }
     onSubmit({

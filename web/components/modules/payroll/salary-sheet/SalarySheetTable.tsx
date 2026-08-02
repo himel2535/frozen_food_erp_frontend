@@ -1,5 +1,7 @@
 'use client';
 
+import { toast } from '@/lib/ui/feedback';
+
 import { useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { employeeAvatarClass, employeeInitials } from '@/lib/services/hrm-service';
@@ -215,7 +217,7 @@ export function SalarySheetTable({
                       <button
                         type="button"
                         className={SS_ACTION_BTN_PAID_CLS}
-                        onClick={() => window.alert('Payslip preview coming soon.')}
+                        onClick={() => toast.info('Feature coming soon', { module: 'Salary Sheet', description: "Payslip preview coming soon." })}
                       >
                         View Payslip
                       </button>

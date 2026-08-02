@@ -1,5 +1,7 @@
 'use client';
 
+import { confirmAction } from '@/lib/ui/feedback';
+
 import { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Plus } from 'lucide-react';
@@ -110,8 +112,8 @@ export function SalesOrdersPage() {
     },
   ], []);
 
-  const handleDelete = (id: string) => {
-    if (!window.confirm('Delete this sales order?')) return;
+  const handleDelete = async (id: string) => {
+    const __ok = await confirmAction({ title: "Delete this sales order", message: "Delete this sales order?", confirmLabel: 'Delete', tone: 'danger', module: 'Sales' }); if (!__ok) return;
     deleteSalesOrder(appState, id);
     saveAppState();
   };

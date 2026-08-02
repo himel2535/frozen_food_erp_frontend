@@ -1,5 +1,7 @@
 'use client';
 
+import { toast, confirmAction } from '@/lib/ui/feedback';
+
 import { useMemo, useState, type ReactNode } from 'react';
 import { Footer } from '@/components/layout/Footer';
 import { AppFormFields, AppFormModal } from '@/components/shared/AppForm';
@@ -117,7 +119,7 @@ export function DedicatedModule({ config }: { config: DedicatedModuleConfig }) {
     const result = editingId && config.adapter.update
       ? config.adapter.update(appState, editingId, payload)
       : config.adapter.create?.(appState, payload) ?? { ok: false, error: 'Create not supported' };
-    if (!result.ok) { window.alert(result.error ?? 'Save failed'); return; }
+    if (!result.ok) { toast.error('Operation failed', { module: 'Module', description: String(result.error ?? 'Save failed') }); return; }
     saveAppState();
     setView('main');
     resetForm();
@@ -200,10 +202,11 @@ export function DedicatedModule({ config }: { config: DedicatedModuleConfig }) {
                   <TableIconAction
                     variant="delete"
                     onClick={() => {
-                      if (window.confirm('Delete?')) {
+                      confirmAction({ title: 'Delete', message: 'Delete?', confirmLabel: 'Delete', tone: 'danger', module: 'Module' }).then((__ok) => {
+                        if (!__ok) return;
                         config.adapter.delete!(appState, String(row.id));
                         saveAppState();
-                      }
+                      });
                     }}
                   />
                 )}

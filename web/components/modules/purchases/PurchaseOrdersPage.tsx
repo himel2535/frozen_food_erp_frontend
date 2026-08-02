@@ -1,5 +1,7 @@
 'use client';
 
+import { toast, confirmAction } from '@/lib/ui/feedback';
+
 import { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Plus } from 'lucide-react';
@@ -126,7 +128,7 @@ export function PurchaseOrdersPage() {
           onClick={() => {
             const r = sendPurchaseOrder(appState, id);
             if (r.ok) save();
-            else window.alert('error' in r ? r.error : 'Send failed');
+            else toast.error('Operation failed', { module: 'Purchases', description: 'error' in r ? String(r.error) : 'Send failed' });
           }}
         >
           Send
@@ -142,7 +144,7 @@ export function PurchaseOrdersPage() {
           onClick={() => {
             const r = receivePurchaseOrder(appState, id);
             if (r.ok) save();
-            else window.alert('error' in r ? r.error : 'Receive failed');
+            else toast.error('Operation failed', { module: 'Purchases', description: 'error' in r ? String(r.error) : 'Receive failed' });
           }}
         >
           Receive
@@ -155,8 +157,15 @@ export function PurchaseOrdersPage() {
           key="cancel"
           type="button"
           className={`text-slate-500 ${btnCls}`}
-          onClick={() => {
-            if (!window.confirm('Cancel PO?')) return;
+          onClick={async () => {
+            const ok = await confirmAction({
+              title: 'Cancel PO',
+              message: 'Cancel this purchase order?',
+              confirmLabel: 'Cancel PO',
+              tone: 'danger',
+              module: 'Purchases',
+            });
+            if (!ok) return;
             const r = cancelPurchaseOrder(appState, id);
             if (r.ok) save();
           }}
@@ -175,8 +184,8 @@ export function PurchaseOrdersPage() {
     );
   };
 
-  const handleDelete = (id: string) => {
-    if (!window.confirm('Delete this purchase order?')) return;
+  const handleDelete = async (id: string) => {
+    const __ok = await confirmAction({ title: "Delete this purchase order", message: "Delete this purchase order?", confirmLabel: 'Delete', tone: 'danger', module: 'Purchases' }); if (!__ok) return;
     deletePurchaseOrder(appState, id);
     saveAppState();
   };

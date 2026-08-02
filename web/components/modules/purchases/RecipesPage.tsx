@@ -1,5 +1,7 @@
 'use client';
 
+import { toast, confirmAction } from '@/lib/ui/feedback';
+
 import { useMemo, useState } from 'react';
 import { Icon } from '@iconify/react';
 import { ArrowDown, ArrowUp, Calculator, Layers, Package, Paperclip } from 'lucide-react';
@@ -282,7 +284,7 @@ export function RecipesPage() {
       : addMaterialToRecipe(appState, bomRecipeId, payload);
 
     if (!result.ok) {
-      window.alert('error' in result ? result.error : 'Failed to save material');
+      toast.error('Operation failed', { module: 'Recipes', description: 'error' in result ? String(result.error) : 'Failed to save material' });
       return;
     }
     saveAppState();
@@ -308,11 +310,19 @@ export function RecipesPage() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const handleDeleteMaterial = (materialId: string) => {
-    if (!bomRecipeId || !window.confirm('Remove this material from the BOM?')) return;
+  const handleDeleteMaterial = async (materialId: string) => {
+    if (!bomRecipeId) return;
+    const ok = await confirmAction({
+      title: 'Remove material',
+      message: 'Remove this material from the BOM?',
+      confirmLabel: 'Remove',
+      tone: 'danger',
+      module: 'Recipes',
+    });
+    if (!ok) return;
     const result = removeMaterialFromRecipe(appState, bomRecipeId, materialId);
     if (!result.ok) {
-      window.alert('error' in result ? result.error : 'Failed to remove material');
+      toast.error('Operation failed', { module: 'Recipes', description: 'error' in result ? String(result.error) : 'Failed to remove material' });
       return;
     }
     saveAppState();
@@ -334,7 +344,7 @@ export function RecipesPage() {
       status: 'active',
     });
     if (!result.ok) {
-      window.alert('error' in result ? result.error : 'Failed to create recipe');
+      toast.error('Operation failed', { module: 'Recipes', description: 'error' in result ? String(result.error) : 'Failed to create recipe' });
       return;
     }
     saveAppState();
@@ -342,8 +352,8 @@ export function RecipesPage() {
     setView('main');
   };
 
-  const handleDeleteRecipe = (id: string) => {
-    if (!window.confirm('Delete this recipe and all BOM materials?')) return;
+  const handleDeleteRecipe = async (id: string) => {
+    const __ok = await confirmAction({ title: "Delete this recipe and all BOM materials", message: "Delete this recipe and all BOM materials?", confirmLabel: 'Delete', tone: 'danger', module: 'Recipes' }); if (!__ok) return;
     deleteRecipe(appState, id);
     saveAppState();
   };

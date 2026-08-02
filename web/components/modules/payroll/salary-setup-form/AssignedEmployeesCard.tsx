@@ -1,5 +1,7 @@
 'use client';
 
+import { toast } from '@/lib/ui/feedback';
+
 import { Plus } from 'lucide-react';
 import { StatusBadge } from '@/components/shared/StatusBadge';
 import {
@@ -49,7 +51,7 @@ export function AssignedEmployeesCard({
       <button
         type="button"
         className="inline-flex items-center gap-1.5 text-xs font-bold text-blue-600 hover:text-blue-700 cursor-pointer mt-2"
-        onClick={() => window.alert('Assign Employees picker coming soon.')}
+        onClick={() => toast.info('Feature coming soon', { module: 'Salary Setup', description: "Assign Employees picker coming soon." })}
       >
         <Plus className="w-4 h-4" /> Assign Employees
       </button>

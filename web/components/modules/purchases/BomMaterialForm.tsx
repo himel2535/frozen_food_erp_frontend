@@ -1,5 +1,7 @@
 'use client';
 
+import { toast } from '@/lib/ui/feedback';
+
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import Link from 'next/link';
 import { Calculator, CloudUpload, Package, Plus, Search, X } from 'lucide-react';
@@ -218,12 +220,12 @@ export function BomMaterialForm({
       return;
     }
     if (file.size > 2 * 1024 * 1024) {
-      window.alert('File must be 2MB or smaller.');
+      toast.error('Action required', { module: 'Purchases', description: "File must be 2MB or smaller." });
       return;
     }
     const allowed = ['image/jpeg', 'image/png', 'application/pdf'];
     if (!allowed.includes(file.type)) {
-      window.alert('Only JPG, PNG, and PDF files are allowed.');
+      toast.error('Action required', { module: 'Purchases', description: "Only JPG, PNG, and PDF files are allowed." });
       return;
     }
     const reader = new FileReader();
@@ -240,15 +242,15 @@ export function BomMaterialForm({
   const handleSubmit = () => {
     const name = (form.name || materialSearch).trim();
     if (!name) {
-      window.alert('Please select or enter a material.');
+      toast.error('Action required', { module: 'Purchases', description: "Please select or enter a material." });
       return;
     }
     if (form.qtyPerProduct <= 0) {
-      window.alert('Qty per product must be greater than zero.');
+      toast.error('Action required', { module: 'Purchases', description: "Qty per product must be greater than zero." });
       return;
     }
     if (form.standardCost <= 0) {
-      window.alert('Cost must be greater than zero.');
+      toast.error('Action required', { module: 'Purchases', description: "Cost must be greater than zero." });
       return;
     }
     onSubmit({ ...form, name, category: form.category || insight.category || 'General' });

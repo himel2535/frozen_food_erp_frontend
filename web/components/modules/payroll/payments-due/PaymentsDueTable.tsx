@@ -1,5 +1,7 @@
 'use client';
 
+import { toast } from '@/lib/ui/feedback';
+
 import { useMemo } from 'react';
 import Link from 'next/link';
 import { Info, MoreHorizontal } from 'lucide-react';
@@ -144,7 +146,7 @@ export function PaymentsDueTable({
                 <button
                   type="button"
                   className="text-[11px] font-bold text-blue-600 hover:text-blue-700 cursor-pointer whitespace-nowrap"
-                  onClick={() => window.alert('Payslip preview coming soon.')}
+                  onClick={() => toast.info('Feature coming soon', { module: 'Payments Due', description: "Payslip preview coming soon." })}
                 >
                   View Payslip
                 </button>
@@ -162,7 +164,7 @@ export function PaymentsDueTable({
               <button
                 type="button"
                 className="p-1 text-slate-400 hover:text-slate-600 cursor-pointer"
-                onClick={() => window.alert('More actions coming soon.')}
+                onClick={() => toast.info('Feature coming soon', { module: 'Payments Due', description: "More actions coming soon." })}
               >
                 <MoreHorizontal className="w-4 h-4" />
               </button>

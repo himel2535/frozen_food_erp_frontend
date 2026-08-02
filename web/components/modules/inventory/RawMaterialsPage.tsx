@@ -1,5 +1,7 @@
 'use client';
 
+import { toast, confirmAction } from '@/lib/ui/feedback';
+
 import { useMemo, useState } from 'react';
 import { Download, MoreVertical, Package, Settings2 } from 'lucide-react';
 import { Footer } from '@/components/layout/Footer';
@@ -267,7 +269,7 @@ export function RawMaterialsPage() {
       ? updateRawMaterial(appState, editingId, payload)
       : createRawMaterial(appState, payload);
     if (!result.ok) {
-      window.alert('error' in result ? result.error : 'Save failed');
+      toast.error('Operation failed', { module: 'Inventory', description: 'error' in result ? String(result.error) : 'Save failed' });
       return;
     }
     saveAppState();
@@ -358,7 +360,7 @@ export function RawMaterialsPage() {
           <div className="flex items-center gap-2 self-end sm:self-auto">
             <button
               type="button"
-              onClick={() => window.alert('Export — coming soon.')}
+              onClick={() => toast.info('Feature coming soon', { module: 'Inventory', description: "Export" })}
               className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-600 border border-slate-200 bg-white hover:bg-slate-50 px-3 py-2 rounded-xl cursor-pointer"
             >
               <Download className="w-3.5 h-3.5" /> Export
@@ -366,7 +368,7 @@ export function RawMaterialsPage() {
             <button
               type="button"
               title="Table settings"
-              onClick={() => window.alert('Column settings — coming soon.')}
+              onClick={() => toast.info('Feature coming soon', { module: 'Inventory', description: "Column settings" })}
               className="p-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-500 cursor-pointer"
             >
               <Settings2 className="w-4 h-4" />
@@ -385,7 +387,7 @@ export function RawMaterialsPage() {
               <button
                 type="button"
                 title="More actions"
-                onClick={() => window.alert('More actions — coming soon.')}
+                onClick={() => toast.info('Feature coming soon', { module: 'Inventory', description: "More actions" })}
                 className="app-table-icon-btn cursor-pointer"
               >
                 <MoreVertical className="w-4 h-4" />
@@ -393,9 +395,11 @@ export function RawMaterialsPage() {
               <TableIconAction
                 variant="delete"
                 onClick={() => {
-                  if (!window.confirm('Delete this raw material?')) return;
-                  deleteRawMaterial(appState, String(rm.id));
-                  saveAppState();
+                  confirmAction({ title: 'Delete raw material', message: 'Delete this raw material?', confirmLabel: 'Delete', tone: 'danger', module: 'Raw Materials' }).then((__ok) => {
+                    if (!__ok) return;
+                    deleteRawMaterial(appState, String(rm.id));
+                    saveAppState();
+                  });
                 }}
               />
             </>

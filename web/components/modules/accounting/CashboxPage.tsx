@@ -1,5 +1,7 @@
 'use client';
 
+import { toast, confirmAction } from '@/lib/ui/feedback';
+
 import { useMemo, useState } from 'react';
 import { Footer } from '@/components/layout/Footer';
 import { MODULE_LIST_SHELL } from '@/lib/ui/module-layout';
@@ -89,15 +91,15 @@ export function CashboxPage() {
     setPage(1);
   };
 
-  const handleDelete = (entry: CashboxEntry) => {
-    if (!window.confirm(`Delete "${entry.description}"?`)) return;
+  const handleDelete = async (entry: CashboxEntry) => {
+    const __ok = await confirmAction({ title: 'Confirm action', message: `Delete "${entry.description}"?`, confirmLabel: 'Confirm', tone: 'danger', module: 'Cashbox' }); if (!__ok) return;
     deleteCashboxEntry(appState, entry.id);
     saveAppState();
     if (editingEntry?.id === entry.id) closeForm();
   };
 
   const handleTransfer = () => {
-    window.alert('Transfer between cashboxes is coming soon.');
+    toast.info('Feature coming soon', { module: 'Cashbox', description: "Transfer between cashboxes is coming soon." });
   };
 
   return (

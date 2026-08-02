@@ -1,5 +1,7 @@
 'use client';
 
+import { toast } from '@/lib/ui/feedback';
+
 import { useMemo, useState } from 'react';
 import { Plus } from 'lucide-react';
 import { Footer } from '@/components/layout/Footer';
@@ -160,7 +162,7 @@ export function DueManagementPage() {
               onDetailTabChange={setDetailTab}
               onClose={() => setSelectedPartyId(null)}
               onReceive={openReceive}
-              onSendReminder={() => window.alert('WhatsApp reminder coming soon.')}
+              onSendReminder={() => toast.info('Feature coming soon', { module: 'Accounting', description: "WhatsApp reminder coming soon." })}
             />
           )}
         </div>

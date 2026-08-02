@@ -1,5 +1,7 @@
 'use client';
 
+import { confirmAction, toast } from '@/lib/ui/feedback';
+
 import { Suspense, useEffect, useMemo, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Download, Upload, Printer } from 'lucide-react';
@@ -230,7 +232,10 @@ function CustomersPageContent() {
       ? updateCustomer(appState, editingId, payload)
       : createCustomer(appState, payload);
     if (!result.ok) {
-      window.alert('error' in result && result.error ? String(result.error) : 'Duplicate or invalid customer');
+      toast.error('Could not save customer', {
+        module: 'Customers',
+        description: 'error' in result && result.error ? String(result.error) : 'Duplicate or invalid customer',
+      });
       return;
     }
     saveAppState();
@@ -400,10 +405,11 @@ function CustomersPageContent() {
             <TableIconAction
               variant="delete"
               onClick={() => {
-                if (window.confirm('Delete customer?')) {
+                confirmAction({ title: 'Delete customer', message: 'Delete customer?', confirmLabel: 'Delete', tone: 'danger', module: 'Customers' }).then((__ok) => {
+                  if (!__ok) return;
                   deleteCustomer(appState, String(row.id));
                   saveAppState();
-                }
+                });
               }}
             />
           </>

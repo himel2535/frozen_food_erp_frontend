@@ -1,5 +1,7 @@
 'use client';
 
+import { toast, confirmAction } from '@/lib/ui/feedback';
+
 import { useMemo, useState } from 'react';
 import { AppFormFields, AppFormModal } from '@/components/shared/AppForm';
 import { AppTable, type AppTableColumn } from '@/components/shared/AppTable';
@@ -70,14 +72,14 @@ export function UnitsPage() {
     e.preventDefault();
     const payload = { ...form, conversionFactor: Number(form.conversionFactor || 1) };
     const result = editingId ? updateUnit(appState, editingId, payload) : createUnit(appState, payload);
-    if (!result.ok) { window.alert('error' in result ? result.error : 'Save failed'); return; }
+    if (!result.ok) { toast.error('Operation failed', { module: 'Units', description: 'error' in result ? String(result.error) : 'Save failed' }); return; }
     saveAppState();
     setView('main');
     resetForm();
   };
 
-  const handleDelete = (id: string) => {
-    if (!window.confirm('Delete this unit?')) return;
+  const handleDelete = async (id: string) => {
+    const __ok = await confirmAction({ title: "Delete this unit", message: "Delete this unit?", confirmLabel: 'Delete', tone: 'danger', module: 'Units' }); if (!__ok) return;
     deleteUnit(appState, id);
     saveAppState();
   };

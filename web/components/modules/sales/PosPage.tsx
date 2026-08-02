@@ -1,5 +1,7 @@
 'use client';
 
+import { toast } from '@/lib/ui/feedback';
+
 import { useMemo, useState } from 'react';
 import { Search, ShoppingCart, Trash2 } from 'lucide-react';
 import { Footer } from '@/components/layout/Footer';
@@ -65,17 +67,17 @@ export function PosPage() {
 
   const checkout = () => {
     if (cart.length === 0) {
-      window.alert('Cart is empty');
+      toast.error('Action required', { module: 'POS', description: "Cart is empty" });
       return;
     }
     const result = posCheckout(appState, { customer, cart: cart as unknown as Record<string, unknown>[], total: cartTotal });
     if (!result.ok) {
-      window.alert('error' in result ? result.error : 'Checkout failed');
+      toast.error('Operation failed', { module: 'POS', description: 'error' in result ? String(result.error) : 'Checkout failed' });
       return;
     }
     saveAppState();
     setCart([]);
-    window.alert(`Sale complete! Order ${result.id} · ${formatCurrency(cartTotal)}`);
+    toast.info('Notice', { module: 'POS', description: `Sale complete! Order ${result.id} · ${formatCurrency(cartTotal)}` });
   };
 
   return (

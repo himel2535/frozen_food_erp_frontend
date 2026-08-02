@@ -1,5 +1,7 @@
 'use client';
 
+import { toast } from '@/lib/ui/feedback';
+
 import { Phone, MessageCircle, FileText, MoreHorizontal, CalendarPlus, UserRound } from 'lucide-react';
 import {
   formatDueDate,
@@ -67,7 +69,7 @@ function PanelFooter({
             title={label}
             disabled={disabled}
             className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
-            onClick={disabled ? undefined : () => window.alert(`${label} integration coming soon.`)}
+            onClick={disabled ? undefined : () => toast.info('Feature coming soon', { module: 'Customer Due', description: "${label} integration coming soon." })}
           >
             <Icon className="w-4 h-4" />
           </button>
@@ -200,7 +202,7 @@ export function CustomerDueDetailPanel({
                 <button
                   type="button"
                   className="inline-flex items-center gap-1 rounded-lg border border-slate-200 px-2 py-1 text-[11px] font-semibold text-slate-600 hover:bg-slate-50 cursor-pointer"
-                  onClick={() => window.alert('Add follow-up coming soon.')}
+                  onClick={() => toast.info('Feature coming soon', { module: 'Customer Due', description: "Add follow-up coming soon." })}
                 >
                   <CalendarPlus className="w-3.5 h-3.5" />
                   Add

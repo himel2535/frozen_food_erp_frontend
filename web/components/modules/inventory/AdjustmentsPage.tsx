@@ -1,5 +1,7 @@
 'use client';
 
+import { toast } from '@/lib/ui/feedback';
+
 import { useMemo, useState } from 'react';
 import { AppFormModal, FORM_GRID_CLS, FORM_INPUT_CLS, FORM_LABEL_CLS, FORM_SELECT_CLS } from '@/components/shared/AppForm';
 import { AdvancedDetailsToggle } from '@/components/shared/AdvancedDetailsToggle';
@@ -63,7 +65,7 @@ export function AdjustmentsPage() {
     const result = createAdjustment(appState, {
       ...form, qty: Number(form.qty || 0), unitValue: Number(form.unitValue || 0),
     });
-    if (!result.ok) { window.alert('error' in result ? result.error : 'Save failed'); return; }
+    if (!result.ok) { toast.error('Operation failed', { module: 'Stock Correction', description: 'error' in result ? String(result.error) : 'Save failed' }); return; }
     saveAppState();
     setView('main');
     resetForm();
@@ -71,7 +73,7 @@ export function AdjustmentsPage() {
 
   const handleApprove = (id: string) => {
     const result = approveAdjustment(appState, id);
-    if (!result.ok) { window.alert('error' in result ? result.error : 'Approve failed'); return; }
+    if (!result.ok) { toast.error('Operation failed', { module: 'Stock Correction', description: 'error' in result ? String(result.error) : 'Approve failed' }); return; }
     saveAppState();
   };
 

@@ -1,5 +1,7 @@
 'use client';
 
+import { toast } from '@/lib/ui/feedback';
+
 import { useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { PurchaseOrderForm, type PoSaveAction } from '@/components/modules/purchases/purchase-order-form/PurchaseOrderForm';
@@ -63,7 +65,7 @@ export function PurchaseOrderFormPage({ mode, orderId }: { mode: 'create' | 'edi
       ? updatePurchaseOrder(appState, orderId, record)
       : createPurchaseOrder(appState, record);
     if (!result.ok) {
-      window.alert('error' in result ? result.error : 'Save failed');
+      toast.error('Operation failed', { module: 'Purchases', description: 'error' in result ? String(result.error) : 'Save failed' });
       return;
     }
     saveAppState();

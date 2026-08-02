@@ -1,5 +1,7 @@
 'use client';
 
+import { toast } from '@/lib/ui/feedback';
+
 import { ArrowRight } from 'lucide-react';
 import { employeeAvatarClass, employeeInitials } from '@/lib/services/hrm-service';
 import { formatMoney } from '@/lib/services/salary-sheet-service';
@@ -67,7 +69,7 @@ export function PaymentsDueSidebar({
         <button
           type="button"
           className="inline-flex items-center gap-1 text-xs font-bold text-blue-600 hover:text-blue-700 cursor-pointer mt-2"
-          onClick={() => window.alert('View all payments coming soon.')}
+          onClick={() => toast.info('Feature coming soon', { module: 'Payments Due', description: "View all payments coming soon." })}
         >
           View All Payments <ArrowRight className="w-3.5 h-3.5" />
         </button>

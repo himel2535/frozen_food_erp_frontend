@@ -1,5 +1,7 @@
 'use client';
 
+import { toast } from '@/lib/ui/feedback';
+
 import { useMemo, useState } from 'react';
 import { Plus } from 'lucide-react';
 import { Footer } from '@/components/layout/Footer';
@@ -172,7 +174,7 @@ export function DealsPage() {
   const handleStageChange = (cardId: string, _fromStage: string, toStage: string) => {
     const result = updateDealStage(appState, cardId, toStage);
     if (!result.ok) {
-      window.alert(result.error ?? 'Stage update failed');
+      toast.error('Operation failed', { module: 'Deals', description: String(result.error ?? 'Stage update failed') });
       return;
     }
     saveAppState();
@@ -202,7 +204,7 @@ export function DealsPage() {
       : createDeal(appState, payload);
 
     if (!result.ok) {
-      window.alert('error' in result ? result.error : 'Save failed');
+      toast.error('Operation failed', { module: 'Deals', description: 'error' in result ? String(result.error) : 'Save failed' });
       return;
     }
     saveAppState();

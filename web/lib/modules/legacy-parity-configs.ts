@@ -1,5 +1,7 @@
 'use client';
 
+import { toast, confirmAction } from '@/lib/ui/feedback';
+
 import React from 'react';
 import type { DedicatedModuleConfig } from '@/components/modules/shared/DedicatedModule';
 import type { PortAdapter } from '@/lib/modules/port-types';
@@ -109,21 +111,21 @@ const purchasesOrdersConfig: DedicatedModuleConfig = {
       actions.push(React.createElement('button', {
         key: 'send', type: 'button',
         className: `text-blue-600 ${btnCls}`,
-        onClick: () => { const r = sendPurchaseOrder(appState, id); if (r.ok) save(); else window.alert(r.error); },
+        onClick: () => { const r = sendPurchaseOrder(appState, id); if (r.ok) save(); else toast.error('Could not send PO', { module: 'Purchases', description: String(r.error) }); },
       }, 'Send'));
     }
     if (status === 'Sent') {
       actions.push(React.createElement('button', {
         key: 'recv', type: 'button',
         className: `text-emerald-600 ${btnCls}`,
-        onClick: () => { const r = receivePurchaseOrder(appState, id); if (r.ok) save(); else window.alert(r.error); },
+        onClick: () => { const r = receivePurchaseOrder(appState, id); if (r.ok) save(); else toast.error('Could not receive PO', { module: 'Purchases', description: String(r.error) }); },
       }, 'Receive'));
     }
     if (status === 'Draft' || status === 'Sent') {
       actions.push(React.createElement('button', {
         key: 'cancel', type: 'button',
         className: `text-slate-500 ${btnCls}`,
-        onClick: () => { if (window.confirm('Cancel PO?')) { const r = cancelPurchaseOrder(appState, id); if (r.ok) save(); } },
+        onClick: () => { confirmAction({ title: 'Cancel PO', message: 'Cancel this purchase order?', confirmLabel: 'Cancel PO', tone: 'danger', module: 'Purchases' }).then((__ok) => { if (!__ok) return; const r = cancelPurchaseOrder(appState, id); if (r.ok) save(); }); },
       }, 'Cancel'));
     }
     return React.createElement(React.Fragment, null, ...actions);

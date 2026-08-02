@@ -1,5 +1,7 @@
 'use client';
 
+import { toast } from '@/lib/ui/feedback';
+
 import { Fragment, useState } from 'react';
 import { ChevronDown, ChevronRight, Settings2 } from 'lucide-react';
 import {
@@ -34,7 +36,7 @@ export function TrialBalanceTable({
         <button
           type="button"
           className="inline-flex items-center justify-center w-8 h-8 rounded-lg border border-slate-200 text-slate-500 hover:bg-slate-50 cursor-pointer"
-          onClick={() => window.alert('Column settings coming soon.')}
+          onClick={() => toast.info('Feature coming soon', { module: 'Trial Balance', description: "Column settings coming soon." })}
           aria-label="Table settings"
         >
           <Settings2 className="w-4 h-4" />

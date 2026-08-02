@@ -1,5 +1,7 @@
 'use client';
 
+import { toast } from '@/lib/ui/feedback';
+
 import { useEffect, useMemo, useState } from 'react';
 import { ArrowRight, Download, Filter, Info } from 'lucide-react';
 import { Footer } from '@/components/layout/Footer';
@@ -114,7 +116,7 @@ export function PaymentsDuePage() {
           <button
             type="button"
             className={PD_EXPORT_BTN_CLS}
-            onClick={() => window.alert('Export coming soon.')}
+            onClick={() => toast.info('Feature coming soon', { module: 'Payments Due', description: "Export coming soon." })}
           >
             <Download className="w-3.5 h-3.5" /> Export
           </button>

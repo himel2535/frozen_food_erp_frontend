@@ -1,5 +1,7 @@
 'use client';
 
+import { toast } from '@/lib/ui/feedback';
+
 import { useMemo, useState } from 'react';
 import { MessageCircle, MoreVertical, Phone, Plus, Search, Upload } from 'lucide-react';
 import { Footer } from '@/components/layout/Footer';
@@ -363,7 +365,7 @@ export function LeadsPage() {
         <div className="flex items-center gap-2 self-start">
           <button
             type="button"
-            onClick={() => window.alert('Import leads — coming soon.')}
+            onClick={() => toast.info('Feature coming soon', { module: 'Leads', description: "Import leads" })}
             className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-600 border border-slate-200 bg-white hover:bg-slate-50 px-4 py-2.5 rounded-xl cursor-pointer"
           >
             <Upload className="w-4 h-4" /> Import Leads
@@ -465,10 +467,10 @@ export function LeadsPage() {
             onRowClick={(row) => setSelectedId(String(row.id))}
             renderActions={(row) => (
               <>
-                <button type="button" title="WhatsApp" onClick={(e) => { e.stopPropagation(); window.alert('WhatsApp — coming soon.'); }} className="app-table-icon-btn cursor-pointer">
+                <button type="button" title="WhatsApp" onClick={(e) => { e.stopPropagation(); toast.info('Feature coming soon', { module: 'Leads', description: "WhatsApp" }); }} className="app-table-icon-btn cursor-pointer">
                   <MessageCircle className="w-4 h-4" />
                 </button>
-                <button type="button" title="Call" onClick={(e) => { e.stopPropagation(); window.alert(`Call ${String(row.phone)} — coming soon.`); }} className="app-table-icon-btn cursor-pointer">
+                <button type="button" title="Call" onClick={(e) => { e.stopPropagation(); toast.info('Feature coming soon', { module: 'Leads', description: "Call ${String(row.phone)} — coming soon." }); }} className="app-table-icon-btn cursor-pointer">
                   <Phone className="w-4 h-4" />
                 </button>
                 <button type="button" title="More" onClick={(e) => { e.stopPropagation(); openEdit(row); }} className="app-table-icon-btn cursor-pointer">
@@ -503,7 +505,7 @@ export function LeadsPage() {
           onConvert={() => {
             if (!selectedLead) return;
             const r = convertLeadToCustomer(appState, String(selectedLead.id), {});
-            if (r.ok) { saveAppState(); window.alert('Converted to customer'); }
+            if (r.ok) { saveAppState(); toast.success('Done', { module: 'Leads', description: "Converted to customer" }); }
           }}
           onMarkLost={() => {
             if (!selectedLead) return;

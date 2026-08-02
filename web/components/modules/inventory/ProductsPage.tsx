@@ -1,5 +1,7 @@
 'use client';
 
+import { toast, confirmAction } from '@/lib/ui/feedback';
+
 import { useMemo, useState } from 'react';
 import { Footer } from '@/components/layout/Footer';
 import { KpiCards } from '@/components/shared/KpiCards';
@@ -170,7 +172,7 @@ export function ProductsPage() {
       ? updateProduct(appState, editingId, payload)
       : createProduct(appState, payload);
     if (!result.ok) {
-      window.alert('error' in result ? result.error : 'Save failed');
+      toast.error('Operation failed', { module: 'Products', description: 'error' in result ? String(result.error) : 'Save failed' });
       return;
     }
     saveAppState();
@@ -262,10 +264,11 @@ export function ProductsPage() {
             <TableIconAction
               variant="delete"
               onClick={() => {
-                if (window.confirm('Delete?')) {
+                confirmAction({ title: 'Delete', message: 'Delete?', confirmLabel: 'Delete', tone: 'danger', module: 'Products' }).then((__ok) => {
+                  if (!__ok) return;
                   deleteProduct(appState, String(row.id));
                   saveAppState();
-                }
+                });
               }}
             />
           </>

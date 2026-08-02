@@ -1,5 +1,7 @@
 'use client';
 
+import { toast } from '@/lib/ui/feedback';
+
 import { useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -98,7 +100,7 @@ export function EmployeeReviewPayPage({ employeeId }: { employeeId: string }) {
   const handleApprove = (payment: { amount: number; method: string; date: string; note: string }) => {
     const result = approveAndPay(appState, String(entry.id), payment);
     if (!result.ok) {
-      window.alert(result.error ?? 'Payment failed');
+      toast.error('Operation failed', { module: 'Salary Sheet', description: String(result.error ?? 'Payment failed') });
       return;
     }
     saveAppState();

@@ -1,5 +1,7 @@
 'use client';
 
+import { toast, confirmAction } from '@/lib/ui/feedback';
+
 import { useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { DedicatedModule } from '@/components/modules/shared/DedicatedModule';
@@ -41,7 +43,7 @@ function workflowApprovalsConfig(): DedicatedModuleConfig {
             onClick={() => {
               const result = approvePurchaseRmOrder(appState, refId);
               if (!result.ok) {
-                window.alert(result.error ?? 'Approve failed');
+                toast.error('Operation failed', { module: 'Workflow Approvals', description: String(result.error ?? 'Approve failed') });
                 return;
               }
               save();
@@ -53,11 +55,18 @@ function workflowApprovalsConfig(): DedicatedModuleConfig {
           <button
             type="button"
             title="Reject"
-            onClick={() => {
-              if (!window.confirm('Reject this RM order?')) return;
+            onClick={async () => {
+              const ok = await confirmAction({
+                title: 'Reject RM order',
+                message: 'Reject this RM order?',
+                confirmLabel: 'Reject',
+                tone: 'danger',
+                module: 'Workflow Approvals',
+              });
+              if (!ok) return;
               const result = rejectPurchaseRmOrder(appState, refId);
               if (!result.ok) {
-                window.alert(result.error ?? 'Reject failed');
+                toast.error('Operation failed', { module: 'Workflow Approvals', description: String(result.error ?? 'Reject failed') });
                 return;
               }
               save();

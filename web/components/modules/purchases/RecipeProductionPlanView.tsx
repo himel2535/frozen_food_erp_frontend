@@ -1,5 +1,7 @@
 'use client';
 
+import { toast } from '@/lib/ui/feedback';
+
 import { useMemo, useState } from 'react';
 import { Icon } from '@iconify/react';
 import { Download } from 'lucide-react';
@@ -93,7 +95,7 @@ export function RecipeProductionPlanView({
     try {
       await downloadProductionPlanPdf(recipe, batchQty, plan);
     } catch {
-      window.alert('Failed to generate PDF. Please try again.');
+      toast.error('Action required', { module: 'Purchases', description: "Failed to generate PDF. Please try again." });
     } finally {
       setExporting(false);
     }

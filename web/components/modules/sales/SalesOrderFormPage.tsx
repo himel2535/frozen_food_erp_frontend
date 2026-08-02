@@ -1,5 +1,7 @@
 'use client';
 
+import { toast } from '@/lib/ui/feedback';
+
 import { useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { SalesOrderForm, type SoSaveAction } from '@/components/modules/sales/sales-order-form/SalesOrderForm';
@@ -67,7 +69,7 @@ export function SalesOrderFormPage({ mode, orderId }: { mode: 'create' | 'edit';
       ? updateSalesOrder(appState, orderId, record)
       : createSalesOrder(appState, record);
     if (!result.ok) {
-      window.alert('error' in result ? result.error : 'Save failed');
+      toast.error('Operation failed', { module: 'Sales', description: 'error' in result ? String(result.error) : 'Save failed' });
       return;
     }
     saveAppState();

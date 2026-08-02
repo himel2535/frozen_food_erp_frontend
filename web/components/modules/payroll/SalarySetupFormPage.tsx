@@ -1,5 +1,7 @@
 'use client';
 
+import { toast } from '@/lib/ui/feedback';
+
 import { useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { SalarySetupForm } from '@/components/modules/payroll/salary-setup-form/SalarySetupForm';
@@ -54,7 +56,7 @@ export function SalarySetupFormPage({ mode, structureId }: { mode: 'create' | 'e
       ? updateSalaryStructure(appState, structureId, record)
       : createSalaryStructure(appState, record);
     if (!result.ok) {
-      window.alert('error' in result ? result.error : 'Save failed');
+      toast.error('Operation failed', { module: 'Payroll', description: 'error' in result ? String(result.error) : 'Save failed' });
       return;
     }
     saveAppState();

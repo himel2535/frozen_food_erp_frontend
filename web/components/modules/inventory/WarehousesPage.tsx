@@ -1,5 +1,7 @@
 'use client';
 
+import { toast, confirmAction } from '@/lib/ui/feedback';
+
 import { useMemo, useState } from 'react';
 import { AppFormFields, AppFormModal } from '@/components/shared/AppForm';
 import { AppTable, type AppTableColumn } from '@/components/shared/AppTable';
@@ -73,14 +75,14 @@ export function WarehousesPage() {
     e.preventDefault();
     const payload = { ...form, capacity: Number(form.capacity || 0) };
     const result = editingId ? updateWarehouse(appState, editingId, payload) : createWarehouse(appState, payload);
-    if (!result.ok) { window.alert('error' in result ? result.error : 'Save failed'); return; }
+    if (!result.ok) { toast.error('Operation failed', { module: 'Warehouses', description: 'error' in result ? String(result.error) : 'Save failed' }); return; }
     saveAppState();
     setView('main');
     resetForm();
   };
 
-  const handleDelete = (id: string) => {
-    if (!window.confirm('Delete this warehouse?')) return;
+  const handleDelete = async (id: string) => {
+    const __ok = await confirmAction({ title: "Delete this warehouse", message: "Delete this warehouse?", confirmLabel: 'Delete', tone: 'danger', module: 'Warehouses' }); if (!__ok) return;
     deleteWarehouse(appState, id);
     saveAppState();
   };

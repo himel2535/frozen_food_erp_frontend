@@ -1,5 +1,7 @@
 'use client';
 
+import { toast } from '@/lib/ui/feedback';
+
 import { useMemo, useState } from 'react';
 import { AppFormModal, FORM_GRID_CLS, FORM_INPUT_CLS, FORM_LABEL_CLS, FORM_SELECT_CLS } from '@/components/shared/AppForm';
 import { AdvancedDetailsToggle } from '@/components/shared/AdvancedDetailsToggle';
@@ -52,7 +54,7 @@ export function TransfersPage() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const result = createTransfer(appState, { ...form, qty: Number(form.qty || 0) });
-    if (!result.ok) { window.alert('error' in result ? result.error : 'Save failed'); return; }
+    if (!result.ok) { toast.error('Operation failed', { module: 'Stock Transfers', description: 'error' in result ? String(result.error) : 'Save failed' }); return; }
     saveAppState();
     setView('main');
     resetForm();
@@ -60,7 +62,7 @@ export function TransfersPage() {
 
   const handleComplete = (id: string) => {
     const result = completeTransfer(appState, id);
-    if (!result.ok) { window.alert('error' in result ? result.error : 'Complete failed'); return; }
+    if (!result.ok) { toast.error('Operation failed', { module: 'Stock Transfers', description: 'error' in result ? String(result.error) : 'Complete failed' }); return; }
     saveAppState();
   };
 

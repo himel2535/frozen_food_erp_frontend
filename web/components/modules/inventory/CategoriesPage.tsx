@@ -1,5 +1,7 @@
 'use client';
 
+import { toast, confirmAction } from '@/lib/ui/feedback';
+
 import { useMemo, useState } from 'react';
 import { AppFormFields, AppFormModal, FORM_GRID_CLS, FORM_LABEL_CLS } from '@/components/shared/AppForm';
 import { AppTable, type AppTableColumn } from '@/components/shared/AppTable';
@@ -78,14 +80,14 @@ export function CategoriesPage() {
     e.preventDefault();
     const payload = { ...form, defaultTaxRate: Number(form.defaultTaxRate || 0) };
     const result = editingId ? updateCategory(appState, editingId, payload) : createCategory(appState, payload);
-    if (!result.ok) { window.alert('error' in result ? result.error : 'Save failed'); return; }
+    if (!result.ok) { toast.error('Operation failed', { module: 'Categories', description: 'error' in result ? String(result.error) : 'Save failed' }); return; }
     saveAppState();
     setView('main');
     resetForm();
   };
 
-  const handleDelete = (id: string) => {
-    if (!window.confirm('Delete this category?')) return;
+  const handleDelete = async (id: string) => {
+    const __ok = await confirmAction({ title: "Delete this category", message: "Delete this category?", confirmLabel: 'Delete', tone: 'danger', module: 'Categories' }); if (!__ok) return;
     deleteCategory(appState, id);
     saveAppState();
   };

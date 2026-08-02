@@ -1,5 +1,7 @@
 'use client';
 
+import { toast } from '@/lib/ui/feedback';
+
 import Link from 'next/link';
 import { useMemo, useRef, useState, type FormEvent } from 'react';
 import {
@@ -261,7 +263,7 @@ export function PurchaseOrderForm({
                   </button>
                   <button
                     type="button"
-                    onClick={() => window.alert('Import Items — coming soon.')}
+                    onClick={() => toast.info('Feature coming soon', { module: 'Purchases', description: "Import Items" })}
                     className={PO_BTN_OUTLINE}
                   >
                     <FileSpreadsheet className="w-4 h-4" /> Import Items

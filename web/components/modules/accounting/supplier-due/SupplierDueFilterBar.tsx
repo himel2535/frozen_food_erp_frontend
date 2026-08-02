@@ -1,5 +1,7 @@
 'use client';
 
+import { toast } from '@/lib/ui/feedback';
+
 import { Search, ChevronDown } from 'lucide-react';
 import { FilterTabs } from '@/components/shared/FilterTabs';
 import { SUPPLIER_DUE_STATUS_TABS } from './supplier-due-options';
@@ -32,7 +34,7 @@ export function SupplierDueFilterBar({
         <button
           type="button"
           className="inline-flex items-center gap-1 rounded-lg border border-slate-200 px-2.5 py-1.5 text-xs font-semibold text-slate-600 hover:bg-slate-50 cursor-pointer"
-          onClick={() => window.alert('More filters coming soon.')}
+          onClick={() => toast.info('Feature coming soon', { module: 'Supplier Due', description: "More filters coming soon." })}
         >
           More Filters
           <ChevronDown className="w-3.5 h-3.5" />

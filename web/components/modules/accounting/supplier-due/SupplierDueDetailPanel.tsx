@@ -1,5 +1,7 @@
 'use client';
 
+import { toast } from '@/lib/ui/feedback';
+
 import { FileText, BookOpen, History, StickyNote, MoreHorizontal, Building2 } from 'lucide-react';
 import {
   formatDueDate,
@@ -122,7 +124,7 @@ function PanelFooter({
             title={label}
             disabled={disabled}
             className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
-            onClick={disabled ? undefined : () => window.alert(`${label} coming soon.`)}
+            onClick={disabled ? undefined : () => toast.info('Feature coming soon', { module: 'Supplier Due', description: "${label} coming soon." })}
           >
             <Icon className="w-4 h-4" />
           </button>

@@ -1,5 +1,7 @@
 'use client';
 
+import { toast } from '@/lib/ui/feedback';
+
 import { ArrowRight, Banknote, CalendarDays, Clock, Gift, MinusCircle } from 'lucide-react';
 import { formatMoney } from '@/lib/services/payroll-service';
 
@@ -31,7 +33,7 @@ export function SalarySetupPreview({
         <button
           type="button"
           className="inline-flex items-center gap-1 text-[10px] font-bold text-blue-600 hover:text-blue-700 cursor-pointer shrink-0"
-          onClick={() => window.alert('Full salary setup details coming soon.')}
+          onClick={() => toast.info('Feature coming soon', { module: 'HRM', description: "Full salary setup details coming soon." })}
         >
           View full details <ArrowRight className="w-3 h-3" />
         </button>

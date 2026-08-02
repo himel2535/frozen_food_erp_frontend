@@ -1,5 +1,7 @@
 'use client';
 
+import { toast } from '@/lib/ui/feedback';
+
 import { useMemo, useState } from 'react';
 import { Plus } from 'lucide-react';
 import { Footer } from '@/components/layout/Footer';
@@ -108,7 +110,7 @@ export function CustomerDuePage() {
     const customerId = customerIdByLabel[addDueForm.customer] ?? addDueForm.customer;
     const result = createCustomerDue(appState, { ...addDueForm, customer: customerId });
     if (!result.ok) {
-      window.alert('error' in result ? result.error : 'Failed to save due');
+      toast.error('Operation failed', { module: 'Accounting', description: 'error' in result ? String(result.error) : 'Failed to save due' });
       return;
     }
     saveAppState();
@@ -128,7 +130,7 @@ export function CustomerDuePage() {
       receiveForm.method,
     );
     if (!result.ok) {
-      window.alert(result.error ?? 'Failed to record payment');
+      toast.error('Operation failed', { module: 'Accounting', description: String(result.error ?? 'Failed to record payment') });
       return;
     }
     saveAppState();
@@ -158,7 +160,7 @@ export function CustomerDuePage() {
               onClick={() => {
                 const target = selectedCustomer ?? allCustomers.find((c) => c.totalDue > 0);
                 if (target) openReceive(target);
-                else window.alert('Select a customer with outstanding due first.');
+                else toast.error('Action required', { module: 'Accounting', description: "Select a customer with outstanding due first." });
               }}
               className="bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold px-4 py-2.5 rounded-xl transition-colors flex items-center gap-2 cursor-pointer"
             >

@@ -1,5 +1,7 @@
 'use client';
 
+import { toast, confirmAction } from '@/lib/ui/feedback';
+
 import { useMemo, useState } from 'react';
 import { Footer } from '@/components/layout/Footer';
 import { AppFormFields, AppFormModal } from '@/components/shared/AppForm';
@@ -82,7 +84,7 @@ export function InventoryMasterModule({ config }: { config: InventoryMasterConfi
     const payload: Record<string, unknown> = { ...form };
     config.fields.forEach((f) => { if (f.type === 'number') payload[f.key] = Number(form[f.key] || 0); });
     const result = editingId ? config.update(appState, editingId, payload) : config.create(appState, payload);
-    if (!result.ok) { window.alert('error' in result ? result.error : 'Save failed'); return; }
+    if (!result.ok) { toast.error('Operation failed', { module: 'Inventory', description: 'error' in result ? String(result.error) : 'Save failed' }); return; }
     saveAppState();
     setView('main');
     resetForm();
@@ -115,10 +117,11 @@ export function InventoryMasterModule({ config }: { config: InventoryMasterConfi
               <TableIconAction
                 variant="delete"
                 onClick={() => {
-                  if (window.confirm('Delete?')) {
+                  confirmAction({ title: 'Delete', message: 'Delete?', confirmLabel: 'Delete', tone: 'danger', module: 'Inventory' }).then((__ok) => {
+                    if (!__ok) return;
                     config.delete!(appState, String(row.id));
                     saveAppState();
-                  }
+                  });
                 }}
               />
             )}

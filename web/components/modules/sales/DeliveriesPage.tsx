@@ -1,5 +1,7 @@
 'use client';
 
+import { toast, confirmAction } from '@/lib/ui/feedback';
+
 import { useEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Plus } from 'lucide-react';
@@ -201,7 +203,7 @@ export function DeliveriesPage() {
       ? updateDelivery(appState, editingId, record)
       : createDelivery(appState, record);
     if (!result.ok) {
-      window.alert('error' in result ? result.error : 'Save failed');
+      toast.error('Operation failed', { module: 'Delivery Challan', description: 'error' in result ? String(result.error) : 'Save failed' });
       return null;
     }
     saveAppState();
@@ -250,8 +252,8 @@ export function DeliveriesPage() {
     };
   }, [printPayload]);
 
-  const handleDelete = (id: string) => {
-    if (!window.confirm('Delete this challan?')) return;
+  const handleDelete = async (id: string) => {
+    const __ok = await confirmAction({ title: "Delete this challan", message: "Delete this challan?", confirmLabel: 'Delete', tone: 'danger', module: 'Delivery Challan' }); if (!__ok) return;
     deleteFromState(appState, 'salesDeliveries', id);
     saveAppState();
   };

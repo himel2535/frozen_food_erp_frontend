@@ -855,3 +855,18 @@ body.dashboard-page .text-3xl { font-size: 2rem; }        /* 32px */
     page-break-inside: avoid;
   }
 }
+
+@keyframes app-toast-in {
+  from {
+    opacity: 0;
+    transform: translateX(1rem);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.app-toast-enter {
+  animation: app-toast-in 0.22s ease-out;
+}

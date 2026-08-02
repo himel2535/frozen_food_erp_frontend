@@ -1,5 +1,7 @@
 'use client';
 
+import { toast } from '@/lib/ui/feedback';
+
 import { useMemo, useState } from 'react';
 import { FileDown, FileSpreadsheet, Plus, Printer } from 'lucide-react';
 import { Footer } from '@/components/layout/Footer';
@@ -90,7 +92,7 @@ export function TrialBalancePage() {
       notes: addForm.notes,
     });
     if (!result.ok) {
-      window.alert(result.error ?? 'Failed to add line');
+      toast.error('Operation failed', { module: 'Trial Balance', description: String(result.error ?? 'Failed to add line') });
       return;
     }
     saveAppState();
@@ -119,7 +121,7 @@ export function TrialBalancePage() {
           <div className="flex flex-wrap items-center gap-2 self-start xl:self-auto">
             <button
               type="button"
-              onClick={() => window.alert('Export PDF coming soon.')}
+              onClick={() => toast.info('Feature coming soon', { module: 'Trial Balance', description: "Export PDF coming soon." })}
               className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition-colors cursor-pointer"
             >
               <FileDown className="w-4 h-4" />
@@ -127,7 +129,7 @@ export function TrialBalancePage() {
             </button>
             <button
               type="button"
-              onClick={() => window.alert('Export Excel coming soon.')}
+              onClick={() => toast.info('Feature coming soon', { module: 'Trial Balance', description: "Export Excel coming soon." })}
               className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition-colors cursor-pointer"
             >
               <FileSpreadsheet className="w-4 h-4" />

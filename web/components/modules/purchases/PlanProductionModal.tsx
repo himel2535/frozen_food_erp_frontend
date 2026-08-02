@@ -1,5 +1,7 @@
 'use client';
 
+import { toast } from '@/lib/ui/feedback';
+
 import { useEffect, useState } from 'react';
 import { X } from 'lucide-react';
 import { formatMoney, getRecipeBomCost, type Recipe } from '@/lib/services/recipes-service';
@@ -35,7 +37,7 @@ export function PlanProductionModal({
   const handleSubmit = () => {
     const qty = Number(qtyInput);
     if (!Number.isFinite(qty) || qty < 1) {
-      window.alert('Enter a valid quantity (minimum 1).');
+      toast.info('Notice', { module: 'Purchases', description: "Enter a valid quantity (minimum 1)." });
       return;
     }
     onSubmit(Math.floor(qty));
