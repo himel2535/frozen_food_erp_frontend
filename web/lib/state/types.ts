@@ -31,6 +31,8 @@ export interface AppState {
   trialBalance?: Array<Record<string, unknown>>;
   profitLoss?: Array<Record<string, unknown>>;
   balanceSheet?: Array<Record<string, unknown>>;
+  salaryStructures?: Array<Record<string, unknown>>;
+  salarySheetEntries?: Array<Record<string, unknown>>;
   payroll: Array<Record<string, unknown>>;
   projects: Array<Record<string, unknown>>;
   manufacturing: Array<Record<string, unknown>>;

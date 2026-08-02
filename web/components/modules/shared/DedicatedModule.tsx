@@ -24,6 +24,9 @@ export interface DedicatedModuleConfig extends PortModuleConfig {
   rowClassName?: string | ((row: Record<string, unknown>, index: number) => string);
   rowSort?: (a: Record<string, unknown>, b: Record<string, unknown>) => number;
   kpiGridClassName?: string;
+  onAdd?: () => void;
+  onEditRow?: (row: Record<string, unknown>) => void;
+  hideInlineForm?: boolean;
 }
 
 export function DedicatedModule({ config }: { config: DedicatedModuleConfig }) {
@@ -122,7 +125,14 @@ export function DedicatedModule({ config }: { config: DedicatedModuleConfig }) {
         search={search}
         onSearchChange={setSearch}
         searchPlaceholder={`Search ${config.title.toLowerCase()}...`}
-        onAdd={() => { resetForm(); setView('form'); }}
+        onAdd={() => {
+          if (config.onAdd) {
+            config.onAdd();
+            return;
+          }
+          resetForm();
+          setView('form');
+        }}
         addLabel={config.addLabel ?? `Add ${entityLabel}`}
         filters={
           <>
@@ -160,7 +170,16 @@ export function DedicatedModule({ config }: { config: DedicatedModuleConfig }) {
             {config.rowActions?.(row, { appState, save: saveAppState })}
             {!config.hideDefaultRowActions?.(row) && (
               <>
-                <TableIconAction variant="edit" onClick={() => openEdit(row)} />
+                <TableIconAction
+                  variant="edit"
+                  onClick={() => {
+                    if (config.onEditRow) {
+                      config.onEditRow(row);
+                      return;
+                    }
+                    openEdit(row);
+                  }}
+                />
                 {config.adapter.delete && (
                   <TableIconAction
                     variant="delete"
@@ -179,6 +198,7 @@ export function DedicatedModule({ config }: { config: DedicatedModuleConfig }) {
       />
       <Footer />
     </div>
+    {!config.hideInlineForm && (
     <AppFormModal
       open={view === 'form'}
       onClose={handleBack}
@@ -195,6 +215,7 @@ export function DedicatedModule({ config }: { config: DedicatedModuleConfig }) {
         onToggleAdvanced={() => setShowAdvanced(!showAdvanced)}
       />
     </AppFormModal>
+    )}
     </>
   );
 }

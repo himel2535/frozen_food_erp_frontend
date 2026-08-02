@@ -59,7 +59,12 @@ const KEY_ICON_MAP: Record<string, string> = {
   purchases: 'fluent-color:document-add-24',
   sales: 'flat-color-icons:shipped',
   avg: 'flat-color-icons:currency-exchange',
+  avgbase: 'flat-color-icons:currency-exchange',
   bom: 'flat-color-icons:serial-tasks',
+  assigned: 'flat-color-icons:manager',
+  payroll: 'flat-color-icons:paid',
+  structures: 'flat-color-icons:rules',
+  structure: 'flat-color-icons:rules',
 };
 
 const LABEL_PATTERNS: { pattern: RegExp; icon: string }[] = [
@@ -72,7 +77,8 @@ const LABEL_PATTERNS: { pattern: RegExp; icon: string }[] = [
   { pattern: /customer|client/i, icon: 'fluent-color:person-24' },
   { pattern: /supplier|vendor/i, icon: 'fluent-color:building-store-24' },
   { pattern: /employee|staff|hr/i, icon: 'fluent-color:person-24' },
-  { pattern: /payment|paid/i, icon: 'flat-color-icons:paid' },
+  { pattern: /payment|paid|payroll|salary/i, icon: 'flat-color-icons:paid' },
+  { pattern: /structure/i, icon: 'flat-color-icons:rules' },
   { pattern: /invoice|bill/i, icon: 'fluent-color:document-24' },
   { pattern: /order|sale/i, icon: 'flat-color-icons:shipped' },
   { pattern: /lead|prospect/i, icon: 'flat-color-icons:opened-folder' },

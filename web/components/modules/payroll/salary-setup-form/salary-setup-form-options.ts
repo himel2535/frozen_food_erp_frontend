@@ -1,0 +1,11 @@
+export const EMPLOYEE_TYPE_OPTIONS = ['Worker', 'Staff', 'Manager', 'Executive'];
+export const STATUS_OPTIONS = ['active', 'inactive'];
+export const PAY_FREQUENCY_OPTIONS = ['Monthly', 'Weekly', 'Bi-Weekly'];
+export const COMPONENT_TYPE_OPTIONS = ['Fixed Amount', 'Percentage (%)'];
+export const CALCULATION_OPTIONS = ['Fixed', '% of Basic'];
+export const ABSENT_DEDUCTION_OPTIONS = ['Per Day Salary', 'No Deduction', 'Fixed Amount'];
+export const HALF_DAY_DEDUCTION_OPTIONS = ['50% of Per Day', 'Per Day Salary', 'No Deduction'];
+export const LATE_DEDUCTION_OPTIONS = ['Per Late (Fixed)', 'No Deduction', 'Per Hour'];
+export const OT_RATE_TYPE_OPTIONS = ['Per Hour', 'Per Day'];
+export const BONUS_TYPE_OPTIONS = ['Percentage (%)', 'Fixed Amount'];
+export const BONUS_ON_OPTIONS = ['Basic Salary', 'Gross Salary', 'Total Fixed'];

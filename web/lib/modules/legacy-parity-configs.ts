@@ -28,6 +28,7 @@ import {
   listDepartments, listDesignations, listAttendance, listLeaveRequests,
   listSalaryStructures, listPayrollRuns, listPayrollSlips, crudHrm,
 } from '@/lib/services/hrm-service';
+import { getSalaryStructureMetrics, formatMoney as payrollMoney } from '@/lib/services/payroll-service';
 import { listFromState, createInState, updateInState, deleteFromState } from '@/lib/services/domain-service';
 import { crmActivityAdapter } from '@/lib/modules/port-adapters';
 import type { AppState } from '@/lib/state/types';
@@ -874,14 +875,24 @@ Object.assign(LEGACY_PARITY_CONFIGS, {
   },
   'payroll-structures': {
     id: 'payroll-structures',
-    title: 'Salary Structures',
-    subtitle: 'Define salary components and allowances.',
+    title: 'Salary Setup',
+    subtitle: 'Manage salary components, deduction rules, and employee assignments.',
     addLabel: 'Add Structure',
-    searchKeys: ['name'],
+    searchKeys: ['name', 'code', 'employeeType'],
+    statusTabs: [
+      { id: 'all', label: 'All' },
+      { id: 'active', label: 'Active' },
+      { id: 'inactive', label: 'Inactive' },
+    ],
     columns: [
       { key: 'name', label: 'Structure' },
-      { key: 'base', label: 'Base Salary', render: (r) => money(r.base) },
-      { key: 'allowances', label: 'Allowances', render: (r) => money(r.allowances) },
+      { key: 'employeeType', label: 'Employee Type' },
+      { key: 'payFrequency', label: 'Pay Frequency' },
+      { key: 'base', label: 'Base Salary' },
+      { key: 'totalFixed', label: 'Total Fixed' },
+      { key: 'assignedCount', label: 'Employees' },
+      { key: 'effectiveFrom', label: 'Effective From' },
+      { key: 'rules', label: 'Rules' },
       { key: 'status', label: 'Status' },
     ],
     fields: [
@@ -892,7 +903,16 @@ Object.assign(LEGACY_PARITY_CONFIGS, {
       { key: 'status', label: 'Status', type: 'select', options: ['active', 'inactive'] },
       { key: 'notes', label: 'Notes', type: 'textarea', advanced: true },
     ],
-    kpi: (rows) => [{ key: 'total', label: 'Structures', value: String(rows.length) }],
+    kpi: (rows) => {
+      const m = getSalaryStructureMetrics(rows);
+      return [
+        { key: 'total', label: 'Total Structures', value: String(m.total), iconify: 'flat-color-icons:rules' },
+        { key: 'active', label: 'Active', value: String(m.active), iconify: 'flat-color-icons:ok' },
+        { key: 'assigned', label: 'Employees Assigned', value: String(m.assignedEmployees), iconify: 'flat-color-icons:manager' },
+        { key: 'payroll', label: 'Monthly Payroll', value: payrollMoney(m.monthlyPayroll), sub: 'Active structures', iconify: 'flat-color-icons:paid' },
+        { key: 'avgBase', label: 'Avg Base Salary', value: payrollMoney(m.avgBase), sub: 'Per active structure', iconify: 'flat-color-icons:currency-exchange' },
+      ];
+    },
     adapter: adapter({ ...crudHrm('salaryStructures', 'SS') }),
   },
   'payroll-runs': {
