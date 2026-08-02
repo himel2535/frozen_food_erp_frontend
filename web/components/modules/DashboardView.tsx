@@ -1,15 +1,23 @@
 'use client';
 
 import Link from 'next/link';
+import dynamic from 'next/dynamic';
 import { useEffect, useMemo, useState } from 'react';
 import { Icon } from '@iconify/react';
 import { Footer } from '@/components/layout/Footer';
 import { useAppStore } from '@/lib/state/app-store';
 import type { AppState } from '@/lib/state/types';
-import { SalesTrendChart } from '@/components/modules/dashboard/SalesTrendChart';
-import { RevenueAnalyticsChart } from '@/components/modules/dashboard/RevenueAnalyticsChart';
 import { DashboardNotifications } from '@/components/modules/dashboard/DashboardNotifications';
 import { DashboardBottomPanels } from '@/components/modules/dashboard/DashboardBottomPanels';
+
+const SalesTrendChart = dynamic(
+  () => import('@/components/modules/dashboard/SalesTrendChart').then((m) => m.SalesTrendChart),
+  { ssr: false },
+);
+const RevenueAnalyticsChart = dynamic(
+  () => import('@/components/modules/dashboard/RevenueAnalyticsChart').then((m) => m.RevenueAnalyticsChart),
+  { ssr: false },
+);
 
 function formatMoney(value: number) {
   return `৳ ${Number(value || 0).toLocaleString('en-US', { maximumFractionDigits: 0 })}`;

@@ -6,13 +6,9 @@ import { Users } from 'lucide-react';
 import { DedicatedModule } from '@/components/modules/shared/DedicatedModule';
 import { EmployeeRegisterForm } from '@/components/modules/hrm/employee-form/EmployeeRegisterForm';
 import { TableIconAction } from '@/components/shared/TableIconAction';
-import { getLegacyParityConfig } from '@/lib/modules/legacy-parity-configs';
+import { useLegacyParityConfig } from '@/hooks/use-legacy-parity-config';
 import { employeeAvatarClass, employeeInitials } from '@/lib/services/hrm-service';
 import { formatMoney } from '@/lib/services/payroll-service';
-
-function cfg(id: string) {
-  return getLegacyParityConfig(id);
-}
 
 function formatEffectiveDate(value: unknown) {
   const raw = String(value ?? '').split('T')[0];
@@ -41,8 +37,11 @@ const EMPLOYEE_TYPE_STYLES: Record<string, string> = {
 
 export function EmployeesPage() {
   const router = useRouter();
-  const config = useMemo(() => ({
-    ...cfg('hrm-employees'),
+  const base = useLegacyParityConfig('hrm-employees');
+  const config = useMemo(() => {
+    if (!base) return null;
+    return {
+    ...base,
     kpiGridClassName: 'grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2',
     formModalSize: 'lg' as const,
     formModalTitle: (editingId: string | null) => (editingId ? 'Edit Employee' : 'Create Employee'),
@@ -84,19 +83,25 @@ export function EmployeesPage() {
         }}
       />
     ),
-  }), [router]);
+  };
+  }, [base, router]);
+
+  if (!config) return <DedicatedModule configId="hrm-employees" />;
 
   return <DedicatedModule config={config} />;
 }
 
-export function DepartmentsPage() { return <DedicatedModule config={cfg('hrm-departments')} />; }
-export function DesignationsPage() { return <DedicatedModule config={cfg('hrm-designations')} />; }
-export function AttendancePage() { return <DedicatedModule config={cfg('hrm-attendance')} />; }
-export function LeavePage() { return <DedicatedModule config={cfg('hrm-leave')} />; }
+export function DepartmentsPage() { return <DedicatedModule configId="hrm-departments" />; }
+export function DesignationsPage() { return <DedicatedModule configId="hrm-designations" />; }
+export function AttendancePage() { return <DedicatedModule configId="hrm-attendance" />; }
+export function LeavePage() { return <DedicatedModule configId="hrm-leave" />; }
 export function PayrollStructuresPage() {
   const router = useRouter();
-  const config = useMemo(() => ({
-    ...cfg('payroll-structures'),
+  const base = useLegacyParityConfig('payroll-structures');
+  const config = useMemo(() => {
+    if (!base) return null;
+    return {
+    ...base,
     addLabel: 'Add Structure',
     kpiGridClassName: 'grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2',
     hideInlineForm: true,
@@ -168,9 +173,12 @@ export function PayrollStructuresPage() {
         </span>
       ),
     },
-  }), [router]);
+  };
+  }, [base, router]);
+
+  if (!config) return <DedicatedModule configId="payroll-structures" />;
 
   return <DedicatedModule config={config} />;
 }
-export function PayrollRunsPage() { return <DedicatedModule config={cfg('payroll-runs')} />; }
-export function PayrollSlipsPage() { return <DedicatedModule config={cfg('payroll-slips')} />; }
+export function PayrollRunsPage() { return <DedicatedModule configId="payroll-runs" />; }
+export function PayrollSlipsPage() { return <DedicatedModule configId="payroll-slips" />; }

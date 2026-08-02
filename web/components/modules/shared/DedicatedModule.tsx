@@ -12,6 +12,7 @@ import { FilterTabs } from '@/components/shared/FilterTabs';
 import { AppTable } from '@/components/shared/AppTable';
 import { StatusBadge } from '@/components/shared/StatusBadge';
 import { TableIconAction } from '@/components/shared/TableIconAction';
+import { useLegacyParityConfig } from '@/hooks/use-legacy-parity-config';
 import { useAppStore } from '@/lib/state/app-store';
 import type { PortModuleConfig } from '@/lib/modules/port-types';
 import type { AppState } from '@/lib/state/types';
@@ -42,7 +43,28 @@ export interface DedicatedModuleConfig extends PortModuleConfig {
   formSubmitLabel?: (editingId: string | null) => string;
 }
 
-export function DedicatedModule({ config }: { config: DedicatedModuleConfig }) {
+export function DedicatedModule({
+  config,
+  configId,
+}: {
+  config?: DedicatedModuleConfig;
+  configId?: string;
+}) {
+  const loadedConfig = useLegacyParityConfig(config ? null : configId);
+  const activeConfig = config ?? loadedConfig;
+
+  if (!activeConfig) {
+    return (
+      <div className={MODULE_LIST_SHELL}>
+        <AppTable columns={[{ key: 'a', label: 'Loading' }]} rows={[]} loading />
+      </div>
+    );
+  }
+
+  return <DedicatedModuleView config={activeConfig} />;
+}
+
+function DedicatedModuleView({ config }: { config: DedicatedModuleConfig }) {
   const appState = useAppStore((s) => s.appState);
   const saveAppState = useAppStore((s) => s.saveAppState);
   const [view, setView] = useState<'main' | 'form'>('main');

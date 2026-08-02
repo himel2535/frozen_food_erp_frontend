@@ -1,9 +1,19 @@
 import { create } from 'zustand';
 import { DEFAULT_STATE, LOCAL_STORAGE_KEY } from './default-state';
 import type { AppState, Lang } from './types';
-import { saveRemoteAppState, subscribeToRemoteAppState } from '../firebase';
 import { ensureCrmState } from '../services/crm-service';
-import { translations } from '../i18n/translations';
+import { ensureBnTranslations, translate as translateKey } from '../i18n/translations';
+
+type FirebaseApi = typeof import('../firebase');
+
+let firebaseApi: FirebaseApi | null = null;
+
+async function getFirebase(): Promise<FirebaseApi> {
+  if (!firebaseApi) {
+    firebaseApi = await import('../firebase');
+  }
+  return firebaseApi;
+}
 
 function hydrateAppState(state: Partial<AppState> | null): AppState {
   const nextState = { ...DEFAULT_STATE, ...(state ?? {}) } as AppState;
@@ -45,17 +55,7 @@ function loadInitialState(): AppState {
 }
 
 export function translate(key: string, vars?: Record<string, string | number>, lang?: Lang): string {
-  const activeLang = lang ?? 'en';
-  let text =
-    (translations[activeLang] as Record<string, string>)?.[key] ??
-    (translations.en as Record<string, string>)?.[key] ??
-    key;
-  if (vars) {
-    Object.keys(vars).forEach((k) => {
-      text = text.replace(new RegExp(`\\{${k}\\}`, 'g'), String(vars[k]));
-    });
-  }
-  return text;
+  return translateKey(key, vars, lang ?? 'en');
 }
 
 interface AppStore {
@@ -86,7 +86,15 @@ export const useAppStore = create<AppStore>((set, get) => ({
 
   setHydrated: () => {
     const appState = loadInitialState();
-    set({ appState, hydrated: true, lastSyncedState: JSON.stringify(appState) });
+    set({
+      appState,
+      hydrated: true,
+      ready: true,
+      lastSyncedState: JSON.stringify(appState),
+    });
+    if (appState.lang === 'bn') {
+      void ensureBnTranslations();
+    }
   },
 
   initFromStorage: () => {
@@ -101,41 +109,38 @@ export const useAppStore = create<AppStore>((set, get) => ({
         resolve();
         return;
       }
-      set({ remoteListenerStarted: true });
-      try {
-        let resolved = false;
-        subscribeToRemoteAppState((remoteState) => {
-          if (!remoteState) {
-            const { appState } = get();
-            const { isLoggedIn: _li, sidebarCollapsed: _sc, ...toSend } = appState;
-            saveRemoteAppState(toSend as Record<string, unknown>).catch(() => {});
-          } else {
-            const current = get();
-            const hydrated = hydrateAppState(remoteState as Partial<AppState>);
-            const serialized = JSON.stringify(hydrated);
-            if (serialized !== current.lastSyncedState) {
-              const loggedIn = current.appState.isLoggedIn;
-              const sidebar = current.appState.sidebarCollapsed;
-              hydrated.isLoggedIn = loggedIn;
-              hydrated.sidebarCollapsed = sidebar;
-              set({ ignoreRemoteEcho: true, appState: hydrated, lastSyncedState: serialized });
-              localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(hydrated));
-              set({ ignoreRemoteEcho: false });
-              if (typeof window !== 'undefined') {
-                window.dispatchEvent(new CustomEvent('hookerp:state-synced'));
+      set({ remoteListenerStarted: true, ready: true });
+      void getFirebase()
+        .then(({ subscribeToRemoteAppState, saveRemoteAppState }) => {
+          subscribeToRemoteAppState((remoteState) => {
+            if (!remoteState) {
+              const { appState } = get();
+              const { isLoggedIn: _li, sidebarCollapsed: _sc, ...toSend } = appState;
+              saveRemoteAppState(toSend as Record<string, unknown>).catch(() => {});
+            } else {
+              const current = get();
+              const hydrated = hydrateAppState(remoteState as Partial<AppState>);
+              const serialized = JSON.stringify(hydrated);
+              if (serialized !== current.lastSyncedState) {
+                const loggedIn = current.appState.isLoggedIn;
+                const sidebar = current.appState.sidebarCollapsed;
+                hydrated.isLoggedIn = loggedIn;
+                hydrated.sidebarCollapsed = sidebar;
+                set({ ignoreRemoteEcho: true, appState: hydrated, lastSyncedState: serialized });
+                localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(hydrated));
+                set({ ignoreRemoteEcho: false });
+                if (typeof window !== 'undefined') {
+                  window.dispatchEvent(new CustomEvent('hookerp:state-synced'));
+                }
               }
             }
-          }
-          if (!resolved) {
-            resolved = true;
-            set({ ready: true });
-            resolve();
-          }
+          });
+          resolve();
+        })
+        .catch(() => {
+          set({ remoteListenerStarted: false });
+          resolve();
         });
-      } catch {
-        set({ remoteListenerStarted: false, ready: true });
-        resolve();
-      }
     }),
 
   saveAppState: () => {
@@ -151,8 +156,10 @@ export const useAppStore = create<AppStore>((set, get) => ({
 
     set({ lastSyncedState: serialized });
     const { isLoggedIn: _li, sidebarCollapsed: _sc, ...toSend } = appState;
-    saveRemoteAppState(toSend as Record<string, unknown>).catch((error) => {
-      console.warn('Firebase sync failed', error);
+    void getFirebase().then(({ saveRemoteAppState }) => {
+      saveRemoteAppState(toSend as Record<string, unknown>).catch((error) => {
+        console.warn('Firebase sync failed', error);
+      });
     });
   },
 
@@ -183,13 +190,16 @@ export const useAppStore = create<AppStore>((set, get) => ({
     get().saveAppState();
     if (typeof window !== 'undefined') {
       const lang = get().appState.lang;
+      if (lang === 'bn') {
+        void ensureBnTranslations();
+      }
       document.documentElement.lang = lang ?? 'en';
       document.body.classList.toggle('lang-bn', lang === 'bn');
       window.dispatchEvent(new CustomEvent('hookerp:language-changed', { detail: { lang } }));
     }
   },
 
-  t: (key, vars) => translate(key, vars, get().appState.lang as Lang),
+  t: (key, vars) => translateKey(key, vars, get().appState.lang as Lang),
 }));
 
 export function useAppState() {
@@ -203,8 +213,10 @@ export function useIsLoggedIn() {
 export let appReadyPromise: Promise<void> = Promise.resolve();
 
 export function bootstrapAppStore() {
-  const store = useAppStore.getState();
-  store.initFromStorage();
-  appReadyPromise = store.startSync();
+  appReadyPromise = useAppStore.getState().startSync();
   return appReadyPromise;
+}
+
+if (typeof window !== 'undefined') {
+  useAppStore.getState().initFromStorage();
 }

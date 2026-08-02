@@ -5,7 +5,7 @@ import { toast, confirmAction } from '@/lib/ui/feedback';
 import { useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { DedicatedModule } from '@/components/modules/shared/DedicatedModule';
-import { getLegacyParityConfig } from '@/lib/modules/legacy-parity-configs';
+import { useLegacyParityConfig } from '@/hooks/use-legacy-parity-config';
 import { PORT_CONFIGS } from '@/lib/modules/port-configs';
 import type { DedicatedModuleConfig } from '@/components/modules/shared/DedicatedModule';
 import { approvePurchaseRmOrder, rejectPurchaseRmOrder } from '@/lib/services/purchase-rm-service';
@@ -24,12 +24,7 @@ import {
   PRIORITY_DOT_CLS,
 } from '@/components/modules/projects/project-form/project-form-types';
 
-function cfg(id: string): DedicatedModuleConfig {
-  return getLegacyParityConfig(id);
-}
-
-function workflowApprovalsConfig(): DedicatedModuleConfig {
-  const base = cfg('workflow-approvals');
+function workflowApprovalsConfig(base: DedicatedModuleConfig): DedicatedModuleConfig {
   return {
     ...base,
     rowActions: (row, { appState, save }) => {
@@ -81,17 +76,20 @@ function workflowApprovalsConfig(): DedicatedModuleConfig {
   };
 }
 
-export function SettingsUsersPage() { return <DedicatedModule config={cfg('settings-users')} />; }
-export function SettingsRolesPage() { return <DedicatedModule config={cfg('settings-roles')} />; }
-export function SettingsPermissionsPage() { return <DedicatedModule config={cfg('settings-permissions')} />; }
-export function SettingsDocumentsPage() { return <DedicatedModule config={cfg('settings-documents')} />; }
-export function SettingsCompanyPage() { return <DedicatedModule config={cfg('settings-company')} />; }
+export function SettingsUsersPage() { return <DedicatedModule configId="settings-users" />; }
+export function SettingsRolesPage() { return <DedicatedModule configId="settings-roles" />; }
+export function SettingsPermissionsPage() { return <DedicatedModule configId="settings-permissions" />; }
+export function SettingsDocumentsPage() { return <DedicatedModule configId="settings-documents" />; }
+export function SettingsCompanyPage() { return <DedicatedModule configId="settings-company" />; }
 export function SettingsAuditLogsPage() { return <DedicatedModule config={PORT_CONFIGS['settings-audit-logs'] as DedicatedModuleConfig} />; }
-export function SettingsProfilePage() { return <DedicatedModule config={cfg('settings-profile')} />; }
+export function SettingsProfilePage() { return <DedicatedModule configId="settings-profile" />; }
 export function ProjectsPage() {
   const router = useRouter();
-  const config = useMemo(() => ({
-    ...cfg('projects'),
+  const base = useLegacyParityConfig('projects');
+  const config = useMemo(() => {
+    if (!base) return null;
+    return {
+    ...base,
     kpiGridClassName: 'grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2',
     hideInlineForm: true,
     onAdd: () => router.push('/projects/new'),
@@ -194,22 +192,29 @@ export function ProjectsPage() {
         </span>
       ),
     },
-  }), [router]);
+  };
+  }, [base, router]);
+  if (!config) return <DedicatedModule configId="projects" />;
   return <DedicatedModule config={config} />;
 }
-export function AssetManagementPage() { return <DedicatedModule config={cfg('asset-management')} />; }
+export function AssetManagementPage() { return <DedicatedModule configId="asset-management" />; }
 export function WorkflowApprovalsPage() {
   const router = useRouter();
-  const config = useMemo(() => ({
-    ...workflowApprovalsConfig(),
+  const base = useLegacyParityConfig('workflow-approvals');
+  const config = useMemo(() => {
+    if (!base) return null;
+    return {
+    ...workflowApprovalsConfig(base),
     rowSort: (a: Record<string, unknown>, b: Record<string, unknown>) =>
       String(b.createdAt ?? '').localeCompare(String(a.createdAt ?? '')),
     onRowClick: (row: Record<string, unknown>) => {
       if (String(row.refType) !== 'purchase_rm_order') return;
       router.push(`/purchases/purchase-rm?focus=${encodeURIComponent(String(row.refId))}&from=approval`);
     },
-  }), [router]);
+  };
+  }, [base, router]);
+  if (!config) return <DedicatedModule configId="workflow-approvals" />;
   return <DedicatedModule config={config} />;
 }
-export function CrmActivitiesPage() { return <DedicatedModule config={cfg('crm-activities')} />; }
-export function SalesWholesalePage() { return <DedicatedModule config={cfg('sales-wholesale')} />; }
+export function CrmActivitiesPage() { return <DedicatedModule configId="crm-activities" />; }
+export function SalesWholesalePage() { return <DedicatedModule configId="sales-wholesale" />; }

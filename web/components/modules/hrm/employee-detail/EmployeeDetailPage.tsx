@@ -16,7 +16,7 @@ import { OverviewTab } from '@/components/modules/hrm/employee-detail/tabs/Overv
 import { AttendanceTab } from '@/components/modules/hrm/employee-detail/tabs/AttendanceTab';
 import { PayrollTab } from '@/components/modules/hrm/employee-detail/tabs/PayrollTab';
 import { NotesTab } from '@/components/modules/hrm/employee-detail/tabs/NotesTab';
-import { getLegacyParityConfig } from '@/lib/modules/legacy-parity-configs';
+import { useLegacyParityConfig } from '@/hooks/use-legacy-parity-config';
 import { MODULE_LIST_SHELL } from '@/lib/ui/module-layout';
 import { useAppStore } from '@/lib/state/app-store';
 import {
@@ -35,8 +35,8 @@ export function EmployeeDetailPage() {
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [form, setForm] = useState<Record<string, string>>({});
 
-  const config = useMemo(() => getLegacyParityConfig('hrm-employees'), []);
-  const fields = config.fields;
+  const config = useLegacyParityConfig('hrm-employees');
+  const fields = config?.fields ?? [];
 
   const profile = useMemo(
     () => (employeeId ? getEmployeeProfile(appState, employeeId) : null),

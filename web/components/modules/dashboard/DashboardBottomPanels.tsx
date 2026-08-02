@@ -1,5 +1,6 @@
 'use client';
 
+import Image from 'next/image';
 import Link from 'next/link';
 import { useMemo } from 'react';
 import { Icon } from '@iconify/react';
@@ -88,7 +89,14 @@ export function DashboardBottomPanels() {
       label: t('common.product'),
       render: (row) => (
         <div className="flex items-center gap-3">
-          <img src={row.image} className="h-7 w-7 rounded-md object-cover bg-slate-100 border border-slate-200" alt="" />
+          <Image
+            src={row.image}
+            alt=""
+            width={28}
+            height={28}
+            className="h-7 w-7 rounded-md object-cover bg-slate-100 border border-slate-200"
+            loading="lazy"
+          />
           <span className="font-bold text-slate-950">{row.name}</span>
         </div>
       ),
@@ -182,7 +190,14 @@ export function DashboardBottomPanels() {
           {ACTIVITY.map((item, idx) => (
             <div key={idx} className="flex items-center gap-3">
               {item.type === 'avatar' ? (
-                <img src={item.avatar} className="h-6 w-6 rounded-full object-cover shrink-0" alt="" />
+                <Image
+                  src={item.avatar!}
+                  alt=""
+                  width={24}
+                  height={24}
+                  className="h-6 w-6 rounded-full object-cover shrink-0"
+                  loading="lazy"
+                />
               ) : (
                 <div className={`h-6 w-6 rounded-full flex items-center justify-center shrink-0 text-[10px] font-bold ${item.badgeClass}`}>
                   {item.badge}

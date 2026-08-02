@@ -3,13 +3,10 @@
 import { useEffect } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { useAppStore } from '@/lib/state/app-store';
-import { useAppReady } from '@/hooks/use-app-ready';
-import { ToysLoader } from '@/components/shared/ToysLoader';
 
 export function AuthGuard({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
-  const ready = useAppReady();
   const isLoggedIn = useAppStore((s) => s.appState.isLoggedIn);
   const hydrated = useAppStore((s) => s.hydrated);
 
@@ -20,8 +17,8 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
     }
   }, [hydrated, isLoggedIn, pathname, router]);
 
-  if (!hydrated || !ready) {
-    return <ToysLoader label="Loading Workspace..." sublabel="Connecting real-time factory data" fullScreen />;
+  if (!hydrated) {
+    return null;
   }
 
   if (!isLoggedIn) {
