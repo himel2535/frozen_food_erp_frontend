@@ -1,5 +1,6 @@
 import type { AppState } from '@/lib/state/types';
 import { listFromState, createInState, updateInState, deleteFromState, formatCurrency } from '@/lib/services/domain-service';
+import { getSalaryStructureById } from '@/lib/services/payroll-service';
 
 type Row = Record<string, unknown>;
 
@@ -162,11 +163,76 @@ export function getEmployeeDetailMetrics(state: AppState, id: string): EmployeeD
   };
 }
 
+export function getNextEmployeeCode(state: AppState) {
+  const employees = listEmployees(state);
+  let max = 0;
+  employees.forEach((row) => {
+    const raw = String(row.employeeCode ?? row.id ?? '');
+    const match = raw.match(/EMP-(\d+)/i);
+    if (match) max = Math.max(max, Number(match[1]));
+  });
+  return `EMP-${String(max + 1).padStart(3, '0')}`;
+}
+
+export function getEmployeeInitialForm(state: AppState) {
+  const structures = listSalaryStructures(state).filter(
+    (s) => String(s.status ?? '').toLowerCase() === 'active',
+  );
+  const defaultStructure = structures[0];
+  return {
+    name: '',
+    phone: '',
+    email: '',
+    nid: '',
+    department: '',
+    designation: '',
+    joiningDate: new Date().toISOString().split('T')[0],
+    employeeType: 'Worker',
+    status: 'active',
+    employeeCode: getNextEmployeeCode(state),
+    salaryStructureId: defaultStructure ? String(defaultStructure.id) : '',
+    paymentMethod: 'Cash',
+    emergencyPhone: '',
+    address: '',
+    notes: '',
+  };
+}
+
+export function mapEmployeeRowToForm(row: Row) {
+  return {
+    name: String(row.name ?? ''),
+    phone: String(row.phone ?? ''),
+    email: String(row.email ?? ''),
+    nid: String(row.nid ?? ''),
+    department: String(row.department ?? ''),
+    designation: String(row.designation ?? ''),
+    joiningDate: String(row.joiningDate ?? '').split('T')[0],
+    employeeType: String(row.employeeType ?? 'Worker'),
+    status: String(row.status ?? 'active'),
+    employeeCode: String(row.employeeCode ?? row.id ?? ''),
+    salaryStructureId: String(row.salaryStructureId ?? ''),
+    paymentMethod: String(row.paymentMethod ?? 'Cash'),
+    emergencyPhone: String(row.emergencyPhone ?? ''),
+    address: String(row.address ?? ''),
+    notes: String(row.notes ?? ''),
+  };
+}
+
 export function createEmployee(state: AppState, payload: Row) {
+  const code = String(payload.employeeCode ?? getNextEmployeeCode(state));
+  const salaryStructureId = String(payload.salaryStructureId ?? '');
+  let salary = Number(payload.salary ?? 0);
+  if (!salary && salaryStructureId) {
+    const structure = getSalaryStructureById(state, salaryStructureId);
+    if (structure) salary = Number(structure.base ?? 0);
+  }
   return createInState(state, 'employees', {
     ...payload,
+    id: code,
+    employeeCode: code,
     status: payload.status ?? 'active',
     joiningDate: payload.joiningDate ?? new Date().toISOString().split('T')[0],
+    salary,
   }, 'EMP');
 }
 

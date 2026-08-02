@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useMemo, useState, type ReactNode } from 'react';
 import { Footer } from '@/components/layout/Footer';
 import { AppFormFields, AppFormModal } from '@/components/shared/AppForm';
 import { ListToolbar } from '@/components/shared/ListToolbar';
@@ -12,13 +12,14 @@ import { StatusBadge } from '@/components/shared/StatusBadge';
 import { TableIconAction } from '@/components/shared/TableIconAction';
 import { useAppStore } from '@/lib/state/app-store';
 import type { PortModuleConfig } from '@/lib/modules/port-types';
+import type { AppState } from '@/lib/state/types';
 
 export interface DedicatedModuleConfig extends PortModuleConfig {
   kpi?: (rows: Record<string, unknown>[]) => KpiCardItem[];
   statusTabs?: { id: string; label: string }[];
   columnRender?: Record<string, (row: Record<string, unknown>) => React.ReactNode>;
   computedFields?: Record<string, (form: Record<string, string>) => string>;
-  rowActions?: (row: Record<string, unknown>, ctx: { appState: import('@/lib/state/types').AppState; save: () => void }) => React.ReactNode;
+  rowActions?: (row: Record<string, unknown>, ctx: { appState: AppState; save: () => void }) => React.ReactNode;
   hideDefaultRowActions?: (row: Record<string, unknown>) => boolean;
   onRowClick?: (row: Record<string, unknown>) => void;
   rowClassName?: string | ((row: Record<string, unknown>, index: number) => string);
@@ -27,6 +28,16 @@ export interface DedicatedModuleConfig extends PortModuleConfig {
   onAdd?: () => void;
   onEditRow?: (row: Record<string, unknown>) => void;
   hideInlineForm?: boolean;
+  customFormBody?: (ctx: {
+    form: Record<string, string>;
+    setField: (key: string, value: string) => void;
+    editingId: string | null;
+    appState: AppState;
+  }) => ReactNode;
+  formModalSize?: 'sm' | 'md' | 'lg';
+  formModalTitle?: (editingId: string | null) => string;
+  formModalSubtitle?: (editingId: string | null) => string;
+  formSubmitLabel?: (editingId: string | null) => string;
 }
 
 export function DedicatedModule({ config }: { config: DedicatedModuleConfig }) {
@@ -68,20 +79,25 @@ export function DedicatedModule({ config }: { config: DedicatedModuleConfig }) {
     ];
   }, [config, rows]);
 
-  const resetForm = () => {
-    const initial = config.adapter.getInitialForm?.(appState) ?? {};
+  const buildFormState = (initial: Record<string, unknown>) => {
     const next: Record<string, string> = {};
     config.fields.forEach((f) => { next[f.key] = String(initial[f.key] ?? ''); });
-    setForm(next);
+    Object.entries(initial).forEach(([k, v]) => {
+      next[k] = String(v ?? '');
+    });
+    return next;
+  };
+
+  const resetForm = () => {
+    const initial = config.adapter.getInitialForm?.(appState) ?? {};
+    setForm(buildFormState(initial));
     setEditingId(null);
     setShowAdvanced(false);
   };
 
   const openEdit = (row: Record<string, unknown>) => {
     const mapped = config.adapter.mapRowToForm?.(row) ?? row;
-    const next: Record<string, string> = {};
-    config.fields.forEach((f) => { next[f.key] = String(mapped[f.key] ?? ''); });
-    setForm(next);
+    setForm(buildFormState(mapped as Record<string, unknown>));
     setEditingId(String(row.id));
     setView('form');
   };
@@ -202,18 +218,23 @@ export function DedicatedModule({ config }: { config: DedicatedModuleConfig }) {
     <AppFormModal
       open={view === 'form'}
       onClose={handleBack}
-      title={editingId ? `Edit ${entityLabel}` : `Create ${entityLabel}`}
-      subtitle={config.subtitle}
+      title={config.formModalTitle?.(editingId) ?? (editingId ? `Edit ${entityLabel}` : `Create ${entityLabel}`)}
+      subtitle={config.formModalSubtitle?.(editingId) ?? config.subtitle}
       onSubmit={handleSubmit}
-      size="md"
+      submitLabel={config.formSubmitLabel?.(editingId) ?? (editingId ? 'Save' : 'Create')}
+      size={config.formModalSize ?? 'md'}
     >
-      <AppFormFields
-        fields={config.fields}
-        values={form}
-        onChange={setField}
-        showAdvanced={showAdvanced}
-        onToggleAdvanced={() => setShowAdvanced(!showAdvanced)}
-      />
+      {config.customFormBody ? (
+        config.customFormBody({ form, setField, editingId, appState })
+      ) : (
+        <AppFormFields
+          fields={config.fields}
+          values={form}
+          onChange={setField}
+          showAdvanced={showAdvanced}
+          onToggleAdvanced={() => setShowAdvanced(!showAdvanced)}
+        />
+      )}
     </AppFormModal>
     )}
     </>

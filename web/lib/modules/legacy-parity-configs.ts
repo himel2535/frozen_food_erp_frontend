@@ -25,6 +25,7 @@ import {
 } from '@/lib/services/accounting-service';
 import {
   listEmployees, createEmployee, updateEmployee, deleteEmployee, getEmployeeMetrics,
+  getEmployeeInitialForm, mapEmployeeRowToForm,
   listDepartments, listDesignations, listAttendance, listLeaveRequests,
   listSalaryStructures, listPayrollRuns, listPayrollSlips, crudHrm,
 } from '@/lib/services/hrm-service';
@@ -41,6 +42,7 @@ function adapter(ops: {
   update?: (s: AppState, id: string, p: Row) => { ok: boolean; error?: string };
   delete?: (s: AppState, id: string) => { ok: boolean; error?: string };
   getInitialForm?: (s: AppState) => Row;
+  mapRowToForm?: (row: Row) => Row;
 }): PortAdapter {
   return ops as PortAdapter;
 }
@@ -783,7 +785,14 @@ Object.assign(LEGACY_PARITY_CONFIGS, {
         { key: 'payroll', label: 'Monthly Payroll', value: money(m.monthlyPayroll), sub: 'Active staff only' },
       ];
     },
-    adapter: adapter({ list: listEmployees, create: createEmployee, update: updateEmployee, delete: deleteEmployee, getInitialForm: () => ({ joiningDate: new Date().toISOString().split('T')[0], status: 'active' }) }),
+    adapter: adapter({
+      list: listEmployees,
+      create: createEmployee,
+      update: updateEmployee,
+      delete: deleteEmployee,
+      getInitialForm: getEmployeeInitialForm,
+      mapRowToForm: mapEmployeeRowToForm,
+    }),
   },
   'hrm-departments': {
     id: 'hrm-departments',
