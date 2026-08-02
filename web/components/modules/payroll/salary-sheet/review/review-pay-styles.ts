@@ -31,7 +31,7 @@ export const RP_EARNINGS_BOX_CLS = 'rounded-xl bg-emerald-50/80 border border-em
 export const RP_DEDUCTIONS_BOX_CLS = 'rounded-xl bg-rose-50/80 border border-rose-100 p-3 space-y-2';
 
 export const RP_NET_HERO_CLS =
-  'rounded-xl bg-gradient-to-br from-emerald-500 to-emerald-600 text-white p-4 flex items-center gap-3 shadow-sm';
+  'rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 text-white p-4 flex items-center gap-3 shadow-sm';
 
 export const RP_LINE_ROW_CLS = 'flex justify-between items-center gap-2 text-xs text-slate-700';
 
@@ -54,4 +54,4 @@ export const RP_PILL_TOGGLE_IDLE_CLS =
   'px-2.5 py-1 rounded-lg text-[11px] font-bold bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 cursor-pointer transition-colors';
 
 export const RP_APPROVE_BTN_CLS =
-  'w-full inline-flex items-center justify-center gap-2 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-extrabold shadow-sm transition-colors cursor-pointer';
+  'w-full inline-flex items-center justify-center gap-2 py-3 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-sm font-extrabold shadow-sm transition-colors cursor-pointer';

@@ -55,6 +55,7 @@ const htmlRedirects = [
   ['hrm-leave.html', '/hrm/leave'],
   ['payroll-structures.html', '/payroll/structures'],
   ['payroll-salary-sheet.html', '/payroll/salary-sheet'],
+  ['payroll-payments-due.html', '/payroll/payments-due'],
   ['payroll-runs.html', '/payroll/runs'],
   ['payroll-slips.html', '/payroll/slips'],
   ['reports-sales.html', '/reports/sales'],

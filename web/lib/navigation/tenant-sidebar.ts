@@ -101,6 +101,7 @@ export const TENANT_SIDEBAR_SECTIONS: SidebarSection[] = [
     items: [
       { label: 'Salary Setup', href: '/payroll/structures', view: 'structures', imageIcon: '/images/sidebar/payroll/structures.png', iconifyIcon: 'fluent-color:table-24' },
       { label: 'Salary Sheet', href: '/payroll/salary-sheet', view: 'salary-sheet', imageIcon: '/images/sidebar/payroll/salary-sheet.png', iconifyIcon: 'flat-color-icons:calculator' },
+      { label: 'Payments & Due', href: '/payroll/payments-due', view: 'payments-due', imageIcon: '/images/sidebar/payroll/runs.png', iconifyIcon: 'flat-color-icons:currency-exchange' },
       { label: 'Payroll Runs', href: '/payroll/runs', view: 'runs', imageIcon: '/images/sidebar/payroll/runs.png', iconifyIcon: 'flat-color-icons:start' },
       { label: 'Payslips', href: '/payroll/slips', view: 'slips', imageIcon: '/images/sidebar/payroll/slips.png', iconifyIcon: 'flat-color-icons:print' },
     ],

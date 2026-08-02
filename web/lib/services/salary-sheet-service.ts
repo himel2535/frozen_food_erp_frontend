@@ -307,4 +307,142 @@ export function amountInWords(amount: number): string {
   return `${n.toLocaleString('en-US')} Taka Only`;
 }
 
+export type PaymentRecord = { id: string; amount: number; method: string; date: string; note: string };
+
+export type PaymentsDueRow = {
+  entry: Row;
+  employee: Row;
+  structure: Row;
+  computed: ComputedSheetRow;
+  lastPayment: PaymentRecord | null;
+  displayStatus: 'paid' | 'partial' | 'unpaid' | 'notProcessed';
+};
+
+function getLastPayment(entry: Row): PaymentRecord | null {
+  const payments = Array.isArray(entry.payments) ? entry.payments as PaymentRecord[] : [];
+  if (!payments.length) return null;
+  return [...payments].sort((a, b) => String(b.date).localeCompare(String(a.date)))[0] ?? null;
+}
+
+function resolveDisplayStatus(entry: Row, computed: ComputedSheetRow): PaymentsDueRow['displayStatus'] {
+  const status = String(entry.status ?? 'pending') as SalarySheetStatus;
+  if (computed.netPayable <= 0) return 'notProcessed';
+  if (status === 'paid') return 'paid';
+  if (status === 'partial') return 'partial';
+  return 'unpaid';
+}
+
+export function listPaymentsDueRows(state: AppState, period: string): PaymentsDueRow[] {
+  return listSheetEmployees(state).map((employee) => {
+    const employeeId = String(employee.id);
+    const entry = getOrCreateSheetEntry(state, period, employeeId);
+    if (!entry) {
+      return {
+        entry: { employeeId, period, status: 'pending', paidAmount: 0, payments: [] },
+        employee,
+        structure: {},
+        computed: {
+          basic: 0, allowances: 0, perDay: 0, absentDeduction: 0, lateDeduction: 0,
+          otRate: 0, otAmount: 0, bonusAmount: 0, otherAllowance: 0, otherDeduction: 0,
+          advanceDeduct: 0, totalEarnings: 0, totalDeductions: 0, netPayable: 0, dueAmount: 0,
+          extraPayType: 'None',
+        },
+        lastPayment: null,
+        displayStatus: 'notProcessed' as const,
+      };
+    }
+    const structure = getSalaryStructureById(state, String(entry.structureId)) ?? {};
+    const computed = computeSheetRow(entry, structure);
+    return {
+      entry,
+      employee,
+      structure,
+      computed,
+      lastPayment: getLastPayment(entry),
+      displayStatus: resolveDisplayStatus(entry, computed),
+    };
+  });
+}
+
+export function getPaymentsDueMetrics(rows: PaymentsDueRow[]) {
+  const totalPayable = rows.reduce((s, r) => s + r.computed.netPayable, 0);
+  const paidAmount = rows.reduce((s, r) => s + Number(r.entry.paidAmount ?? 0), 0);
+  const totalDue = rows.reduce((s, r) => s + r.computed.dueAmount, 0);
+  const partialCount = rows.filter((r) => r.displayStatus === 'partial').length;
+  const unpaidCount = rows.filter((r) => r.displayStatus === 'unpaid').length;
+  const paidPercent = totalPayable > 0 ? (paidAmount / totalPayable) * 100 : 0;
+
+  return {
+    totalEmployees: rows.length,
+    totalPayable,
+    paidAmount,
+    paidPercent,
+    partialCount,
+    unpaidCount,
+    totalDue,
+  };
+}
+
+export function getPaymentStatusSummary(rows: PaymentsDueRow[]) {
+  return {
+    paid: rows.filter((r) => r.displayStatus === 'paid').length,
+    partial: rows.filter((r) => r.displayStatus === 'partial').length,
+    unpaid: rows.filter((r) => r.displayStatus === 'unpaid').length,
+    notProcessed: rows.filter((r) => r.displayStatus === 'notProcessed').length,
+    total: rows.length,
+  };
+}
+
+function periodEndDate(period: string) {
+  const [y, m] = period.split('-').map(Number);
+  return new Date(y, m, 0);
+}
+
+function daysBetween(a: Date, b: Date) {
+  const ms = b.getTime() - a.getTime();
+  return Math.max(0, Math.floor(ms / (1000 * 60 * 60 * 24)));
+}
+
+export function getDueAgingBreakdown(rows: PaymentsDueRow[], asOfDate = new Date()) {
+  let dueWithin7 = 0;
+  let due8to15 = 0;
+  let dueOver15 = 0;
+
+  rows.forEach((row) => {
+    const due = row.computed.dueAmount;
+    if (due <= 0) return;
+    const period = String(row.entry.period ?? '');
+    const end = periodEndDate(period);
+    const daysOverdue = daysBetween(end, asOfDate);
+    if (daysOverdue <= 7) dueWithin7 += due;
+    else if (daysOverdue <= 15) due8to15 += due;
+    else dueOver15 += due;
+  });
+
+  const totalDue = dueWithin7 + due8to15 + dueOver15;
+  return { totalDue, dueWithin7, due8to15, dueOver15 };
+}
+
+export function listRecentPayments(state: AppState, period: string, limit = 3) {
+  const entries = listSalarySheetEntries(state, period);
+  const employees = listEmployees(state);
+  const flat: Array<PaymentRecord & { employeeId: string; employeeName: string }> = [];
+
+  entries.forEach((entry) => {
+    const payments = Array.isArray(entry.payments) ? entry.payments as PaymentRecord[] : [];
+    const emp = employees.find((e) => String(e.id) === String(entry.employeeId));
+    payments.forEach((p) => {
+      flat.push({
+        ...p,
+        employeeId: String(entry.employeeId),
+        employeeName: String(emp?.name ?? 'Employee'),
+      });
+    });
+  });
+
+  return flat
+    .sort((a, b) => String(b.date).localeCompare(String(a.date)))
+    .slice(0, limit);
+}
+
 export { formatCurrency as formatMoney };
