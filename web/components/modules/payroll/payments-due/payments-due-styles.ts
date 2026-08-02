@@ -7,10 +7,6 @@ export {
   SS_INFO_BOX_CLS as PD_INFO_BOX_CLS,
 } from '@/components/modules/payroll/salary-sheet/salary-sheet-styles';
 
-export const PD_TABLE_CARD_CLS = 'premium-card premium-shadow overflow-hidden';
-
-export const PD_TABLE_HEAD_CLS = 'bg-slate-50/80 text-[10px] font-bold uppercase tracking-wide text-slate-500';
-
 export const PD_STATUS_BADGE: Record<string, string> = {
   paid: 'bg-emerald-50 text-emerald-700 border-emerald-100',
   partial: 'bg-orange-50 text-orange-700 border-orange-100',
