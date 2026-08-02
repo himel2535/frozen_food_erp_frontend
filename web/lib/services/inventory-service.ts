@@ -347,6 +347,174 @@ export function rawMaterialStockStatusClass(status: string) {
   return 'text-emerald-600';
 }
 
+export const inventoryStockStatusClass = rawMaterialStockStatusClass;
+
+export function listSemiFinishedProducts(state: AppState) {
+  return listFromState(state, 'semiFinishedProducts');
+}
+
+export function previewSemiFinishedCode(state: AppState) {
+  const rows = listSemiFinishedProducts(state);
+  let max = 0;
+  rows.forEach((row) => {
+    const raw = String(row.id ?? '');
+    const match = raw.match(/^SF-(\d+)$/i);
+    if (match) max = Math.max(max, Number(match[1]));
+  });
+  return `SF-${String(max + 1).padStart(3, '0')}`;
+}
+
+export function getSemiFinishedStockStatus(row: Row): 'In Stock' | 'Low Stock' | 'Out of Stock' {
+  const qty = Number(row.quantity ?? 0);
+  const minStock = Number(row.minStock ?? row.threshold ?? 100);
+  if (qty <= 0) return 'Out of Stock';
+  if (qty < minStock) return 'Low Stock';
+  return 'In Stock';
+}
+
+export function getSemiFinishedTotalValue(row: Row) {
+  return Number(row.quantity ?? 0) * Number(row.avgCost ?? row.price ?? 0);
+}
+
+export function getSemiFinishedMetrics(state: AppState) {
+  const items = listSemiFinishedProducts(state);
+  const totalValue = items.reduce((s, r) => s + getSemiFinishedTotalValue(r), 0);
+  const totalQuantity = items.reduce((s, r) => s + Number(r.quantity ?? 0), 0);
+  const lowStock = items.filter((r) => getSemiFinishedStockStatus(r) === 'Low Stock').length;
+  const outOfStock = items.filter((r) => getSemiFinishedStockStatus(r) === 'Out of Stock').length;
+  return { count: items.length, totalValue, totalQuantity, lowStock, outOfStock };
+}
+
+export function getSemiFinishedLocationLabel(state: AppState, row: Row) {
+  const whId = String(row.warehouseId ?? 'WH-001');
+  const whName = getWarehouseName(state, whId);
+  const bin = String(row.location ?? '').trim();
+  return bin ? `${whName} · ${bin}` : whName;
+}
+
+export function listSemiFinishedCategories(state: AppState) {
+  const cats = new Set(
+    listSemiFinishedProducts(state).map((r) => String(r.category ?? 'Uncategorized').trim() || 'Uncategorized'),
+  );
+  return Array.from(cats).sort((a, b) => a.localeCompare(b));
+}
+
+export function listSemiFinishedUnits(state: AppState) {
+  const units = new Set(
+    listSemiFinishedProducts(state).map((r) => String(r.unit ?? 'pcs').trim() || 'pcs'),
+  );
+  return Array.from(units).sort((a, b) => a.localeCompare(b));
+}
+
+export function createSemiFinishedProduct(state: AppState, payload: Row) {
+  return createInState(state, 'semiFinishedProducts', {
+    ...payload,
+    quantity: Number(payload.quantity ?? 0),
+    minStock: Number(payload.minStock ?? payload.threshold ?? 0),
+    avgCost: Number(payload.avgCost ?? payload.price ?? 0),
+    status: payload.status ?? 'active',
+    lastUpdated: new Date().toISOString(),
+  }, 'SF');
+}
+
+export function updateSemiFinishedProduct(state: AppState, id: string, payload: Row) {
+  return updateInState(state, 'semiFinishedProducts', id, {
+    ...payload,
+    quantity: Number(payload.quantity ?? 0),
+    minStock: Number(payload.minStock ?? payload.threshold ?? 0),
+    avgCost: Number(payload.avgCost ?? payload.price ?? 0),
+    lastUpdated: new Date().toISOString(),
+  });
+}
+
+export function deleteSemiFinishedProduct(state: AppState, id: string) {
+  return deleteFromState(state, 'semiFinishedProducts', id);
+}
+
+export function listFinishedGoods(state: AppState) {
+  return listFromState(state, 'finishedGoods');
+}
+
+export function previewFinishedGoodCode(state: AppState) {
+  const rows = listFinishedGoods(state);
+  let max = 0;
+  rows.forEach((row) => {
+    const raw = String(row.id ?? '');
+    const match = raw.match(/^FG-(\d+)$/i);
+    if (match) max = Math.max(max, Number(match[1]));
+  });
+  return `FG-${String(max + 1).padStart(3, '0')}`;
+}
+
+export function getFinishedGoodsAvailable(row: Row) {
+  const qty = Number(row.quantity ?? 0);
+  const reserved = Number(row.reserved ?? 0);
+  return Math.max(0, qty - reserved);
+}
+
+export function getFinishedGoodsStockValue(row: Row) {
+  return Number(row.quantity ?? 0) * Number(row.avgCost ?? row.price ?? 0);
+}
+
+export function getFinishedGoodsStockStatus(row: Row): 'In Stock' | 'Low Stock' | 'Out of Stock' {
+  const available = getFinishedGoodsAvailable(row);
+  const minStock = Number(row.minStock ?? row.threshold ?? 100);
+  if (available <= 0) return 'Out of Stock';
+  if (available <= minStock) return 'Low Stock';
+  return 'In Stock';
+}
+
+export function getFinishedGoodsMetrics(state: AppState) {
+  const items = listFinishedGoods(state);
+  const totalValue = items.reduce((s, r) => s + getFinishedGoodsStockValue(r), 0);
+  const totalQuantity = items.reduce((s, r) => s + Number(r.quantity ?? 0), 0);
+  const lowStock = items.filter((r) => getFinishedGoodsStockStatus(r) === 'Low Stock').length;
+  const outOfStock = items.filter((r) => getFinishedGoodsStockStatus(r) === 'Out of Stock').length;
+  const inStock = items.filter((r) => getFinishedGoodsStockStatus(r) === 'In Stock').length;
+  return { count: items.length, totalValue, totalQuantity, lowStock, outOfStock, inStock };
+}
+
+export function listFinishedGoodsCategories(state: AppState) {
+  const cats = new Set(
+    listFinishedGoods(state).map((r) => String(r.category ?? 'Uncategorized').trim() || 'Uncategorized'),
+  );
+  return Array.from(cats).sort((a, b) => a.localeCompare(b));
+}
+
+export function listFinishedGoodsUnits(state: AppState) {
+  const units = new Set(
+    listFinishedGoods(state).map((r) => String(r.unit ?? 'pcs').trim() || 'pcs'),
+  );
+  return Array.from(units).sort((a, b) => a.localeCompare(b));
+}
+
+export function createFinishedGood(state: AppState, payload: Row) {
+  return createInState(state, 'finishedGoods', {
+    ...payload,
+    quantity: Number(payload.quantity ?? 0),
+    reserved: Number(payload.reserved ?? 0),
+    minStock: Number(payload.minStock ?? payload.threshold ?? 0),
+    avgCost: Number(payload.avgCost ?? payload.price ?? 0),
+    status: payload.status ?? 'active',
+    lastUpdated: new Date().toISOString(),
+  }, 'FG');
+}
+
+export function updateFinishedGood(state: AppState, id: string, payload: Row) {
+  return updateInState(state, 'finishedGoods', id, {
+    ...payload,
+    quantity: Number(payload.quantity ?? 0),
+    reserved: Number(payload.reserved ?? 0),
+    minStock: Number(payload.minStock ?? payload.threshold ?? 0),
+    avgCost: Number(payload.avgCost ?? payload.price ?? 0),
+    lastUpdated: new Date().toISOString(),
+  });
+}
+
+export function deleteFinishedGood(state: AppState, id: string) {
+  return deleteFromState(state, 'finishedGoods', id);
+}
+
 export function createRawMaterial(state: AppState, payload: Row) {
   return createInState(state, 'rawMaterials', {
     ...payload,

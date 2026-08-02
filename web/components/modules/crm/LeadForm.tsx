@@ -14,6 +14,7 @@ import {
   Mail,
   Megaphone,
   MessageSquare,
+  MapPin,
   Package,
   Phone,
   Save,
@@ -69,6 +70,7 @@ export type LeadFormPayload = {
   expectedValue: number;
   probability: number;
   nextFollowUpAt: string | null;
+  location?: string;
   notes: string;
 };
 
@@ -89,6 +91,7 @@ export const EMPTY_LEAD_FORM: LeadFormValues = {
   followUpDate: '',
   followUpTime: '',
   expectedValue: '',
+  location: '',
   notes: '',
 };
 
@@ -136,6 +139,7 @@ function toPayload(form: LeadFormValues, ownerName: string): LeadFormPayload {
     expectedValue: Number(form.expectedValue || 0),
     probability: 0,
     nextFollowUpAt: combineFollowUpAt(form.followUpDate, form.followUpTime),
+    location: form.location.trim(),
     notes: form.notes.trim(),
   };
 }
@@ -155,6 +159,7 @@ export function LeadForm({
 }) {
   const [form, setForm] = useState<LeadFormValues>(initialValues);
   const [errors, setErrors] = useState<LeadFormFieldError>({});
+  const [showAdvanced, setShowAdvanced] = useState(false);
   const formRef = useRef<HTMLFormElement>(null);
 
   useEffect(() => {
@@ -293,6 +298,26 @@ export function LeadForm({
               onChange={(e) => updateForm({ customerRequirement: e.target.value })}
               placeholder="What is the customer looking for?"
             />
+            <div className="mt-3">
+              <button
+                type="button"
+                onClick={() => setShowAdvanced((v) => !v)}
+                className="text-xs font-bold text-blue-600 hover:text-blue-700 cursor-pointer"
+              >
+                {showAdvanced ? 'Hide Advanced Details' : 'Show Advanced Details'}
+              </button>
+              {showAdvanced ? (
+                <div className="mt-3">
+                  <IconInput
+                    label="Location"
+                    icon={MapPin}
+                    value={form.location}
+                    onChange={(e) => updateForm({ location: e.target.value })}
+                    placeholder="Area, City (optional)"
+                  />
+                </div>
+              ) : null}
+            </div>
           </FormSectionCard>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 items-start">

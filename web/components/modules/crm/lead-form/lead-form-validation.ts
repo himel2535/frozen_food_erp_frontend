@@ -15,6 +15,7 @@ export type LeadFormValues = {
   followUpDate: string;
   followUpTime: string;
   expectedValue: string;
+  location: string;
   notes: string;
 };
 

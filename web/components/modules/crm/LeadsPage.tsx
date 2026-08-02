@@ -1,15 +1,25 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { Plus, Search } from 'lucide-react';
+import { MessageCircle, MoreVertical, Phone, Plus, Search, Upload } from 'lucide-react';
 import { Footer } from '@/components/layout/Footer';
 import { useAppStore } from '@/lib/state/app-store';
-import { getLeadList, getOwnerOptions, createLead, updateLead, convertLeadToCustomer, getLeadActivities } from '@/lib/services/crm-service';
+import {
+  convertLeadToCustomer,
+  createLead,
+  getEnrichedLeadList,
+  getLeadActivities,
+  getLeadMetrics,
+  getLeadPipelineCounts,
+  getOwnerOptions,
+  getUserContext,
+  LEAD_STAGE_LABELS,
+  updateLead,
+} from '@/lib/services/crm-service';
 import { AppTable, type AppTableColumn } from '@/components/shared/AppTable';
 import { StatusBadge } from '@/components/shared/StatusBadge';
-import { KanbanBoard, type KanbanCard } from '@/components/shared/KanbanBoard';
-import { ProfileDrawer } from '@/components/shared/ProfileDrawer';
 import { KpiCards } from '@/components/shared/KpiCards';
+import { FilterTabs } from '@/components/shared/FilterTabs';
 import { MODULE_LIST_SHELL } from '@/lib/ui/module-layout';
 import {
   LeadForm,
@@ -19,10 +29,22 @@ import {
   type LeadFormValues,
 } from '@/components/modules/crm/LeadForm';
 import { LEAD_SOURCE_OPTIONS } from '@/components/modules/crm/lead-form/lead-form-options';
+import { LeadDetailPanel } from '@/components/modules/crm/leads/LeadDetailPanel';
+import { LeadPipelineFunnel } from '@/components/modules/crm/leads/LeadPipelineFunnel';
+import {
+  formatLeadCurrency,
+  formatLeadDateTime,
+  formatRelativeActivity,
+  leadAvatarClass,
+  leadInitials,
+  leadStageLabel,
+  NEXT_ACTION_ICONS,
+  priorityLabel,
+  priorityTagClass,
+} from '@/components/modules/crm/leads/lead-display-utils';
 
-function formatCurrency(value: number) {
-  return `৳${Number(value || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-}
+const PAGE_SIZE_OPTIONS = [10, 15, 25];
+const NEXT_ACTION_FILTERS = ['Call', 'WhatsApp', 'Email', 'Meeting', 'Follow-up'];
 
 function buildEmptyLeadValues(ownerId: string): LeadFormValues {
   return { ...EMPTY_LEAD_FORM, assignedRepId: ownerId };
@@ -47,6 +69,7 @@ function leadRecordToFormValues(lead: Record<string, unknown>, ownerIdFallback: 
     followUpDate: followUp.date,
     followUpTime: followUp.time,
     expectedValue: lead.expectedValue != null && lead.expectedValue !== '' ? String(lead.expectedValue) : '',
+    location: String(lead.location ?? ''),
     notes: String(lead.notes ?? ''),
   };
 }
@@ -56,79 +79,114 @@ export function LeadsPage() {
   const saveAppState = useAppStore((s) => s.saveAppState);
   const [view, setView] = useState<'main' | 'form'>('main');
   const [search, setSearch] = useState('');
-  const [statusFilter, setStatusFilter] = useState('all');
-  const [sourceFilter, setSourceFilter] = useState('all');
+  const [stageFilter, setStageFilter] = useState('all');
   const [ownerFilter, setOwnerFilter] = useState('all');
-  const [layoutMode, setLayoutMode] = useState<'table' | 'kanban'>('table');
-  const [drawerId, setDrawerId] = useState<string | null>(null);
+  const [sourceFilter, setSourceFilter] = useState('all');
+  const [nextActionFilter, setNextActionFilter] = useState('all');
+  const [funnelStage, setFunnelStage] = useState<string | null>(null);
+  const [listTab, setListTab] = useState('all');
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [detailTab, setDetailTab] = useState<'activity' | 'details' | 'notes' | 'files'>('activity');
   const [editingId, setEditingId] = useState<string | null>(null);
   const [formKey, setFormKey] = useState(0);
   const [formValues, setFormValues] = useState<LeadFormValues>(EMPTY_LEAD_FORM);
 
   const owners = useMemo(() => getOwnerOptions(appState), [appState]);
+  const currentUser = useMemo(() => getUserContext(appState), [appState]);
+  const allLeads = useMemo(() => getEnrichedLeadList(appState), [appState]);
+  const metrics = useMemo(() => getLeadMetrics(appState), [appState]);
+  const pipelineCounts = useMemo(() => getLeadPipelineCounts(appState), [appState]);
 
-  const leads = useMemo(() => {
-    return (getLeadList(appState) as Array<Record<string, unknown>>).filter((lead) => {
-      const hay = `${lead.name} ${lead.company} ${lead.source} ${lead.phone} ${lead.email}`.toLowerCase();
-      if (search && !hay.includes(search.toLowerCase())) return false;
-      if (statusFilter !== 'all' && String(lead.status) !== statusFilter) return false;
-      if (sourceFilter !== 'all' && String(lead.source) !== sourceFilter) return false;
-      if (ownerFilter !== 'all' && String(lead.assignedRepId) !== ownerFilter) return false;
-      return true;
+  const filtered = useMemo(() => {
+    let data = allLeads;
+    const q = search.toLowerCase().trim();
+
+    if (listTab === 'mine') {
+      data = data.filter((lead) => String(lead.assignedRepId) === currentUser.employeeId);
+    } else if (listTab === 'today') {
+      data = data.filter((lead) => lead.isFollowUpToday);
+    } else if (listTab === 'overdue') {
+      data = data.filter((lead) => lead.isOverdue);
+    } else if (listTab === 'new') {
+      data = data.filter((lead) => String(lead.status) === 'new');
+    }
+
+    if (funnelStage) {
+      data = data.filter((lead) => String(lead.status) === funnelStage);
+    }
+    if (stageFilter !== 'all') {
+      data = data.filter((lead) => String(lead.status) === stageFilter);
+    }
+    if (ownerFilter !== 'all') {
+      data = data.filter((lead) => String(lead.assignedRepId) === ownerFilter);
+    }
+    if (sourceFilter !== 'all') {
+      data = data.filter((lead) => String(lead.source) === sourceFilter);
+    }
+    if (nextActionFilter !== 'all') {
+      data = data.filter((lead) => String(lead.nextActionType) === nextActionFilter);
+    }
+    if (q) {
+      data = data.filter((lead) =>
+        `${lead.name} ${lead.company} ${lead.source} ${lead.phone} ${lead.email}`.toLowerCase().includes(q),
+      );
+    }
+
+    return data;
+  }, [allLeads, search, stageFilter, ownerFilter, sourceFilter, nextActionFilter, funnelStage, listTab, currentUser.employeeId]);
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
+  const paged = filtered.slice((page - 1) * pageSize, page * pageSize);
+  const selectedLead = useMemo(
+    () => filtered.find((l) => String(l.id) === selectedId) ?? allLeads.find((l) => String(l.id) === selectedId) ?? null,
+    [filtered, allLeads, selectedId],
+  );
+  const selectedActivities = useMemo(
+    () => (selectedId ? getLeadActivities(appState, selectedId) : []),
+    [appState, selectedId],
+  );
+
+  const sourceFilterOptions = useMemo(() => {
+    const fromData = new Set(allLeads.map((l) => String(l.source)).filter(Boolean));
+    LEAD_SOURCE_OPTIONS.forEach((source) => fromData.add(source));
+    return Array.from(fromData).sort();
+  }, [allLeads]);
+
+  const toggleSelect = (id: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
     });
-  }, [appState, search, statusFilter, sourceFilter, ownerFilter]);
+  };
 
-  const drawerLead = useMemo(() => leads.find((l) => String(l.id) === drawerId), [leads, drawerId]);
-  const drawerActivities = useMemo(() => (drawerId ? getLeadActivities(appState, drawerId) : []), [appState, drawerId]);
+  const toggleSelectAll = () => {
+    const pageIds = paged.map((l) => String(l.id));
+    const allSelected = pageIds.every((id) => selectedIds.has(id));
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      pageIds.forEach((id) => {
+        if (allSelected) next.delete(id);
+        else next.add(id);
+      });
+      return next;
+    });
+  };
 
-  const kanbanColumns = useMemo(() => {
-    const stages = ['new', 'contacted', 'qualified', 'lost'];
-    return stages.map((stage) => ({
-      id: stage,
-      title: stage.charAt(0).toUpperCase() + stage.slice(1),
-      cards: leads.filter((l) => String(l.status) === stage).map((l): KanbanCard => ({
-        id: String(l.id),
-        title: String(l.name),
-        subtitle: String(l.company),
-        meta: formatCurrency(Number(l.expectedValue || 0)),
-        stage,
-      })),
-    }));
-  }, [leads]);
-
-  const openCount = leads.filter((l) => l.conversionStatus !== 'converted' && l.status !== 'lost').length;
-  const totalValue = leads.reduce((s, l) => s + Number(l.expectedValue || 0), 0);
-
-  const leadColumns = useMemo<AppTableColumn<Record<string, unknown>>[]>(() => [
-    {
-      key: 'name',
-      label: 'Lead name / company',
-      render: (row) => (
-        <>
-          <div className="font-bold text-slate-900">{String(row.name)}</div>
-          <div className="text-slate-500 text-[11px]">{String(row.company)}</div>
-        </>
-      ),
-    },
-    {
-      key: 'contact',
-      label: 'Contact detail',
-      render: (row) => (
-        <>
-          <div>{String(row.phone)}</div>
-          <div className="text-slate-500 text-[11px]">{String(row.email || '—')}</div>
-        </>
-      ),
-    },
-    { key: 'source', label: 'Source', render: (row) => String(row.source) },
-    { key: 'rep', label: 'Assigned rep', render: (row) => String(row.assignedRepName || '—') },
-    {
-      key: 'status',
-      label: 'Status',
-      render: (row) => <StatusBadge status={String(row.status)} />,
-    },
-    { key: 'value', label: 'Value', render: (row) => formatCurrency(Number(row.expectedValue || 0)) },
-  ], []);
+  const resetFilters = () => {
+    setSearch('');
+    setStageFilter('all');
+    setOwnerFilter('all');
+    setSourceFilter('all');
+    setNextActionFilter('all');
+    setFunnelStage(null);
+    setListTab('all');
+    setPage(1);
+  };
 
   const resetForm = () => {
     setFormValues(buildEmptyLeadValues(owners[0]?.id ?? ''));
@@ -146,7 +204,6 @@ export function LeadsPage() {
     setFormValues(leadRecordToFormValues(lead, owners[0]?.id ?? ''));
     setFormKey((k) => k + 1);
     setView('form');
-    setDrawerId(null);
   };
 
   const handleSave = (payload: LeadFormPayload) => {
@@ -160,11 +217,125 @@ export function LeadsPage() {
     resetForm();
   };
 
-  const sourceFilterOptions = useMemo(() => {
-    const fromData = new Set(leads.map((l) => String(l.source)).filter(Boolean));
-    LEAD_SOURCE_OPTIONS.forEach((source) => fromData.add(source));
-    return Array.from(fromData).sort();
-  }, [leads]);
+  const pageNumbers = useMemo(() => {
+    const pages: number[] = [];
+    const maxVisible = 5;
+    let start = Math.max(1, page - 2);
+    const end = Math.min(totalPages, start + maxVisible - 1);
+    start = Math.max(1, end - maxVisible + 1);
+    for (let i = start; i <= end; i += 1) pages.push(i);
+    return pages;
+  }, [page, totalPages]);
+
+  const columns = useMemo<AppTableColumn<Record<string, unknown>>[]>(() => [
+    {
+      key: '_select',
+      label: '',
+      headerClassName: 'w-10',
+      className: 'w-10',
+      render: (row) => (
+        <input
+          type="checkbox"
+          checked={selectedIds.has(String(row.id))}
+          onChange={() => toggleSelect(String(row.id))}
+          onClick={(e) => e.stopPropagation()}
+          className="cursor-pointer"
+        />
+      ),
+    },
+    {
+      key: 'name',
+      label: 'Lead',
+      render: (row) => {
+        const name = String(row.name ?? '');
+        const priority = String(row.priority ?? 'warm');
+        return (
+          <div className="flex items-center gap-2.5 min-w-0 max-w-[220px]">
+            <span className={`w-9 h-9 rounded-full flex items-center justify-center text-[11px] font-extrabold shrink-0 ${leadAvatarClass(name)}`}>
+              {leadInitials(name)}
+            </span>
+            <div className="min-w-0">
+              <div className="font-bold text-slate-900 truncate">{name}</div>
+              <div className="text-[10px] text-slate-500 truncate">{String(row.company || '—')}</div>
+              <div className="flex flex-wrap items-center gap-1 mt-0.5">
+                <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-slate-100 text-slate-600">{String(row.source || '—')}</span>
+                {priority === 'hot' ? (
+                  <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded border ${priorityTagClass(priority)}`}>
+                    {priorityLabel(priority)}
+                  </span>
+                ) : null}
+              </div>
+            </div>
+          </div>
+        );
+      },
+    },
+    {
+      key: 'contact',
+      label: 'Contact',
+      render: (row) => (
+        <div className="text-xs">
+          <div className="font-semibold text-slate-800">{String(row.phone || '—')}</div>
+          <div className="text-slate-500 text-[10px] truncate max-w-[140px]">{String(row.email || '—')}</div>
+        </div>
+      ),
+    },
+    {
+      key: 'status',
+      label: 'Stage',
+      render: (row) => <StatusBadge status={leadStageLabel(String(row.status))} />,
+    },
+    {
+      key: 'rep',
+      label: 'Assigned To',
+      render: (row) => {
+        const repName = String(row.assignedRepName || 'Unassigned');
+        return (
+          <div className="flex items-center gap-2">
+            <span className={`w-7 h-7 rounded-full flex items-center justify-center text-[9px] font-bold shrink-0 ${leadAvatarClass(repName)}`}>
+              {leadInitials(repName)}
+            </span>
+            <span className="text-xs font-semibold text-slate-700 truncate max-w-[100px]">{repName}</span>
+          </div>
+        );
+      },
+    },
+    {
+      key: 'lastActivity',
+      label: 'Last Activity',
+      render: (row) => (
+        <div className="text-xs min-w-[120px]">
+          <div className="font-semibold text-slate-700">{formatRelativeActivity(row.lastActivityAt as string)}</div>
+          <div className="text-[10px] text-slate-500 truncate max-w-[140px]">{String(row.lastActivitySummary || '—')}</div>
+        </div>
+      ),
+    },
+    {
+      key: 'nextAction',
+      label: 'Next Action',
+      render: (row) => {
+        const actionType = String(row.nextActionType || 'Follow-up');
+        const isToday = Boolean(row.isFollowUpToday);
+        const isOverdue = Boolean(row.isOverdue);
+        return (
+          <div className={`text-xs min-w-[120px] ${isOverdue ? 'text-rose-600' : isToday ? 'text-blue-700' : 'text-slate-700'}`}>
+            <div className="font-bold flex items-center gap-1">
+              <span>{NEXT_ACTION_ICONS[actionType] || '🔔'}</span>
+              {actionType}
+            </div>
+            <div className="text-[10px] font-semibold mt-0.5">{formatLeadDateTime(row.nextActionAt as string)}</div>
+          </div>
+        );
+      },
+    },
+    {
+      key: 'value',
+      label: 'Value',
+      render: (row) => (
+        <span className="text-xs font-extrabold text-slate-900">{formatLeadCurrency(Number(row.expectedValue || 0))}</span>
+      ),
+    },
+  ], [selectedIds]);
 
   if (view === 'form') {
     return (
@@ -184,106 +355,163 @@ export function LeadsPage() {
 
   return (
     <div className={MODULE_LIST_SHELL}>
-      <div className="flex flex-col xl:flex-row xl:items-center xl:justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-xl font-extrabold text-slate-900 tracking-tight">Leads</h2>
-          <p className="text-xs text-slate-500 mt-1 font-medium">Capture prospects, track follow-ups, and convert leads to deals.</p>
+          <h1 className="text-lg font-bold text-slate-900">Leads</h1>
+          <p className="text-xs text-slate-500 mt-0.5">Capture prospects, track follow-ups and convert leads to deals.</p>
         </div>
-        <button type="button" onClick={openCreate} className="bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold px-4 py-2.5 rounded-xl transition-colors flex items-center gap-2 cursor-pointer">
-          <Plus className="w-4 h-4" /> Add lead
-        </button>
+        <div className="flex items-center gap-2 self-start">
+          <button
+            type="button"
+            onClick={() => window.alert('Import leads — coming soon.')}
+            className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-600 border border-slate-200 bg-white hover:bg-slate-50 px-4 py-2.5 rounded-xl cursor-pointer"
+          >
+            <Upload className="w-4 h-4" /> Import Leads
+          </button>
+          <button
+            type="button"
+            onClick={openCreate}
+            className="bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold px-4 py-2.5 rounded-xl transition-colors flex items-center gap-2 cursor-pointer"
+          >
+            <Plus className="w-4 h-4" /> Add Lead
+          </button>
+        </div>
       </div>
 
-      <KpiCards items={[
-        { key: 'open', label: 'Total open leads', value: String(openCount) },
-        { key: 'rate', label: 'Lead conversion rate', value: `${leads.length ? Math.round((leads.filter((l) => l.conversionStatus === 'converted').length / leads.length) * 100) : 0}%` },
-        { key: 'value', label: 'Target value', value: formatCurrency(totalValue) },
-      ]} />
+      <KpiCards
+        gridClassName="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2"
+        items={[
+          { key: 'leads', label: 'New Leads', value: String(metrics.newThisWeek), sub: 'This week' },
+          { key: 'pending', label: 'Follow-up Today', value: String(metrics.followUpToday), sub: 'Leads to contact' },
+          { key: 'alert', label: 'Overdue Follow-ups', value: String(metrics.overdueFollowUps), alert: Number(metrics.overdueFollowUps) > 0, sub: Number(metrics.overdueFollowUps) > 0 ? 'Requires attention' : 'All caught up' },
+          { key: 'open', label: 'Unassigned Leads', value: String(metrics.unassigned), sub: 'Not assigned yet' },
+          { key: 'value', label: 'Active Pipeline Value', value: formatLeadCurrency(Number(metrics.pipelineValue)), sub: `Conversion Rate ${metrics.conversionRate}% this month` },
+        ]}
+      />
 
-      <div className="flex gap-2">
-        <button type="button" onClick={() => setLayoutMode('table')} className={`px-3 py-1.5 rounded-lg text-xs font-bold cursor-pointer ${layoutMode === 'table' ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-600'}`}>Table</button>
-        <button type="button" onClick={() => setLayoutMode('kanban')} className={`px-3 py-1.5 rounded-lg text-xs font-bold cursor-pointer ${layoutMode === 'kanban' ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-600'}`}>Kanban</button>
-      </div>
+      <LeadPipelineFunnel
+        counts={pipelineCounts}
+        activeStage={funnelStage}
+        onStageClick={(stage) => { setFunnelStage(stage); setPage(1); }}
+      />
 
-      <div className="bg-white p-4 rounded-xl border border-slate-200 space-y-4">
-        <div className="flex flex-col xl:flex-row xl:items-center xl:justify-between gap-3">
-          <div className="relative min-w-[240px] flex-1 max-w-md">
-            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+      <FilterTabs
+        tabs={[
+          { id: 'mine', label: 'My Leads' },
+          { id: 'today', label: `Follow-up Today (${metrics.followUpToday})` },
+          { id: 'overdue', label: `Overdue (${metrics.overdueFollowUps})` },
+          { id: 'new', label: `New / Uncontacted (${metrics.newUncontacted})` },
+          { id: 'all', label: `All Leads (${metrics.totalLeads})` },
+        ]}
+        active={listTab}
+        onChange={(id) => { setListTab(id); setPage(1); }}
+      />
+
+      <div className="bg-white p-3 rounded-xl border border-slate-200">
+        <div className="flex flex-col lg:flex-row lg:items-center gap-3">
+          <div className="relative min-w-[200px] flex-1">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
             <input
               type="text"
               value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search name, company, source..."
-              className="w-full pl-10 pr-4 py-2 rounded-xl border border-slate-200 bg-slate-50 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 font-medium"
+              onChange={(e) => { setSearch(e.target.value); setPage(1); }}
+              placeholder="Search leads..."
+              className="w-full pl-9 pr-3 py-2 rounded-xl border border-slate-200 bg-slate-50 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 font-medium"
             />
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 flex-1">
-            <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className="bg-slate-50 border border-slate-200 text-xs font-semibold text-slate-700 rounded-xl px-3 py-2 focus:outline-none cursor-pointer">
-              <option value="all">All statuses</option>
-              <option value="new">New</option>
-              <option value="contacted">Contacted</option>
-              <option value="qualified">Qualified</option>
-              <option value="lost">Lost</option>
-            </select>
-            <select value={sourceFilter} onChange={(e) => setSourceFilter(e.target.value)} className="bg-slate-50 border border-slate-200 text-xs font-semibold text-slate-700 rounded-xl px-3 py-2 focus:outline-none cursor-pointer">
-              <option value="all">All sources</option>
-              {sourceFilterOptions.map((s) => (
-                <option key={s} value={s}>{s}</option>
+          <div className="flex flex-wrap gap-2">
+            <select value={stageFilter} onChange={(e) => { setStageFilter(e.target.value); setPage(1); }} className="bg-slate-50 border border-slate-200 text-xs font-semibold text-slate-700 rounded-xl px-3 py-2 cursor-pointer">
+              <option value="all">Stage</option>
+              {Object.entries(LEAD_STAGE_LABELS).map(([value, label]) => (
+                <option key={value} value={value}>{label}</option>
               ))}
             </select>
-            <select value={ownerFilter} onChange={(e) => setOwnerFilter(e.target.value)} className="bg-slate-50 border border-slate-200 text-xs font-semibold text-slate-700 rounded-xl px-3 py-2 focus:outline-none cursor-pointer">
-              <option value="all">All reps</option>
+            <select value={ownerFilter} onChange={(e) => { setOwnerFilter(e.target.value); setPage(1); }} className="bg-slate-50 border border-slate-200 text-xs font-semibold text-slate-700 rounded-xl px-3 py-2 cursor-pointer">
+              <option value="all">Sales Rep</option>
               {owners.map((o: { id: string; name: string }) => <option key={o.id} value={o.id}>{o.name}</option>)}
             </select>
+            <select value={sourceFilter} onChange={(e) => { setSourceFilter(e.target.value); setPage(1); }} className="bg-slate-50 border border-slate-200 text-xs font-semibold text-slate-700 rounded-xl px-3 py-2 cursor-pointer">
+              <option value="all">Source</option>
+              {sourceFilterOptions.map((s) => <option key={s} value={s}>{s}</option>)}
+            </select>
+            <select value={nextActionFilter} onChange={(e) => { setNextActionFilter(e.target.value); setPage(1); }} className="bg-slate-50 border border-slate-200 text-xs font-semibold text-slate-700 rounded-xl px-3 py-2 cursor-pointer">
+              <option value="all">Next Action</option>
+              {NEXT_ACTION_FILTERS.map((a) => <option key={a} value={a}>{a}</option>)}
+            </select>
+            <button type="button" onClick={resetFilters} className="text-xs font-bold text-slate-500 hover:text-slate-700 cursor-pointer px-2 py-2">
+              Reset
+            </button>
           </div>
         </div>
       </div>
 
-      {layoutMode === 'kanban' ? (
-        <KanbanBoard
-          columns={kanbanColumns}
-          onStageChange={(cardId, stage) => { updateLead(appState, cardId, { status: stage }); saveAppState(); }}
-          onCardClick={(card) => setDrawerId(card.id)}
-        />
-      ) : (
-        <AppTable
-          columns={leadColumns}
-          rows={leads}
-          emptyMessage="No leads found"
-          onRowClick={(row) => setDrawerId(String(row.id))}
-        />
-      )}
-
-      <ProfileDrawer
-        open={!!drawerLead}
-        title={String(drawerLead?.name ?? 'Lead')}
-        subtitle={String(drawerLead?.company ?? '')}
-        onClose={() => setDrawerId(null)}
-        tabs={[{ id: 'notes', label: 'Notes' }, { id: 'activity', label: 'Activity' }]}
-        activeTab="activity"
-        onTabChange={() => {}}
-      >
-        {drawerLead && (
-          <div className="space-y-4 text-xs">
-            <p className="text-slate-600">{String(drawerLead.notes || 'No notes yet.')}</p>
-            <ul className="space-y-2">{(drawerActivities as Array<Record<string, unknown>>).map((a) => (
-              <li key={String(a.id)}>{String(a.summary ?? a.type)}</li>
-            ))}</ul>
-            <div className="flex flex-wrap gap-2 pt-4">
-              <button type="button" className="px-3 py-2 bg-blue-600 text-white font-bold rounded-xl cursor-pointer" onClick={() => openEdit(drawerLead)}>
-                Edit Lead
-              </button>
-              <button type="button" className="px-3 py-2 bg-emerald-600 text-white font-bold rounded-xl cursor-pointer" onClick={() => {
-                const r = convertLeadToCustomer(appState, String(drawerLead.id), {});
-                if (r.ok) { saveAppState(); window.alert('Converted to customer'); setDrawerId(null); }
-              }}>Convert to Customer</button>
-              <button type="button" className="px-3 py-2 bg-rose-50 text-rose-700 font-bold rounded-xl cursor-pointer" onClick={() => {
-                updateLead(appState, String(drawerLead.id), { status: 'lost' }); saveAppState(); setDrawerId(null);
-              }}>Mark Lost</button>
+      <div className="grid grid-cols-1 xl:grid-cols-[1fr_380px] gap-3 items-stretch flex-1 min-h-0">
+        <div className="flex flex-col gap-3 min-h-0">
+          <div className="flex items-center gap-2 px-1">
+            <input
+              type="checkbox"
+              checked={paged.length > 0 && paged.every((l) => selectedIds.has(String(l.id)))}
+              onChange={toggleSelectAll}
+              className="cursor-pointer"
+            />
+            <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wide">Select page</span>
+          </div>
+          <AppTable
+            className="flex-1"
+            columns={columns}
+            rows={paged}
+            emptyMessage="No leads found."
+            rowClassName={(row) => (String(row.id) === selectedId ? 'bg-blue-50/80' : '')}
+            onRowClick={(row) => setSelectedId(String(row.id))}
+            renderActions={(row) => (
+              <>
+                <button type="button" title="WhatsApp" onClick={(e) => { e.stopPropagation(); window.alert('WhatsApp — coming soon.'); }} className="app-table-icon-btn cursor-pointer">
+                  <MessageCircle className="w-4 h-4" />
+                </button>
+                <button type="button" title="Call" onClick={(e) => { e.stopPropagation(); window.alert(`Call ${String(row.phone)} — coming soon.`); }} className="app-table-icon-btn cursor-pointer">
+                  <Phone className="w-4 h-4" />
+                </button>
+                <button type="button" title="More" onClick={(e) => { e.stopPropagation(); openEdit(row); }} className="app-table-icon-btn cursor-pointer">
+                  <MoreVertical className="w-4 h-4" />
+                </button>
+              </>
+            )}
+          />
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 text-xs text-slate-500">
+            <span>
+              Showing {filtered.length === 0 ? 0 : (page - 1) * pageSize + 1} to {Math.min(page * pageSize, filtered.length)} of {filtered.length} leads
+            </span>
+            <div className="flex flex-wrap items-center gap-2">
+              <button type="button" disabled={page <= 1} onClick={() => setPage(page - 1)} className="px-3 py-1.5 border border-slate-200 rounded-lg cursor-pointer disabled:opacity-50">Previous</button>
+              {pageNumbers.map((n) => (
+                <button key={n} type="button" onClick={() => setPage(n)} className={`min-w-[32px] px-2 py-1.5 rounded-lg font-bold cursor-pointer ${n === page ? 'bg-blue-600 text-white' : 'border border-slate-200 hover:bg-slate-50'}`}>{n}</button>
+              ))}
+              <button type="button" disabled={page >= totalPages} onClick={() => setPage(page + 1)} className="px-3 py-1.5 border border-slate-200 rounded-lg cursor-pointer disabled:opacity-50">Next</button>
+              <select value={pageSize} onChange={(e) => { setPageSize(Number(e.target.value)); setPage(1); }} className="bg-slate-50 border border-slate-200 rounded-lg px-2 py-1.5 cursor-pointer">
+                {PAGE_SIZE_OPTIONS.map((size) => <option key={size} value={size}>{size} / page</option>)}
+              </select>
             </div>
           </div>
-        )}
-      </ProfileDrawer>
+        </div>
+
+        <LeadDetailPanel
+          lead={selectedLead}
+          activities={selectedActivities as Array<Record<string, unknown>>}
+          detailTab={detailTab}
+          onDetailTabChange={setDetailTab}
+          onEdit={() => selectedLead && openEdit(selectedLead)}
+          onConvert={() => {
+            if (!selectedLead) return;
+            const r = convertLeadToCustomer(appState, String(selectedLead.id), {});
+            if (r.ok) { saveAppState(); window.alert('Converted to customer'); }
+          }}
+          onMarkLost={() => {
+            if (!selectedLead) return;
+            updateLead(appState, String(selectedLead.id), { status: 'lost' });
+            saveAppState();
+          }}
+        />
+      </div>
 
       <Footer />
     </div>

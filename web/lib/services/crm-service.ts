@@ -1,4 +1,14 @@
 // @ts-nocheck
+import {
+  LEAD_PIPELINE_STAGES,
+  LEAD_STAGE_LABELS,
+  buildLeadActivitiesSeed,
+  buildLeadSeed,
+  buildLeadTasksSeed,
+} from './leads-seed';
+
+export { LEAD_PIPELINE_STAGES, LEAD_STAGE_LABELS };
+
 const DEFAULT_CURRENT_USER = {
   id: 'USR-001',
   name: 'John Doe',
@@ -548,163 +558,17 @@ function buildLegacyMigration(state) {
   const salesReps = (state.employees || []).filter((employee) => employee.department === 'Sales');
   const repA = salesReps[0] || salesRep;
   const repB = salesReps[1] || salesRep;
-  const leadSeed = [
-    {
-      id: 'LEAD-0001',
-      name: 'Farhana Akter',
-      company: 'Orbital Textiles',
-      phone: '+8801711002200',
-      email: 'farhana@orbitaltextiles.com',
-      source: 'Trade Show',
-      status: 'qualified',
-      priority: 'hot',
-      assignedRepId: repA?.id || DEFAULT_CURRENT_USER.employeeId,
-      assignedRepName: repA?.name || DEFAULT_CURRENT_USER.name,
-      expectedValue: 18000,
-      probability: 55,
-      nextFollowUpAt: addDaysToIso(todayIso(), 4),
-      notes: 'Interested in monthly yarn supply. Sent sample catalog last week.',
-      conversionStatus: 'open',
-      linkedDealId: 'DEAL-0001',
-      createdAt: '2026-06-14T10:00:00.000Z'
-    },
-    {
-      id: 'LEAD-0002',
-      name: 'David Bose',
-      company: 'Blue Fern Retail',
-      phone: '+8801919003311',
-      email: 'david@bluefern.io',
-      source: 'Website',
-      status: 'new',
-      priority: 'warm',
-      assignedRepId: repA?.id || DEFAULT_CURRENT_USER.employeeId,
-      assignedRepName: repA?.name || DEFAULT_CURRENT_USER.name,
-      expectedValue: 9400,
-      probability: 30,
-      nextFollowUpAt: todayIso(),
-      notes: 'Wants bundled supply and portal access.',
-      conversionStatus: 'open',
-      linkedDealId: null,
-      createdAt: '2026-06-18T10:00:00.000Z'
-    },
-    {
-      id: 'LEAD-0003',
-      name: 'Rashida Khan',
-      company: 'Happy Kids Mart',
-      phone: '+8801811223344',
-      email: 'rashida@happykidsmart.com',
-      source: 'Referral',
-      status: 'contacted',
-      priority: 'hot',
-      assignedRepId: repB?.id || repA?.id || DEFAULT_CURRENT_USER.employeeId,
-      assignedRepName: repB?.name || repA?.name || DEFAULT_CURRENT_USER.name,
-      expectedValue: 12500,
-      probability: 45,
-      nextFollowUpAt: addDaysToIso(todayIso(), -2),
-      notes: 'Referred by Orbital Textiles. Needs plush toy line pricing.',
-      conversionStatus: 'open',
-      linkedDealId: null,
-      createdAt: '2026-06-20T09:00:00.000Z'
-    },
-    {
-      id: 'LEAD-0004',
-      name: 'Tanvir Hossain',
-      company: 'PlayZone Dhaka',
-      phone: '+8801711556677',
-      email: 'tanvir@playzone.bd',
-      source: 'Facebook',
-      status: 'new',
-      priority: 'cold',
-      assignedRepId: repA?.id || DEFAULT_CURRENT_USER.employeeId,
-      assignedRepName: repA?.name || DEFAULT_CURRENT_USER.name,
-      expectedValue: 6200,
-      probability: 20,
-      nextFollowUpAt: addDaysToIso(todayIso(), 7),
-      notes: 'Inbound message about educational toy sets.',
-      conversionStatus: 'open',
-      linkedDealId: null,
-      createdAt: '2026-06-22T11:30:00.000Z'
-    },
-    {
-      id: 'LEAD-0005',
-      name: 'Nusrat Jahan',
-      company: 'Rainbow Stationery',
-      phone: '+8801911889900',
-      email: 'nusrat@rainbowstationery.com',
-      source: 'Walk-in',
-      status: 'contacted',
-      priority: 'warm',
-      assignedRepId: repB?.id || repA?.id || DEFAULT_CURRENT_USER.employeeId,
-      assignedRepName: repB?.name || repA?.name || DEFAULT_CURRENT_USER.name,
-      expectedValue: 8800,
-      probability: 35,
-      nextFollowUpAt: addDaysToIso(todayIso(), 3),
-      notes: 'Visited factory showroom. Asked for MOQ on puzzle sets.',
-      conversionStatus: 'open',
-      linkedDealId: null,
-      createdAt: '2026-06-23T14:00:00.000Z'
-    },
-    {
-      id: 'LEAD-0006',
-      name: 'Imran Chowdhury',
-      company: 'Metro Gift House',
-      phone: '+8801611445566',
-      email: 'imran@metrogift.com',
-      source: 'Trade Show',
-      status: 'qualified',
-      priority: 'hot',
-      assignedRepId: repA?.id || DEFAULT_CURRENT_USER.employeeId,
-      assignedRepName: repA?.name || DEFAULT_CURRENT_USER.name,
-      expectedValue: 22000,
-      probability: 60,
-      nextFollowUpAt: addDaysToIso(todayIso(), -5),
-      notes: 'Ready for commercial proposal. Follow-up overdue.',
-      conversionStatus: 'open',
-      linkedDealId: null,
-      createdAt: '2026-06-10T08:00:00.000Z'
-    },
-    {
-      id: 'LEAD-0007',
-      name: 'Sadia Rahman',
-      company: 'Little Learners School',
-      phone: '+8801711998877',
-      email: 'sadia@littlelearners.edu',
-      source: 'Website',
-      status: 'lost',
-      priority: 'cold',
-      assignedRepId: repB?.id || repA?.id || DEFAULT_CURRENT_USER.employeeId,
-      assignedRepName: repB?.name || repA?.name || DEFAULT_CURRENT_USER.name,
-      expectedValue: 4500,
-      probability: 10,
-      nextFollowUpAt: addDaysToIso(todayIso(), -10),
-      notes: 'Budget constraints. May revisit next quarter.',
-      conversionStatus: 'open',
-      linkedDealId: null,
-      createdAt: '2026-05-28T10:00:00.000Z'
-    },
-    {
-      id: 'LEAD-0008',
-      name: 'Karim Uddin',
-      company: 'Star Bazaar Chain',
-      phone: '+8801811776655',
-      email: 'karim@starbazaar.com',
-      source: 'Referral',
-      status: 'qualified',
-      priority: 'warm',
-      assignedRepId: repA?.id || DEFAULT_CURRENT_USER.employeeId,
-      assignedRepName: repA?.name || DEFAULT_CURRENT_USER.name,
-      expectedValue: 31000,
-      probability: 70,
-      nextFollowUpAt: addDaysToIso(todayIso(), 1),
-      notes: 'Converted after pricing review. Deal handoff pending.',
-      conversionStatus: 'converted',
-      linkedDealId: null,
-      createdAt: '2026-06-01T09:00:00.000Z'
-    }
-  ];
-
+  const leadSeed = buildLeadSeed(repA, repB, todayIso());
   leadSeed.forEach((lead) => {
     crmData.leadsById[lead.id] = lead;
+  });
+
+  buildLeadActivitiesSeed(todayIso()).forEach((activity) => {
+    crmData.activitiesById[activity.id] = activity;
+  });
+
+  buildLeadTasksSeed(todayIso(), repA, repB).forEach((task) => {
+    crmData.tasksById[task.id] = task;
   });
 
   crmData.dealsById['DEAL-0001'] = {
@@ -1083,6 +947,65 @@ function buildLegacyCustomerList(state) {
   });
 }
 
+function backfillLeadSeed(state) {
+  if (!state.crmData) return;
+  const salesReps = (state.employees || []).filter((employee) => employee.department === 'Sales');
+  const repA = salesReps[0] || (state.employees || [])[0];
+  const repB = salesReps[1] || repA;
+  const today = todayIso();
+
+  buildLeadSeed(repA, repB, today).forEach((lead) => {
+    if (!state.crmData.leadsById[lead.id]) {
+      state.crmData.leadsById[lead.id] = lead;
+    }
+  });
+
+  buildLeadActivitiesSeed(today).forEach((activity) => {
+    if (!state.crmData.activitiesById[activity.id]) {
+      state.crmData.activitiesById[activity.id] = activity;
+    }
+  });
+
+  buildLeadTasksSeed(today, repA, repB).forEach((task) => {
+    if (!state.crmData.tasksById[task.id]) {
+      state.crmData.tasksById[task.id] = task;
+    }
+  });
+}
+
+function isOpenLead(lead) {
+  if (!lead) return false;
+  if (lead.conversionStatus === 'converted') return false;
+  return lead.status !== 'won' && lead.status !== 'lost';
+}
+
+function leadFollowUpDate(lead) {
+  const raw = lead?.nextFollowUpAt;
+  if (!raw) return null;
+  return String(raw).slice(0, 10);
+}
+
+function startOfIsoWeek(dateStr) {
+  const d = new Date(`${dateStr}T12:00:00`);
+  const day = d.getDay();
+  const diff = day === 0 ? 6 : day - 1;
+  d.setDate(d.getDate() - diff);
+  return d.toISOString().slice(0, 10);
+}
+
+function inferNextActionType(lead, openTask) {
+  if (lead?.nextActionType) return lead.nextActionType;
+  if (openTask?.title) {
+    const title = String(openTask.title);
+    if (/call/i.test(title)) return 'Call';
+    if (/whatsapp/i.test(title)) return 'WhatsApp';
+    if (/email/i.test(title)) return 'Email';
+    if (/meeting/i.test(title)) return 'Meeting';
+    return title.split(' ')[0] || 'Follow-up';
+  }
+  return 'Follow-up';
+}
+
 export function ensureCrmState(state) {
   if (!state.currentUser) state.currentUser = clone(DEFAULT_CURRENT_USER);
   if (!state.crmUi) state.crmUi = buildDefaultCrmUi();
@@ -1128,6 +1051,7 @@ export function ensureCrmState(state) {
   seedPaymentsFromInvoices(state);
   ensurePaymentAllocations(state);
   normalizeInvoices(state);
+  backfillLeadSeed(state);
   state.crmCustomers = buildLegacyCustomerList(state);
 
   return state;
@@ -1500,6 +1424,108 @@ export function getLeadList(state) {
     .sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt)));
 }
 
+export function getLeadById(state, leadId) {
+  ensureCrmState(state);
+  return state.crmData.leadsById[leadId] || null;
+}
+
+export function getLeadTasks(state, leadId) {
+  ensureCrmState(state);
+  return mapValues(state.crmData.tasksById)
+    .filter((task) => task.entityType === 'lead' && task.entityId === leadId)
+    .sort((a, b) => String(a.dueDate || '').localeCompare(String(b.dueDate || '')));
+}
+
+export function getLeadOpenTask(state, leadId) {
+  return getLeadTasks(state, leadId).find((task) => task.status === 'open') || null;
+}
+
+export function getLeadLastActivity(state, leadId) {
+  const activities = getLeadActivities(state, leadId);
+  const latest = activities[0];
+  if (!latest) {
+    return { summary: 'No activity yet', timestamp: null, actorName: null };
+  }
+  return {
+    summary: latest.summary || latest.activityType || 'Activity',
+    timestamp: latest.completedAt || latest.createdAt || null,
+    actorName: latest.actorName || null,
+  };
+}
+
+export function enrichLeadRow(state, lead) {
+  const lastActivity = getLeadLastActivity(state, lead.id);
+  const openTask = getLeadOpenTask(state, lead.id);
+  const today = todayIso();
+  const followUpDate = leadFollowUpDate(lead);
+  const nextActionAt = lead.nextFollowUpAt || (openTask?.dueDate ? `${openTask.dueDate}T09:00:00.000Z` : null);
+
+  return {
+    ...lead,
+    lastActivityAt: lastActivity.timestamp,
+    lastActivitySummary: lastActivity.summary,
+    lastActivityActor: lastActivity.actorName,
+    nextActionType: inferNextActionType(lead, openTask),
+    nextActionAt,
+    isOverdue: Boolean(followUpDate && followUpDate < today && isOpenLead(lead)),
+    isFollowUpToday: Boolean(followUpDate === today && isOpenLead(lead)),
+    isUnassigned: !lead.assignedRepId,
+  };
+}
+
+export function getEnrichedLeadList(state) {
+  return getLeadList(state).map((lead) => enrichLeadRow(state, lead));
+}
+
+export function getLeadMetrics(state) {
+  const leads = getLeadList(state);
+  const today = todayIso();
+  const weekStart = startOfIsoWeek(today);
+  const currentMonth = today.slice(0, 7);
+
+  const openLeads = leads.filter((lead) => isOpenLead(lead));
+  const newThisWeek = leads.filter((lead) => String(lead.createdAt || '').slice(0, 10) >= weekStart).length;
+  const followUpToday = openLeads.filter((lead) => leadFollowUpDate(lead) === today).length;
+  const overdueFollowUps = openLeads.filter((lead) => {
+    const date = leadFollowUpDate(lead);
+    return date && date < today;
+  }).length;
+  const unassigned = openLeads.filter((lead) => !lead.assignedRepId).length;
+  const pipelineValue = openLeads.reduce((sum, lead) => sum + Number(lead.expectedValue || 0), 0);
+
+  const monthLeads = leads.filter((lead) => String(lead.createdAt || '').startsWith(currentMonth));
+  const convertedThisMonth = monthLeads.filter(
+    (lead) => lead.status === 'won' || lead.conversionStatus === 'converted',
+  ).length;
+  const conversionRate = monthLeads.length ? Math.round((convertedThisMonth / monthLeads.length) * 100) : 0;
+
+  return {
+    newThisWeek,
+    followUpToday,
+    overdueFollowUps,
+    unassigned,
+    pipelineValue,
+    conversionRate,
+    totalLeads: leads.length,
+    newUncontacted: leads.filter((lead) => lead.status === 'new' && isOpenLead(lead)).length,
+  };
+}
+
+export function getLeadPipelineCounts(state) {
+  const leads = getLeadList(state);
+  const counts = LEAD_PIPELINE_STAGES.reduce((acc, stage) => {
+    acc[stage] = 0;
+    return acc;
+  }, {});
+
+  leads.forEach((lead) => {
+    const stage = LEAD_PIPELINE_STAGES.includes(lead.status) ? lead.status : 'new';
+    counts[stage] += 1;
+  });
+
+  return counts;
+}
+
 export function getDealList(state) {
   ensureCrmState(state);
   const user = getUserContext(state);
@@ -1861,6 +1887,8 @@ export function createLead(state, payload) {
     expectedValue: Number(payload.expectedValue || 0),
     probability: Number(payload.probability || 0),
     nextFollowUpAt: payload.nextFollowUpAt || null,
+    nextActionType: payload.nextActionType || '',
+    location: payload.location || '',
     notes: payload.notes || '',
     conversionStatus: 'open',
     linkedDealId: null,
@@ -1901,6 +1929,8 @@ export function updateLead(state, leadId, payload) {
     expectedValue: payload.expectedValue !== undefined ? Number(payload.expectedValue || 0) : lead.expectedValue,
     probability: payload.probability !== undefined ? Number(payload.probability || 0) : lead.probability,
     nextFollowUpAt: payload.nextFollowUpAt !== undefined ? payload.nextFollowUpAt : lead.nextFollowUpAt,
+    nextActionType: payload.nextActionType !== undefined ? payload.nextActionType : lead.nextActionType,
+    location: payload.location !== undefined ? payload.location : lead.location,
     notes: payload.notes !== undefined ? payload.notes : lead.notes,
     conversionStatus: payload.conversionStatus !== undefined ? payload.conversionStatus : lead.conversionStatus
   });

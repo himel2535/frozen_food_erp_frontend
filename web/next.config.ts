@@ -19,6 +19,8 @@ const htmlRedirects = [
   ['sales-wholesale.html', '/sales/wholesale'],
   ['inventory-products.html', '/inventory/products'],
   ['inventory-raw-materials.html', '/inventory/raw-materials'],
+  ['inventory-semi-finished-products.html', '/inventory/semi-finished-products'],
+  ['inventory-finished-goods.html', '/inventory/finished-goods'],
   ['inventory-stock-in.html', '/inventory/stock-in'],
   ['inventory-stock-out.html', '/inventory/stock-out'],
   ['inventory-transfers.html', '/inventory/transfers'],
