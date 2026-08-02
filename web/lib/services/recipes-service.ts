@@ -443,6 +443,213 @@ export function getProductionPlan(state: AppState, recipe: Recipe, batchQty: num
   };
 }
 
+export type ProductRecipeLookup = {
+  id?: string | number;
+  sku?: string;
+  name?: string;
+};
+
+export function findRecipeForProduct(state: AppState, product: ProductRecipeLookup): Recipe | null {
+  const id = String(product.id ?? '').trim();
+  const sku = String(product.sku ?? '').trim();
+  const name = String(product.name ?? '').trim().toLowerCase();
+
+  const activeRecipes = listRecipes(state).filter((recipe) => recipe.status === 'active');
+
+  return activeRecipes.find((recipe) => {
+    const model = recipe.model.trim();
+    const productSku = recipe.productSku.trim();
+    const recipeProduct = recipe.product.trim().toLowerCase();
+    const recipeProductId = recipe.productId != null ? String(recipe.productId) : '';
+
+    if (sku && (model === sku || productSku === sku)) return true;
+    if (id && (model === id || productSku === id || recipeProductId === id)) return true;
+    if (name && recipeProduct === name) return true;
+    return false;
+  }) ?? null;
+}
+
+/** Prefer explicit recipeId on inventory rows; fall back to SKU/name heuristic. */
+export function resolveRecipeForInventoryRow(
+  state: AppState,
+  row: ProductRecipeLookup & { recipeId?: string | number },
+): Recipe | null {
+  const recipeId = String(row.recipeId ?? '').trim();
+  if (recipeId) {
+    const linked = getRecipe(state, recipeId);
+    if (linked) return linked;
+  }
+  return findRecipeForProduct(state, row);
+}
+
+export type ProductionCapacityLine = {
+  materialId: string;
+  name: string;
+  category: string;
+  unit: string;
+  qtyPerProduct: number;
+  effectiveQtyPerProduct: number;
+  availableQty: number;
+  maxUnitsFromMaterial: number;
+  usedAtMax: number;
+  surplusAfterMax: number;
+  isLimiting: boolean;
+  insight: MaterialInsight;
+};
+
+export type ProductionCapacityReport = {
+  recipe: Recipe;
+  currentStockQty: number;
+  maxProducibleUnits: number;
+  limitingMaterialName: string;
+  totalPossibleUnits: number;
+  lines: ProductionCapacityLine[];
+};
+
+export function getProductionCapacityReport(
+  state: AppState,
+  recipe: Recipe,
+  currentStockQty: number,
+): ProductionCapacityReport {
+  const stockQty = Math.max(0, currentStockQty);
+
+  if (!recipe.materials.length) {
+    return {
+      recipe,
+      currentStockQty: stockQty,
+      maxProducibleUnits: 0,
+      limitingMaterialName: '—',
+      totalPossibleUnits: stockQty,
+      lines: [],
+    };
+  }
+
+  const draftLines = recipe.materials.map((material) => {
+    const insight = getMaterialInsight(state, material.name, material.materialId, 0);
+    const availableQty = insight.availability;
+    const effectiveQtyPerProduct = material.effectiveQty;
+    const maxUnitsFromMaterial = effectiveQtyPerProduct > 0
+      ? Math.floor(availableQty / effectiveQtyPerProduct)
+      : 0;
+
+    return {
+      materialId: material.materialId,
+      name: material.name,
+      category: material.category,
+      unit: material.unit,
+      qtyPerProduct: material.qtyPerProduct,
+      effectiveQtyPerProduct,
+      availableQty,
+      maxUnitsFromMaterial,
+      usedAtMax: 0,
+      surplusAfterMax: availableQty,
+      isLimiting: false,
+      insight,
+    };
+  });
+
+  const maxProducibleUnits = draftLines.reduce(
+    (min, line) => Math.min(min, line.maxUnitsFromMaterial),
+    Number.POSITIVE_INFINITY,
+  );
+  const safeMax = Number.isFinite(maxProducibleUnits) ? Math.max(0, maxProducibleUnits) : 0;
+  const limitingLine = draftLines.find((line) => line.maxUnitsFromMaterial === safeMax) ?? draftLines[0];
+
+  const lines: ProductionCapacityLine[] = draftLines.map((line) => {
+    const usedAtMax = Number((line.effectiveQtyPerProduct * safeMax).toFixed(2));
+    const surplusAfterMax = Number(Math.max(0, line.availableQty - usedAtMax).toFixed(2));
+    return {
+      ...line,
+      usedAtMax,
+      surplusAfterMax,
+      isLimiting: line.materialId === limitingLine?.materialId && line.name === limitingLine?.name,
+    };
+  });
+
+  return {
+    recipe,
+    currentStockQty: stockQty,
+    maxProducibleUnits: safeMax,
+    limitingMaterialName: limitingLine?.name ?? '—',
+    totalPossibleUnits: stockQty + safeMax,
+    lines,
+  };
+}
+
+export type ProductionWhatIfLine = ProductionCapacityLine & {
+  totalRequiredForTarget: number;
+  shortageForTarget: number;
+  surplusForTarget: number;
+  remainingAfterMaxProduction: number;
+  hasShortage: boolean;
+};
+
+export type ProductionPurchaseShortage = {
+  materialId: string;
+  name: string;
+  qty: number;
+  unit: string;
+};
+
+export type ProductionWhatIfAnalysis = {
+  capacity: ProductionCapacityReport;
+  targetQty: number;
+  achievableQty: number;
+  shortfallUnits: number;
+  afterProductionStock: number;
+  totalPotentialStock: number;
+  lines: ProductionWhatIfLine[];
+  purchaseShortages: ProductionPurchaseShortage[];
+};
+
+export function getProductionWhatIfAnalysis(
+  state: AppState,
+  recipe: Recipe,
+  currentStockQty: number,
+  targetQty: number,
+): ProductionWhatIfAnalysis {
+  const capacity = getProductionCapacityReport(state, recipe, currentStockQty);
+  const safeTarget = Math.max(1, Math.floor(Number(targetQty) || 0));
+  const achievableQty = Math.min(safeTarget, capacity.maxProducibleUnits);
+  const shortfallUnits = Math.max(0, safeTarget - capacity.maxProducibleUnits);
+  const afterProductionStock = capacity.currentStockQty + achievableQty;
+  const totalPotentialStock = capacity.currentStockQty + capacity.maxProducibleUnits;
+
+  const lines: ProductionWhatIfLine[] = capacity.lines.map((line) => {
+    const totalRequiredForTarget = Number((line.effectiveQtyPerProduct * safeTarget).toFixed(2));
+    const shortageForTarget = Number(Math.max(0, totalRequiredForTarget - line.availableQty).toFixed(2));
+    const surplusForTarget = Number(Math.max(0, line.availableQty - totalRequiredForTarget).toFixed(2));
+    return {
+      ...line,
+      totalRequiredForTarget,
+      shortageForTarget,
+      surplusForTarget,
+      remainingAfterMaxProduction: line.surplusAfterMax,
+      hasShortage: shortageForTarget > 0,
+    };
+  });
+
+  const purchaseShortages: ProductionPurchaseShortage[] = lines
+    .filter((line) => line.shortageForTarget > 0)
+    .map((line) => ({
+      materialId: line.materialId,
+      name: line.name,
+      qty: line.shortageForTarget,
+      unit: line.unit,
+    }));
+
+  return {
+    capacity,
+    targetQty: safeTarget,
+    achievableQty,
+    shortfallUnits,
+    afterProductionStock,
+    totalPotentialStock,
+    lines,
+    purchaseShortages,
+  };
+}
+
 export function listMaterialOptions(state: AppState): MaterialOption[] {
   const raw = listFromState(state, 'rawMaterials');
   const inventory = listFromState(state, 'inventory').filter((p) => {

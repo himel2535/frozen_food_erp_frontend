@@ -3,7 +3,7 @@
 import { toast } from '@/lib/ui/feedback';
 
 import { useMemo, useState } from 'react';
-import { ChevronDown, Download, Info, MoreVertical, Package, Settings2 } from 'lucide-react';
+import { ChevronDown, Calculator, Download, Info, Package, Settings2 } from 'lucide-react';
 import { Footer } from '@/components/layout/Footer';
 import { AppFormFields, AppFormModal, FORM_GRID_CLS, FORM_LABEL_CLS } from '@/components/shared/AppForm';
 import { AppTable, type AppTableColumn } from '@/components/shared/AppTable';
@@ -12,7 +12,10 @@ import { KpiCards } from '@/components/shared/KpiCards';
 import { StatusBadge } from '@/components/shared/StatusBadge';
 import { TableIconAction } from '@/components/shared/TableIconAction';
 import { FilterBar, FilterSelect, SearchInput } from '@/components/modules/inventory/shared/inventory-ui';
-import { WarehouseSelect } from '@/components/modules/inventory/shared/selects';
+import { InventoryProductDetailView } from '@/components/modules/inventory/shared/InventoryProductDetailView';
+import { InventoryStockSummaryView } from '@/components/modules/inventory/shared/InventoryStockSummaryView';
+import { InventoryProductionCapacityView } from '@/components/modules/inventory/shared/InventoryProductionCapacityView';
+import { ProductSelect, RecipeSelect, WarehouseSelect } from '@/components/modules/inventory/shared/selects';
 import { MODULE_LIST_SHELL } from '@/lib/ui/module-layout';
 import { useAppStore } from '@/lib/state/app-store';
 import type { PortField } from '@/lib/modules/port-types';
@@ -26,10 +29,20 @@ import {
   listFinishedGoods,
   listFinishedGoodsCategories,
   listFinishedGoodsUnits,
+  listInventory,
   listWarehouses,
   previewFinishedGoodCode,
   updateFinishedGood,
 } from '@/lib/services/inventory-service';
+import {
+  buildFinishedGoodsStockSummary,
+  downloadInventoryProductCsv,
+} from '@/lib/services/inventory-export';
+import {
+  findRecipeForProduct,
+  getRecipe,
+  updateRecipe,
+} from '@/lib/services/recipes-service';
 
 const PAGE_SIZE_OPTIONS = [10, 15, 25];
 
@@ -80,7 +93,9 @@ function ProductThumb({ category }: { category: string }) {
 export function FinishedGoodsPage() {
   const appState = useAppStore((s) => s.appState);
   const saveAppState = useAppStore((s) => s.saveAppState);
-  const [view, setView] = useState<'main' | 'form'>('main');
+  const [view, setView] = useState<'main' | 'form' | 'detail' | 'summary' | 'capacity'>('main');
+  const [detailId, setDetailId] = useState<string | null>(null);
+  const [capacityId, setCapacityId] = useState<string | null>(null);
   const [search, setSearch] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('all');
   const [warehouseFilter, setWarehouseFilter] = useState('all');
@@ -93,6 +108,8 @@ export function FinishedGoodsPage() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [form, setForm] = useState({
+    catalogProductId: '',
+    recipeId: '',
     name: '',
     sku: '',
     category: '',
@@ -241,6 +258,8 @@ export function FinishedGoodsPage() {
 
   const resetForm = () => {
     setForm({
+      catalogProductId: '',
+      recipeId: '',
       name: '',
       sku: '',
       category: '',
@@ -264,6 +283,8 @@ export function FinishedGoodsPage() {
 
   const openEdit = (row: Record<string, unknown>) => {
     setForm({
+      catalogProductId: String(row.catalogProductId ?? ''),
+      recipeId: String(row.recipeId ?? ''),
       name: String(row.name ?? ''),
       sku: String(row.sku ?? ''),
       category: String(row.category ?? ''),
@@ -280,10 +301,64 @@ export function FinishedGoodsPage() {
     setView('form');
   };
 
+  const handleCatalogProductChange = (productId: string) => {
+    if (!productId) {
+      setForm((prev) => ({ ...prev, catalogProductId: '', recipeId: prev.recipeId }));
+      return;
+    }
+    const product = listInventory(appState, { productType: 'Finished Goods' }).find(
+      (p) => String(p.id) === productId,
+    );
+    if (!product) {
+      setForm((prev) => ({ ...prev, catalogProductId: productId }));
+      return;
+    }
+    const matched = findRecipeForProduct(appState, {
+      id: product.id as string | number,
+      sku: String(product.sku ?? ''),
+      name: String(product.name ?? ''),
+    });
+    setForm((prev) => ({
+      ...prev,
+      catalogProductId: productId,
+      recipeId: matched?.id ?? prev.recipeId,
+      name: String(product.name ?? prev.name),
+      sku: String(product.sku ?? prev.sku),
+      category: String(product.category ?? prev.category),
+      unit: String(product.uom ?? product.unit ?? (prev.unit || 'pcs')),
+      avgCost: product.cost != null ? String(product.cost) : prev.avgCost,
+      minStock: product.minStock != null ? String(product.minStock) : prev.minStock,
+      barcode: String(product.barcode ?? prev.barcode),
+      warehouseId: product.defaultWarehouse
+        ? String(product.defaultWarehouse)
+        : prev.warehouseId,
+    }));
+  };
+
+  const handleRecipeChange = (recipeId: string) => {
+    if (!recipeId) {
+      setForm((prev) => ({ ...prev, recipeId: '' }));
+      return;
+    }
+    const recipe = getRecipe(appState, recipeId);
+    if (!recipe) {
+      setForm((prev) => ({ ...prev, recipeId }));
+      return;
+    }
+    setForm((prev) => ({
+      ...prev,
+      recipeId,
+      name: prev.name.trim() ? prev.name : recipe.product,
+      sku: prev.sku.trim() ? prev.sku : (recipe.productSku || recipe.model),
+    }));
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const payload = {
       ...form,
+      catalogProductId: form.catalogProductId || undefined,
+      recipeId: form.recipeId || undefined,
       quantity: Number(form.quantity || 0),
       reserved: Number(form.reserved || 0),
       avgCost: Number(form.avgCost || 0),
@@ -296,6 +371,17 @@ export function FinishedGoodsPage() {
     if (!result.ok) {
       toast.error('Operation failed', { module: 'Inventory', description: 'error' in result ? String(result.error) : 'Save failed' });
       return;
+    }
+    if (form.recipeId && form.catalogProductId) {
+      const catalog = listInventory(appState, { productType: 'Finished Goods' }).find(
+        (p) => String(p.id) === form.catalogProductId,
+      );
+      updateRecipe(appState, form.recipeId, {
+        productId: (catalog?.id as string | number | undefined) ?? form.catalogProductId,
+        productSku: form.sku || String(catalog?.sku ?? ''),
+        model: form.sku || String(catalog?.sku ?? ''),
+        product: form.name || String(catalog?.name ?? ''),
+      });
     }
     saveAppState();
     setView('main');
@@ -313,6 +399,57 @@ export function FinishedGoodsPage() {
   }, [page, totalPages]);
 
   const productFields = [...FG_BASIC_FIELDS, ...FG_ADVANCED_FIELDS];
+  const detailRow = useMemo(
+    () => (detailId ? allProducts.find((row) => String(row.id) === detailId) ?? null : null),
+    [allProducts, detailId],
+  );
+  const capacityRow = useMemo(
+    () => (capacityId ? allProducts.find((row) => String(row.id) === capacityId) ?? null : null),
+    [allProducts, capacityId],
+  );
+  const stockSummary = useMemo(() => buildFinishedGoodsStockSummary(appState), [appState]);
+
+  const openDetail = (row: Record<string, unknown>) => {
+    setDetailId(String(row.id));
+    setView('detail');
+  };
+
+  const openCapacity = (row: Record<string, unknown>) => {
+    setCapacityId(String(row.id));
+    setView('capacity');
+  };
+
+  if (view === 'detail' && detailRow) {
+    return (
+      <InventoryProductDetailView
+        variant="finished-goods"
+        row={detailRow}
+        appState={appState}
+        onBack={() => { setView('main'); setDetailId(null); }}
+        onEdit={() => openEdit(detailRow)}
+      />
+    );
+  }
+
+  if (view === 'summary') {
+    return (
+      <InventoryStockSummaryView
+        summary={stockSummary}
+        onBack={() => setView('main')}
+      />
+    );
+  }
+
+  if (view === 'capacity' && capacityRow) {
+    return (
+      <InventoryProductionCapacityView
+        variant="finished-goods"
+        row={capacityRow}
+        appState={appState}
+        onBack={() => { setView('main'); setCapacityId(null); }}
+      />
+    );
+  }
 
   return (
     <>
@@ -440,25 +577,25 @@ export function FinishedGoodsPage() {
             <>
               <TableIconAction
                 variant="view"
-                onClick={() => toast.info('Feature coming soon', { module: 'Inventory', description: "View ${String(row.name)} — coming soon." })}
+                onClick={() => openDetail(row)}
               />
               <button
                 type="button"
                 title="Download"
-                onClick={() => toast.info('Feature coming soon', { module: 'Inventory', description: "Download spec" })}
+                onClick={() => downloadInventoryProductCsv(row, 'finished-goods', appState)}
                 className="app-table-icon-btn cursor-pointer"
               >
                 <Download className="w-4 h-4" />
               </button>
-              <TableIconAction variant="edit" onClick={() => openEdit(row)} />
               <button
                 type="button"
-                title="More actions"
-                onClick={() => toast.info('Feature coming soon', { module: 'Inventory', description: "More actions for ${String(row.name)} — coming soon." })}
+                title="Production Report"
+                onClick={() => openCapacity(row)}
                 className="app-table-icon-btn cursor-pointer"
               >
-                <MoreVertical className="w-4 h-4" />
+                <Calculator className="w-4 h-4" />
               </button>
+              <TableIconAction variant="edit" onClick={() => openEdit(row)} />
             </>
           )}
         />
@@ -473,7 +610,7 @@ export function FinishedGoodsPage() {
           </div>
           <button
             type="button"
-            onClick={() => toast.info('Feature coming soon', { module: 'Inventory', description: "Stock summary" })}
+            onClick={() => setView('summary')}
             className="shrink-0 text-xs font-bold text-blue-700 border border-blue-200 bg-white hover:bg-blue-50 px-3 py-2 rounded-xl cursor-pointer"
           >
             View Stock Summary
@@ -536,6 +673,32 @@ export function FinishedGoodsPage() {
         submitLabel="Save Product"
         size="lg"
       >
+        <div className={FORM_GRID_CLS}>
+          <div>
+            <label className={FORM_LABEL_CLS}>Product (Catalog)</label>
+            <ProductSelect
+              state={appState}
+              value={form.catalogProductId}
+              onChange={handleCatalogProductChange}
+              productType="Finished Goods"
+            />
+          </div>
+          <div>
+            <label className={FORM_LABEL_CLS}>BOM / Recipe</label>
+            <RecipeSelect
+              state={appState}
+              value={form.recipeId}
+              onChange={handleRecipeChange}
+              filterProduct={form.catalogProductId || form.sku || form.name
+                ? {
+                    id: form.catalogProductId || undefined,
+                    sku: form.sku || undefined,
+                    name: form.name || undefined,
+                  }
+                : undefined}
+            />
+          </div>
+        </div>
         <AppFormFields
           fields={productFields}
           values={form}

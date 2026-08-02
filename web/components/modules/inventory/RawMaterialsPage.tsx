@@ -3,7 +3,7 @@
 import { toast, confirmAction } from '@/lib/ui/feedback';
 
 import { useMemo, useState } from 'react';
-import { Download, MoreVertical, Package, Settings2 } from 'lucide-react';
+import { Download, Package, Settings2 } from 'lucide-react';
 import { Footer } from '@/components/layout/Footer';
 import { AppFormFields, AppFormModal, FORM_GRID_CLS, FORM_LABEL_CLS } from '@/components/shared/AppForm';
 import { AppTable, type AppTableColumn } from '@/components/shared/AppTable';
@@ -384,14 +384,6 @@ export function RawMaterialsPage() {
           renderActions={(rm) => (
             <>
               <TableIconAction variant="edit" onClick={() => openEdit(rm)} />
-              <button
-                type="button"
-                title="More actions"
-                onClick={() => toast.info('Feature coming soon', { module: 'Inventory', description: "More actions" })}
-                className="app-table-icon-btn cursor-pointer"
-              >
-                <MoreVertical className="w-4 h-4" />
-              </button>
               <TableIconAction
                 variant="delete"
                 onClick={() => {

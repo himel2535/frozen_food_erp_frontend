@@ -3,7 +3,7 @@
 import { toast } from '@/lib/ui/feedback';
 
 import { useMemo, useState } from 'react';
-import { ChevronDown, Download, MoreVertical, Package, Settings2 } from 'lucide-react';
+import { ChevronDown, Calculator, Download, Info, Package, Settings2 } from 'lucide-react';
 import { Footer } from '@/components/layout/Footer';
 import { AppFormFields, AppFormModal, FORM_GRID_CLS, FORM_LABEL_CLS } from '@/components/shared/AppForm';
 import { AppTable, type AppTableColumn } from '@/components/shared/AppTable';
@@ -12,6 +12,9 @@ import { KpiCards } from '@/components/shared/KpiCards';
 import { StatusBadge } from '@/components/shared/StatusBadge';
 import { TableIconAction } from '@/components/shared/TableIconAction';
 import { FilterBar, FilterSelect, SearchInput } from '@/components/modules/inventory/shared/inventory-ui';
+import { InventoryProductDetailView } from '@/components/modules/inventory/shared/InventoryProductDetailView';
+import { InventoryStockSummaryView } from '@/components/modules/inventory/shared/InventoryStockSummaryView';
+import { InventoryProductionCapacityView } from '@/components/modules/inventory/shared/InventoryProductionCapacityView';
 import { WarehouseSelect } from '@/components/modules/inventory/shared/selects';
 import { MODULE_LIST_SHELL } from '@/lib/ui/module-layout';
 import { useAppStore } from '@/lib/state/app-store';
@@ -20,7 +23,6 @@ import {
   createSemiFinishedProduct,
   deleteSemiFinishedProduct,
   formatMoney,
-  getSemiFinishedLocationLabel,
   getSemiFinishedMetrics,
   getSemiFinishedStockStatus,
   getSemiFinishedTotalValue,
@@ -32,6 +34,10 @@ import {
   previewSemiFinishedCode,
   updateSemiFinishedProduct,
 } from '@/lib/services/inventory-service';
+import {
+  buildSemiFinishedStockSummary,
+  downloadInventoryProductCsv,
+} from '@/lib/services/inventory-export';
 
 const PAGE_SIZE_OPTIONS = [10, 15, 25];
 
@@ -70,7 +76,9 @@ function ProductThumb({ category }: { category: string }) {
 export function SemiFinishedProductsPage() {
   const appState = useAppStore((s) => s.appState);
   const saveAppState = useAppStore((s) => s.saveAppState);
-  const [view, setView] = useState<'main' | 'form'>('main');
+  const [view, setView] = useState<'main' | 'form' | 'detail' | 'summary' | 'capacity'>('main');
+  const [detailId, setDetailId] = useState<string | null>(null);
+  const [capacityId, setCapacityId] = useState<string | null>(null);
   const [search, setSearch] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('all');
   const [stockStatusFilter, setStockStatusFilter] = useState('all');
@@ -293,6 +301,57 @@ export function SemiFinishedProductsPage() {
   }, [page, totalPages]);
 
   const productFields = [...SF_BASIC_FIELDS, ...SF_ADVANCED_FIELDS];
+  const detailRow = useMemo(
+    () => (detailId ? allProducts.find((row) => String(row.id) === detailId) ?? null : null),
+    [allProducts, detailId],
+  );
+  const capacityRow = useMemo(
+    () => (capacityId ? allProducts.find((row) => String(row.id) === capacityId) ?? null : null),
+    [allProducts, capacityId],
+  );
+  const stockSummary = useMemo(() => buildSemiFinishedStockSummary(appState), [appState]);
+
+  const openDetail = (row: Record<string, unknown>) => {
+    setDetailId(String(row.id));
+    setView('detail');
+  };
+
+  const openCapacity = (row: Record<string, unknown>) => {
+    setCapacityId(String(row.id));
+    setView('capacity');
+  };
+
+  if (view === 'detail' && detailRow) {
+    return (
+      <InventoryProductDetailView
+        variant="semi-finished"
+        row={detailRow}
+        appState={appState}
+        onBack={() => { setView('main'); setDetailId(null); }}
+        onEdit={() => openEdit(detailRow)}
+      />
+    );
+  }
+
+  if (view === 'summary') {
+    return (
+      <InventoryStockSummaryView
+        summary={stockSummary}
+        onBack={() => setView('main')}
+      />
+    );
+  }
+
+  if (view === 'capacity' && capacityRow) {
+    return (
+      <InventoryProductionCapacityView
+        variant="semi-finished"
+        row={capacityRow}
+        appState={appState}
+        onBack={() => { setView('main'); setCapacityId(null); }}
+      />
+    );
+  }
 
   return (
     <>
@@ -419,28 +478,45 @@ export function SemiFinishedProductsPage() {
             <>
               <TableIconAction
                 variant="view"
-                onClick={() => toast.info('Feature coming soon', { module: 'Inventory', description: "View ${String(row.name)} — coming soon." })}
+                onClick={() => openDetail(row)}
               />
               <button
                 type="button"
                 title="Download"
-                onClick={() => toast.info('Feature coming soon', { module: 'Inventory', description: "Download spec" })}
+                onClick={() => downloadInventoryProductCsv(row, 'semi-finished', appState)}
                 className="app-table-icon-btn cursor-pointer"
               >
                 <Download className="w-4 h-4" />
               </button>
-              <TableIconAction variant="edit" onClick={() => openEdit(row)} />
               <button
                 type="button"
-                title="More actions"
-                onClick={() => toast.info('Notice', { module: 'Inventory', description: `Location: ${getSemiFinishedLocationLabel(appState, row)}` })}
+                title="Production Report"
+                onClick={() => openCapacity(row)}
                 className="app-table-icon-btn cursor-pointer"
               >
-                <MoreVertical className="w-4 h-4" />
+                <Calculator className="w-4 h-4" />
               </button>
+              <TableIconAction variant="edit" onClick={() => openEdit(row)} />
             </>
           )}
         />
+
+        <div className="rounded-xl border border-emerald-200/80 bg-emerald-50/80 px-4 py-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <div className="flex items-start gap-2 text-xs text-emerald-800">
+            <Info className="w-4 h-4 shrink-0 mt-0.5" />
+            <p>
+              <span className="font-bold">Track WIP parts stock by warehouse and location.</span>{' '}
+              Monitor semi-finished inventory across production stages.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => setView('summary')}
+            className="shrink-0 text-xs font-bold text-emerald-700 border border-emerald-200 bg-white hover:bg-emerald-50 px-3 py-2 rounded-xl cursor-pointer"
+          >
+            View Stock Summary
+          </button>
+        </div>
 
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 text-xs text-slate-500">
           <span>

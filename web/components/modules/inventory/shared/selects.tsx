@@ -3,16 +3,67 @@
 import type { AppState } from '@/lib/state/types';
 import { listInventory, listWarehouses, listCategories, listUnits } from '@/lib/services/inventory-service';
 import { listSuppliers } from '@/lib/services/purchases-service';
+import { findRecipeForProduct, listRecipes } from '@/lib/services/recipes-service';
 import { SELECT_CLS } from '@/components/modules/inventory/shared/inventory-ui';
 
-export function ProductSelect({ state, value, onChange, required, includeAll }: { state: AppState; value: string; onChange: (v: string) => void; required?: boolean; includeAll?: boolean }) {
-  const products = listInventory(state);
+export function ProductSelect({
+  state,
+  value,
+  onChange,
+  required,
+  includeAll,
+  productType,
+}: {
+  state: AppState;
+  value: string;
+  onChange: (v: string) => void;
+  required?: boolean;
+  includeAll?: boolean;
+  productType?: string;
+}) {
+  const products = listInventory(state, productType
+    ? { productType, excludeRaw: true }
+    : undefined);
   return (
     <select required={required} value={value} onChange={(e) => onChange(e.target.value)} className={SELECT_CLS}>
       {includeAll && <option value="all">All Products</option>}
       <option value="">Select Product</option>
       {products.map((p) => (
         <option key={String(p.id)} value={String(p.id)}>{String(p.name)} ({String(p.sku)})</option>
+      ))}
+    </select>
+  );
+}
+
+export function RecipeSelect({
+  state,
+  value,
+  onChange,
+  required,
+  filterProduct,
+}: {
+  state: AppState;
+  value: string;
+  onChange: (v: string) => void;
+  required?: boolean;
+  filterProduct?: { id?: string; sku?: string; name?: string };
+}) {
+  const active = listRecipes(state).filter((r) => r.status === 'active');
+  const matched = filterProduct
+    ? findRecipeForProduct(state, filterProduct)
+    : null;
+
+  const recipes = matched
+    ? [matched, ...active.filter((r) => r.id !== matched.id)]
+    : active;
+
+  return (
+    <select required={required} value={value} onChange={(e) => onChange(e.target.value)} className={SELECT_CLS}>
+      <option value="">Select BOM / Recipe</option>
+      {recipes.map((r) => (
+        <option key={r.id} value={r.id}>
+          {r.recipeNumber} — {r.product} ({r.model})
+        </option>
       ))}
     </select>
   );
