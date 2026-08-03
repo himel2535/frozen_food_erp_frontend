@@ -349,6 +349,16 @@ export function SemiFinishedProductsPage() {
         row={capacityRow}
         appState={appState}
         onBack={() => { setView('main'); setCapacityId(null); }}
+        backLabel="Back to Capacity Report"
+        onEdit={() => openEdit(capacityRow)}
+        onLinkBom={(recipeId) => {
+          const result = updateSemiFinishedProduct(appState, String(capacityRow.id), { recipeId });
+          if (!result.ok) {
+            toast.error('Failed to link BOM', { module: 'Inventory', description: 'error' in result ? String(result.error) : 'Save failed' });
+            return;
+          }
+          saveAppState();
+        }}
       />
     );
   }
