@@ -2,9 +2,8 @@
 
 import { toast } from '@/lib/ui/feedback';
 
-import { useMemo, useState } from 'react';
-import { Plus } from 'lucide-react';
-import { Footer } from '@/components/layout/Footer';
+import { useEffect, useMemo, useState } from 'react';
+import { Plus, Info } from 'lucide-react';
 import { AppFormFields, AppFormModal } from '@/components/shared/AppForm';
 import { MODULE_LIST_SHELL } from '@/lib/ui/module-layout';
 import { useAppStore } from '@/lib/state/app-store';
@@ -15,18 +14,20 @@ import {
   filterCustomerReceivables,
   getCustomerReceivableDetail,
   getCustomerReceivableMetrics,
+  getTodayCollectionStats,
   listCustomerReceivables,
   receiveCustomerPayment,
   type CustomerReceivable,
 } from '@/lib/services/customer-receivables-service';
 import { CustomerDueMetrics } from './customer-due/CustomerDueMetrics';
+import { CustomerDueCollectionBar } from './customer-due/CustomerDueCollectionBar';
 import { CustomerDueFilterBar } from './customer-due/CustomerDueFilterBar';
 import { CustomerDueTable } from './customer-due/CustomerDueTable';
 import { CustomerDueDetailPanel } from './customer-due/CustomerDueDetailPanel';
 import { RECEIVE_PAYMENT_FIELDS } from './customer-due/customer-due-options';
-import type { CustomerDueDetailTab } from './customer-due/customer-due-types';
+import type { CustomerDueDetailTab, CustomerDueViewMode } from './customer-due/customer-due-types';
 
-const PAGE_SIZE = 8;
+const DEFAULT_PAGE_SIZE = 5;
 
 const RECEIVE_FORM_FIELDS: PortField[] = RECEIVE_PAYMENT_FIELDS.map((f) => ({ ...f }));
 
@@ -39,10 +40,13 @@ export function CustomerDuePage() {
   const saveAppState = useAppStore((s) => s.saveAppState);
 
   const [search, setSearch] = useState('');
-  const [statusFilter, setStatusFilter] = useState('all_due');
+  const [statusFilter, setStatusFilter] = useState('my_tasks');
   const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
+  const [viewMode, setViewMode] = useState<CustomerDueViewMode>('list');
   const [selectedCustomerId, setSelectedCustomerId] = useState<string | null>(null);
   const [detailTab, setDetailTab] = useState<CustomerDueDetailTab>('overview');
+  const [initialized, setInitialized] = useState(false);
 
   const [showAddDueModal, setShowAddDueModal] = useState(false);
   const [showReceiveModal, setShowReceiveModal] = useState(false);
@@ -82,6 +86,7 @@ export function CustomerDuePage() {
 
   const allCustomers = useMemo(() => listCustomerReceivables(appState), [appState]);
   const metrics = useMemo(() => getCustomerReceivableMetrics(appState), [appState]);
+  const todayStats = useMemo(() => getTodayCollectionStats(appState), [appState]);
 
   const filteredRows = useMemo(
     () => filterCustomerReceivables(allCustomers, { search, status: statusFilter }),
@@ -92,6 +97,15 @@ export function CustomerDuePage() {
     () => (selectedCustomerId ? getCustomerReceivableDetail(appState, selectedCustomerId) : null),
     [appState, selectedCustomerId],
   );
+
+  useEffect(() => {
+    if (initialized || allCustomers.length === 0) return;
+    const firstWithDue = allCustomers.find((c) => c.totalDue > 0);
+    if (firstWithDue) {
+      setSelectedCustomerId(firstWithDue.customerId);
+      setInitialized(true);
+    }
+  }, [allCustomers, initialized]);
 
   const openReceive = (customer: CustomerReceivable) => {
     setReceiveTarget(customer);
@@ -143,8 +157,11 @@ export function CustomerDuePage() {
       <div className={MODULE_LIST_SHELL}>
         <div className="flex flex-col xl:flex-row xl:items-center xl:justify-between gap-4">
           <div>
-            <h2 className="text-xl font-extrabold text-slate-900 tracking-tight">Customer Due (Cash)</h2>
-            <p className="text-xs text-slate-500 mt-1 font-medium">Track and collect outstanding payments from your customers.</p>
+            <div className="flex items-center gap-2">
+              <h2 className="text-xl font-extrabold text-slate-900 tracking-tight">Customer Due &amp; Collection</h2>
+              <Info className="w-4 h-4 text-slate-400" aria-hidden />
+            </div>
+            <p className="text-xs text-slate-500 mt-1 font-medium">Manage receivables, follow-ups and collections.</p>
           </div>
           <div className="flex flex-wrap items-center gap-2 self-start xl:self-auto">
             <button
@@ -160,7 +177,7 @@ export function CustomerDuePage() {
               onClick={() => {
                 const target = selectedCustomer ?? allCustomers.find((c) => c.totalDue > 0);
                 if (target) openReceive(target);
-                else toast.error('Action required', { module: 'Accounting', description: "Select a customer with outstanding due first." });
+                else toast.error('Action required', { module: 'Accounting', description: 'Select a customer with outstanding due first.' });
               }}
               className="bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold px-4 py-2.5 rounded-xl transition-colors flex items-center gap-2 cursor-pointer"
             >
@@ -169,25 +186,35 @@ export function CustomerDuePage() {
           </div>
         </div>
 
-        <CustomerDueMetrics metrics={metrics} />
+        <CustomerDueMetrics
+          metrics={metrics}
+          onViewPromises={() => { setStatusFilter('promised'); setPage(1); }}
+        />
 
-        <div className="grid grid-cols-1 xl:grid-cols-[1fr_380px] gap-3 items-stretch">
+        <CustomerDueCollectionBar
+          stats={todayStats}
+          onStartCollection={() => { setStatusFilter('my_tasks'); setPage(1); }}
+        />
+
+        <div className="grid grid-cols-1 xl:grid-cols-[1fr_400px] gap-3 items-stretch">
           <div className="premium-card premium-shadow overflow-hidden min-w-0 min-h-[580px] flex flex-col">
             <CustomerDueFilterBar
               search={search}
               statusFilter={statusFilter}
+              viewMode={viewMode}
               onSearchChange={(v) => { setSearch(v); setPage(1); }}
               onStatusChange={(v) => { setStatusFilter(v); setPage(1); }}
+              onViewModeChange={setViewMode}
             />
             <div className="flex-1 flex flex-col min-h-0">
               <CustomerDueTable
                 rows={filteredRows}
                 page={page}
-                pageSize={PAGE_SIZE}
+                pageSize={pageSize}
                 selectedCustomerId={selectedCustomerId}
                 onPageChange={setPage}
+                onPageSizeChange={(size) => { setPageSize(size); setPage(1); }}
                 onRowClick={(customer) => { setSelectedCustomerId(customer.customerId); setDetailTab('overview'); }}
-                onReceive={openReceive}
               />
             </div>
           </div>
@@ -197,10 +224,9 @@ export function CustomerDuePage() {
             detailTab={detailTab}
             onDetailTabChange={setDetailTab}
             onReceive={openReceive}
+            onClose={() => setSelectedCustomerId(null)}
           />
         </div>
-
-        <Footer />
       </div>
 
       <AppFormModal

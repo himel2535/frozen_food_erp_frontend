@@ -1,5 +1,5 @@
 import type { AppState } from '@/lib/state/types';
-import type { ProductionCapacityReport, ProductionWhatIfAnalysis } from '@/lib/services/recipes-service';
+import type { MaterialRequirementReport, ProductionCapacityReport, ProductionWhatIfAnalysis } from '@/lib/services/recipes-service';
 import {
   getFinishedGoodsAvailable,
   getFinishedGoodsMetrics,
@@ -259,6 +259,43 @@ export function downloadProductionCapacityCsv(report: ProductionCapacityReport, 
   });
 
   triggerDownload(lines.join('\n'), `${slugify(productName)}-production-capacity.csv`);
+}
+
+export function downloadMaterialRequirementCsv(report: MaterialRequirementReport, productName: string) {
+  const lines: string[] = [
+    'Metric,Value',
+    `Product,${escapeCsv(productName)}`,
+    `Recipe,${escapeCsv(report.recipe.recipeNumber)}`,
+    `Current Stock,${report.currentStockQty}`,
+    `Max Total Possible,${report.maxTotalUnits}`,
+    `Max Additional Units,${report.maxAdditionalUnits}`,
+    `Limiting Material,${escapeCsv(report.limitingMaterialName)}`,
+    '',
+    'Material,Category,Unit,Required Per Unit,Used in Current Stock,Raw Stock,In Semi-Finished,In Finished Goods,Total Overall,Max Additional Units,Status',
+  ];
+
+  report.lines.forEach((line) => {
+    const status = line.totalOverallQty <= 0
+      ? 'Out of Stock'
+      : line.totalOverallQty < line.requiredForCurrentStock + line.effectiveQtyPerProduct
+        ? 'Low Stock'
+        : 'In Stock';
+    lines.push([
+      line.name,
+      line.category,
+      line.unit,
+      line.effectiveQtyPerProduct,
+      line.requiredForCurrentStock,
+      line.rawQty,
+      line.inSemiFinishedQty,
+      line.inFinishedGoodsQty,
+      line.totalOverallQty,
+      line.maxAdditionalUnitsFromMaterial,
+      status,
+    ].map(escapeCsv).join(','));
+  });
+
+  triggerDownload(lines.join('\n'), `${slugify(productName)}-material-requirements.csv`);
 }
 
 export function downloadProductionWhatIfCsv(analysis: ProductionWhatIfAnalysis, productName: string) {

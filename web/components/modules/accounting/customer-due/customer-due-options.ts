@@ -1,8 +1,10 @@
 export const CUSTOMER_DUE_STATUS_TABS = [
-  { id: 'all_due', label: 'All Due' },
+  { id: 'all', label: 'All' },
+  { id: 'my_tasks', label: 'My Tasks' },
+  { id: 'today', label: 'Today' },
   { id: 'overdue', label: 'Overdue' },
-  { id: 'due_soon', label: 'Due Soon' },
-  { id: 'paid', label: 'Paid' },
+  { id: 'promised', label: 'Promised' },
+  { id: 'missed', label: 'Missed' },
 ];
 
 export const ADD_DUE_FIELDS = [

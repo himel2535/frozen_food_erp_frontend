@@ -3,7 +3,7 @@
 import { toast } from '@/lib/ui/feedback';
 
 import { useMemo, useState } from 'react';
-import { ChevronDown, Calculator, Download, Info, Package, Settings2 } from 'lucide-react';
+import { ChevronDown, Calculator, Download, Info, Layers, Package, Settings2 } from 'lucide-react';
 import { Footer } from '@/components/layout/Footer';
 import { AppFormFields, AppFormModal, FORM_GRID_CLS, FORM_LABEL_CLS } from '@/components/shared/AppForm';
 import { AppTable, type AppTableColumn } from '@/components/shared/AppTable';
@@ -15,6 +15,7 @@ import { FilterBar, FilterSelect, SearchInput } from '@/components/modules/inven
 import { InventoryProductDetailView } from '@/components/modules/inventory/shared/InventoryProductDetailView';
 import { InventoryStockSummaryView } from '@/components/modules/inventory/shared/InventoryStockSummaryView';
 import { InventoryProductionCapacityView } from '@/components/modules/inventory/shared/InventoryProductionCapacityView';
+import { InventoryMaterialRequirementView } from '@/components/modules/inventory/shared/InventoryMaterialRequirementView';
 import { WarehouseSelect } from '@/components/modules/inventory/shared/selects';
 import { MODULE_LIST_SHELL } from '@/lib/ui/module-layout';
 import { useAppStore } from '@/lib/state/app-store';
@@ -76,9 +77,10 @@ function ProductThumb({ category }: { category: string }) {
 export function SemiFinishedProductsPage() {
   const appState = useAppStore((s) => s.appState);
   const saveAppState = useAppStore((s) => s.saveAppState);
-  const [view, setView] = useState<'main' | 'form' | 'detail' | 'summary' | 'capacity'>('main');
+  const [view, setView] = useState<'main' | 'form' | 'detail' | 'summary' | 'capacity' | 'materials'>('main');
   const [detailId, setDetailId] = useState<string | null>(null);
   const [capacityId, setCapacityId] = useState<string | null>(null);
+  const [materialsId, setMaterialsId] = useState<string | null>(null);
   const [search, setSearch] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('all');
   const [stockStatusFilter, setStockStatusFilter] = useState('all');
@@ -309,6 +311,10 @@ export function SemiFinishedProductsPage() {
     () => (capacityId ? allProducts.find((row) => String(row.id) === capacityId) ?? null : null),
     [allProducts, capacityId],
   );
+  const materialsRow = useMemo(
+    () => (materialsId ? allProducts.find((row) => String(row.id) === materialsId) ?? null : null),
+    [allProducts, materialsId],
+  );
   const stockSummary = useMemo(() => buildSemiFinishedStockSummary(appState), [appState]);
 
   const openDetail = (row: Record<string, unknown>) => {
@@ -319,6 +325,11 @@ export function SemiFinishedProductsPage() {
   const openCapacity = (row: Record<string, unknown>) => {
     setCapacityId(String(row.id));
     setView('capacity');
+  };
+
+  const openMaterials = (row: Record<string, unknown>) => {
+    setMaterialsId(String(row.id));
+    setView('materials');
   };
 
   if (view === 'detail' && detailRow) {
@@ -353,6 +364,27 @@ export function SemiFinishedProductsPage() {
         onEdit={() => openEdit(capacityRow)}
         onLinkBom={(recipeId) => {
           const result = updateSemiFinishedProduct(appState, String(capacityRow.id), { recipeId });
+          if (!result.ok) {
+            toast.error('Failed to link BOM', { module: 'Inventory', description: 'error' in result ? String(result.error) : 'Save failed' });
+            return;
+          }
+          saveAppState();
+        }}
+      />
+    );
+  }
+
+  if (view === 'materials' && materialsRow) {
+    return (
+      <InventoryMaterialRequirementView
+        variant="semi-finished"
+        row={materialsRow}
+        appState={appState}
+        onBack={() => { setView('main'); setMaterialsId(null); }}
+        backLabel="Back to Semi-Finished Products"
+        onEdit={() => openEdit(materialsRow)}
+        onLinkBom={(recipeId) => {
+          const result = updateSemiFinishedProduct(appState, String(materialsRow.id), { recipeId });
           if (!result.ok) {
             toast.error('Failed to link BOM', { module: 'Inventory', description: 'error' in result ? String(result.error) : 'Save failed' });
             return;
@@ -497,6 +529,14 @@ export function SemiFinishedProductsPage() {
                 className="app-table-icon-btn cursor-pointer"
               >
                 <Download className="w-4 h-4" />
+              </button>
+              <button
+                type="button"
+                title="Material Requirements"
+                onClick={() => openMaterials(row)}
+                className="app-table-icon-btn cursor-pointer"
+              >
+                <Layers className="w-4 h-4" />
               </button>
               <button
                 type="button"

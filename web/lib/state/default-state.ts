@@ -1,5 +1,6 @@
 import type { AppState } from './types';
 import { FINISHED_GOODS_SEED } from './finished-goods-seed';
+import { COLLECTION_DEMO_CUSTOMERS, COLLECTION_DEMO_INVOICES } from './customer-collection-seed';
 
 export const DEFAULT_STATE: AppState = {
   isLoggedIn: false,
@@ -28,6 +29,7 @@ export const DEFAULT_STATE: AppState = {
     { id: 3, name: 'Thomas Edison', company: 'General Electric', phone: '+1 555-9832', email: 'edison@ge.com', status: 'active', sales: 89000.0, due: 0.0 },
     { id: 4, name: 'Nikola Tesla', company: 'Wardenclyffe', phone: '+1 555-4309', email: 'tesla@lightning.net', status: 'inactive', sales: 0.0, due: 12000.0 },
     { id: 5, name: 'Sobuz Hossain', company: 'Shoppy', phone: '01911110476', email: 'sobuz@shoppy.bd', status: 'active', sales: 25000.0, due: 0.0 },
+    ...COLLECTION_DEMO_CUSTOMERS,
   ],
   inventory: [
     { id: 1, name: 'Premium ABS Plastic Pellets', sku: 'SKU-PLST-01', category: 'Plastic Pellets', productType: 'Raw Materials', cost: 2.5, price: 4.5, wholesalePrice: 3.5, taxRate: 5, stock: 4500, warehouseStock: { 'WH-001': 3000, 'WH-002': 1500 }, minStock: 1000, reorderLevel: 1500, defaultWarehouse: 'WH-001', description: 'High quality ABS plastic pellets for injection molding.', uom: 'kg', reserved: 500, discontinued: false },
@@ -64,6 +66,7 @@ export const DEFAULT_STATE: AppState = {
     { id: 'INV-2025-00143', customerId: 3, date: '2025-06-10', amount: 3200.0, paid: 3200.0, due: 0.0, status: 'paid', items: [{ name: 'Premium Cotton Yarn', quantity: 200, price: 12.5, total: 2500.0 }, { name: 'Polyester Thread Spool', quantity: 90, price: 4.5, total: 405.0 }], discount: 0, tax: 295.0 },
     { id: 'INV-2025-00142', customerId: 4, date: '2025-06-09', amount: 950.0, paid: 0.0, due: 950.0, status: 'overdue', items: [{ name: 'Indigo Dye Concentrate', quantity: 10, price: 85.0, total: 850.0 }], discount: 0, tax: 100.0 },
     { id: 'INV-2025-00141', customerId: 1, date: '2025-06-08', amount: 4125.0, paid: 4125.0, due: 0.0, status: 'paid', items: [{ name: 'Silk Satin Blend Fabric', quantity: 150, price: 24.0, total: 3600.0 }, { name: 'Polyester Thread Spool', quantity: 33, price: 4.5, total: 150.0 }], discount: 0, tax: 375.0 },
+    ...COLLECTION_DEMO_INVOICES,
   ],
   employees: [
     { id: 'EMP-001', employeeCode: 'EMP-001', name: 'Sarah Connor', employeeType: 'Staff', department: 'IT', designation: 'Lead DevOps Architect', phone: '+1 555-9081', email: 'sarah.c@hookerp.com', joiningDate: '2023-01-15', status: 'active', address: '42 Resistance Ave', city: 'Los Angeles', manager: 'Ellen Ripley', salary: 8500, bloodGroup: 'O+', gender: 'Female', nid: 'NID-1990-001', emergencyContact: 'John Connor', emergencyPhone: '+1 555-9082', notes: 'Leads infrastructure and DevOps initiatives.' },

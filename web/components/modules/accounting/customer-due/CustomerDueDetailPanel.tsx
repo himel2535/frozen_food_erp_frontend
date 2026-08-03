@@ -1,26 +1,29 @@
 'use client';
 
-import { toast } from '@/lib/ui/feedback';
-
-import { Phone, MessageCircle, FileText, MoreHorizontal, CalendarPlus, UserRound } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { Phone, MessageCircle, CalendarPlus, X, UserRound, MapPin, Bookmark, CheckCircle2 } from 'lucide-react';
 import {
   formatDueDate,
   formatDueMoney,
-  getCustomerStatusLabel,
-  getPartyInitials,
   type CustomerReceivable,
+  type CollectionActivityType,
 } from '@/lib/services/customer-receivables-service';
 import {
-  CUSTOMER_DUE_STATUS_BADGE,
-  DUE_AVATAR_CLS,
-  DUE_BTN_RECEIVE,
+  formatActionSchedule,
+  formatDueMoneyDetailed,
+  openPhoneCall,
+  openWhatsApp,
+} from '@/lib/utils/communication-utils';
+import {
+  COLLECTION_STATUS_BADGE,
+  CUSTOMER_DUE_AGING_BADGE,
   DUE_PANEL_CLS,
   DUE_TAB_ACTIVE,
   DUE_TAB_INACTIVE,
 } from './customer-due-styles';
 import type { CustomerDueDetailTab } from './customer-due-types';
 
-const PANEL_SHELL = `${DUE_PANEL_CLS} min-h-[580px] h-full flex flex-col`;
+const PANEL_SHELL = `${DUE_PANEL_CLS} min-h-[580px] h-full flex flex-col gap-3`;
 
 function SummaryMini({ label, value, tone }: { label: string; value: string; tone?: 'red' | 'green' | 'default' }) {
   const valueCls = tone === 'red' ? 'text-rose-600' : tone === 'green' ? 'text-emerald-600' : 'text-slate-900';
@@ -32,51 +35,29 @@ function SummaryMini({ label, value, tone }: { label: string; value: string; ton
   );
 }
 
-const DETAIL_TABS: { id: CustomerDueDetailTab; label: string }[] = [
-  { id: 'overview', label: 'Overview' },
-  { id: 'invoices', label: 'Invoices' },
-  { id: 'transactions', label: 'Transactions' },
-  { id: 'followups', label: 'Follow-ups' },
-];
+function formatActivityTime(iso: string) {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return iso;
+  return d.toLocaleString('en-GB', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+}
 
-function PanelFooter({
-  disabled,
-  onReceive,
-}: {
-  disabled?: boolean;
-  onReceive?: () => void;
-}) {
-  return (
-    <div className="space-y-2 pt-2 border-t border-slate-100 mt-auto">
-      <button
-        type="button"
-        disabled={disabled}
-        className="w-full inline-flex items-center justify-center gap-2 rounded-lg bg-blue-600 hover:bg-blue-700 disabled:bg-slate-200 disabled:text-slate-400 disabled:cursor-not-allowed text-white text-sm font-bold py-2.5 cursor-pointer"
-        onClick={disabled ? undefined : onReceive}
-      >
-        Receive Payment
-      </button>
-      <div className="flex items-center justify-center gap-2">
-        {[
-          { icon: Phone, label: 'Call' },
-          { icon: MessageCircle, label: 'WhatsApp' },
-          { icon: FileText, label: 'Statement' },
-          { icon: MoreHorizontal, label: 'More' },
-        ].map(({ icon: Icon, label }) => (
-          <button
-            key={label}
-            type="button"
-            title={label}
-            disabled={disabled}
-            className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
-            onClick={disabled ? undefined : () => toast.info('Feature coming soon', { module: 'Customer Due', description: "${label} integration coming soon." })}
-          >
-            <Icon className="w-4 h-4" />
-          </button>
-        ))}
-      </div>
-    </div>
-  );
+function ActivityIcon({ type }: { type: CollectionActivityType }) {
+  if (type === 'promise') return <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />;
+  if (type === 'call') return <Phone className="w-4 h-4 text-blue-600 shrink-0" />;
+  if (type === 'whatsapp') return <MessageCircle className="w-4 h-4 text-emerald-600 shrink-0" />;
+  return <span className="h-2.5 w-2.5 rounded-full bg-slate-400 shrink-0 mt-1" />;
+}
+
+function promiseStatusBadge(status?: 'waiting' | 'missed' | 'received') {
+  if (status === 'missed') return 'bg-rose-100 text-rose-700 border-rose-200';
+  if (status === 'received') return 'bg-emerald-100 text-emerald-700 border-emerald-200';
+  return 'bg-amber-100 text-amber-700 border-amber-200';
+}
+
+function promiseStatusLabel(status?: 'waiting' | 'missed' | 'received') {
+  if (status === 'missed') return 'Promise Missed';
+  if (status === 'received') return 'Payment Received';
+  return 'Waiting for Payment';
 }
 
 export function CustomerDueDetailPanel({
@@ -84,6 +65,7 @@ export function CustomerDueDetailPanel({
   detailTab,
   onDetailTabChange,
   onReceive,
+  onClose,
 }: {
   customer: CustomerReceivable | null;
   detailTab: CustomerDueDetailTab;
@@ -91,6 +73,8 @@ export function CustomerDueDetailPanel({
   onClose?: () => void;
   onReceive: (customer: CustomerReceivable) => void;
 }) {
+  const router = useRouter();
+
   if (!customer) {
     return (
       <aside className={PANEL_SHELL}>
@@ -100,53 +84,154 @@ export function CustomerDueDetailPanel({
           </span>
           <h3 className="font-extrabold text-slate-900">Select a customer</h3>
           <p className="text-xs text-slate-500 mt-1 max-w-[240px]">
-            Click a row in the table to view outstanding balance, invoices, and payment actions.
+            Click a row in the table to view collection actions, promises, and payment history.
           </p>
         </div>
-
-        <div className="flex border-b border-slate-200 overflow-x-auto opacity-50 pointer-events-none">
-          {DETAIL_TABS.map((tab) => (
-            <button key={tab.id} type="button" className={`flex-1 pb-2 text-[11px] whitespace-nowrap px-1 ${DUE_TAB_INACTIVE}`}>
-              {tab.label}
-            </button>
-          ))}
-        </div>
-
-        <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50/80 p-6 text-center flex-1">
-          <p className="text-xs text-slate-400">Customer details will appear here</p>
-        </div>
-
-        <PanelFooter disabled />
       </aside>
     );
   }
 
   const overdueAmount = customer.status === 'overdue' ? customer.totalDue : 0;
-  const outstandingInvoices = customer.invoices.filter((inv) => inv.due > 0);
+  const invoiceCount = customer.invoices.length;
+  const detailTabs: { id: CustomerDueDetailTab; label: string }[] = [
+    { id: 'overview', label: 'Overview' },
+    { id: 'followups', label: 'Follow-ups' },
+    { id: 'invoices', label: `Invoices (${invoiceCount})` },
+    { id: 'payments', label: 'Payments' },
+  ];
+
+  const nextActionTitle = customer.nextAction?.type === 'call'
+    ? 'Call Customer'
+    : customer.nextAction?.type === 'whatsapp'
+      ? 'WhatsApp Customer'
+      : customer.nextAction?.label ?? 'Next Action';
 
   return (
     <aside className={PANEL_SHELL}>
       <div className="flex items-start justify-between gap-2">
-        <div className="flex items-center gap-2.5 min-w-0">
-          <span className={`${DUE_AVATAR_CLS} h-11 w-11 text-sm`}>{getPartyInitials(customer.name)}</span>
-          <div className="min-w-0">
-            <h3 className="font-extrabold text-slate-900 truncate">{customer.name}</h3>
-            <p className="text-xs text-slate-500 truncate">{customer.company}</p>
-            <p className="text-[11px] text-slate-400">{customer.phone}</p>
-          </div>
+        <div className="min-w-0 flex-1">
+          <h3 className="font-extrabold text-slate-900 truncate text-base">{customer.company}</h3>
+          <p className="text-xs text-slate-500 mt-0.5">{customer.phone}</p>
+          {customer.location && (
+            <p className="text-[11px] text-slate-400 flex items-center gap-1 mt-0.5">
+              <MapPin className="w-3 h-3 shrink-0" />
+              {customer.location}
+            </p>
+          )}
+        </div>
+        <div className="flex items-center gap-1 shrink-0">
+          {(customer.isCriticalOverdue || customer.isMissed) && (
+            <Bookmark className="w-4 h-4 text-rose-500 fill-rose-500" />
+          )}
+          {onClose && (
+            <button
+              type="button"
+              title="Close panel"
+              className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-slate-500 hover:bg-slate-100 cursor-pointer"
+              onClick={onClose}
+            >
+              <X className="w-4 h-4" />
+            </button>
+          )}
         </div>
       </div>
 
       <div className="rounded-xl border border-rose-100 bg-rose-50/50 p-3 text-center">
         <p className="text-[10px] font-bold uppercase tracking-wide text-rose-500">Outstanding</p>
-        <p className="text-2xl font-extrabold text-rose-600 mt-0.5">{formatDueMoney(customer.totalDue)}</p>
-        <span className={`inline-flex mt-1 rounded-full border px-2 py-0.5 text-[10px] font-bold ${CUSTOMER_DUE_STATUS_BADGE[customer.status] ?? CUSTOMER_DUE_STATUS_BADGE.active}`}>
-          {getCustomerStatusLabel(customer.status)}
+        <p className="text-2xl font-extrabold text-rose-600 mt-0.5">{formatDueMoneyDetailed(customer.totalDue)}</p>
+        <span className={`inline-flex mt-1 rounded-full border px-2 py-0.5 text-[10px] font-bold ${CUSTOMER_DUE_AGING_BADGE[customer.status] ?? CUSTOMER_DUE_AGING_BADGE.active}`}>
+          {customer.agingLabel}
         </span>
       </div>
 
+      {customer.nextAction && (
+        <div className="rounded-xl border border-rose-100 bg-rose-50/40 p-3 space-y-2">
+          <div className="flex items-start gap-2">
+            <span className="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-blue-100 text-blue-600 shrink-0">
+              <Phone className="w-4 h-4" />
+            </span>
+            <div className="min-w-0">
+              <p className="text-sm font-extrabold text-slate-900">{nextActionTitle}</p>
+              <p className="text-[11px] text-slate-500 mt-0.5">{formatActionSchedule(customer.nextAction.scheduledAt)}</p>
+            </div>
+          </div>
+          {customer.nextAction.reason && (
+            <p className="text-xs text-slate-600 leading-relaxed">{customer.nextAction.reason}</p>
+          )}
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-bold px-3 py-1.5 cursor-pointer"
+              onClick={() => openPhoneCall(customer.phone)}
+            >
+              <Phone className="w-3.5 h-3.5" />
+              Call
+            </button>
+            <button
+              type="button"
+              className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-bold px-3 py-1.5 cursor-pointer"
+              onClick={() => openWhatsApp(customer.phone)}
+            >
+              <MessageCircle className="w-3.5 h-3.5" />
+              WhatsApp
+            </button>
+            <button
+              type="button"
+              className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-[11px] font-bold px-3 py-1.5 cursor-pointer"
+              onClick={() => router.push(`/accounting/receivables/${customer.customerId}/follow-up?add=1`)}
+            >
+              <CalendarPlus className="w-3.5 h-3.5" />
+              + Follow-up
+            </button>
+          </div>
+        </div>
+      )}
+
+      {customer.paymentPromise && (
+        <div className="rounded-xl border border-slate-200 bg-white p-3 space-y-2">
+          <div className="flex items-start justify-between gap-2">
+            <div>
+              <p className="text-[10px] font-bold uppercase tracking-wide text-slate-500">Payment Promise</p>
+              <p className="text-lg font-extrabold text-slate-900 mt-0.5">{formatDueMoneyDetailed(customer.paymentPromise.amount)}</p>
+              <p className="text-[11px] text-slate-500">
+                Due {customer.paymentPromise.dueDate === new Date().toISOString().slice(0, 10) ? 'today' : formatDueDate(customer.paymentPromise.dueDate)}
+              </p>
+            </div>
+            <span className={`inline-flex rounded-full border px-2 py-0.5 text-[10px] font-bold ${promiseStatusBadge(customer.paymentPromise.status)}`}>
+              {promiseStatusLabel(customer.paymentPromise.status)}
+            </span>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              className="inline-flex items-center rounded-lg border-2 border-emerald-600 text-emerald-700 hover:bg-emerald-50 text-[11px] font-bold px-3 py-1.5 cursor-pointer"
+              onClick={() => onReceive(customer)}
+            >
+              Mark Received
+            </button>
+            <button
+              type="button"
+              className="inline-flex items-center rounded-lg border-2 border-blue-600 text-blue-700 hover:bg-blue-50 text-[11px] font-bold px-3 py-1.5 cursor-pointer"
+              onClick={() => router.push(`/accounting/receivables/${customer.customerId}/follow-up`)}
+            >
+              Follow Up
+            </button>
+          </div>
+        </div>
+      )}
+
+      <div className="grid grid-cols-3 gap-2">
+        <SummaryMini label="Total Due" value={formatDueMoney(customer.totalDue)} tone="red" />
+        <SummaryMini label="Overdue" value={formatDueMoney(overdueAmount)} tone="red" />
+        <SummaryMini
+          label="Last Payment"
+          value={customer.lastPaymentAmount > 0 ? formatDueMoney(customer.lastPaymentAmount) : '—'}
+          tone="green"
+        />
+      </div>
+
       <div className="flex border-b border-slate-200 overflow-x-auto">
-        {DETAIL_TABS.map((tab) => (
+        {detailTabs.map((tab) => (
           <button
             key={tab.id}
             type="button"
@@ -161,54 +246,50 @@ export function CustomerDueDetailPanel({
       <div className="flex-1 min-h-0 overflow-y-auto">
         {detailTab === 'overview' && (
           <div className="space-y-3">
-            <div className="grid grid-cols-2 gap-2">
-              <SummaryMini label="Total Due" value={formatDueMoney(customer.totalDue)} tone="red" />
-              <SummaryMini label="Overdue" value={formatDueMoney(overdueAmount)} tone="red" />
-              <SummaryMini label="Last Payment" value={customer.lastPaymentAmount > 0 ? formatDueMoney(customer.lastPaymentAmount) : '—'} tone="green" />
-              <SummaryMini label="Credit Limit" value={formatDueMoney(customer.creditLimit)} />
-              <SummaryMini label="Available Credit" value={formatDueMoney(customer.availableCredit)} tone="green" />
-              <SummaryMini label="Customer Since" value={formatDueDate(customer.customerSince)} />
-            </div>
-
-            {outstandingInvoices.length > 0 && (
-              <div>
-                <h4 className="text-xs font-bold text-slate-700 mb-2">Outstanding Invoices</h4>
-                <div className="space-y-2 max-h-[200px] overflow-y-auto">
-                  {outstandingInvoices.map((inv) => (
-                    <div key={inv.invoiceId} className="rounded-lg border border-slate-200 p-2.5 flex items-center justify-between gap-2">
-                      <div>
-                        <p className="font-bold text-sm text-slate-900">{inv.invoiceId}</p>
-                        <p className="text-[11px] text-slate-500">{formatDueDate(inv.dueDate)} · {formatDueMoney(inv.due)} due</p>
+            <div>
+              <h4 className="text-xs font-bold text-slate-700 mb-2">Recent Activity</h4>
+              {customer.recentActivity.length === 0 ? (
+                <p className="text-xs text-slate-500 py-4 text-center">No recent activity.</p>
+              ) : (
+                <div className="space-y-0">
+                  {customer.recentActivity.map((activity, index) => (
+                    <div key={activity.id} className="flex gap-3">
+                      <div className="flex flex-col items-center">
+                        <ActivityIcon type={activity.type} />
+                        {index < customer.recentActivity.length - 1 && (
+                          <span className="w-px flex-1 bg-slate-200 min-h-[24px]" />
+                        )}
                       </div>
-                      <button type="button" className={DUE_BTN_RECEIVE} onClick={() => onReceive(customer)}>
-                        Receive
-                      </button>
+                      <div className="pb-4 min-w-0">
+                        <p className="text-xs font-medium text-slate-800 leading-snug">{activity.text}</p>
+                        <p className="text-[10px] text-slate-500 mt-0.5">{formatActivityTime(activity.at)}</p>
+                        <p className="text-[10px] text-slate-400">{activity.by}</p>
+                      </div>
                     </div>
                   ))}
                 </div>
-              </div>
-            )}
-
-            <div className="rounded-lg border border-slate-200 p-3">
-              <div className="flex items-center justify-between gap-2">
-                <div>
-                  <p className="text-[10px] font-bold uppercase tracking-wide text-slate-500">Next Follow-up</p>
-                  <p className="text-xs font-semibold text-slate-700 mt-1">
-                    {customer.nextFollowUp
-                      ? new Date(customer.nextFollowUp).toLocaleString('en-GB', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })
-                      : 'Not scheduled'}
-                  </p>
-                </div>
-                <button
-                  type="button"
-                  className="inline-flex items-center gap-1 rounded-lg border border-slate-200 px-2 py-1 text-[11px] font-semibold text-slate-600 hover:bg-slate-50 cursor-pointer"
-                  onClick={() => toast.info('Feature coming soon', { module: 'Customer Due', description: "Add follow-up coming soon." })}
-                >
-                  <CalendarPlus className="w-3.5 h-3.5" />
-                  Add
-                </button>
-              </div>
+              )}
             </div>
+          </div>
+        )}
+
+        {detailTab === 'followups' && (
+          <div className="space-y-2">
+            {customer.nextAction ? (
+              <div className="rounded-lg border border-slate-200 p-3">
+                <p className="font-bold text-sm text-slate-900">{customer.nextAction.label}</p>
+                <p className="text-[11px] text-slate-500 mt-1">{formatActionSchedule(customer.nextAction.scheduledAt)}</p>
+                {customer.nextAction.reason && (
+                  <p className="text-xs text-slate-600 mt-2">{customer.nextAction.reason}</p>
+                )}
+                <div className="flex gap-2 mt-3">
+                  <button type="button" className="text-[10px] font-bold text-emerald-700 border border-emerald-200 rounded-lg px-2.5 py-1.5 cursor-pointer hover:bg-emerald-50" onClick={() => openPhoneCall(customer.phone)}>Call</button>
+                  <button type="button" className="text-[10px] font-bold text-emerald-700 border border-emerald-200 rounded-lg px-2.5 py-1.5 cursor-pointer hover:bg-emerald-50" onClick={() => openWhatsApp(customer.phone)}>WhatsApp</button>
+                </div>
+              </div>
+            ) : (
+              <p className="text-xs text-slate-500 py-6 text-center">No follow-ups scheduled.</p>
+            )}
           </div>
         )}
 
@@ -218,42 +299,46 @@ export function CustomerDueDetailPanel({
               <p className="text-xs text-slate-500 py-6 text-center">No invoices on record.</p>
             ) : (
               customer.invoices.map((inv) => (
-                <div key={inv.invoiceId} className="rounded-lg border border-slate-200 p-3 space-y-2">
+                <div key={inv.invoiceId} className="rounded-lg border border-slate-200 p-3">
                   <div className="flex items-start justify-between gap-2">
                     <div>
                       <p className="font-bold text-slate-900 text-sm">{inv.invoiceId}</p>
                       <p className="text-[11px] text-slate-500">{formatDueDate(inv.dueDate)}</p>
                     </div>
-                    <span className={`rounded-full border px-2 py-0.5 text-[10px] font-bold ${CUSTOMER_DUE_STATUS_BADGE[inv.status] ?? CUSTOMER_DUE_STATUS_BADGE.active}`}>
-                      {inv.status === 'overdue' ? 'Overdue' : inv.due <= 0 ? 'Paid' : 'Due Soon'}
+                    <span className={`rounded-full border px-2 py-0.5 text-[10px] font-bold ${COLLECTION_STATUS_BADGE[inv.status === 'overdue' ? 'promise_missed' : 'none']}`}>
+                      {inv.due <= 0 ? 'Paid' : inv.status === 'overdue' ? 'Overdue' : 'Open'}
                     </span>
                   </div>
-                  <div className="grid grid-cols-3 gap-2 text-[11px]">
+                  <div className="grid grid-cols-3 gap-2 text-[11px] mt-2">
                     <div><span className="text-slate-500 block">Amount</span><span className="font-bold">{formatDueMoney(inv.amount)}</span></div>
                     <div><span className="text-slate-500 block">Paid</span><span className="font-bold text-emerald-600">{formatDueMoney(inv.paid)}</span></div>
                     <div><span className="text-slate-500 block">Due</span><span className="font-bold text-rose-600">{formatDueMoney(inv.due)}</span></div>
                   </div>
-                  {inv.due > 0 && (
-                    <button type="button" className={`${DUE_BTN_RECEIVE} w-full`} onClick={() => onReceive(customer)}>
-                      Receive
-                    </button>
-                  )}
                 </div>
               ))
             )}
           </div>
         )}
 
-        {detailTab === 'transactions' && (
-          <p className="text-xs text-slate-500 py-6 text-center">No transaction history yet.</p>
-        )}
-
-        {detailTab === 'followups' && (
-          <p className="text-xs text-slate-500 py-6 text-center">No follow-up history yet.</p>
+        {detailTab === 'payments' && (
+          <p className="text-xs text-slate-500 py-6 text-center">
+            {customer.lastPaymentAmount > 0
+              ? `Last payment ${formatDueMoney(customer.lastPaymentAmount)} on ${formatDueDate(customer.lastPaymentDate)}`
+              : 'No payment history yet.'}
+          </p>
         )}
       </div>
 
-      <PanelFooter onReceive={() => onReceive(customer)} />
+      <div className="pt-2 border-t border-slate-100 mt-auto">
+        <button
+          type="button"
+          disabled={customer.totalDue <= 0}
+          className="w-full inline-flex items-center justify-center gap-2 rounded-lg bg-blue-600 hover:bg-blue-700 disabled:bg-slate-200 disabled:text-slate-400 disabled:cursor-not-allowed text-white text-sm font-bold py-2.5 cursor-pointer"
+          onClick={() => onReceive(customer)}
+        >
+          Receive Payment
+        </button>
+      </div>
     </aside>
   );
 }

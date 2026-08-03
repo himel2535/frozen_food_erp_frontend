@@ -576,6 +576,178 @@ export function getProductionCapacityReport(
   };
 }
 
+function bomLineMatchesMaterial(material: BomMaterial, materialId: string, materialName: string): boolean {
+  const id = materialId.trim().toLowerCase();
+  const name = materialName.trim().toLowerCase();
+  const lineId = String(material.materialId ?? '').trim().toLowerCase();
+  const lineName = String(material.name ?? '').trim().toLowerCase();
+  if (id && lineId === id) return true;
+  if (name && lineName === name) return true;
+  return false;
+}
+
+export type MaterialOverallInventory = {
+  rawQty: number;
+  inSemiFinishedQty: number;
+  inFinishedGoodsQty: number;
+  totalOverallQty: number;
+};
+
+function embeddedMaterialFromInventoryRows(
+  state: AppState,
+  collection: 'semiFinishedProducts' | 'finishedGoods',
+  materialId: string,
+  materialName: string,
+): number {
+  let embedded = 0;
+  for (const row of listFromState(state, collection)) {
+    const qty = Math.max(0, Number(row.quantity ?? 0));
+    if (qty <= 0) continue;
+    const recipe = resolveRecipeForInventoryRow(state, {
+      id: row.id as string | number,
+      sku: String(row.sku ?? row.id ?? ''),
+      name: String(row.name ?? ''),
+      recipeId: row.recipeId as string | number | undefined,
+    });
+    if (!recipe) continue;
+    for (const mat of recipe.materials) {
+      if (bomLineMatchesMaterial(mat, materialId, materialName)) {
+        embedded += qty * mat.effectiveQty;
+      }
+    }
+  }
+  return embedded;
+}
+
+export function computeMaterialOverallInventory(
+  state: AppState,
+  materialId: string,
+  materialName: string,
+): MaterialOverallInventory {
+  const raw = findRawMaterial(state, materialId || materialName);
+  const rawQty = raw ? Number(raw.quantity ?? 0) : 0;
+  const inSemiFinishedQty = embeddedMaterialFromInventoryRows(
+    state,
+    'semiFinishedProducts',
+    materialId,
+    materialName,
+  );
+  const inFinishedGoodsQty = embeddedMaterialFromInventoryRows(
+    state,
+    'finishedGoods',
+    materialId,
+    materialName,
+  );
+  const totalOverallQty = Number((rawQty + inSemiFinishedQty + inFinishedGoodsQty).toFixed(2));
+
+  return {
+    rawQty: Number(rawQty.toFixed(2)),
+    inSemiFinishedQty: Number(inSemiFinishedQty.toFixed(2)),
+    inFinishedGoodsQty: Number(inFinishedGoodsQty.toFixed(2)),
+    totalOverallQty,
+  };
+}
+
+export type MaterialRequirementLine = {
+  materialId: string;
+  name: string;
+  category: string;
+  unit: string;
+  qtyPerProduct: number;
+  effectiveQtyPerProduct: number;
+  requiredForCurrentStock: number;
+  rawQty: number;
+  inSemiFinishedQty: number;
+  inFinishedGoodsQty: number;
+  totalOverallQty: number;
+  maxTotalUnitsFromMaterial: number;
+  maxAdditionalUnitsFromMaterial: number;
+  isLimiting: boolean;
+  insight: MaterialInsight;
+};
+
+export type MaterialRequirementReport = {
+  recipe: Recipe;
+  currentStockQty: number;
+  maxTotalUnits: number;
+  maxAdditionalUnits: number;
+  limitingMaterialName: string;
+  totalPossibleUnits: number;
+  lines: MaterialRequirementLine[];
+};
+
+export function getMaterialRequirementReport(
+  state: AppState,
+  recipe: Recipe,
+  currentStockQty: number,
+): MaterialRequirementReport {
+  const stockQty = Math.max(0, currentStockQty);
+
+  if (!recipe.materials.length) {
+    return {
+      recipe,
+      currentStockQty: stockQty,
+      maxTotalUnits: 0,
+      maxAdditionalUnits: 0,
+      limitingMaterialName: '—',
+      totalPossibleUnits: 0,
+      lines: [],
+    };
+  }
+
+  const draftLines = recipe.materials.map((material) => {
+    const insight = getMaterialInsight(state, material.name, material.materialId, 0);
+    const overall = computeMaterialOverallInventory(state, material.materialId, material.name);
+    const effectiveQtyPerProduct = material.effectiveQty;
+    const requiredForCurrentStock = Number((effectiveQtyPerProduct * stockQty).toFixed(2));
+    const maxTotalUnitsFromMaterial = effectiveQtyPerProduct > 0
+      ? Math.floor(overall.totalOverallQty / effectiveQtyPerProduct)
+      : 0;
+    const maxAdditionalUnitsFromMaterial = Math.max(0, maxTotalUnitsFromMaterial - stockQty);
+
+    return {
+      materialId: material.materialId,
+      name: material.name,
+      category: material.category,
+      unit: material.unit,
+      qtyPerProduct: material.qtyPerProduct,
+      effectiveQtyPerProduct,
+      requiredForCurrentStock,
+      rawQty: overall.rawQty,
+      inSemiFinishedQty: overall.inSemiFinishedQty,
+      inFinishedGoodsQty: overall.inFinishedGoodsQty,
+      totalOverallQty: overall.totalOverallQty,
+      maxTotalUnitsFromMaterial,
+      maxAdditionalUnitsFromMaterial,
+      isLimiting: false,
+      insight,
+    };
+  });
+
+  const maxTotalUnits = draftLines.reduce(
+    (min, line) => Math.min(min, line.maxTotalUnitsFromMaterial),
+    Number.POSITIVE_INFINITY,
+  );
+  const safeMaxTotal = Number.isFinite(maxTotalUnits) ? Math.max(0, maxTotalUnits) : 0;
+  const maxAdditionalUnits = Math.max(0, safeMaxTotal - stockQty);
+  const limitingLine = draftLines.find((line) => line.maxTotalUnitsFromMaterial === safeMaxTotal) ?? draftLines[0];
+
+  const lines: MaterialRequirementLine[] = draftLines.map((line) => ({
+    ...line,
+    isLimiting: line.materialId === limitingLine?.materialId && line.name === limitingLine?.name,
+  }));
+
+  return {
+    recipe,
+    currentStockQty: stockQty,
+    maxTotalUnits: safeMaxTotal,
+    maxAdditionalUnits,
+    limitingMaterialName: limitingLine?.name ?? '—',
+    totalPossibleUnits: safeMaxTotal,
+    lines,
+  };
+}
+
 export type ProductionWhatIfLine = ProductionCapacityLine & {
   totalRequiredForTarget: number;
   shortageForTarget: number;

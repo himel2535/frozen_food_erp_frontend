@@ -502,6 +502,29 @@ function buildLegacyMigration(state) {
       primary: true
     };
 
+    const secondaryContactId1 = makeId('CONT', (index + 1) * 100 + 1);
+    const secondaryContactId2 = makeId('CONT', (index + 1) * 100 + 2);
+    crmData.customerContactsById[secondaryContactId1] = {
+      id: secondaryContactId1,
+      customerId,
+      name: 'Accounts Manager',
+      designation: 'Accounts',
+      phone: customer.phone,
+      email: customer.email,
+      whatsappEnabled: true,
+      primary: false,
+    };
+    crmData.customerContactsById[secondaryContactId2] = {
+      id: secondaryContactId2,
+      customerId,
+      name: 'Operations Head',
+      designation: 'Operations',
+      phone: customer.phone,
+      email: customer.email,
+      whatsappEnabled: false,
+      primary: false,
+    };
+
     crmData.customerAddressesById[billingId] = {
       id: billingId,
       customerId,
