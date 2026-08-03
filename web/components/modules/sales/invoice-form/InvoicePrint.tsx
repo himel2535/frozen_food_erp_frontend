@@ -300,11 +300,29 @@ export function InvoicePrint({
           </div>
 
           <div className={INV_PRINT_SIGNATURE_BOX}>
-            <p className="text-[10px] font-extrabold text-slate-700 mb-2">Authorized Signature</p>
-            <div className={`${INV_PRINT_SIGNATURE_LINE} ${signatureFont.className}`}>
-              {INV_COMPANY_INFO.authorizedBy}
-            </div>
-            <p className="text-[10px] font-semibold">{INV_COMPANY_INFO.authorizedBy}</p>
+            <p className="text-[10px] font-extrabold text-slate-700 mb-2">
+              {data.signature?.label || 'Authorized Signature'}
+            </p>
+            {data.signature?.imageDataUrl ? (
+              <div className="min-h-[56px] flex items-end justify-start pb-1">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={data.signature.imageDataUrl}
+                  alt=""
+                  className="max-h-14 max-w-[180px] object-contain object-left"
+                />
+              </div>
+            ) : (
+              <div className={`${INV_PRINT_SIGNATURE_LINE} ${signatureFont.className}`}>
+                {INV_COMPANY_INFO.authorizedBy}
+              </div>
+            )}
+            <p className="text-[10px] font-semibold">
+              {data.signature?.signerName ?? INV_COMPANY_INFO.authorizedBy}
+            </p>
+            {data.signature?.designation ? (
+              <p className="text-[10px] text-slate-500">{data.signature.designation}</p>
+            ) : null}
             <p className="text-[10px] text-slate-500 flex items-center gap-1 mt-0.5">
               <Calendar className="w-3 h-3" /> {issueDate}
             </p>

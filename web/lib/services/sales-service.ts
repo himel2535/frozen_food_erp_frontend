@@ -602,6 +602,8 @@ export function createInvoice(state: AppState, payload: Row) {
     billingAddress: payload.billingAddress ?? '',
     notes: payload.notes ?? '',
     terms: payload.terms ?? payload.paymentTerms ?? 'Net 30',
+    includeSignature: Boolean(payload.includeSignature),
+    signatureId: payload.signatureId ?? null,
   };
   state.invoices = [...listInvoices(state), record];
   syncInvoiceBalances(state);
@@ -635,6 +637,8 @@ export function updateInvoice(state: AppState, id: string, payload: Row) {
     billingAddress: payload.billingAddress ?? rows[idx].billingAddress,
     notes: payload.notes ?? rows[idx].notes,
     terms: payload.terms ?? rows[idx].terms,
+    includeSignature: payload.includeSignature ?? rows[idx].includeSignature ?? false,
+    signatureId: payload.signatureId ?? rows[idx].signatureId ?? null,
   };
   state.invoices = rows;
   syncInvoiceBalances(state);

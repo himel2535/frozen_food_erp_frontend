@@ -65,9 +65,8 @@ export const TENANT_SIDEBAR_SECTIONS: SidebarSection[] = [
     ],
   },
   {
-    id: 'factory', label: 'Factory', href: '/manufacturing/bom', imageIcon: '/images/sidebar/factory.png', iconifyIcon: 'flat-color-icons:factory', color: 'text-rose-600',
+    id: 'factory', label: 'Factory', href: '/manufacturing/machine-maintenance', imageIcon: '/images/sidebar/factory.png', iconifyIcon: 'flat-color-icons:factory', color: 'text-rose-600',
     items: [
-      { label: 'Raw Materials BOM', href: '/manufacturing/bom', view: 'bom', imageIcon: '/images/sidebar/factory/bom.png', iconifyIcon: 'flat-color-icons:tree-structure' },
       { label: 'Machine Maintenance', href: '/manufacturing/machine-maintenance', view: 'machine-maintenance', imageIcon: '/images/sidebar/factory/machine-maintenance.png', iconifyIcon: 'fluent-color:wrench-24' },
       { label: 'Mold Management', href: '/manufacturing/mold-management', view: 'mold-management', imageIcon: '/images/sidebar/factory/mold-management.png', iconifyIcon: 'fluent-color:puzzle-piece-24' },
       { label: 'Wastage', href: '/manufacturing/wastage', view: 'wastage', imageIcon: '/images/sidebar/factory/wastage.png', iconifyIcon: 'flat-color-icons:full-trash' },
@@ -124,14 +123,21 @@ export const TENANT_SIDEBAR_SECTIONS: SidebarSection[] = [
     ],
   },
   {
-    id: 'settings', label: 'Administration', href: '/settings/users', imageIcon: '/images/sidebar/administration.png', iconifyIcon: 'fluent-color:shield-24', color: 'text-slate-500',
+    id: 'administration', label: 'Administration', href: '/settings/users', imageIcon: '/images/sidebar/administration.png', iconifyIcon: 'fluent-color:shield-24', color: 'text-slate-500',
     items: [
       { label: 'Users', href: '/settings/users', view: 'users', iconifyIcon: 'fluent-color:people-team-24' },
       { label: 'Roles', href: '/settings/roles', view: 'roles', iconifyIcon: 'fluent-color:person-key-24' },
       { label: 'Permissions', href: '/settings/permissions', view: 'permissions', iconifyIcon: 'fluent-color:checkmark-circle-24' },
       { label: 'Documents', href: '/settings/documents', view: 'documents', iconifyIcon: 'fluent-color:document-lock-24' },
-      { label: 'Company Settings', href: '/settings/company', view: 'company', iconifyIcon: 'fluent-color:building-home-24' },
       { label: 'Audit Logs', href: '/settings/audit-logs', view: 'audit-logs', iconifyIcon: 'fluent-color:history-24' },
+    ],
+  },
+  {
+    id: 'settings', label: 'Settings', href: '/settings/profile', iconifyIcon: 'fluent-color:settings-24', color: 'text-slate-500',
+    items: [
+      { label: 'My Profile', href: '/settings/profile', view: 'profile', iconifyIcon: 'fluent-color:person-24' },
+      { label: 'Company Settings', href: '/settings/company', view: 'company', iconifyIcon: 'fluent-color:building-home-24' },
+      { label: 'Signatures', href: '/settings/signatures', view: 'signatures', iconifyIcon: 'lucide:signature' },
     ],
   },
 ];
@@ -139,6 +145,11 @@ export const TENANT_SIDEBAR_SECTIONS: SidebarSection[] = [
 export function getActiveSidebarModule(pathname: string): string {
   const path = pathname.split('/').filter(Boolean);
   const first = path[0] ?? 'dashboard';
+  if (first === 'settings') {
+    const view = path[1];
+    if (view === 'profile' || view === 'company' || view === 'signatures') return 'settings';
+    return 'administration';
+  }
   const map: Record<string, string> = {
     dashboard: 'dashboard',
     crm: 'sales-crm',
@@ -153,7 +164,6 @@ export function getActiveSidebarModule(pathname: string): string {
     'asset-management': 'assets',
     'workflow-approvals': 'approvals',
     reports: 'reports',
-    settings: 'settings',
     notifications: 'dashboard',
   };
   return map[first] ?? first;

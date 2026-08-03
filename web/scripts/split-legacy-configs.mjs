@@ -44,7 +44,6 @@ write(
   `import {
   listProductionOrders, createProductionOrder, updateProductionOrder, deleteProductionOrder,
   startProductionOrder, completeProductionOrder,
-  listBom, createBomEntry, updateBomEntry, deleteBomEntry,
   crudFactory,
 } from '@/lib/services/manufacturing-service';
 import { adapter, money, React, toast, confirmAction, type DedicatedModuleConfig } from './shared';`,

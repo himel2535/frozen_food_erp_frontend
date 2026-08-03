@@ -40,8 +40,8 @@ const htmlRedirects = [
   ['purchases-payments.html', '/purchases/payments'],
   ['purchases-returns.html', '/purchases/returns'],
   ['purchases-recipes.html', '/purchases/recipes'],
-  ['manufacturing-orders.html', '/manufacturing/bom'],
-  ['manufacturing-bom.html', '/manufacturing/bom'],
+  ['manufacturing-orders.html', '/manufacturing/machine-maintenance'],
+  ['manufacturing-bom.html', '/manufacturing/machine-maintenance'],
   ['manufacturing-machine-maintenance.html', '/manufacturing/machine-maintenance'],
   ['manufacturing-mold-management.html', '/manufacturing/mold-management'],
   ['manufacturing-wastage.html', '/manufacturing/wastage'],
@@ -79,6 +79,7 @@ const htmlRedirects = [
   ['settings-company.html', '/settings/company'],
   ['settings-audit-logs.html', '/settings/audit-logs'],
   ['settings-profile.html', '/settings/profile'],
+  ['settings-signatures.html', '/settings/signatures'],
   ['projects.html', '/projects'],
   ['projects-new.html', '/projects/new'],
   ['asset-management.html', '/asset-management'],
@@ -131,7 +132,8 @@ const nextConfig: NextConfig = {
       ...htmlRedirects.flatMap(([html, destination]) => [
         { source: `/${html}`, destination, permanent: false },
       ]),
-      { source: '/manufacturing/orders', destination: '/manufacturing/bom', permanent: false },
+      { source: '/manufacturing/orders', destination: '/manufacturing/machine-maintenance', permanent: false },
+      { source: '/manufacturing/bom', destination: '/manufacturing/machine-maintenance', permanent: false },
     ];
   },
 };

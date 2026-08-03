@@ -22,6 +22,8 @@ export type InvoiceFormValues = {
   terms: string;
   docDiscountOverride: number | null;
   docTaxOverride: number | null;
+  includeSignature: boolean;
+  signatureId: string | null;
   items: InvoiceLineItem[];
 };
 
@@ -31,6 +33,13 @@ export type InvoiceTotals = {
   discountAmount: number;
   taxAmount: number;
   total: number;
+};
+
+export type InvoiceSignaturePrint = {
+  imageDataUrl: string;
+  signerName: string;
+  designation?: string;
+  label?: string;
 };
 
 export type InvoicePayload = InvoiceFormValues & {
@@ -43,6 +52,7 @@ export type InvoicePayload = InvoiceFormValues & {
   shippingAddress?: string;
   customerEmail?: string;
   customerPhone?: string;
+  signature?: InvoiceSignaturePrint | null;
 };
 
 export const EMPTY_INVOICE_FORM: InvoiceFormValues = {
@@ -56,6 +66,8 @@ export const EMPTY_INVOICE_FORM: InvoiceFormValues = {
   terms: '',
   docDiscountOverride: null,
   docTaxOverride: null,
+  includeSignature: false,
+  signatureId: null,
   items: [createEmptyLineItem()],
 };
 

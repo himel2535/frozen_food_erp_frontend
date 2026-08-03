@@ -1,5 +1,6 @@
 import type { AppState } from '@/lib/state/types';
 import { getCustomerProfile } from '@/lib/services/crm-service';
+import { resolveInvoiceSignature } from '@/lib/services/settings-service';
 import type { InvoicePayload } from '@/components/modules/sales/invoice-form/inv-form-types';
 import { computeInvoiceTotalsFromItems, createEmptyLineItem, recalcLineItem } from '@/components/modules/sales/invoice-form/inv-form-types';
 
@@ -33,6 +34,7 @@ export function enrichPrintPayload(appState: AppState, payload: InvoicePayload):
     shippingAddress: payload.shippingAddress || formatAddress(shipping) || payload.billingAddress,
     customerEmail: payload.customerEmail || String(primary?.email ?? ''),
     customerPhone: payload.customerPhone || String(primary?.phone ?? ''),
+    signature: resolveInvoiceSignature(appState, payload.includeSignature, payload.signatureId),
   };
 }
 
@@ -72,6 +74,8 @@ export function buildPrintPayloadFromRow(
     terms: String(row.terms ?? row.paymentTerms ?? ''),
     docDiscountOverride: null,
     docTaxOverride: null,
+    includeSignature: Boolean(row.includeSignature),
+    signatureId: row.signatureId ? String(row.signatureId) : null,
     items: lineItems.length ? lineItems : [createEmptyLineItem()],
     invoiceNo: String(row.id),
     totals,

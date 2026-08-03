@@ -2,10 +2,12 @@
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useMemo } from 'react';
 import { Search, User, Settings, LogOut } from 'lucide-react';
 import { Icon } from '@iconify/react';
 import { useAppStore } from '@/lib/state/app-store';
+import { getProfileView } from '@/lib/services/settings-service';
+import { employeeInitials } from '@/lib/services/hrm-service';
 
 interface HeaderProps {
   title?: string;
@@ -13,12 +15,18 @@ interface HeaderProps {
 
 export function Header({ title }: HeaderProps) {
   const router = useRouter();
+  const appState = useAppStore((s) => s.appState);
   const toggleLanguage = useAppStore((s) => s.toggleLanguage);
   const setLoggedIn = useAppStore((s) => s.setLoggedIn);
   const lang = useAppStore((s) => s.appState.lang);
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const displayTitle = title && title !== 'Enterprise Workspace' ? title : 'Toys Factory Operations Hub';
+
+  const profile = useMemo(() => getProfileView(appState), [appState]);
+  const userName = profile.name || 'User';
+  const userEmail = profile.email || '';
+  const userInitials = employeeInitials(userName);
 
   useEffect(() => {
     const handler = (e: MouseEvent) => {
@@ -122,14 +130,14 @@ export function Header({ title }: HeaderProps) {
             className="h-9 w-9 rounded-full bg-gradient-to-br from-amber-500 via-amber-600 to-amber-700 text-white flex items-center justify-center font-black text-xs shadow-md shadow-amber-500/25 border-2 border-white hover:scale-105 transition-all cursor-pointer focus:outline-none"
             title="User Profile"
           >
-            JD
+            {userInitials}
           </button>
 
           {menuOpen && (
             <div className="absolute right-0 top-full mt-2 w-52 rounded-2xl bg-white/95 backdrop-blur-2xl border border-white/90 shadow-2xl z-50 p-1.5 space-y-1">
               <div className="p-2.5 border-b border-slate-100/80 bg-amber-50/50 rounded-xl mb-1">
-                <p className="text-xs font-extrabold text-slate-900">John Doe</p>
-                <p className="text-[11px] font-medium text-slate-400 truncate">admin@toysfactory.com</p>
+                <p className="text-xs font-extrabold text-slate-900">{userName}</p>
+                <p className="text-[11px] font-medium text-slate-400 truncate">{userEmail || 'No email set'}</p>
               </div>
               <Link
                 href="/settings/profile"

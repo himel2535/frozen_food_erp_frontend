@@ -528,7 +528,7 @@ export function InventoryProductionCapacityView({
                 Create production order for <span className="font-bold">{capacity.maxProducibleUnits.toLocaleString()} {unit}</span> with available materials.
               </p>
               <Link
-                href="/manufacturing/bom"
+                href="/purchases/recipes"
                 className="inline-flex items-center gap-1.5 text-xs font-bold text-blue-700 border border-blue-200 bg-blue-50 hover:bg-blue-100 px-3 py-2 rounded-xl cursor-pointer"
               >
                 Create Production Order

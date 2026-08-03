@@ -123,12 +123,6 @@ export const PORT_CONFIGS: Record<string, PortModuleConfig> = {
     { key: 'notes', label: 'Notes', type: 'textarea', advanced: true },
   ]),
 
-  'manufacturing-bom': stateModule('manufacturing-bom', 'bom', 'BOM', [
-    { key: 'product', label: 'Product', type: 'text', required: true },
-    { key: 'status', label: 'Status', type: 'select', options: ['active', 'inactive'] },
-    { key: 'notes', label: 'Notes', type: 'textarea', advanced: true },
-  ]),
-
   'manufacturing-machine-maintenance': stateModule('manufacturing-machine-maintenance', 'machineMaintenance', 'MM', [
     { key: 'machine', label: 'Machine', type: 'text', required: true },
     { key: 'status', label: 'Status', type: 'select', options: ['scheduled', 'in-progress', 'completed'] },

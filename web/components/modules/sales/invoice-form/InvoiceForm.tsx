@@ -8,6 +8,7 @@ import {
   FileText,
   MapPin,
   Package,
+  PenLine,
   Plus,
   Printer,
   Save,
@@ -48,6 +49,8 @@ import {
 } from '@/components/modules/sales/invoice-form/inv-form-types';
 import type { AppState } from '@/lib/state/types';
 import { listInventoryProductOptions } from '@/lib/services/sales-service';
+import { getCompanySignatures, getDefaultSignature } from '@/lib/services/settings-service';
+import { useAppStore } from '@/lib/state/app-store';
 
 export type InvoiceSaveAction = 'draft' | 'sent';
 
@@ -77,6 +80,10 @@ export function InvoiceForm({
   const [saveMenuOpen, setSaveMenuOpen] = useState(false);
   const saveActionRef = useRef<InvoiceSaveAction>('draft');
   const formRef = useRef<HTMLFormElement>(null);
+  const t = useAppStore((s) => s.t);
+
+  const signatures = useMemo(() => getCompanySignatures(appState), [appState]);
+  const defaultSignature = useMemo(() => getDefaultSignature(appState), [appState]);
 
   const productOptions = useMemo(() => listInventoryProductOptions(appState), [appState]);
 
@@ -313,6 +320,85 @@ export function InvoiceForm({
               onEditTax={handleEditTax}
             />
           </div>
+
+          <InvoiceFormSectionCard
+            compact
+            title="Authorized Signature"
+            icon={<PenLine className="w-4 h-4" />}
+          >
+            <div className="space-y-4">
+              <label className="flex items-center justify-between gap-3 py-1 cursor-pointer">
+                <span className="text-sm font-semibold text-slate-800">
+                  {t('settings.signatures_include_on_invoice')}
+                </span>
+                <input
+                  type="checkbox"
+                  checked={form.includeSignature}
+                  onChange={(e) => {
+                    const checked = e.target.checked;
+                    updateForm({
+                      includeSignature: checked,
+                      signatureId: checked
+                        ? (form.signatureId || defaultSignature?.id || signatures[0]?.id || null)
+                        : form.signatureId,
+                    });
+                  }}
+                  className="w-5 h-5 rounded border-slate-300 text-blue-600 cursor-pointer"
+                />
+              </label>
+
+              {signatures.length === 0 ? (
+                <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50/70 p-4">
+                  <p className="text-xs font-medium text-slate-500">
+                    {t('settings.signatures_no_signatures')}
+                  </p>
+                  <Link
+                    href="/settings/signatures"
+                    className="inline-flex mt-2 text-xs font-bold text-blue-600 hover:text-blue-700 cursor-pointer"
+                  >
+                    {t('settings.signatures_manage_link')} →
+                  </Link>
+                </div>
+              ) : (
+                <div className={`space-y-3 ${form.includeSignature ? '' : 'opacity-60 pointer-events-none'}`}>
+                  <label className={`${INV_LABEL_CLS} block`}>{t('settings.signatures_select_signature')}</label>
+                  <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-2">
+                    {signatures.map((signature) => {
+                      const selected = form.signatureId === signature.id;
+                      return (
+                        <button
+                          key={signature.id}
+                          type="button"
+                          onClick={() => updateForm({ signatureId: signature.id, includeSignature: true })}
+                          className={`rounded-xl border p-3 text-left cursor-pointer transition-colors ${
+                            selected
+                              ? 'border-blue-300 bg-blue-50/70 ring-2 ring-blue-200'
+                              : 'border-slate-200 bg-white hover:border-slate-300'
+                          }`}
+                        >
+                          <div
+                            className="h-14 flex items-center justify-center rounded-lg mb-2"
+                            style={{
+                              backgroundImage:
+                                'linear-gradient(45deg, #f8fafc 25%, transparent 25%), linear-gradient(-45deg, #f8fafc 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #f8fafc 75%), linear-gradient(-45deg, transparent 75%, #f8fafc 75%)',
+                              backgroundSize: '12px 12px',
+                            }}
+                          >
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img src={signature.imageDataUrl} alt="" className="max-h-10 object-contain" />
+                          </div>
+                          <p className="text-xs font-bold text-slate-800 truncate">{signature.signerName}</p>
+                          <p className="text-[10px] font-medium text-slate-500 truncate">
+                            {signature.designation || signature.label}
+                          </p>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+            </div>
+          </InvoiceFormSectionCard>
         </div>
 
         <div className={INV_FOOTER_CLS}>

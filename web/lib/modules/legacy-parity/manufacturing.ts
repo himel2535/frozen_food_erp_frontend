@@ -3,7 +3,6 @@
 import {
   listProductionOrders, createProductionOrder, updateProductionOrder, deleteProductionOrder,
   startProductionOrder, completeProductionOrder,
-  listBom, createBomEntry, updateBomEntry, deleteBomEntry,
   crudFactory,
 } from '@/lib/services/manufacturing-service';
 import { adapter, money, React, toast, confirmAction, type DedicatedModuleConfig } from './shared';
@@ -45,31 +44,6 @@ export const CONFIGS: Record<string, DedicatedModuleConfig> = {
       delete: deleteProductionOrder,
       getInitialForm: () => ({ startDate: new Date().toISOString().split('T')[0], status: 'Planned' }),
     }),
-  },
-
-  'manufacturing-bom': {
-    id: 'manufacturing-bom',
-    title: 'Raw Materials BOM',
-    subtitle: 'Define bill of materials for production.',
-    addLabel: 'Add BOM',
-    searchKeys: ['product', 'id'],
-    columns: [
-      { key: 'id', label: 'BOM #' },
-      { key: 'product', label: 'Product' },
-      { key: 'material', label: 'Material' },
-      { key: 'qty', label: 'Qty Required' },
-      { key: 'status', label: 'Status' },
-    ],
-    fields: [
-      { key: 'product', label: 'Finished Product', type: 'text', required: true },
-      { key: 'material', label: 'Raw Material', type: 'text', required: true },
-      { key: 'qty', label: 'Qty Required', type: 'number', required: true },
-      { key: 'uom', label: 'Unit', type: 'text' },
-      { key: 'status', label: 'Status', type: 'select', options: ['active', 'inactive'] },
-      { key: 'notes', label: 'Notes', type: 'textarea', advanced: true },
-    ],
-    kpi: (rows) => [{ key: 'total', label: 'BOM Lines', value: String(rows.length) }],
-    adapter: adapter({ list: listBom, create: createBomEntry, update: updateBomEntry, delete: deleteBomEntry }),
   },
 
   'manufacturing-machine-maintenance': {

@@ -1,5 +1,77 @@
 export type Lang = 'en' | 'bn';
 
+export interface CurrentUserProfile {
+  id: string;
+  name: string;
+  email?: string;
+  phone?: string;
+  role: string;
+  branch: string;
+  territory?: string;
+  employeeId?: string;
+  timezone?: string;
+  dateFormat?: string;
+  bio?: string;
+  emergencyContact?: string;
+  emergencyPhone?: string;
+  notifyEmail?: boolean;
+  notifyPush?: boolean;
+  memberSince?: string;
+  lastActive?: string;
+  twoFactorEnabled?: boolean;
+  profileUpdateCount?: number;
+  lastPasswordChangeDays?: number;
+  logins30Days?: number;
+  sessionDetail?: string;
+}
+
+export interface CompanyProfile {
+  name: string;
+  legalName?: string;
+  industry?: string;
+  registrationNo?: string;
+  phone?: string;
+  email?: string;
+  website?: string;
+  currency?: string;
+  timezone?: string;
+  fiscalYearStart?: string;
+  taxId?: string;
+  vatNumber?: string;
+  street?: string;
+  city?: string;
+  state?: string;
+  postalCode?: string;
+  country?: string;
+  invoicePrefix?: string;
+  letterheadFooter?: string;
+  paymentTermsNote?: string;
+  establishedYear?: string;
+  dateFormat?: string;
+  currencySymbol?: string;
+  numberFormat?: string;
+  language?: string;
+  itemsPerPage?: number;
+  theme?: string;
+  defaultLandingPage?: string;
+  notificationEmail?: string;
+  autoBackupEnabled?: boolean;
+  sessionTimeoutMinutes?: number;
+  twoFactorEnabled?: boolean;
+  documents?: Array<{ id: string; name: string; type: string }>;
+}
+
+export interface CompanySignature {
+  id: string;
+  label: string;
+  signerName: string;
+  designation?: string;
+  imageDataUrl: string;
+  isDefault?: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface AppState {
   isLoggedIn: boolean;
   sidebarCollapsed: boolean;
@@ -41,7 +113,9 @@ export interface AppState {
   purchaseRmOrders?: Array<Record<string, unknown>>;
   approvals?: Array<Record<string, unknown>>;
   salesOrders?: Array<Record<string, unknown>>;
-  currentUser?: Record<string, unknown>;
+  currentUser?: CurrentUserProfile;
+  companyProfile?: CompanyProfile;
+  companySignatures?: CompanySignature[];
   crmUi?: Record<string, unknown>;
   crmData?: Record<string, unknown>;
   [key: string]: unknown;

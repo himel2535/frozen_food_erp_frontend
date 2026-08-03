@@ -12,7 +12,6 @@ const DOMAIN_BY_ID: Record<string, LegacyDomain> = {
   'purchases-returns': 'purchases',
   'purchases-recipes': 'purchases',
   'manufacturing-orders': 'manufacturing',
-  'manufacturing-bom': 'manufacturing',
   'manufacturing-machine-maintenance': 'manufacturing',
   'manufacturing-mold-management': 'manufacturing',
   'manufacturing-wastage': 'manufacturing',

@@ -7,10 +7,6 @@ export function listProductionOrders(state: AppState) {
   return listFromState(state, 'productionOrders');
 }
 
-export function listBom(state: AppState) {
-  return listFromState(state, 'bom');
-}
-
 export function listMachineMaintenance(state: AppState) {
   return listFromState(state, 'machineMaintenance');
 }
@@ -60,18 +56,6 @@ export function completeProductionOrder(state: AppState, id: string) {
     actualQuantity: Number(record.plannedQuantity ?? record.qty ?? 0),
     endDate: new Date().toISOString().split('T')[0],
   });
-}
-
-export function createBomEntry(state: AppState, payload: Row) {
-  return createInState(state, 'bom', payload, 'BOM');
-}
-
-export function updateBomEntry(state: AppState, id: string, payload: Row) {
-  return updateInState(state, 'bom', id, payload);
-}
-
-export function deleteBomEntry(state: AppState, id: string) {
-  return deleteFromState(state, 'bom', id);
 }
 
 export function crudFactory(stateKey: string, prefix: string) {

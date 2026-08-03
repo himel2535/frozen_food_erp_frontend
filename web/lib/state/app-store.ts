@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { DEFAULT_STATE, LOCAL_STORAGE_KEY } from './default-state';
 import type { AppState, Lang } from './types';
 import { ensureCrmState } from '../services/crm-service';
+import { ensureSettingsState } from '../services/settings-service';
 import { ensureBnTranslations, translate as translateKey } from '../i18n/translations';
 
 type FirebaseApi = typeof import('../firebase');
@@ -41,6 +42,7 @@ function hydrateAppState(state: Partial<AppState> | null): AppState {
   if (!nextState.approvals) nextState.approvals = DEFAULT_STATE.approvals;
   if (!nextState.lang) nextState.lang = 'en';
   ensureCrmState(nextState);
+  ensureSettingsState(nextState);
   return nextState;
 }
 

@@ -2,7 +2,8 @@
 
 import { toast, confirmAction } from '@/lib/ui/feedback';
 
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { Download, Plus } from 'lucide-react';
 import { Footer } from '@/components/layout/Footer';
 import { FilterTabs } from '@/components/shared/FilterTabs';
@@ -39,6 +40,7 @@ import {
   enrichPrintPayload,
   exportInvoicesCsv,
 } from '@/components/modules/sales/invoice-list/invoice-list-utils';
+import { getDefaultSignature, getCompanySignatures } from '@/lib/services/settings-service';
 
 const STATUS_TABS = [
   { id: 'all', label: 'All' },
@@ -76,6 +78,8 @@ function recordToFormValues(record: Record<string, unknown>): InvoiceFormValues 
     terms: String(record.terms ?? record.paymentTerms ?? ''),
     docDiscountOverride: record.discountAmount != null ? Number(record.discountAmount) : null,
     docTaxOverride: record.taxAmount != null ? Number(record.taxAmount) : null,
+    includeSignature: Boolean(record.includeSignature),
+    signatureId: record.signatureId ? String(record.signatureId) : null,
     items,
   };
 }
@@ -97,6 +101,8 @@ function payloadToRecord(payload: InvoicePayload, id?: string) {
     items: payload.items,
     docDiscountOverride: payload.docDiscountOverride,
     docTaxOverride: payload.docTaxOverride,
+    includeSignature: payload.includeSignature,
+    signatureId: payload.signatureId,
     subtotal: payload.totals.subtotal,
     discountAmount: payload.totals.discountAmount,
     taxAmount: payload.totals.taxAmount,
@@ -105,8 +111,11 @@ function payloadToRecord(payload: InvoicePayload, id?: string) {
 }
 
 export function InvoicesPage() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const appState = useAppStore((s) => s.appState);
   const saveAppState = useAppStore((s) => s.saveAppState);
+  const t = useAppStore((s) => s.t);
   const [view, setView] = useState<'main' | 'form'>('main');
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
@@ -167,6 +176,36 @@ export function InvoicesPage() {
     resetForm();
     setView('form');
   };
+
+  useEffect(() => {
+    if (searchParams.get('create') !== '1') return;
+
+    setEditingId(null);
+
+    if (searchParams.get('signature') === '1') {
+      const defaultSig = getDefaultSignature(appState);
+      const fallbackSig = getCompanySignatures(appState)[0] ?? null;
+      const signatureId = defaultSig?.id ?? fallbackSig?.id ?? null;
+      setFormValues({
+        ...EMPTY_INVOICE_FORM,
+        items: [createEmptyLineItem()],
+        includeSignature: Boolean(signatureId),
+        signatureId,
+      });
+    } else {
+      setFormValues({ ...EMPTY_INVOICE_FORM, items: [createEmptyLineItem()] });
+    }
+
+    setFormKey((k) => k + 1);
+    setView('form');
+
+    toast.info(t('settings.signatures_invoice_opened_toast'), {
+      module: 'Invoices',
+      description: t('settings.signatures_invoice_opened_desc'),
+    });
+
+    router.replace('/sales/invoices');
+  }, [searchParams, appState, router, t]);
 
   const openEdit = (row: Record<string, unknown>) => {
     setEditingId(String(row.id));
