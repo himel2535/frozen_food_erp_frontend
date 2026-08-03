@@ -136,6 +136,7 @@ export const bn = {
     "sidebar.bom": "উপাদান তালিকা (BOM)",
     "sidebar.products": "পণ্য",
     "sidebar.orders": "অর্ডার",
+    "sidebar.purchase-orders": "ক্রয় অর্ডার",
     "sidebar.customers": "গ্রাহক",
     "sidebar.leads": "সম্ভাব্য গ্রাহক",
     "sidebar.deals": "চুক্তি ও পাইপলাইন",

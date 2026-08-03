@@ -119,7 +119,7 @@ export function PoSupplierDetailsCard({
 
       {supplierId ? (
         <Link
-          href="/purchases/suppliers"
+          href={`/purchases/suppliers/${supplierId}`}
           className="inline-flex items-center gap-1 text-[11px] font-bold text-blue-600 hover:text-blue-700 cursor-pointer mt-auto pt-2"
         >
           View Full Profile <ExternalLink className="w-3 h-3" />

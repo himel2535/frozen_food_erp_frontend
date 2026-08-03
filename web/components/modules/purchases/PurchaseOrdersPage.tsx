@@ -1,241 +1,299 @@
 'use client';
 
-import { toast, confirmAction } from '@/lib/ui/feedback';
 
-import { useMemo, useState } from 'react';
+
+import { useEffect, useMemo, useState } from 'react';
+
 import { useRouter } from 'next/navigation';
+
+import { Icon } from '@iconify/react';
+
 import { Plus } from 'lucide-react';
+
 import { Footer } from '@/components/layout/Footer';
-import { FilterTabs } from '@/components/shared/FilterTabs';
-import { KpiCards } from '@/components/shared/KpiCards';
-import { AppTable, type AppTableColumn } from '@/components/shared/AppTable';
-import { StatusBadge } from '@/components/shared/StatusBadge';
-import { TableIconAction } from '@/components/shared/TableIconAction';
+
 import { MODULE_LIST_SHELL } from '@/lib/ui/module-layout';
-import { CF_BTN_PRIMARY } from '@/components/modules/crm/customer-form/customer-form-styles';
+
 import { useAppStore } from '@/lib/state/app-store';
+
 import {
-  cancelPurchaseOrder,
-  deletePurchaseOrder,
-  formatMoney,
+
   getPurchaseOrderMetrics,
+
   listPurchases,
-  receivePurchaseOrder,
-  sendPurchaseOrder,
+
+  listSuppliers,
+
 } from '@/lib/services/purchases-service';
-import type { PoLineItem } from '@/lib/services/purchases-service';
 
-const STATUS_TABS = [
-  { id: 'all', label: 'All' },
-  { id: 'draft', label: 'Draft' },
-  { id: 'sent', label: 'Sent' },
-  { id: 'received', label: 'Received' },
-];
+import { PurchaseOrdersMetrics } from './purchase-orders/PurchaseOrdersMetrics';
 
-function summarizeItems(row: Record<string, unknown>): string {
-  const items = Array.isArray(row.items) ? (row.items as PoLineItem[]) : [];
-  if (items.length) {
-    const active = items.filter((i) => i.description?.trim() || i.productId);
-    if (!active.length) return '—';
-    if (active.length === 1) return active[0].description || '1 item';
-    const first = active[0].description || 'Item';
-    return `${first} +${active.length - 1} more`;
-  }
-  const product = String(row.product ?? '').trim();
-  return product || '—';
-}
+import { PurchaseOrdersFilterBar } from './purchase-orders/PurchaseOrdersFilterBar';
+
+import { PurchaseOrdersTable } from './purchase-orders/PurchaseOrdersTable';
+
+import { PurchaseOrdersDetailSidebar } from './purchase-orders/PurchaseOrdersDetailSidebar';
+
+import { PurchaseOrdersDetailPanel } from './purchase-orders/PurchaseOrdersDetailPanel';
+
+import { poFirstItemLabel } from './purchase-orders/purchase-orders-utils';
+
+import { PO_BTN_PRIMARY, PO_CARD_CLS } from './purchase-orders/purchase-orders-styles';
+
+
 
 export function PurchaseOrdersPage() {
+
   const router = useRouter();
+
   const appState = useAppStore((s) => s.appState);
+
   const saveAppState = useAppStore((s) => s.saveAppState);
+
   const [search, setSearch] = useState('');
+
   const [statusFilter, setStatusFilter] = useState('all');
+
+  const [supplierFilter, setSupplierFilter] = useState('');
+
+  const [paymentFilter, setPaymentFilter] = useState('');
+
+  const [dateFrom, setDateFrom] = useState('');
+
+  const [dateTo, setDateTo] = useState('');
+
+  const [selectedPoId, setSelectedPoId] = useState<string | null>(null);
+
+  const [bottomTab, setBottomTab] = useState('items');
+
+
 
   const allRows = useMemo(() => listPurchases(appState), [appState]);
 
-  const rows = useMemo(() => {
-    let data = allRows;
-    if (search) {
-      const q = search.toLowerCase();
-      data = data.filter((row) =>
-        `${row.id} ${row.supplier} ${row.product} ${summarizeItems(row)}`.toLowerCase().includes(q),
-      );
-    }
-    if (statusFilter !== 'all') {
-      data = data.filter((row) => String(row.status).toLowerCase() === statusFilter);
-    }
-    return data;
-  }, [allRows, search, statusFilter]);
+  const suppliers = useMemo(
 
-  const kpis = useMemo(() => {
-    const m = getPurchaseOrderMetrics(allRows);
-    return [
-      { key: 'spend', label: 'Total Procured Spend', value: formatMoney(m.totalSpend) },
-      { key: 'pending', label: 'Pending POs', value: String(m.pending) },
-      { key: 'received', label: 'Received POs', value: String(m.received) },
-      { key: 'draft', label: 'Draft POs', value: String(m.draft) },
-    ];
-  }, [allRows]);
+    () => listSuppliers(appState).map((s) => ({ id: String(s.id), name: String(s.name ?? s.id) })),
+
+    [appState],
+
+  );
+
+
+
+  const rows = useMemo(() => {
+
+    let data = allRows;
+
+    if (search) {
+
+      const q = search.toLowerCase();
+
+      data = data.filter((row) => {
+
+        const { primary } = poFirstItemLabel(row);
+
+        return `${row.id} ${row.supplier} ${row.supplierName} ${row.reference} ${primary}`
+
+          .toLowerCase()
+
+          .includes(q);
+
+      });
+
+    }
+
+    if (statusFilter !== 'all') {
+
+      data = data.filter((row) => String(row.status).toLowerCase() === statusFilter);
+
+    }
+
+    if (supplierFilter) {
+
+      data = data.filter((row) => String(row.supplierId) === supplierFilter);
+
+    }
+
+    if (paymentFilter) {
+
+      data = data.filter((row) => String(row.paymentStatus ?? 'unpaid') === paymentFilter);
+
+    }
+
+    if (dateFrom) {
+
+      data = data.filter((row) => String(row.date) >= dateFrom);
+
+    }
+
+    if (dateTo) {
+
+      data = data.filter((row) => String(row.date) <= dateTo);
+
+    }
+
+    return data.sort((a, b) => String(b.date).localeCompare(String(a.date)));
+
+  }, [allRows, search, statusFilter, supplierFilter, paymentFilter, dateFrom, dateTo]);
+
+
+
+  useEffect(() => {
+
+    if (!rows.length) {
+
+      setSelectedPoId(null);
+
+      return;
+
+    }
+
+    if (!selectedPoId || !rows.some((r) => String(r.id) === selectedPoId)) {
+
+      setSelectedPoId(String(rows[0].id));
+
+    }
+
+  }, [rows, selectedPoId]);
+
+
+
+  const metrics = useMemo(() => getPurchaseOrderMetrics(allRows), [allRows]);
+
+  const selectedPo = rows.find((r) => String(r.id) === selectedPoId) ?? null;
+
+
 
   const save = () => saveAppState();
 
-  const columns = useMemo<AppTableColumn<Record<string, unknown>>[]>(() => [
-    {
-      key: 'id',
-      label: 'PO ID',
-      render: (row) => <span className="font-bold text-slate-900">{String(row.id)}</span>,
-    },
-    {
-      key: 'supplier',
-      label: 'Supplier',
-      render: (row) => String(row.supplier ?? row.supplierName ?? '—'),
-    },
-    {
-      key: 'items',
-      label: 'Items',
-      render: (row) => <span className="text-slate-600">{summarizeItems(row)}</span>,
-    },
-    {
-      key: 'total',
-      label: 'Total',
-      render: (row) => <span className="font-bold">{formatMoney(Number(row.total ?? 0))}</span>,
-    },
-    {
-      key: 'date',
-      label: 'Date',
-      render: (row) => String(row.date ?? '—'),
-    },
-    {
-      key: 'status',
-      label: 'Status',
-      render: (row) => <StatusBadge status={String(row.status)} />,
-    },
-  ], []);
 
-  const renderRowActions = (row: Record<string, unknown>) => {
-    const id = String(row.id);
-    const status = String(row.status);
-    const btnCls = 'font-bold cursor-pointer text-[10px]';
-    const actions: React.ReactNode[] = [];
-
-    if (status === 'Draft') {
-      actions.push(
-        <button
-          key="send"
-          type="button"
-          className={`text-blue-600 ${btnCls}`}
-          onClick={() => {
-            const r = sendPurchaseOrder(appState, id);
-            if (r.ok) save();
-            else toast.error('Operation failed', { module: 'Purchases', description: 'error' in r ? String(r.error) : 'Send failed' });
-          }}
-        >
-          Send
-        </button>,
-      );
-    }
-    if (status === 'Sent') {
-      actions.push(
-        <button
-          key="recv"
-          type="button"
-          className={`text-emerald-600 ${btnCls}`}
-          onClick={() => {
-            const r = receivePurchaseOrder(appState, id);
-            if (r.ok) save();
-            else toast.error('Operation failed', { module: 'Purchases', description: 'error' in r ? String(r.error) : 'Receive failed' });
-          }}
-        >
-          Receive
-        </button>,
-      );
-    }
-    if (status === 'Draft' || status === 'Sent') {
-      actions.push(
-        <button
-          key="cancel"
-          type="button"
-          className={`text-slate-500 ${btnCls}`}
-          onClick={async () => {
-            const ok = await confirmAction({
-              title: 'Cancel PO',
-              message: 'Cancel this purchase order?',
-              confirmLabel: 'Cancel PO',
-              tone: 'danger',
-              module: 'Purchases',
-            });
-            if (!ok) return;
-            const r = cancelPurchaseOrder(appState, id);
-            if (r.ok) save();
-          }}
-        >
-          Cancel
-        </button>,
-      );
-    }
-
-    return (
-      <div className="flex flex-wrap items-center gap-2">
-        <TableIconAction variant="edit" onClick={() => router.push(`/purchases/orders/${id}/edit`)} />
-        {actions.length > 0 && <span className="text-slate-300">|</span>}
-        {actions}
-      </div>
-    );
-  };
-
-  const handleDelete = async (id: string) => {
-    const __ok = await confirmAction({ title: "Delete this purchase order", message: "Delete this purchase order?", confirmLabel: 'Delete', tone: 'danger', module: 'Purchases' }); if (!__ok) return;
-    deletePurchaseOrder(appState, id);
-    saveAppState();
-  };
 
   return (
+
     <div className={MODULE_LIST_SHELL}>
-      <div className="flex flex-col xl:flex-row xl:items-center xl:justify-between gap-4">
-        <div>
-          <h2 className="text-xl font-extrabold text-slate-900 tracking-tight">Purchase Orders</h2>
-          <p className="text-xs text-slate-500 mt-1 font-medium max-w-2xl">
-            Create and track purchase orders with supplier workflows.
-          </p>
+
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+
+        <div className="flex items-start gap-3">
+
+          <span className="inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-amber-50 text-amber-600 shrink-0">
+
+            <Icon icon="fluent-color:document-add-24" width={28} height={28} />
+
+          </span>
+
+          <div>
+
+            <h1 className="text-lg font-bold text-slate-900">Purchase Orders</h1>
+
+            <p className="text-xs text-slate-500 mt-0.5">Create and track purchase orders with supplier workflows.</p>
+
+          </div>
+
         </div>
+
         <button
+
           type="button"
+
           onClick={() => router.push('/purchases/orders/new')}
-          className={CF_BTN_PRIMARY}
+
+          className={`${PO_BTN_PRIMARY} self-start`}
+
         >
-          <Plus className="w-4 h-4" /> Create PO
+
+          <Plus className="w-4 h-4" />
+
+          Create PO
+
         </button>
+
       </div>
 
-      <KpiCards items={kpis} gridClassName="mt-4 grid grid-cols-2 md:grid-cols-4 gap-2" />
 
-      <div className="mt-4 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
-        <FilterTabs tabs={STATUS_TABS} active={statusFilter} onChange={setStatusFilter} />
-        <input
-          type="search"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          placeholder="Search PO ID, supplier, items..."
-          className="w-full lg:w-72 px-3 py-2 rounded-xl border border-slate-200 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400"
+
+      <PurchaseOrdersMetrics metrics={metrics} />
+
+
+
+      <div className={PO_CARD_CLS}>
+
+        <PurchaseOrdersFilterBar
+
+          search={search}
+
+          statusFilter={statusFilter}
+
+          supplierFilter={supplierFilter}
+
+          paymentFilter={paymentFilter}
+
+          dateFrom={dateFrom}
+
+          dateTo={dateTo}
+
+          suppliers={suppliers}
+
+          onSearchChange={setSearch}
+
+          onStatusChange={setStatusFilter}
+
+          onSupplierChange={setSupplierFilter}
+
+          onPaymentChange={setPaymentFilter}
+
+          onDateFromChange={setDateFrom}
+
+          onDateToChange={setDateTo}
+
         />
+
       </div>
 
-      <div className="mt-4 premium-card overflow-hidden">
-        <AppTable
-          columns={columns}
+
+
+      <div className="grid grid-cols-1 xl:grid-cols-[1fr_300px] gap-4 items-stretch">
+
+        <PurchaseOrdersTable
+
           rows={rows}
-          rowKey={(row) => String(row.id)}
-          renderActions={(row) => (
-            <div className="flex items-center gap-2">
-              {renderRowActions(row)}
-              <TableIconAction variant="delete" onClick={() => handleDelete(String(row.id))} />
-            </div>
-          )}
+
+          selectedPoId={selectedPoId}
+
+          appState={appState}
+
+          onSelect={setSelectedPoId}
+
+          onSave={save}
+
         />
+
+        {selectedPo && (
+
+          <PurchaseOrdersDetailSidebar po={selectedPo} appState={appState} />
+
+        )}
+
       </div>
+
+
+
+      {selectedPo && (
+        <PurchaseOrdersDetailPanel
+          po={selectedPo}
+          appState={appState}
+          bottomTab={bottomTab}
+          onTabChange={setBottomTab}
+        />
+      )}
+
+
 
       <Footer />
+
     </div>
+
   );
+
 }
+

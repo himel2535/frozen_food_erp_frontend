@@ -251,12 +251,62 @@ export function cancelPurchaseOrder(state: AppState, id: string) {
   return updateInState(state, 'purchases', id, { status: 'Cancelled' });
 }
 
+export function getPurchaseOrderSupplierProfile(state: AppState, supplierId: string) {
+  const supplier = listSuppliers(state).find((s) => String(s.id) === supplierId);
+  if (!supplier) return null;
+
+  const orders = listPurchases(state).filter((o) => String(o.supplierId) === supplierId);
+  const lastOrder = orders.sort((a, b) => String(b.date).localeCompare(String(a.date)))[0];
+  const outstanding = Number(supplier.due ?? supplier.balance ?? 0);
+  const creditLimit = Number(supplier.creditLimit ?? 100000);
+
+  return {
+    id: String(supplier.id),
+    name: String(supplier.name ?? ''),
+    rating: Number(supplier.rating ?? 4),
+    status: String(supplier.status ?? 'active'),
+    phone: String(supplier.phone ?? ''),
+    email: String(supplier.email ?? ''),
+    address: String(supplier.address ?? supplier.location ?? 'Dhaka, Bangladesh'),
+    outstanding,
+    creditLimit,
+    lastPurchaseLabel: lastOrder
+      ? `${Math.max(0, Math.floor((Date.now() - new Date(String(lastOrder.date)).getTime()) / 86400000))} Days Ago`
+      : '—',
+    lastPoId: lastOrder ? String(lastOrder.id) : '—',
+    paymentTerms: String(supplier.paymentTerms ?? '30 Days (Credit)'),
+    onTimeDelivery: Number(supplier.onTimeDelivery ?? 96),
+  };
+}
+
+export function listDueEntries(state: AppState) {
+  return listFromState(state, 'dueEntries');
+}
+
+export function findBillsForPurchaseOrder(state: AppState, po: Row) {
+  const poId = String(po.id);
+  const vendorBills = listVendorBills(state).filter(
+    (b) => String(b.ref ?? b.poId ?? b.purchaseOrderId ?? '') === poId,
+  );
+  if (vendorBills.length) return vendorBills;
+
+  const supplierId = String(po.supplierId ?? '');
+  if (!supplierId) return [];
+
+  return listDueEntries(state).filter(
+    (e) => e.type === 'supplier' && String(e.partyId) === supplierId,
+  );
+}
+
 export function getPurchaseOrderMetrics(rows: Row[]) {
   const totalSpend = rows.reduce((s, r) => s + Number(r.total ?? 0), 0);
-  const pending = rows.filter((r) => ['Draft', 'Sent'].includes(String(r.status))).length;
+  const totalCount = rows.length;
+  const sent = rows.filter((r) => String(r.status) === 'Sent').length;
   const received = rows.filter((r) => String(r.status) === 'Received').length;
   const draft = rows.filter((r) => String(r.status) === 'Draft').length;
-  return { totalSpend, pending, received, draft };
+  const pending = rows.filter((r) => ['Draft', 'Sent'].includes(String(r.status))).length;
+  const avgOrderValue = totalCount > 0 ? totalSpend / totalCount : 0;
+  return { totalSpend, totalCount, sent, pending, received, draft, avgOrderValue };
 }
 
 export function listGoodsReceived(state: AppState) { return listFromState(state, 'goodsReceived'); }

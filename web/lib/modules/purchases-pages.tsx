@@ -3,7 +3,7 @@
 import { DedicatedModule } from '@/components/modules/shared/DedicatedModule';
 import { RecipesPage as RecipesBomPage } from '@/components/modules/purchases/RecipesPage';
 
-export function SuppliersPage() { return <DedicatedModule configId="purchases-suppliers" />; }
+export { SuppliersPage } from '@/components/modules/purchases/SuppliersPage';
 export { PurchaseOrdersPage } from '@/components/modules/purchases/PurchaseOrdersPage';
 export { PurchaseRmPage } from '@/components/modules/purchases/PurchaseRmPage';
 export function GoodsReceivedPage() { return <DedicatedModule configId="purchases-goods-received" />; }

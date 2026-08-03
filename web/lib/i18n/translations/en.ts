@@ -135,6 +135,7 @@ export const en = {
     "sidebar.bom": "Bill of Materials (BOM)",
     "sidebar.products": "Products",
     "sidebar.orders": "Orders",
+    "sidebar.purchase-orders": "Purchase Orders",
     "sidebar.customers": "Customers",
     "sidebar.leads": "Leads",
     "sidebar.deals": "Deals & Pipeline",
