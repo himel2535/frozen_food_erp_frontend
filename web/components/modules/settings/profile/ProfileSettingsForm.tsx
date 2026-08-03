@@ -4,7 +4,9 @@ import { Bell, Briefcase, Settings, User } from 'lucide-react';
 import { AdvancedDetailsToggle } from '@/components/shared/AdvancedDetailsToggle';
 import {
   ST_CARD_COMPACT,
-  ST_GRID,
+  ST_FORM_GRID,
+  ST_FORM_GRID_2,
+  ST_FORM_STACK,
   ST_SECTION_HEADER_COMPACT,
   ST_TITLE,
 } from '@/components/modules/settings/settings-styles';
@@ -113,8 +115,8 @@ export function ProfileSettingsForm({
   labels,
 }: ProfileSettingsFormProps) {
   return (
-    <div className="space-y-4">
-      <div className={ST_GRID}>
+    <div className={ST_FORM_STACK}>
+      <div className={ST_FORM_GRID}>
         <SectionCard icon={<User className="w-4 h-4 text-blue-500" />} title={labels.personalSection}>
           <div className={FORM_GRID_CLS}>
             <div>
@@ -241,7 +243,7 @@ export function ProfileSettingsForm({
       </div>
 
       {showAdvanced ? (
-        <div className={ST_GRID}>
+        <div className={ST_FORM_GRID_2}>
           <SectionCard icon={<User className="w-4 h-4 text-slate-500" />} title={labels.advancedSection}>
             <div className="space-y-4">
               <div>

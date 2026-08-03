@@ -7,8 +7,9 @@ import { FormHeader } from '@/components/layout/FormHeader';
 import { ProfileSettingsForm } from '@/components/modules/settings/profile/ProfileSettingsForm';
 import { ProfileSettingsOverview } from '@/components/modules/settings/profile/ProfileSettingsOverview';
 import { profileToForm } from '@/components/modules/settings/profile/profile-form-utils';
-import { MODULE_FORM_SHELL, MODULE_LIST_SHELL } from '@/lib/ui/module-layout';
-import { FORM_BTN_PRIMARY, FORM_BTN_SECONDARY, FORM_FOOTER_CLS } from '@/lib/ui/form-styles';
+import { MODULE_LIST_SHELL } from '@/lib/ui/module-layout';
+import { FORM_BTN_PRIMARY, FORM_BTN_SECONDARY } from '@/lib/ui/form-styles';
+import { ST_FORM_FOOTER } from '@/components/modules/settings/settings-styles';
 import {
   getProfileActivitySummary,
   getProfileMetrics,
@@ -145,14 +146,17 @@ export function ProfileSettingsPage() {
 
   if (view === 'form') {
     return (
-      <div className={MODULE_FORM_SHELL}>
-        <form onSubmit={handleSubmit} className="max-w-5xl mx-auto w-full space-y-4 flex flex-col flex-1">
-          <FormHeader
-            title={labels.editTitle}
-            subtitle={labels.editSubtitle}
-            onBack={closeForm}
-            backLabel={labels.back}
-          />
+      <div className={MODULE_LIST_SHELL}>
+        <form onSubmit={handleSubmit} className="w-full flex flex-col min-h-full pb-4">
+          <div className="pt-3 md:pt-4 mb-3">
+            <FormHeader
+              compact
+              title={labels.editTitle}
+              subtitle={labels.editSubtitle}
+              onBack={closeForm}
+              backLabel={labels.back}
+            />
+          </div>
           <ProfileSettingsForm
             form={form}
             roleLabel={profile.roleLabel}
@@ -166,7 +170,7 @@ export function ProfileSettingsPage() {
             onChange={onChange}
             labels={labels}
           />
-          <div className={`${FORM_FOOTER_CLS} premium-card premium-shadow p-4 rounded-2xl`}>
+          <div className={ST_FORM_FOOTER}>
             <button type="button" onClick={closeForm} className={FORM_BTN_SECONDARY}>
               {labels.cancel}
             </button>

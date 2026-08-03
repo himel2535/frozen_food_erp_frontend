@@ -28,4 +28,13 @@ export const ST_ACCENT_BAR_COMPANY = 'absolute top-0 left-0 right-0 h-[3px] bg-g
 
 export const ST_GRID = 'grid grid-cols-1 xl:grid-cols-2 gap-2';
 
+export const ST_FORM_STACK = 'flex flex-col gap-2 flex-1';
+
+export const ST_FORM_GRID = 'grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-2';
+
+export const ST_FORM_GRID_2 = 'grid grid-cols-1 lg:grid-cols-2 gap-2';
+
+export const ST_FORM_FOOTER =
+  'sticky bottom-0 z-10 flex flex-col sm:flex-row sm:items-center sm:justify-end gap-3 px-4 py-4 -mx-2 md:-mx-4 mt-3 border-t border-slate-200/80 bg-white/85 backdrop-blur-md';
+
 export const ST_SAVE_BAR = 'sticky bottom-0 z-10 premium-card premium-shadow p-4 flex items-center justify-between gap-3 border-t border-slate-100/80 bg-white/95 backdrop-blur-sm';

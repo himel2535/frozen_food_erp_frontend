@@ -4,7 +4,8 @@ import { Building2, Globe, MapPin, Receipt, Settings } from 'lucide-react';
 import type { CompanyEditSection } from '@/components/modules/settings/company/company-form-utils';
 import {
   ST_CARD_COMPACT,
-  ST_GRID,
+  ST_FORM_GRID,
+  ST_FORM_STACK,
   ST_SECTION_HEADER_COMPACT,
   ST_TITLE,
 } from '@/components/modules/settings/settings-styles';
@@ -358,8 +359,8 @@ export function CompanySettingsForm({ section, form, onChange, labels }: Company
   const showBranding = section === 'all';
 
   return (
-    <div className="space-y-4">
-      <div className={section === 'all' ? ST_GRID : 'space-y-4'}>
+    <div className={ST_FORM_STACK}>
+      <div className={section === 'all' ? ST_FORM_GRID : ST_FORM_STACK}>
         {showIdentity ? <IdentityFields form={form} onChange={onChange} labels={labels} /> : null}
         {showBusiness ? <BusinessFields form={form} onChange={onChange} labels={labels} /> : null}
         {showTax ? <TaxFields form={form} onChange={onChange} labels={labels} /> : null}
