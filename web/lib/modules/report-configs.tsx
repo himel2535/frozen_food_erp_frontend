@@ -177,9 +177,6 @@ export const REPORT_CONFIGS: Record<string, ReportModuleConfig> = {
   },
 };
 
-export function ReportsSalesPage() { return <ReportModule config={REPORT_CONFIGS['reports-sales']} />; }
-export function ReportsPurchasesPage() { return <ReportModule config={REPORT_CONFIGS['reports-purchases']} />; }
-export function ReportsInventoryPage() { return <ReportModule config={REPORT_CONFIGS['reports-inventory']} />; }
 export function ReportsCustomersPage() { return <ReportModule config={REPORT_CONFIGS['reports-customers']} />; }
 export function ReportsSuppliersPage() { return <ReportModule config={REPORT_CONFIGS['reports-suppliers']} />; }
 export function ReportsFinancialPage() { return <ReportModule config={REPORT_CONFIGS['reports-financial']} />; }

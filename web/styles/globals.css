@@ -515,6 +515,50 @@ body.lang-bn .uppercase {
   box-shadow: inset 2px 0 0 rgba(59, 130, 246, 0.3);
 }
 
+.report-data-table-shell {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.report-data-table-shell .app-table-element {
+  table-layout: fixed;
+}
+
+.report-data-table-shell:has(.report-table-pagination) .app-table,
+.report-data-table-shell:has(.report-table-custom-footer) .app-table {
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
+}
+
+.report-data-table-shell .report-table-pagination,
+.report-data-table-shell .report-table-custom-footer {
+  background: var(--glass-shell-tint);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--glass-border);
+  border-top: 1px solid rgba(191, 219, 254, 0.35);
+}
+
+.report-data-table-shell .report-table-pagination {
+  border-bottom-left-radius: 1.25rem;
+  border-bottom-right-radius: 1.25rem;
+}
+
+.report-data-table-shell .report-table-custom-footer {
+  border-bottom-left-radius: 1.25rem;
+  border-bottom-right-radius: 1.25rem;
+}
+
+.report-data-table-shell:has(.report-table-pagination) .report-table-custom-footer {
+  border-top: 1px solid rgba(191, 219, 254, 0.35);
+}
+
+.report-data-table-shell:has(.report-table-pagination):has(.report-table-custom-footer) .report-table-pagination {
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
+}
+
 .app-table tfoot td {
   padding: 0.875rem 1rem;
   font-size: 0.875rem;
@@ -789,6 +833,10 @@ body.dashboard-page .text-3xl { font-size: 2rem; }        /* 32px */
   margin: 8mm;
 }
 
+.report-print-root {
+  display: none;
+}
+
 @media print {
   body.print-challan-active > *:not(.delivery-challan-print-root) {
     display: none !important;
@@ -857,6 +905,433 @@ body.dashboard-page .text-3xl { font-size: 2rem; }        /* 32px */
   .dc-print-footer {
     break-inside: avoid;
     page-break-inside: avoid;
+  }
+
+  body.print-report-active > *:not(.report-print-root) {
+    display: none !important;
+  }
+
+  body.print-report-active .report-print-root {
+    display: block !important;
+    position: static !important;
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: visible !important;
+    background: white !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  body.print-report-active .report-print-root * {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  .report-print-body {
+    font-family: Inter, system-ui, sans-serif;
+    color: #0f172a;
+    padding: 0;
+    max-width: 100%;
+  }
+
+  .report-print-header {
+    border-bottom: 2px solid #e2e8f0;
+    padding-bottom: 12px;
+    margin-bottom: 16px;
+  }
+
+  .report-print-brand {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #64748b;
+    margin: 0 0 4px;
+  }
+
+  .report-print-title {
+    font-size: 20px;
+    font-weight: 800;
+    margin: 0 0 6px;
+    color: #0f172a;
+  }
+
+  .report-print-meta {
+    font-size: 10px;
+    color: #64748b;
+    margin: 0;
+  }
+
+  .report-print-section {
+    break-inside: avoid;
+    page-break-inside: avoid;
+    margin-bottom: 18px;
+  }
+
+  .report-print-section h2 {
+    font-size: 13px;
+    font-weight: 800;
+    margin: 0 0 8px;
+    color: #1e293b;
+  }
+
+  .report-print-footer {
+    margin-top: 20px;
+    padding-top: 10px;
+    border-top: 1px solid #e2e8f0;
+    font-size: 9px;
+    color: #94a3b8;
+    text-align: center;
+  }
+
+  .inventory-print-letterhead {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 12px;
+    align-items: start;
+    border-bottom: 2px solid #1e3a8a;
+    padding-bottom: 12px;
+    margin-bottom: 10px;
+  }
+
+  .inventory-print-brand {
+    font-size: 11px;
+    font-weight: 800;
+    color: #1e3a8a;
+    margin: 0 0 2px;
+  }
+
+  .inventory-print-legal {
+    font-size: 10px;
+    font-weight: 700;
+    color: #0f172a;
+    margin: 0 0 4px;
+  }
+
+  .inventory-print-doc-title {
+    font-size: 16px;
+    font-weight: 900;
+    letter-spacing: 0.06em;
+    color: #1e3a8a;
+    margin: 0 0 6px;
+    text-align: center;
+  }
+
+  .inventory-print-period-badge {
+    display: inline-block;
+    margin: 0 auto;
+    padding: 4px 10px;
+    border-radius: 999px;
+    background: #eff6ff;
+    border: 1px solid #bfdbfe;
+    font-size: 9px;
+    font-weight: 700;
+    color: #1d4ed8;
+    text-align: center;
+  }
+
+  .inventory-print-letterhead-center {
+    text-align: center;
+  }
+
+  .inventory-print-letterhead-right {
+    text-align: right;
+  }
+
+  .inventory-print-qr {
+    width: 48px;
+    height: 48px;
+    margin-left: auto;
+    margin-top: 6px;
+    border: 1px solid #cbd5e1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 8px;
+    font-weight: 800;
+    color: #64748b;
+  }
+
+  .inventory-print-filter-line {
+    font-size: 9px;
+    color: #64748b;
+    margin: 0 0 12px;
+  }
+
+  .inventory-print-th {
+    background: #1e3a8a !important;
+    color: #fff !important;
+    border-color: #1e3a8a !important;
+  }
+
+  .inventory-print-split {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 12px;
+  }
+
+  .inventory-print-bottom {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 12px;
+  }
+
+  .inventory-print-summary-list ul {
+    margin: 0;
+    padding-left: 16px;
+    font-size: 10px;
+    line-height: 1.6;
+  }
+
+  .inventory-print-footer {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 8px;
+    margin-top: 16px;
+    padding-top: 10px;
+    border-top: 1px solid #e2e8f0;
+    font-size: 9px;
+    color: #64748b;
+    text-align: center;
+  }
+
+  .customer-print-section,
+  .customer-print-charts,
+  .customer-print-bottom,
+  .customer-print-summary-list {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  .customer-print-charts {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 12px;
+  }
+
+  .customer-print-bottom {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 16px;
+    align-items: start;
+  }
+
+  .customer-print-summary-list ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    font-size: 10px;
+    line-height: 1.6;
+  }
+
+  .supplier-print-section,
+  .supplier-print-charts,
+  .supplier-print-bottom,
+  .supplier-print-kpi-row {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  .supplier-print-period-label {
+    font-size: 8px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: #64748b;
+    margin: 4px 0 2px;
+  }
+
+  .supplier-print-kpi-row {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 8px;
+  }
+
+  .supplier-print-kpi-card {
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 8px;
+    text-align: center;
+    font-size: 9px;
+  }
+
+  .supplier-print-kpi-label {
+    display: block;
+    font-weight: 700;
+    color: #64748b;
+    margin-top: 4px;
+  }
+
+  .supplier-print-kpi-value {
+    display: block;
+    font-size: 11px;
+    font-weight: 800;
+    color: #0f172a;
+    margin-top: 2px;
+  }
+
+  .supplier-print-kpi-sub {
+    display: block;
+    font-size: 8px;
+    color: #94a3b8;
+    margin-top: 2px;
+  }
+
+  .supplier-print-charts {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 12px;
+  }
+
+  .supplier-print-chart-block h2 {
+    font-size: 11px;
+    font-weight: 800;
+    margin: 0 0 4px;
+  }
+
+  .supplier-print-chart-total {
+    font-size: 10px;
+    font-weight: 800;
+    color: #1e3a8a;
+    margin: 0 0 6px;
+  }
+
+  .supplier-print-bottom {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 16px;
+    align-items: start;
+  }
+
+  .supplier-print-summary-list ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    font-size: 10px;
+    line-height: 1.8;
+  }
+
+  .supplier-print-summary-list li {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .supplier-print-footer {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 8px;
+    margin-top: 16px;
+    padding-top: 10px;
+    border-top: 1px solid #e2e8f0;
+    font-size: 9px;
+    color: #64748b;
+    text-align: center;
+  }
+
+  .financial-print-section,
+  .financial-print-bottom,
+  .financial-print-kpi-row {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  .financial-print-kpi-row {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  .financial-print-bottom {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 12px;
+    align-items: start;
+  }
+
+  .financial-print-chart-block h2 {
+    font-size: 11px;
+    font-weight: 800;
+    margin: 0 0 4px;
+  }
+
+  .financial-print-chart-total {
+    font-size: 10px;
+    font-weight: 800;
+    color: #1e3a8a;
+    margin: 0 0 6px;
+  }
+
+  .financial-print-footer {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 8px;
+    margin-top: 16px;
+    padding-top: 10px;
+    border-top: 1px solid #e2e8f0;
+    font-size: 9px;
+    color: #64748b;
+    text-align: center;
+  }
+
+  .hr-print-section,
+  .hr-print-kpi-row,
+  .hr-print-middle-row,
+  .hr-print-charts-row,
+  .hr-print-bottom-row {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  .hr-print-kpi-row {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+  }
+
+  .hr-print-middle-row {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 12px;
+    align-items: start;
+  }
+
+  .hr-print-charts-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 12px;
+    align-items: start;
+  }
+
+  .hr-print-bottom-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 12px;
+    align-items: start;
+  }
+
+  .hr-print-chart-block h2 {
+    font-size: 11px;
+    font-weight: 800;
+    margin: 0 0 4px;
+  }
+
+  .hr-print-chart-total {
+    font-size: 10px;
+    font-weight: 800;
+    color: #1e3a8a;
+    margin: 0 0 6px;
+  }
+
+  .hr-print-footer {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 8px;
+    margin-top: 16px;
+    padding-top: 10px;
+    border-top: 1px solid #e2e8f0;
+    font-size: 9px;
+    color: #64748b;
+    text-align: center;
   }
 }
 
