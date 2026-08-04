@@ -7,7 +7,7 @@ import { Icon } from '@iconify/react';
 import { Footer } from '@/components/layout/Footer';
 import { useAppStore } from '@/lib/state/app-store';
 import type { AppState } from '@/lib/state/types';
-import { DashboardNotifications } from '@/components/modules/dashboard/DashboardNotifications';
+import { DashboardBusinessAlerts } from '@/components/modules/dashboard/DashboardBusinessAlerts';
 import { DashboardBottomPanels } from '@/components/modules/dashboard/DashboardBottomPanels';
 
 const SalesTrendChart = dynamic(
@@ -227,7 +227,7 @@ export function DashboardView() {
       <section className="grid grid-cols-1 lg:grid-cols-4 gap-2">
         <SalesTrendChart />
         <RevenueAnalyticsChart />
-        <DashboardNotifications />
+        <DashboardBusinessAlerts />
       </section>
 
       <DashboardBottomPanels />

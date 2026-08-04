@@ -711,6 +711,41 @@ export function getCustomerReceivableDetail(state: AppState, customerId: string)
   ) ?? null;
 }
 
+function normalizePartyLabel(value: string): string {
+  return value.trim().toLowerCase().replace(/\s+/g, ' ');
+}
+
+export function resolveReceivableCustomerId(
+  state: AppState,
+  partyId: string,
+  partyName: string,
+): string | null {
+  const receivables = listCustomerReceivables(state);
+  const id = partyId.trim();
+  if (id) {
+    const byId = receivables.find((customer) => customer.customerId === id || customer.id === id);
+    if (byId) return byId.customerId;
+  }
+
+  const normalizedName = normalizePartyLabel(partyName);
+  if (!normalizedName) return null;
+
+  const byName = receivables.find((customer) => {
+    const company = normalizePartyLabel(customer.company);
+    const name = normalizePartyLabel(customer.name);
+    return company === normalizedName || name === normalizedName;
+  });
+  return byName?.customerId ?? null;
+}
+
+export function buildCustomerFollowUpHref(state: AppState, partyId: string, partyName: string): string {
+  const resolvedId = resolveReceivableCustomerId(state, partyId, partyName);
+  if (resolvedId) {
+    return `/accounting/receivables/${encodeURIComponent(resolvedId)}/follow-up`;
+  }
+  return '/accounting/receivables';
+}
+
 export function receiveCustomerPayment(
   state: AppState,
   customerId: string,

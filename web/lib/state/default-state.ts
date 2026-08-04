@@ -1,6 +1,7 @@
 import type { AppState } from './types';
 import { FINISHED_GOODS_SEED } from './finished-goods-seed';
 import { COLLECTION_DEMO_CUSTOMERS, COLLECTION_DEMO_INVOICES } from './customer-collection-seed';
+import { DEFAULT_ALERT_SETTINGS } from '@/lib/services/alert-settings-defaults';
 
 export const DEFAULT_STATE: AppState = {
   isLoggedIn: false,
@@ -1142,6 +1143,10 @@ export const DEFAULT_STATE: AppState = {
     ],
   },
   companySignatures: [],
+  alertSettings: {
+    ...DEFAULT_ALERT_SETTINGS,
+    roleVisibility: { ...DEFAULT_ALERT_SETTINGS.roleVisibility },
+  },
 };
 
 export const LOCAL_STORAGE_KEY = 'hookerp_auth_state';

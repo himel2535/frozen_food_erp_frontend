@@ -82,16 +82,18 @@ export function CustomerDueFollowUpPage({ customerId }: { customerId: string }) 
   if (!customer) {
     return (
       <div className={MODULE_LIST_SHELL}>
-        <div className="premium-card premium-shadow p-8 text-center space-y-4 max-w-lg mx-auto mt-12">
+        <div className="premium-card premium-shadow p-8 text-center space-y-4 max-w-lg mx-auto mt-4">
           <h2 className="text-lg font-extrabold text-slate-900">Customer not found</h2>
           <p className="text-xs text-slate-500">The customer ID &quot;{customerId}&quot; does not exist or was removed.</p>
-          <Link
-            href="/accounting/receivables"
-            className="inline-flex items-center gap-2 text-xs font-bold text-blue-600 hover:text-blue-700 cursor-pointer"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            Back to Customer Due
-          </Link>
+          <div className="flex flex-col items-center gap-2">
+            <Link
+              href="/accounting/receivables"
+              className="inline-flex items-center gap-2 text-xs font-bold text-blue-600 hover:text-blue-700 cursor-pointer"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              Back to Customer Due
+            </Link>
+          </div>
         </div>
         <Footer />
       </div>

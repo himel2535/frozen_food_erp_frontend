@@ -128,6 +128,7 @@ export const TENANT_SIDEBAR_SECTIONS: SidebarSection[] = [
       { label: 'Users', href: '/settings/users', view: 'users', iconifyIcon: 'fluent-color:people-team-24' },
       { label: 'Roles', href: '/settings/roles', view: 'roles', iconifyIcon: 'fluent-color:person-key-24' },
       { label: 'Permissions', href: '/settings/permissions', view: 'permissions', iconifyIcon: 'fluent-color:checkmark-circle-24' },
+      { label: 'Alert Settings', href: '/settings/alert-settings', view: 'alert-settings', iconifyIcon: 'fluent-color:alert-24' },
       { label: 'Documents', href: '/settings/documents', view: 'documents', iconifyIcon: 'fluent-color:document-lock-24' },
       { label: 'Audit Logs', href: '/settings/audit-logs', view: 'audit-logs', iconifyIcon: 'fluent-color:history-24' },
     ],

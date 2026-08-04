@@ -1,4 +1,5 @@
 import type { AppState, CompanyProfile, CompanySignature, CurrentUserProfile } from '@/lib/state/types';
+import { DEFAULT_ALERT_SETTINGS } from '@/lib/services/alert-settings-defaults';
 
 export const DEFAULT_CURRENT_USER: CurrentUserProfile = {
   id: 'USR-001',
@@ -426,4 +427,7 @@ export function ensureSettingsState(state: AppState) {
   ensureCurrentUser(state);
   ensureCompanyProfile(state);
   ensureCompanySignatures(state);
+  if (!state.alertSettings) {
+    state.alertSettings = JSON.parse(JSON.stringify(DEFAULT_ALERT_SETTINGS));
+  }
 }

@@ -1,5 +1,7 @@
 export type Lang = 'en' | 'bn';
 
+import type { AlertSettings } from '@/lib/services/business-alert-types';
+
 export interface CurrentUserProfile {
   id: string;
   name: string;
@@ -116,6 +118,7 @@ export interface AppState {
   currentUser?: CurrentUserProfile;
   companyProfile?: CompanyProfile;
   companySignatures?: CompanySignature[];
+  alertSettings?: AlertSettings;
   crmUi?: Record<string, unknown>;
   crmData?: Record<string, unknown>;
   [key: string]: unknown;

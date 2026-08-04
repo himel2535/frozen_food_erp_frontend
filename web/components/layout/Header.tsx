@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { HeaderAlertsDropdown } from '@/components/layout/HeaderAlertsDropdown';
 import { useState, useRef, useEffect, useMemo } from 'react';
 import { Search, User, Settings, LogOut } from 'lucide-react';
 import { Icon } from '@iconify/react';
@@ -103,13 +104,7 @@ export function Header({ title }: HeaderProps) {
         </button>
 
         {/* Notifications Button with Vibrant Colorful Icon */}
-        <Link
-          href="/notifications"
-          className="h-9 w-9 rounded-xl bg-white/50 hover:bg-white/90 border border-white/80 shadow-xs flex items-center justify-center transition-all relative cursor-pointer"
-          title="Notifications"
-        >
-          <Icon icon="fluent-color:alert-badge-24" width={20} height={20} className="shrink-0" />
-        </Link>
+        <HeaderAlertsDropdown />
 
         {/* Language Switcher with Vibrant Colorful Globe Icon */}
         <button

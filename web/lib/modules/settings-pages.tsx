@@ -7,6 +7,7 @@ import { useRouter } from 'next/navigation';
 import { CompanySettingsPage } from '@/components/modules/settings/company/CompanySettingsPage';
 import { SignatureSettingsPage } from '@/components/modules/settings/signatures/SignatureSettingsPage';
 import { ProfileSettingsPage } from '@/components/modules/settings/profile/ProfileSettingsPage';
+import { AlertSettingsPage } from '@/components/modules/settings/alerts/AlertSettingsPage';
 import { DedicatedModule } from '@/components/modules/shared/DedicatedModule';
 import { useLegacyParityConfig } from '@/hooks/use-legacy-parity-config';
 import { PORT_CONFIGS } from '@/lib/modules/port-configs';
@@ -87,6 +88,7 @@ export function SettingsCompanyPage() { return <CompanySettingsPage />; }
 export function SettingsAuditLogsPage() { return <DedicatedModule config={PORT_CONFIGS['settings-audit-logs'] as DedicatedModuleConfig} />; }
 export function SettingsProfilePage() { return <ProfileSettingsPage />; }
 export function SettingsSignaturesPage() { return <SignatureSettingsPage />; }
+export function SettingsAlertSettingsPage() { return <AlertSettingsPage />; }
 export function ProjectsPage() {
   const router = useRouter();
   const base = useLegacyParityConfig('projects');

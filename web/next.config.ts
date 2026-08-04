@@ -84,7 +84,7 @@ const htmlRedirects = [
   ['projects-new.html', '/projects/new'],
   ['asset-management.html', '/asset-management'],
   ['workflow-approvals.html', '/workflow-approvals'],
-  ['notifications.html', '/notifications'],
+  ['notifications.html', '/alerts'],
   ['super-admin.html', '/super-admin'],
   ['design-system.html', '/design-system'],
 ] as const;
