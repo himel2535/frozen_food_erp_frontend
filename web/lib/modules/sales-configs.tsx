@@ -28,10 +28,14 @@ import { createPaymentRecord } from '@/lib/services/crm-service';
 
 function docKpi(rows: Record<string, unknown>[], label: string) {
   const total = rows.reduce((s, r) => s + Number(r.total ?? 0), 0);
+  const closedStatuses = ['fulfilled', 'paid', 'resolved', 'closed', 'accepted', 'delivered'];
+  const open = rows.filter((r) => !closedStatuses.includes(String(r.status).toLowerCase())).length;
+  const closed = rows.length - open;
   return [
     { key: 'count', label: `Total ${label}`, value: String(rows.length) },
-    { key: 'open', label: 'Open', value: String(rows.filter((r) => !['fulfilled', 'paid', 'resolved', 'closed', 'accepted'].includes(String(r.status).toLowerCase())).length) },
+    { key: 'open', label: 'Open', value: String(open) },
     { key: 'value', label: 'Total Value', value: formatMoney(total) },
+    { key: 'closed', label: 'Closed', value: String(closed) },
   ];
 }
 

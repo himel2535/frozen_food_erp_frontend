@@ -98,6 +98,7 @@ export function buildFinancialKpis(rows: FinancialReportRow[], trendSuffix: stri
   const revenue = calcTotalRevenue(rows);
   const expenses = calcTotalExpenses(rows);
   const net = calcNetProfit(rows);
+  const marginPct = revenue > 0 ? ((net / revenue) * 100).toFixed(1) : '0.0';
 
   return [
     {
@@ -121,6 +122,13 @@ export function buildFinancialKpis(rows: FinancialReportRow[], trendSuffix: stri
       value: formatCurrency(net),
       sub: `▲ 31.82% ${trendSuffix}`,
       iconify: 'flat-color-icons:line-chart',
+    },
+    {
+      key: 'margin',
+      label: 'Net Margin',
+      value: `${marginPct}%`,
+      sub: 'Net profit as % of revenue',
+      iconify: 'flat-color-icons:pie-chart',
     },
   ];
 }

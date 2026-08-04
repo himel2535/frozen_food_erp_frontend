@@ -112,6 +112,7 @@ export function WarehousesPage() {
         { key: 'total', label: 'Total Warehouses', value: String(metrics.warehouses.length), sub: `${metrics.activeWarehouses} active · ${metrics.inactiveWarehouses} inactive` },
         { key: 'capacity', label: 'Total Stock Capacity', value: metrics.totalCapacity.toLocaleString(), sub: 'units across all facilities' },
         { key: 'util', label: 'Current Stock Utilization', value: `${metrics.utilizationPercent.toFixed(1)}%`, sub: `${metrics.totalCurrentStock.toLocaleString()} units stored` },
+        { key: 'value', label: 'Total Stock Value', value: formatMoney(metrics.totalStockValue), sub: 'across all warehouses' },
       ]}
       filters={
         <FilterBar>

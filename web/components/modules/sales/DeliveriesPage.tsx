@@ -114,14 +114,17 @@ export function DeliveriesPage() {
   }, [appState, search, statusFilter]);
 
   const kpis = useMemo(() => {
-    const open = rows.filter((r) => !['delivered', 'cancelled'].includes(String(r.status))).length;
-    const totalQty = rows.reduce((s, r) => s + Number(r.totalDeliverQty ?? 0), 0);
+    const allRows = listDeliveries(appState);
+    const open = allRows.filter((r) => !['delivered', 'cancelled'].includes(String(r.status).toLowerCase())).length;
+    const delivered = allRows.filter((r) => String(r.status).toLowerCase() === 'delivered').length;
+    const totalQty = allRows.reduce((s, r) => s + Number(r.totalDeliverQty ?? 0), 0);
     return [
-      { key: 'count', label: 'Total Deliveries', value: String(rows.length) },
+      { key: 'count', label: 'Total Deliveries', value: String(allRows.length) },
       { key: 'open', label: 'Open', value: String(open) },
       { key: 'qty', label: 'Total Deliver Qty', value: `${totalQty.toLocaleString()} Pcs` },
+      { key: 'delivered', label: 'Delivered', value: String(delivered) },
     ];
-  }, [rows]);
+  }, [appState]);
 
   const challanPreviewId = useMemo(
     () => (editingId ? editingId : previewChallanNumber(appState, formValues.date)),

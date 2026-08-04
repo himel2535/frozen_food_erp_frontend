@@ -106,6 +106,7 @@ export function UnitsPage() {
         { key: 'total', label: 'Total Units', value: String(total) },
         { key: 'active', label: 'Active Units', value: String(activeUnits) },
         { key: 'used', label: 'In Use by Products', value: String(usedUnits) },
+        { key: 'unused', label: 'Unused Units', value: String(Math.max(0, total - usedUnits)) },
       ]}
       filters={
         <FilterBar>

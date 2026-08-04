@@ -1,6 +1,6 @@
 'use client';
 
-import { ArrowDown, ArrowUp, CheckCircle2, Scale } from 'lucide-react';
+import { ArrowDown, ArrowUp, CheckCircle2, Scale, Layers } from 'lucide-react';
 import { formatTrialMoney, type TrialBalanceMetrics } from '@/lib/services/trial-balance-service';
 
 function MetricCard({
@@ -38,7 +38,7 @@ function MetricCard({
 
 export function TrialBalanceMetricsCards({ metrics }: { metrics: TrialBalanceMetrics }) {
   return (
-    <section className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+    <section className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-2">
       <MetricCard
         label="TOTAL DEBIT"
         value={formatTrialMoney(metrics.totalDebit)}
@@ -81,6 +81,17 @@ export function TrialBalanceMetricsCards({ metrics }: { metrics: TrialBalanceMet
         icon={
           <span className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-violet-500 text-white">
             <Scale className="h-5 w-5" />
+          </span>
+        }
+      />
+      <MetricCard
+        label="ACCOUNTS"
+        value={String(metrics.accountCount)}
+        sub="Active trial balance lines"
+        cardClassName="bg-slate-50/90 border-slate-200/80"
+        icon={
+          <span className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-slate-500 text-white">
+            <Layers className="h-5 w-5" />
           </span>
         }
       />

@@ -242,10 +242,24 @@ export function buildHrKpis(rows: HrDepartmentRow[], trendSuffix: string): KpiCa
       iconify: 'fluent-color:people-24',
     },
     {
-      key: 'metrics',
-      label: 'Metrics Tracked',
-      value: '4',
-      sub: `— 0% ${trendSuffix}`,
+      key: 'joined',
+      label: 'Joiners',
+      value: String(totals.joined),
+      sub: `This period · ${trendSuffix}`,
+      iconify: 'fluent-color:person-add-24',
+    },
+    {
+      key: 'left',
+      label: 'Leavers',
+      value: String(totals.left),
+      sub: `This period · ${trendSuffix}`,
+      iconify: 'fluent-color:person-delete-24',
+    },
+    {
+      key: 'net-change',
+      label: 'Net Change',
+      value: String(totals.netChange),
+      sub: `Joiners minus leavers · ${trendSuffix}`,
       iconify: 'fluent-color:data-trending-24',
     },
   ];

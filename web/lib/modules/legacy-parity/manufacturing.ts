@@ -5,7 +5,7 @@ import {
   startProductionOrder, completeProductionOrder,
   crudFactory,
 } from '@/lib/services/manufacturing-service';
-import { adapter, money, React, toast, confirmAction, type DedicatedModuleConfig } from './shared';
+import { adapter, money, countStatus, countStatusIn, sumField, kpiCount, kpiMoneySum, React, toast, confirmAction, type DedicatedModuleConfig } from './shared';
 export const CONFIGS: Record<string, DedicatedModuleConfig> = {
   'manufacturing-orders': {
     id: 'manufacturing-orders',
@@ -33,9 +33,10 @@ export const CONFIGS: Record<string, DedicatedModuleConfig> = {
       { key: 'notes', label: 'Notes', type: 'textarea', advanced: true },
     ],
     kpi: (rows) => [
-      { key: 'total', label: 'Total Orders', value: String(rows.length) },
-      { key: 'progress', label: 'In Progress', value: String(rows.filter((r) => r.status === 'In Progress').length) },
-      { key: 'done', label: 'Completed', value: String(rows.filter((r) => r.status === 'Completed').length) },
+      kpiCount('total', 'Total Orders', rows.length),
+      kpiCount('planned', 'Planned', countStatus(rows, 'Planned')),
+      kpiCount('progress', 'In Progress', countStatus(rows, 'In Progress')),
+      kpiCount('done', 'Completed', countStatus(rows, 'Completed')),
     ],
     adapter: adapter({
       list: listProductionOrders,
@@ -69,8 +70,10 @@ export const CONFIGS: Record<string, DedicatedModuleConfig> = {
       { key: 'notes', label: 'Notes', type: 'textarea', advanced: true },
     ],
     kpi: (rows) => [
-      { key: 'total', label: 'Total Records', value: String(rows.length) },
-      { key: 'scheduled', label: 'Scheduled', value: String(rows.filter((r) => r.status === 'scheduled').length) },
+      kpiCount('total', 'Total Records', rows.length),
+      kpiCount('scheduled', 'Scheduled', countStatus(rows, 'scheduled')),
+      kpiCount('inProgress', 'In Progress', countStatusIn(rows, ['in-progress', 'in progress'])),
+      kpiCount('completed', 'Completed', countStatus(rows, 'completed')),
     ],
     adapter: adapter({ ...crudFactory('machineMaintenance', 'MM') }),
   },
@@ -97,8 +100,10 @@ export const CONFIGS: Record<string, DedicatedModuleConfig> = {
       { key: 'notes', label: 'Notes', type: 'textarea', advanced: true },
     ],
     kpi: (rows) => [
-      { key: 'total', label: 'Total Molds', value: String(rows.length) },
-      { key: 'active', label: 'Active', value: String(rows.filter((r) => r.status === 'active').length) },
+      kpiCount('total', 'Total Molds', rows.length),
+      kpiCount('active', 'Active', countStatus(rows, 'active')),
+      kpiCount('maintenance', 'In Maintenance', countStatus(rows, 'maintenance')),
+      kpiCount('retired', 'Retired', countStatus(rows, 'retired')),
     ],
     adapter: adapter({ ...crudFactory('molds', 'MOLD') }),
   },
@@ -125,8 +130,10 @@ export const CONFIGS: Record<string, DedicatedModuleConfig> = {
       { key: 'notes', label: 'Notes', type: 'textarea', advanced: true },
     ],
     kpi: (rows) => [
-      { key: 'total', label: 'Total Records', value: String(rows.length) },
-      { key: 'qty', label: 'Total Wastage Qty', value: String(rows.reduce((s, r) => s + Number(r.qty ?? 0), 0)) },
+      kpiCount('total', 'Total Records', rows.length),
+      kpiCount('qty', 'Total Wastage Qty', sumField(rows, 'qty')),
+      kpiCount('reviewed', 'Reviewed', countStatus(rows, 'reviewed')),
+      kpiCount('recorded', 'Recorded', countStatus(rows, 'recorded')),
     ],
     adapter: adapter({ ...crudFactory('wastage', 'WST') }),
   },
@@ -153,8 +160,10 @@ export const CONFIGS: Record<string, DedicatedModuleConfig> = {
       { key: 'notes', label: 'Notes', type: 'textarea', advanced: true },
     ],
     kpi: (rows) => [
-      { key: 'batches', label: 'Total Batches', value: String(rows.length) },
-      { key: 'packed', label: 'Total Packed', value: String(rows.reduce((s, r) => s + Number(r.qty ?? 0), 0)) },
+      kpiCount('batches', 'Total Batches', rows.length),
+      kpiCount('packed', 'Total Packed', sumField(rows, 'qty')),
+      kpiCount('open', 'Open', countStatus(rows, 'open')),
+      kpiCount('closed', 'Closed', countStatus(rows, 'closed')),
     ],
     adapter: adapter({ ...crudFactory('packing', 'PKG') }),
   },

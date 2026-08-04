@@ -6,7 +6,7 @@ import {
 } from '@/lib/services/accounting-service';
 import { listSuppliers, updateSupplier } from '@/lib/services/purchases-service';
 import { listFromState, createInState, updateInState, deleteFromState } from '@/lib/services/domain-service';
-import { adapter, money, type DedicatedModuleConfig } from './shared';
+import { adapter, money, countStatus, kpiCount, kpiMoneySum, type DedicatedModuleConfig } from './shared';
 export const CONFIGS: Record<string, DedicatedModuleConfig> = {
   'accounting-journals': {
     id: 'accounting-journals',
@@ -31,10 +31,12 @@ export const CONFIGS: Record<string, DedicatedModuleConfig> = {
     ],
     kpi: (rows) => {
       const m = getJournalMetrics(rows);
+      const totalCredit = rows.reduce((s, r) => s + Number(r.credit ?? 0), 0);
       return [
-        { key: 'entries', label: 'Total Entries', value: String(m.totalEntries) },
+        kpiCount('entries', 'Total Entries', m.totalEntries),
         { key: 'debit', label: 'Total Debit Volume', value: money(m.totalDebit) },
-        { key: 'pending', label: 'Pending Approvals', value: String(m.pending) },
+        { key: 'credit', label: 'Total Credit Volume', value: money(totalCredit) },
+        kpiCount('pending', 'Pending Approvals', m.pending),
       ];
     },
     adapter: adapter({
@@ -70,9 +72,13 @@ export const CONFIGS: Record<string, DedicatedModuleConfig> = {
     ],
     kpi: (rows) => {
       const m = getLedgerMetrics(rows);
+      const totalDebit = rows.reduce((s, r) => s + Number(r.debit ?? 0), 0);
+      const totalCredit = rows.reduce((s, r) => s + Number(r.credit ?? 0), 0);
       return [
-        { key: 'entries', label: 'Total Entries', value: String(m.totalEntries) },
+        kpiCount('entries', 'Total Entries', m.totalEntries),
         { key: 'balance', label: 'Net Balance', value: money(m.netBalance) },
+        { key: 'debit', label: 'Total Debit', value: money(totalDebit) },
+        { key: 'credit', label: 'Total Credit', value: money(totalCredit) },
       ];
     },
     adapter: adapter({
@@ -109,10 +115,16 @@ export const CONFIGS: Record<string, DedicatedModuleConfig> = {
       { key: 'dueDate', label: 'Due Date', type: 'date' },
       { key: 'notes', label: 'Notes', type: 'textarea', advanced: true },
     ],
-    kpi: (rows) => [
-      { key: 'recv', label: 'Receivables', value: money(rows.filter((r) => r.type === 'receivable').reduce((s, r) => s + Number(r.due ?? 0), 0)) },
-      { key: 'pay', label: 'Payables', value: money(rows.filter((r) => r.type === 'payable').reduce((s, r) => s + Number(r.due ?? 0), 0)) },
-    ],
+    kpi: (rows) => {
+      const recv = rows.filter((r) => r.type === 'receivable').reduce((s, r) => s + Number(r.due ?? 0), 0);
+      const pay = rows.filter((r) => r.type === 'payable').reduce((s, r) => s + Number(r.due ?? 0), 0);
+      return [
+        { key: 'recv', label: 'Receivables', value: money(recv) },
+        { key: 'pay', label: 'Payables', value: money(pay) },
+        { key: 'net', label: 'Net Due', value: money(recv - pay) },
+        kpiCount('records', 'Due Records', rows.length),
+      ];
+    },
     adapter: adapter({ ...crudAccounting('dues', 'DUE') }),
   },
 };
@@ -137,8 +149,10 @@ CONFIGS['accounting-receivables'] = {
     { key: 'notes', label: 'Notes', type: 'textarea', advanced: true },
   ],
   kpi: (rows) => [
-    { key: 'total', label: 'Total Due', value: money(rows.reduce((s, r) => s + Number(r.due ?? 0), 0)) },
-    { key: 'overdue', label: 'Overdue Accounts', value: String(rows.filter((r) => r.status === 'overdue').length) },
+    kpiMoneySum('total', 'Total Due', rows, 'due'),
+    kpiCount('overdue', 'Overdue Accounts', rows.filter((r) => r.status === 'overdue').length),
+    kpiCount('active', 'Active', countStatus(rows, 'active')),
+    kpiCount('customers', 'Customers', rows.length),
   ],
   adapter: adapter({
     list: (s) => listFromState(s, 'crmCustomers'),
@@ -164,7 +178,12 @@ CONFIGS['accounting-payables'] = {
     { key: 'status', label: 'Status', type: 'select', options: ['active', 'inactive'] },
     { key: 'notes', label: 'Notes', type: 'textarea', advanced: true },
   ],
-  kpi: (rows) => [{ key: 'total', label: 'Total Payables', value: money(rows.reduce((s, r) => s + Number(r.due ?? 0), 0)) }],
+  kpi: (rows) => [
+    kpiMoneySum('total', 'Total Payables', rows, 'due'),
+    kpiCount('active', 'Active Suppliers', countStatus(rows, 'active')),
+    kpiCount('inactive', 'Inactive', countStatus(rows, 'inactive')),
+    kpiCount('suppliers', 'Suppliers', rows.length),
+  ],
   adapter: adapter({
     list: listSuppliers,
     update: (s, id, p) => updateSupplier(s, id, p),
@@ -187,10 +206,16 @@ CONFIGS['accounting-trial'] = {
     { key: 'debit', label: 'Debit', type: 'number' },
     { key: 'credit', label: 'Credit', type: 'number' },
   ],
-  kpi: (rows) => [
-    { key: 'debit', label: 'Total Debit', value: money(rows.reduce((s, r) => s + Number(r.debit ?? 0), 0)) },
-    { key: 'credit', label: 'Total Credit', value: money(rows.reduce((s, r) => s + Number(r.credit ?? 0), 0)) },
-  ],
+  kpi: (rows) => {
+    const totalDebit = rows.reduce((s, r) => s + Number(r.debit ?? 0), 0);
+    const totalCredit = rows.reduce((s, r) => s + Number(r.credit ?? 0), 0);
+    return [
+      { key: 'debit', label: 'Total Debit', value: money(totalDebit) },
+      { key: 'credit', label: 'Total Credit', value: money(totalCredit) },
+      { key: 'diff', label: 'Difference', value: money(Math.abs(totalDebit - totalCredit)) },
+      kpiCount('accounts', 'Accounts', rows.length),
+    ];
+  },
   adapter: adapter({ ...crudAccounting('trialBalance', 'TB') }),
 };
 
@@ -213,9 +238,13 @@ CONFIGS['accounting-pl'] = {
   kpi: (rows) => {
     const revenue = rows.filter((r) => r.category === 'Revenue').reduce((s, r) => s + Number(r.amount ?? 0), 0);
     const expense = rows.filter((r) => r.category !== 'Revenue').reduce((s, r) => s + Number(r.amount ?? 0), 0);
+    const net = revenue - expense;
+    const marginPct = revenue > 0 ? ((net / revenue) * 100).toFixed(1) : '0.0';
     return [
       { key: 'revenue', label: 'Total Revenue', value: money(revenue) },
-      { key: 'net', label: 'Net P&L', value: money(revenue - expense) },
+      { key: 'expense', label: 'Total Expense', value: money(expense) },
+      { key: 'net', label: 'Net P&L', value: money(net) },
+      { key: 'margin', label: 'Profit Margin', value: `${marginPct}%` },
     ];
   },
   adapter: adapter({ ...crudAccounting('profitLoss', 'PL') }),
@@ -240,9 +269,12 @@ CONFIGS['accounting-balance'] = {
   kpi: (rows) => {
     const assets = rows.filter((r) => r.section === 'Assets').reduce((s, r) => s + Number(r.amount ?? 0), 0);
     const liab = rows.filter((r) => r.section === 'Liabilities').reduce((s, r) => s + Number(r.amount ?? 0), 0);
+    const equity = rows.filter((r) => r.section === 'Equity').reduce((s, r) => s + Number(r.amount ?? 0), 0);
     return [
       { key: 'assets', label: 'Total Assets', value: money(assets) },
       { key: 'liab', label: 'Total Liabilities', value: money(liab) },
+      { key: 'equity', label: 'Total Equity', value: money(equity) },
+      { key: 'net', label: 'Assets − Liabilities', value: money(assets - liab) },
     ];
   },
   adapter: adapter({ ...crudAccounting('balanceSheet', 'BS') }),

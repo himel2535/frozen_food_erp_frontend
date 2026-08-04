@@ -7,6 +7,7 @@ import { Footer } from '@/components/layout/Footer';
 import { AppFormFields, AppFormModal } from '@/components/shared/AppForm';
 import { ListToolbar } from '@/components/shared/ListToolbar';
 import { KpiCards, type KpiCardItem } from '@/components/shared/KpiCards';
+import { getKpiGridClassName } from '@/lib/ui/kpi-grid';
 import { MODULE_LIST_SHELL } from '@/lib/ui/module-layout';
 import { FilterTabs } from '@/components/shared/FilterTabs';
 import { AppTable } from '@/components/shared/AppTable';
@@ -189,7 +190,7 @@ function DedicatedModuleView({ config }: { config: DedicatedModuleConfig }) {
       {kpis.length > 0 && (
         <KpiCards
           items={kpis}
-          gridClassName={config.kpiGridClassName ?? 'grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2'}
+          gridClassName={config.kpiGridClassName ?? getKpiGridClassName(kpis.length)}
         />
       )}
       <AppTable

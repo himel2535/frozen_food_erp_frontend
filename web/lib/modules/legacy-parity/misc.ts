@@ -6,11 +6,16 @@ import { listFromState, createInState, updateInState, deleteFromState } from '@/
 import { crudFactory } from '@/lib/services/manufacturing-service';
 import { crudHrm } from '@/lib/services/hrm-service';
 import { crmActivityAdapter } from '@/lib/modules/port-adapters';
-import { adapter, money, type DedicatedModuleConfig } from './shared';
+import { adapter, money, countStatus, countStatusIn, sumField, kpiCount, kpiMoneySum, type DedicatedModuleConfig } from './shared';
 export const CONFIGS: Record<string, DedicatedModuleConfig> = {
   'crm-activities': {
     ...(PORT_CONFIGS['crm-activities'] as DedicatedModuleConfig),
-    kpi: (rows) => [{ key: 'total', label: 'Total Activities', value: String(rows.length) }],
+    kpi: (rows) => [
+      kpiCount('total', 'Total Activities', rows.length),
+      kpiCount('calls', 'Calls', rows.filter((r) => String(r.type).toLowerCase() === 'call').length),
+      kpiCount('meetings', 'Meetings', rows.filter((r) => String(r.type).toLowerCase() === 'meeting').length),
+      kpiCount('followups', 'Follow-ups', rows.filter((r) => String(r.type).toLowerCase() === 'follow-up').length),
+    ],
   },
   'sales-wholesale': {
     id: 'sales-wholesale',
@@ -32,8 +37,10 @@ export const CONFIGS: Record<string, DedicatedModuleConfig> = {
       { key: 'notes', label: 'Notes', type: 'textarea', advanced: true },
     ],
     kpi: (rows) => [
-      { key: 'orders', label: 'Total Orders', value: String(rows.length) },
-      { key: 'value', label: 'Total Value', value: money(rows.reduce((s, r) => s + Number(r.total ?? 0), 0)) },
+      kpiCount('orders', 'Total Orders', rows.length),
+      kpiMoneySum('value', 'Total Value', rows, 'total'),
+      kpiCount('open', 'Open', countStatus(rows, 'open')),
+      kpiCount('closed', 'Closed', countStatus(rows, 'closed')),
     ],
     adapter: adapter({
       list: (s) => listFromState(s, 'wholesaleOrders'),
@@ -63,8 +70,10 @@ export const CONFIGS: Record<string, DedicatedModuleConfig> = {
       { key: 'notes', label: 'Notes', type: 'textarea', advanced: true },
     ],
     kpi: (rows) => [
-      { key: 'total', label: 'Total Users', value: String(rows.length) },
-      { key: 'active', label: 'Active', value: String(rows.filter((r) => r.status === 'Active').length) },
+      kpiCount('total', 'Total Users', rows.length),
+      kpiCount('active', 'Active', countStatus(rows, 'Active')),
+      kpiCount('inactive', 'Inactive', countStatus(rows, 'Inactive')),
+      kpiCount('roles', 'Unique Roles', new Set(rows.map((r) => String(r.role ?? '')).filter(Boolean)).size),
     ],
     adapter: adapter({ ...crudHrm('users', 'USR') }),
   },
@@ -81,7 +90,12 @@ export const CONFIGS: Record<string, DedicatedModuleConfig> = {
       { key: 'permissions', label: 'Permissions Summary', type: 'textarea', advanced: true },
       { key: 'status', label: 'Status', type: 'select', options: ['active', 'inactive'] },
     ],
-    kpi: (rows) => [{ key: 'total', label: 'Roles', value: String(rows.length) }],
+    kpi: (rows) => [
+      kpiCount('total', 'Total Roles', rows.length),
+      kpiCount('active', 'Active', countStatus(rows, 'active')),
+      kpiCount('inactive', 'Inactive', countStatus(rows, 'inactive')),
+      kpiCount('assigned', 'Assigned Users', sumField(rows, 'users')),
+    ],
     adapter: adapter({ ...crudHrm('roles', 'ROLE') }),
   },
   'settings-permissions': {
@@ -97,7 +111,12 @@ export const CONFIGS: Record<string, DedicatedModuleConfig> = {
       { key: 'access', label: 'Access Level', type: 'select', options: ['none', 'read', 'write', 'admin'] },
       { key: 'notes', label: 'Notes', type: 'textarea', advanced: true },
     ],
-    kpi: (rows) => [{ key: 'total', label: 'Permission Rules', value: String(rows.length) }],
+    kpi: (rows) => [
+      kpiCount('total', 'Permission Rules', rows.length),
+      kpiCount('admin', 'Admin Access', rows.filter((r) => String(r.access).toLowerCase() === 'admin').length),
+      kpiCount('write', 'Write Access', rows.filter((r) => String(r.access).toLowerCase() === 'write').length),
+      kpiCount('read', 'Read Access', rows.filter((r) => String(r.access).toLowerCase() === 'read').length),
+    ],
     adapter: adapter({ ...crudHrm('permissions', 'PERM') }),
   },
   'settings-documents': {
@@ -113,7 +132,12 @@ export const CONFIGS: Record<string, DedicatedModuleConfig> = {
       { key: 'template', label: 'Template ID', type: 'text', advanced: true },
       { key: 'notes', label: 'Notes', type: 'textarea', advanced: true },
     ],
-    kpi: (rows) => [{ key: 'total', label: 'Documents', value: String(rows.length) }],
+    kpi: (rows) => [
+      kpiCount('total', 'Documents', rows.length),
+      kpiCount('invoice', 'Invoice Templates', rows.filter((r) => String(r.type).toLowerCase() === 'invoice').length),
+      kpiCount('quotation', 'Quotation Templates', rows.filter((r) => String(r.type).toLowerCase() === 'quotation').length),
+      kpiCount('active', 'Active', countStatusIn(rows, ['active', 'published'])),
+    ],
     adapter: adapter({ ...crudHrm('documents', 'DOC') }),
   },
   'settings-company': {
@@ -128,7 +152,12 @@ export const CONFIGS: Record<string, DedicatedModuleConfig> = {
       { key: 'value', label: 'Value', type: 'text', required: true },
       { key: 'notes', label: 'Notes', type: 'textarea', advanced: true },
     ],
-    kpi: (rows) => [{ key: 'total', label: 'Settings', value: String(rows.length) }],
+    kpi: (rows) => [
+      kpiCount('total', 'Settings', rows.length),
+      kpiCount('configured', 'Configured', rows.filter((r) => String(r.value ?? '').trim().length > 0).length),
+      kpiCount('empty', 'Empty', rows.filter((r) => !String(r.value ?? '').trim()).length),
+      kpiCount('fields', 'Unique Fields', new Set(rows.map((r) => String(r.field ?? '')).filter(Boolean)).size),
+    ],
     adapter: adapter({ ...crudHrm('companySettings', 'SET') }),
   },
   'settings-profile': {
@@ -142,7 +171,12 @@ export const CONFIGS: Record<string, DedicatedModuleConfig> = {
       { key: 'field', label: 'Preference', type: 'text', required: true },
       { key: 'value', label: 'Value', type: 'text', required: true },
     ],
-    kpi: (rows) => [{ key: 'total', label: 'Preferences', value: String(rows.length) }],
+    kpi: (rows) => [
+      kpiCount('total', 'Preferences', rows.length),
+      kpiCount('configured', 'Configured', rows.filter((r) => String(r.value ?? '').trim().length > 0).length),
+      kpiCount('empty', 'Empty', rows.filter((r) => !String(r.value ?? '').trim()).length),
+      kpiCount('fields', 'Unique Fields', new Set(rows.map((r) => String(r.field ?? '')).filter(Boolean)).size),
+    ],
     adapter: adapter({ ...crudHrm('profileSettings', 'PROF') }),
   },
   'projects': {
@@ -206,8 +240,10 @@ export const CONFIGS: Record<string, DedicatedModuleConfig> = {
       { key: 'notes', label: 'Notes', type: 'textarea', advanced: true },
     ],
     kpi: (rows) => [
-      { key: 'total', label: 'Total Assets', value: String(rows.length) },
-      { key: 'value', label: 'Total Value', value: money(rows.reduce((s, r) => s + Number(r.value ?? 0), 0)) },
+      kpiCount('total', 'Total Assets', rows.length),
+      kpiMoneySum('value', 'Total Value', rows, 'value'),
+      kpiCount('active', 'Active', countStatus(rows, 'active')),
+      kpiCount('maintenance', 'In Maintenance', countStatus(rows, 'maintenance')),
     ],
     adapter: adapter({ ...crudFactory('assets', 'AST') }),
   },
@@ -237,8 +273,10 @@ export const CONFIGS: Record<string, DedicatedModuleConfig> = {
       { key: 'notes', label: 'Notes', type: 'textarea', advanced: true },
     ],
     kpi: (rows) => [
-      { key: 'pending', label: 'Pending', value: String(rows.filter((r) => r.status === 'pending').length) },
-      { key: 'approved', label: 'Approved', value: String(rows.filter((r) => r.status === 'approved').length) },
+      kpiCount('total', 'Total Requests', rows.length),
+      kpiCount('pending', 'Pending', countStatus(rows, 'pending')),
+      kpiCount('approved', 'Approved', countStatus(rows, 'approved')),
+      kpiCount('rejected', 'Rejected', countStatus(rows, 'rejected')),
     ],
     hideDefaultRowActions: (row) => String(row.refType) === 'purchase_rm_order',
     adapter: adapter({ ...crudFactory('approvals', 'APR') }),
@@ -263,8 +301,10 @@ export const CONFIGS: Record<string, DedicatedModuleConfig> = {
       { key: 'message', label: 'Message', type: 'textarea', advanced: true },
     ],
     kpi: (rows) => [
-      { key: 'unread', label: 'Unread', value: String(rows.filter((r) => r.status === 'unread').length) },
-      { key: 'total', label: 'Total', value: String(rows.length) },
+      kpiCount('total', 'Total', rows.length),
+      kpiCount('unread', 'Unread', countStatus(rows, 'unread')),
+      kpiCount('read', 'Read', countStatus(rows, 'read')),
+      kpiCount('warnings', 'Warnings', rows.filter((r) => String(r.type).toLowerCase() === 'warning').length),
     ],
     adapter: adapter({ ...crudFactory('notifications', 'NTF') }),
   },

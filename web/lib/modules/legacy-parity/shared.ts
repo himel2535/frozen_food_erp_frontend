@@ -24,5 +24,26 @@ export function money(v: unknown) {
   return formatCurrency(Number(v ?? 0));
 }
 
+export function countStatus(rows: Row[], status: string): number {
+  return rows.filter((r) => String(r.status ?? '').toLowerCase() === status.toLowerCase()).length;
+}
+
+export function countStatusIn(rows: Row[], statuses: string[]): number {
+  const set = new Set(statuses.map((s) => s.toLowerCase()));
+  return rows.filter((r) => set.has(String(r.status ?? '').toLowerCase())).length;
+}
+
+export function sumField(rows: Row[], field: string): number {
+  return rows.reduce((s, r) => s + Number(r[field] ?? 0), 0);
+}
+
+export function kpiCount(key: string, label: string, value: number | string) {
+  return { key, label, value: String(value) };
+}
+
+export function kpiMoneySum(key: string, label: string, rows: Row[], field: string) {
+  return { key, label, value: money(sumField(rows, field)) };
+}
+
 export { React, toast, confirmAction };
 export type { DedicatedModuleConfig, Row };

@@ -14,7 +14,7 @@ import {
 } from '@/lib/services/recipes-service';
 import { createInState, updateInState, deleteFromState } from '@/lib/services/domain-service';
 import { PORT_CONFIGS } from '@/lib/modules/port-configs';
-import { adapter, money, React, toast, confirmAction, type DedicatedModuleConfig } from './shared';
+import { adapter, money, countStatus, countStatusIn, sumField, kpiCount, kpiMoneySum, React, toast, confirmAction, type DedicatedModuleConfig } from './shared';
 const purchasesOrdersConfig: DedicatedModuleConfig = {
   id: 'purchases-orders',
   title: 'Purchase Orders',
@@ -121,9 +121,10 @@ export const CONFIGS: Record<string, DedicatedModuleConfig> = {
       { key: 'notes', label: 'Notes', type: 'textarea', advanced: true },
     ],
     kpi: (rows) => [
-      { key: 'total', label: 'Total Suppliers', value: String(rows.length) },
-      { key: 'active', label: 'Active', value: String(rows.filter((r) => String(r.status) === 'active').length) },
-      { key: 'due', label: 'Total Outstanding', value: money(rows.reduce((s, r) => s + Number(r.due ?? 0), 0)) },
+      kpiCount('total', 'Total Suppliers', rows.length),
+      kpiCount('active', 'Active', countStatus(rows, 'active')),
+      kpiCount('inactive', 'Inactive / Hold', countStatusIn(rows, ['inactive', 'credit-hold'])),
+      kpiMoneySum('due', 'Total Outstanding', rows, 'due'),
     ],
     adapter: adapter({ list: listSuppliers, create: createSupplier, update: updateSupplier, delete: deleteSupplier }),
   },
@@ -154,8 +155,10 @@ export const CONFIGS: Record<string, DedicatedModuleConfig> = {
       { key: 'notes', label: 'Notes', type: 'textarea', advanced: true },
     ],
     kpi: (rows) => [
-      { key: 'count', label: 'Total GRNs', value: String(rows.length) },
-      { key: 'qty', label: 'Total Qty Received', value: String(rows.reduce((s, r) => s + Number(r.qty ?? 0), 0)) },
+      kpiCount('count', 'Total GRNs', rows.length),
+      kpiCount('open', 'Open', countStatus(rows, 'open')),
+      kpiCount('closed', 'Closed', countStatus(rows, 'closed')),
+      kpiCount('qty', 'Total Qty Received', sumField(rows, 'qty')),
     ],
     adapter: adapter({
       list: listGoodsReceived,
@@ -188,9 +191,10 @@ export const CONFIGS: Record<string, DedicatedModuleConfig> = {
       { key: 'notes', label: 'Notes', type: 'textarea', advanced: true },
     ],
     kpi: (rows) => [
-      { key: 'total', label: 'Total Bills', value: String(rows.length) },
-      { key: 'amount', label: 'Total Amount', value: money(rows.reduce((s, r) => s + Number(r.amount ?? 0), 0)) },
-      { key: 'unpaid', label: 'Unpaid', value: String(rows.filter((r) => r.status !== 'paid').length) },
+      kpiCount('total', 'Total Bills', rows.length),
+      kpiMoneySum('amount', 'Total Amount', rows, 'amount'),
+      kpiCount('unpaid', 'Unpaid', rows.filter((r) => r.status !== 'paid').length),
+      kpiCount('paid', 'Paid', countStatus(rows, 'paid')),
     ],
     adapter: adapter({
       list: listVendorBills,
@@ -223,8 +227,10 @@ export const CONFIGS: Record<string, DedicatedModuleConfig> = {
       { key: 'notes', label: 'Notes', type: 'textarea', advanced: true },
     ],
     kpi: (rows) => [
-      { key: 'total', label: 'Total Payments', value: String(rows.length) },
-      { key: 'paid', label: 'Total Paid', value: money(rows.reduce((s, r) => s + Number(r.amount ?? 0), 0)) },
+      kpiCount('total', 'Total Payments', rows.length),
+      kpiMoneySum('paid', 'Total Paid', rows, 'amount'),
+      kpiCount('pending', 'Pending', countStatus(rows, 'pending')),
+      kpiCount('completed', 'Paid', countStatus(rows, 'paid')),
     ],
     adapter: adapter({
       list: listPurchasePayments,
@@ -255,7 +261,12 @@ export const CONFIGS: Record<string, DedicatedModuleConfig> = {
       { key: 'status', label: 'Status', type: 'select', options: ['open', 'closed', 'pending'] },
       { key: 'notes', label: 'Notes', type: 'textarea', advanced: true },
     ],
-    kpi: (rows) => [{ key: 'total', label: 'Total Returns', value: String(rows.length) }],
+    kpi: (rows) => [
+      kpiCount('total', 'Total Returns', rows.length),
+      kpiCount('open', 'Open', countStatus(rows, 'open')),
+      kpiCount('closed', 'Closed', countStatus(rows, 'closed')),
+      kpiCount('qty', 'Total Return Qty', sumField(rows, 'qty')),
+    ],
     adapter: adapter({
       list: listPurchaseReturns,
       create: (s, p) => createInState(s, 'purchaseReturns', p, 'PR'),
@@ -284,8 +295,10 @@ export const CONFIGS: Record<string, DedicatedModuleConfig> = {
       { key: 'notes', label: 'Notes', type: 'textarea', advanced: true },
     ],
     kpi: (rows) => [
-      { key: 'total', label: 'Total Recipes', value: String(rows.length) },
-      { key: 'active', label: 'Active', value: String(rows.filter((r) => r.status === 'active').length) },
+      kpiCount('total', 'Total Recipes', rows.length),
+      kpiCount('active', 'Active', countStatus(rows, 'active')),
+      kpiCount('inactive', 'Inactive', countStatus(rows, 'inactive')),
+      kpiCount('withComponents', 'With Components', rows.filter((r) => String(r.components ?? '').trim().length > 0).length),
     ],
     adapter: adapter({
       list: listRecipes,

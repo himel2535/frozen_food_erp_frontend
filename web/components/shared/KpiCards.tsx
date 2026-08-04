@@ -2,6 +2,7 @@
 
 import { Icon } from '@iconify/react';
 import { resolveKpiIcon } from '@/lib/ui/kpi-icons';
+import { getKpiGridClassName } from '@/lib/ui/kpi-grid';
 
 export interface KpiCardItem {
   key: string;
@@ -15,13 +16,15 @@ export interface KpiCardItem {
 
 export function KpiCards({
   items,
-  gridClassName = 'grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2',
+  gridClassName,
 }: {
   items: KpiCardItem[];
   gridClassName?: string;
 }) {
+  const grid = gridClassName ?? getKpiGridClassName(items.length);
+
   return (
-    <section className={gridClassName}>
+    <section className={grid}>
       {items.map((item) => {
         const iconId = item.iconify ?? resolveKpiIcon(item.key, item.label);
         return (

@@ -34,7 +34,7 @@ function MetricCard({
 
 export function ProfitLossMetrics({ metrics }: { metrics: ProfitLossMetrics }) {
   return (
-    <section className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+    <section className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-2">
       <MetricCard
         label="Total Revenue"
         value={formatPlMoney(metrics.totalRevenue)}
@@ -59,13 +59,24 @@ export function ProfitLossMetrics({ metrics }: { metrics: ProfitLossMetrics }) {
       <MetricCard
         label="Net Profit"
         value={formatPlMoney(metrics.netProfit)}
-        sub={`${formatPlPercent(metrics.profitMargin)} Profit Margin`}
         valueClassName="text-emerald-600"
-        subClassName="text-emerald-600 font-bold"
         cardClassName="bg-emerald-50/80 border-emerald-100/80"
         icon={
           <span className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-emerald-500 text-white text-lg font-bold">
             ৳
+          </span>
+        }
+      />
+      <MetricCard
+        label="Profit Margin"
+        value={formatPlPercent(metrics.profitMargin)}
+        sub="Net profit as % of revenue"
+        valueClassName="text-emerald-600"
+        subClassName="text-emerald-600 font-bold"
+        cardClassName="bg-blue-50/80 border-blue-100/80"
+        icon={
+          <span className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-blue-500 text-white">
+            %
           </span>
         }
       />

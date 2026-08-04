@@ -18,6 +18,7 @@ export interface TrialBalanceMetrics {
   totalCredit: number;
   difference: number;
   isBalanced: boolean;
+  accountCount: number;
 }
 
 export interface TrialBalanceFilters {
@@ -65,6 +66,7 @@ export function getTrialBalanceMetrics(rows: TrialBalanceAccount[]): TrialBalanc
     totalCredit,
     difference,
     isBalanced: difference < 0.01,
+    accountCount: rows.length,
   };
 }
 

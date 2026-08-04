@@ -5,6 +5,7 @@ import { KpiCards, type KpiCardItem } from '@/components/shared/KpiCards';
 import { formatDueMoney, type DueMetrics } from '@/lib/services/due-management-service';
 
 export function DueMetrics({ metrics }: { metrics: DueMetrics }) {
+  const netDue = metrics.customerDue - metrics.supplierDue;
   const items: KpiCardItem[] = [
     {
       key: 'customer-due',
@@ -27,7 +28,14 @@ export function DueMetrics({ metrics }: { metrics: DueMetrics }) {
       sub: `${metrics.overdueCount} overdue invoice${metrics.overdueCount === 1 ? '' : 's'}`,
       icon: <Icon icon="fluent-color:alert-badge-24" width={38} height={38} className="shrink-0 text-rose-500" />,
     },
+    {
+      key: 'net-due',
+      label: 'Net Due',
+      value: formatDueMoney(netDue),
+      sub: 'Customer due minus supplier due',
+      icon: <Icon icon="flat-color-icons:currency-exchange" width={38} height={38} className="shrink-0" />,
+    },
   ];
 
-  return <KpiCards items={items} gridClassName="grid grid-cols-1 md:grid-cols-3 gap-2" />;
+  return <KpiCards items={items} />;
 }

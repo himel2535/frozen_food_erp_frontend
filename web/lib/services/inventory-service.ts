@@ -678,7 +678,8 @@ export function getWarehouseMetrics(state: AppState) {
   const activeWarehouses = warehouses.filter((w) => String(w.status) === 'Active').length;
   const inactiveWarehouses = warehouses.length - activeWarehouses;
   const utilizationPercent = totalCapacity > 0 ? (totalCurrentStock / totalCapacity) * 100 : 0;
-  return { warehouses, totalCapacity, totalCurrentStock, activeWarehouses, inactiveWarehouses, utilizationPercent };
+  const totalStockValue = warehouses.reduce((s, w) => s + Number(w.stockValueStored ?? 0), 0);
+  return { warehouses, totalCapacity, totalCurrentStock, activeWarehouses, inactiveWarehouses, utilizationPercent, totalStockValue };
 }
 
 export function updateStockIn(state: AppState, id: string, payload: Row) {

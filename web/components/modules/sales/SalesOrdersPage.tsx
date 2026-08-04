@@ -47,10 +47,12 @@ function summarizeItems(row: Record<string, unknown>): string {
 function orderKpis(rows: Record<string, unknown>[]) {
   const total = rows.reduce((s, r) => s + Number(r.total ?? 0), 0);
   const open = rows.filter((r) => !['fulfilled', 'cancelled'].includes(String(r.status).toLowerCase())).length;
+  const fulfilled = rows.filter((r) => String(r.status).toLowerCase() === 'fulfilled').length;
   return [
     { key: 'count', label: 'Total Orders', value: String(rows.length) },
     { key: 'open', label: 'Open Orders', value: String(open) },
     { key: 'value', label: 'Total Value', value: formatMoney(total) },
+    { key: 'fulfilled', label: 'Fulfilled', value: String(fulfilled) },
   ];
 }
 
@@ -136,7 +138,9 @@ export function SalesOrdersPage() {
         </button>
       </div>
 
-      <KpiCards items={kpis} gridClassName="mt-4 grid grid-cols-2 md:grid-cols-3 gap-2" />
+      <div className="mt-4">
+        <KpiCards items={kpis} />
+      </div>
 
       <div className="mt-4 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
         <FilterTabs tabs={STATUS_TABS} active={statusFilter} onChange={setStatusFilter} />

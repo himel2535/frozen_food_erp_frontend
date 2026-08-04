@@ -8,7 +8,7 @@ import {
 } from '@/lib/services/hrm-service';
 import { getSalaryStructureMetrics, formatMoney as payrollMoney } from '@/lib/services/payroll-service';
 import { createInState, updateInState, deleteFromState } from '@/lib/services/domain-service';
-import { adapter, money, type DedicatedModuleConfig } from './shared';
+import { adapter, money, countStatus, countStatusIn, sumField, kpiCount, kpiMoneySum, type DedicatedModuleConfig } from './shared';
 export const CONFIGS: Record<string, DedicatedModuleConfig> = {
   'hrm-employees': {
     id: 'hrm-employees',
@@ -66,7 +66,12 @@ export const CONFIGS: Record<string, DedicatedModuleConfig> = {
       { key: 'status', label: 'Status', type: 'select', options: ['active', 'inactive'] },
       { key: 'notes', label: 'Notes', type: 'textarea', advanced: true },
     ],
-    kpi: (rows) => [{ key: 'total', label: 'Departments', value: String(rows.length) }],
+    kpi: (rows) => [
+      kpiCount('total', 'Departments', rows.length),
+      kpiCount('active', 'Active', countStatus(rows, 'active')),
+      kpiCount('inactive', 'Inactive', countStatus(rows, 'inactive')),
+      kpiCount('withHead', 'With Head Assigned', rows.filter((r) => String(r.head ?? '').trim().length > 0).length),
+    ],
     adapter: adapter({ ...crudHrm('departments', 'DEPT') }),
   },
   'hrm-designations': {
@@ -82,7 +87,12 @@ export const CONFIGS: Record<string, DedicatedModuleConfig> = {
       { key: 'status', label: 'Status', type: 'select', options: ['active', 'inactive'] },
       { key: 'notes', label: 'Notes', type: 'textarea', advanced: true },
     ],
-    kpi: (rows) => [{ key: 'total', label: 'Designations', value: String(rows.length) }],
+    kpi: (rows) => [
+      kpiCount('total', 'Designations', rows.length),
+      kpiCount('active', 'Active', countStatus(rows, 'active')),
+      kpiCount('inactive', 'Inactive', countStatus(rows, 'inactive')),
+      kpiCount('departments', 'Departments Covered', new Set(rows.map((r) => String(r.department ?? '')).filter(Boolean)).size),
+    ],
     adapter: adapter({ ...crudHrm('designations', 'DES') }),
   },
   'hrm-attendance': {
@@ -109,8 +119,10 @@ export const CONFIGS: Record<string, DedicatedModuleConfig> = {
       { key: 'notes', label: 'Notes', type: 'textarea', advanced: true },
     ],
     kpi: (rows) => [
-      { key: 'present', label: 'Present Today', value: String(rows.filter((r) => r.status === 'Present').length) },
-      { key: 'absent', label: 'Absent', value: String(rows.filter((r) => r.status === 'Absent').length) },
+      kpiCount('total', 'Total Records', rows.length),
+      kpiCount('present', 'Present Today', countStatus(rows, 'Present')),
+      kpiCount('absent', 'Absent', countStatus(rows, 'Absent')),
+      kpiCount('late', 'Late / On Leave', countStatusIn(rows, ['Late', 'On Leave'])),
     ],
     adapter: adapter({ ...crudHrm('attendance', 'ATT') }),
   },
@@ -136,8 +148,10 @@ export const CONFIGS: Record<string, DedicatedModuleConfig> = {
       { key: 'notes', label: 'Notes', type: 'textarea', advanced: true },
     ],
     kpi: (rows) => [
-      { key: 'pending', label: 'Pending Requests', value: String(rows.filter((r) => r.status === 'pending').length) },
-      { key: 'approved', label: 'Approved', value: String(rows.filter((r) => r.status === 'approved').length) },
+      kpiCount('total', 'Total Requests', rows.length),
+      kpiCount('pending', 'Pending Requests', countStatus(rows, 'pending')),
+      kpiCount('approved', 'Approved', countStatus(rows, 'approved')),
+      kpiCount('rejected', 'Rejected', countStatus(rows, 'rejected')),
     ],
     adapter: adapter({ ...crudHrm('leaveRequests', 'LV') }),
   },
@@ -203,8 +217,10 @@ export const CONFIGS: Record<string, DedicatedModuleConfig> = {
       { key: 'notes', label: 'Notes', type: 'textarea', advanced: true },
     ],
     kpi: (rows) => [
-      { key: 'runs', label: 'Total Runs', value: String(rows.length) },
-      { key: 'completed', label: 'Completed', value: String(rows.filter((r) => r.status === 'completed').length) },
+      kpiCount('runs', 'Total Runs', rows.length),
+      kpiCount('completed', 'Completed', countStatus(rows, 'completed')),
+      kpiCount('processing', 'Processing', countStatus(rows, 'processing')),
+      kpiMoneySum('totalNet', 'Total Net Pay', rows, 'totalNet'),
     ],
     adapter: adapter({ ...crudHrm('payrollRuns', 'PR') }),
   },
@@ -233,8 +249,10 @@ export const CONFIGS: Record<string, DedicatedModuleConfig> = {
       { key: 'notes', label: 'Notes', type: 'textarea', advanced: true },
     ],
     kpi: (rows) => [
-      { key: 'total', label: 'Total Payslips', value: String(rows.length) },
-      { key: 'net', label: 'Total Disbursed', value: money(rows.reduce((s, r) => s + Number(r.net ?? 0), 0)) },
+      kpiCount('total', 'Total Payslips', rows.length),
+      kpiMoneySum('net', 'Total Disbursed', rows, 'net'),
+      kpiCount('paid', 'Paid', countStatusIn(rows, ['paid', 'Disbursed'])),
+      kpiCount('pending', 'Pending', countStatusIn(rows, ['draft', 'Pending', 'approved'])),
     ],
     adapter: adapter({
       list: listPayrollSlips,
