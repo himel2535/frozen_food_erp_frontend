@@ -945,4 +945,84 @@ export function reorderMaterialInRecipe(state: AppState, recipeId: string, mater
   return updateInState(state, 'recipes', recipeId, { materials });
 }
 
+export type SemiFinishedRecipeRow = ProductRecipeLookup & {
+  recipeId?: string | number;
+};
+
+export function ensureSemiFinishedRecipe(
+  state: AppState,
+  sfRow: SemiFinishedRecipeRow,
+): { ok: true; recipe: Recipe; recipeId: string; stateChanged: boolean } | { ok: false; error: string } {
+  const sfId = String(sfRow.id ?? '').trim();
+  const sfName = String(sfRow.name ?? '').trim();
+  if (!sfId) return { ok: false, error: 'Semi-finished product id is required' };
+
+  let stateChanged = false;
+  const existingRecipeId = String(sfRow.recipeId ?? '').trim();
+
+  if (existingRecipeId) {
+    const linked = getRecipe(state, existingRecipeId);
+    if (linked) return { ok: true, recipe: linked, recipeId: existingRecipeId, stateChanged: false };
+  }
+
+  const matched = findRecipeForProduct(state, { id: sfId, sku: sfId, name: sfName });
+  if (matched) {
+    if (existingRecipeId !== matched.id) {
+      updateInState(state, 'semiFinishedProducts', sfId, { recipeId: matched.id });
+      stateChanged = true;
+    }
+    return { ok: true, recipe: matched, recipeId: matched.id, stateChanged };
+  }
+
+  const created = createRecipe(state, {
+    product: sfName || sfId,
+    model: sfId,
+    status: 'active',
+  });
+  if (!created.ok) {
+    return { ok: false, error: 'error' in created ? String(created.error) : 'Failed to create recipe' };
+  }
+
+  const recipe = getRecipe(state, created.id);
+  if (!recipe) return { ok: false, error: 'Recipe was created but could not be loaded' };
+
+  updateRecipe(state, recipe.id, {
+    productId: sfId,
+    productSku: sfId,
+  });
+  updateInState(state, 'semiFinishedProducts', sfId, { recipeId: recipe.id });
+  stateChanged = true;
+
+  const updated = getRecipe(state, recipe.id);
+  if (!updated) return { ok: false, error: 'Recipe could not be loaded after linking' };
+
+  return { ok: true, recipe: updated, recipeId: updated.id, stateChanged };
+}
+
+export function syncSemiFinishedRecipeMeta(
+  state: AppState,
+  sfId: string,
+  recipeId: string,
+): { ok: true } | { ok: false; error: string } {
+  const id = sfId.trim();
+  const rid = recipeId.trim();
+  if (!id || !rid) return { ok: true };
+
+  const sfRow = listFromState(state, 'semiFinishedProducts').find((row) => String(row.id) === id);
+  if (!sfRow) return { ok: false, error: 'Semi-finished product not found' };
+
+  const recipe = getRecipe(state, rid);
+  if (!recipe) return { ok: false, error: 'Recipe not found' };
+
+  const name = String(sfRow.name ?? '').trim();
+  updateRecipe(state, rid, {
+    productId: id,
+    productSku: id,
+    model: id,
+    product: name || recipe.product,
+  });
+
+  return { ok: true };
+}
+
 export { formatCurrency as formatMoney };

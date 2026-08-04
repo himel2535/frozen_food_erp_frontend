@@ -324,6 +324,11 @@ export const en = {
     "inventory.no_match": "No catalog products match the selected filters.",
     "inventory.no_allocation": "No allocation",
     "inventory.units_count": "{n} units",
+    "inventory.sf_bom_title": "Semi-Finished BOM",
+    "inventory.sf_bom_subtitle": "Parts used to produce this semi-finished product",
+    "inventory.sf_parts_used": "Parts Used",
+    "inventory.sf_manage_bom": "Manage BOM",
+    "inventory.sf_linked_bom": "Linked BOM",
 
     // Sales module
     "sales.orders_title": "Sales Orders",

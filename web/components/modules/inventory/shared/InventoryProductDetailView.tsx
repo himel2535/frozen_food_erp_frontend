@@ -1,6 +1,6 @@
 'use client';
 
-import { Download, Pencil } from 'lucide-react';
+import { Download, ListTree, Pencil } from 'lucide-react';
 import { DetailViewShell } from '@/components/shared/DetailViewShell';
 import { StatusBadge } from '@/components/shared/StatusBadge';
 import type { AppState } from '@/lib/state/types';
@@ -50,12 +50,14 @@ export function InventoryProductDetailView({
   appState,
   onBack,
   onEdit,
+  onManageBom,
 }: {
   variant: 'finished-goods' | 'semi-finished';
   row: Row;
   appState: AppState;
   onBack: () => void;
   onEdit: () => void;
+  onManageBom?: () => void;
 }) {
   const name = String(row.name ?? '—');
   const id = String(row.id ?? '—');
@@ -73,14 +75,12 @@ export function InventoryProductDetailView({
     ? new Date(String(row.lastUpdated)).toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' })
     : '—';
 
-  const linkedRecipe = variant === 'finished-goods'
-    ? resolveRecipeForInventoryRow(appState, {
-        id: row.id as string | number,
-        sku: String(row.sku ?? ''),
-        name: String(row.name ?? ''),
-        recipeId: row.recipeId as string | number | undefined,
-      })
-    : null;
+  const linkedRecipe = resolveRecipeForInventoryRow(appState, {
+    id: row.id as string | number,
+    sku: variant === 'finished-goods' ? String(row.sku ?? '') : String(row.id ?? ''),
+    name: String(row.name ?? ''),
+    recipeId: row.recipeId as string | number | undefined,
+  });
 
   return (
     <DetailViewShell
@@ -89,6 +89,16 @@ export function InventoryProductDetailView({
       onBack={onBack}
       actions={(
         <div className="flex items-center gap-2 shrink-0">
+          {variant === 'semi-finished' && onManageBom ? (
+            <button
+              type="button"
+              onClick={onManageBom}
+              className="inline-flex items-center gap-1.5 text-xs font-bold text-blue-700 border border-blue-200 bg-blue-50 hover:bg-blue-100 px-3 py-2 rounded-xl cursor-pointer"
+            >
+              <ListTree className="w-3.5 h-3.5" />
+              Manage BOM
+            </button>
+          ) : null}
           <button
             type="button"
             onClick={() => downloadInventoryProductCsv(row, variant, appState)}
@@ -133,14 +143,14 @@ export function InventoryProductDetailView({
               <>
                 <InfoRow label="SKU" value={String(row.sku ?? '')} />
                 <InfoRow label="Barcode" value={String(row.barcode ?? '')} />
-                <InfoRow
-                  label="Linked BOM"
-                  value={linkedRecipe
-                    ? `${linkedRecipe.recipeNumber} — ${linkedRecipe.product}`
-                    : 'None'}
-                />
               </>
             ) : null}
+            <InfoRow
+              label="Linked BOM"
+              value={linkedRecipe
+                ? `${linkedRecipe.recipeNumber} — ${linkedRecipe.product}`
+                : 'None'}
+            />
             <InfoRow label="Category" value={String(row.category ?? '')} />
             <InfoRow label="Unit" value={String(row.unit ?? 'pcs')} />
             <InfoRow label="Min. Stock Level" value={Number(row.minStock ?? row.threshold ?? 0).toLocaleString()} />
@@ -159,6 +169,58 @@ export function InventoryProductDetailView({
           </div>
         ) : null}
       </div>
+
+      {variant === 'semi-finished' ? (
+        <div className="space-y-3">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <h3 className="text-xs font-bold uppercase tracking-wide text-slate-500">Parts Used</h3>
+            {onManageBom ? (
+              <button
+                type="button"
+                onClick={onManageBom}
+                className="inline-flex items-center gap-1.5 text-xs font-bold text-blue-600 hover:text-blue-700 cursor-pointer"
+              >
+                <ListTree className="w-3.5 h-3.5" />
+                Manage BOM
+              </button>
+            ) : null}
+          </div>
+          {linkedRecipe && linkedRecipe.materials.length > 0 ? (
+            <div className="rounded-xl border border-slate-200 overflow-hidden">
+              <table className="w-full text-xs">
+                <thead>
+                  <tr className="bg-slate-50 border-b border-slate-200">
+                    <th className="text-left px-4 py-2.5 font-bold text-slate-500">Part</th>
+                    <th className="text-right px-4 py-2.5 font-bold text-slate-500">Qty / Unit</th>
+                    <th className="text-right px-4 py-2.5 font-bold text-slate-500">Unit</th>
+                    <th className="text-right px-4 py-2.5 font-bold text-slate-500">Cost / Unit</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {linkedRecipe.materials.map((material) => (
+                    <tr key={material.id} className="border-b border-slate-100 last:border-0">
+                      <td className="px-4 py-2.5 font-semibold text-slate-800">{material.name}</td>
+                      <td className="px-4 py-2.5 text-right font-semibold text-slate-700">
+                        {material.qtyPerProduct.toLocaleString(undefined, { maximumFractionDigits: 2 })}
+                      </td>
+                      <td className="px-4 py-2.5 text-right text-slate-600">{material.unit}</td>
+                      <td className="px-4 py-2.5 text-right font-semibold text-slate-700">
+                        {formatMoney(material.standardCost)}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50/50 px-4 py-6 text-center text-sm text-slate-500">
+              {linkedRecipe
+                ? 'No parts added to this BOM yet.'
+                : 'No BOM linked. Use Manage BOM to create and add parts.'}
+            </div>
+          )}
+        </div>
+      ) : null}
     </DetailViewShell>
   );
 }

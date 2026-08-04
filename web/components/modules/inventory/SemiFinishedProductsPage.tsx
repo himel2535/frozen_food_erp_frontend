@@ -3,7 +3,7 @@
 import { toast } from '@/lib/ui/feedback';
 
 import { useMemo, useState } from 'react';
-import { ChevronDown, Calculator, Download, Info, Layers, Package, Settings2 } from 'lucide-react';
+import { ChevronDown, Calculator, Download, Info, Layers, ListTree, Package, Settings2 } from 'lucide-react';
 import { Footer } from '@/components/layout/Footer';
 import { AppFormFields, AppFormModal, FORM_GRID_CLS, FORM_LABEL_CLS } from '@/components/shared/AppForm';
 import { AppTable, type AppTableColumn } from '@/components/shared/AppTable';
@@ -13,10 +13,11 @@ import { StatusBadge } from '@/components/shared/StatusBadge';
 import { TableIconAction } from '@/components/shared/TableIconAction';
 import { FilterBar, FilterSelect, SearchInput } from '@/components/modules/inventory/shared/inventory-ui';
 import { InventoryProductDetailView } from '@/components/modules/inventory/shared/InventoryProductDetailView';
+import { InventoryProductBomView } from '@/components/modules/inventory/shared/InventoryProductBomView';
 import { InventoryStockSummaryView } from '@/components/modules/inventory/shared/InventoryStockSummaryView';
 import { InventoryProductionCapacityView } from '@/components/modules/inventory/shared/InventoryProductionCapacityView';
 import { InventoryMaterialRequirementView } from '@/components/modules/inventory/shared/InventoryMaterialRequirementView';
-import { WarehouseSelect } from '@/components/modules/inventory/shared/selects';
+import { WarehouseSelect, RecipeSelect } from '@/components/modules/inventory/shared/selects';
 import { MODULE_LIST_SHELL } from '@/lib/ui/module-layout';
 import { useAppStore } from '@/lib/state/app-store';
 import type { PortField } from '@/lib/modules/port-types';
@@ -39,6 +40,11 @@ import {
   buildSemiFinishedStockSummary,
   downloadInventoryProductCsv,
 } from '@/lib/services/inventory-export';
+import {
+  ensureSemiFinishedRecipe,
+  getRecipe,
+  syncSemiFinishedRecipeMeta,
+} from '@/lib/services/recipes-service';
 
 const PAGE_SIZE_OPTIONS = [10, 15, 25];
 
@@ -77,10 +83,11 @@ function ProductThumb({ category }: { category: string }) {
 export function SemiFinishedProductsPage() {
   const appState = useAppStore((s) => s.appState);
   const saveAppState = useAppStore((s) => s.saveAppState);
-  const [view, setView] = useState<'main' | 'form' | 'detail' | 'summary' | 'capacity' | 'materials'>('main');
+  const [view, setView] = useState<'main' | 'form' | 'detail' | 'summary' | 'capacity' | 'materials' | 'bom'>('main');
   const [detailId, setDetailId] = useState<string | null>(null);
   const [capacityId, setCapacityId] = useState<string | null>(null);
   const [materialsId, setMaterialsId] = useState<string | null>(null);
+  const [bomId, setBomId] = useState<string | null>(null);
   const [search, setSearch] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('all');
   const [stockStatusFilter, setStockStatusFilter] = useState('all');
@@ -102,6 +109,7 @@ export function SemiFinishedProductsPage() {
     warehouseId: '',
     location: '',
     notes: '',
+    recipeId: '',
   });
 
   const warehouses = useMemo(() => listWarehouses(appState), [appState]);
@@ -245,6 +253,7 @@ export function SemiFinishedProductsPage() {
       warehouseId: warehouses[0]?.id ? String(warehouses[0].id) : '',
       location: '',
       notes: '',
+      recipeId: '',
     });
     setEditingId(null);
     setShowAdvanced(false);
@@ -266,26 +275,54 @@ export function SemiFinishedProductsPage() {
       warehouseId: String(row.warehouseId ?? warehouses[0]?.id ?? ''),
       location: String(row.location ?? ''),
       notes: String(row.notes ?? ''),
+      recipeId: String(row.recipeId ?? ''),
     });
     setEditingId(String(row.id));
     setView('form');
+  };
+
+  const handleRecipeChange = (recipeId: string) => {
+    if (!recipeId) {
+      setForm((prev) => ({ ...prev, recipeId: '' }));
+      return;
+    }
+    const recipe = getRecipe(appState, recipeId);
+    if (!recipe) {
+      setForm((prev) => ({ ...prev, recipeId }));
+      return;
+    }
+    setForm((prev) => ({
+      ...prev,
+      recipeId,
+      name: prev.name.trim() ? prev.name : recipe.product,
+    }));
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const payload = {
       ...form,
+      recipeId: form.recipeId || undefined,
       quantity: Number(form.quantity || 0),
       avgCost: Number(form.avgCost || 0),
       minStock: Number(form.minStock || 0),
       status: 'active',
     };
+    const savedId = editingId ?? previewSemiFinishedCode(appState);
     const result = editingId
       ? updateSemiFinishedProduct(appState, editingId, payload)
-      : createSemiFinishedProduct(appState, { ...payload, id: previewSemiFinishedCode(appState) });
+      : createSemiFinishedProduct(appState, { ...payload, id: savedId });
     if (!result.ok) {
       toast.error('Operation failed', { module: 'Inventory', description: 'error' in result ? String(result.error) : 'Save failed' });
       return;
+    }
+    if (form.recipeId) {
+      syncSemiFinishedRecipeMeta(appState, savedId, form.recipeId);
+    } else {
+      ensureSemiFinishedRecipe(appState, {
+        id: savedId,
+        name: form.name,
+      });
     }
     saveAppState();
     setView('main');
@@ -315,6 +352,10 @@ export function SemiFinishedProductsPage() {
     () => (materialsId ? allProducts.find((row) => String(row.id) === materialsId) ?? null : null),
     [allProducts, materialsId],
   );
+  const bomRow = useMemo(
+    () => (bomId ? allProducts.find((row) => String(row.id) === bomId) ?? null : null),
+    [allProducts, bomId],
+  );
   const stockSummary = useMemo(() => buildSemiFinishedStockSummary(appState), [appState]);
 
   const openDetail = (row: Record<string, unknown>) => {
@@ -332,6 +373,11 @@ export function SemiFinishedProductsPage() {
     setView('materials');
   };
 
+  const openBom = (row: Record<string, unknown>) => {
+    setBomId(String(row.id));
+    setView('bom');
+  };
+
   if (view === 'detail' && detailRow) {
     return (
       <InventoryProductDetailView
@@ -340,6 +386,19 @@ export function SemiFinishedProductsPage() {
         appState={appState}
         onBack={() => { setView('main'); setDetailId(null); }}
         onEdit={() => openEdit(detailRow)}
+        onManageBom={() => openBom(detailRow)}
+      />
+    );
+  }
+
+  if (view === 'bom' && bomRow) {
+    return (
+      <InventoryProductBomView
+        variant="semi-finished"
+        row={bomRow}
+        appState={appState}
+        onBack={() => { setView('main'); setBomId(null); }}
+        onSave={saveAppState}
       />
     );
   }
@@ -532,6 +591,14 @@ export function SemiFinishedProductsPage() {
               </button>
               <button
                 type="button"
+                title="Manage BOM / Parts"
+                onClick={() => openBom(row)}
+                className="app-table-icon-btn cursor-pointer"
+              >
+                <ListTree className="w-4 h-4" />
+              </button>
+              <button
+                type="button"
                 title="Material Requirements"
                 onClick={() => openMaterials(row)}
                 className="app-table-icon-btn cursor-pointer"
@@ -631,6 +698,25 @@ export function SemiFinishedProductsPage() {
           showAdvanced={showAdvanced}
           onToggleAdvanced={() => setShowAdvanced(!showAdvanced)}
         />
+        {showAdvanced ? (
+          <div className={FORM_GRID_CLS}>
+            <div>
+              <label className={FORM_LABEL_CLS}>Linked BOM</label>
+              <RecipeSelect
+                state={appState}
+                value={form.recipeId}
+                onChange={handleRecipeChange}
+                filterProduct={form.name || editingId
+                  ? {
+                      id: editingId ?? undefined,
+                      sku: editingId ?? undefined,
+                      name: form.name || undefined,
+                    }
+                  : undefined}
+              />
+            </div>
+          </div>
+        ) : null}
         <div className={FORM_GRID_CLS}>
           <div>
             <label className={FORM_LABEL_CLS}>Warehouse / Location</label>

@@ -325,6 +325,11 @@ export const bn = {
     "inventory.no_match": "নির্বাচিত ফিল্টারে কোনো পণ্য পাওয়া যায়নি।",
     "inventory.no_allocation": "বরাদ্দ নেই",
     "inventory.units_count": "{n} একক",
+    "inventory.sf_bom_title": "অর্ধ-তৈরি BOM",
+    "inventory.sf_bom_subtitle": "এই অর্ধ-তৈরি পণ্য তৈরিতে ব্যবহৃত যন্ত্রাংশ",
+    "inventory.sf_parts_used": "ব্যবহৃত যন্ত্রাংশ",
+    "inventory.sf_manage_bom": "BOM পরিচালনা",
+    "inventory.sf_linked_bom": "সংযুক্ত BOM",
 
     // Sales module
     "sales.orders_title": "বিক্রয় অর্ডার",
