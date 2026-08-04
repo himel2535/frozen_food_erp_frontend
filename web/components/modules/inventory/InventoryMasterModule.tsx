@@ -2,12 +2,12 @@
 
 import { toast, confirmAction } from '@/lib/ui/feedback';
 
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useCallback } from 'react';
 import { Footer } from '@/components/layout/Footer';
 import { AppFormFields, AppFormModal } from '@/components/shared/AppForm';
-import { ListToolbar } from '@/components/shared/ListToolbar';
+import { ListToolbar, ModuleToolbarActions } from '@/components/shared/ListToolbar';
+import { useRegisterModuleActions } from '@/components/layout/ModuleActionsContext';
 import { KpiCards, type KpiCardItem } from '@/components/shared/KpiCards';
-import { MODULE_LIST_SHELL } from '@/lib/ui/module-layout';
 import { FilterTabs } from '@/components/shared/FilterTabs';
 import { AppTable } from '@/components/shared/AppTable';
 import { TableIconAction } from '@/components/shared/TableIconAction';
@@ -97,10 +97,24 @@ export function InventoryMasterModule({ config }: { config: InventoryMasterConfi
 
   const tabs = config.statusTabs ?? [{ id: 'all', label: 'All' }, { id: 'active', label: 'Active' }, { id: 'inactive', label: 'Inactive' }];
 
+  const handleAdd = useCallback(() => {
+    resetForm();
+    setView('form');
+  }, [resetForm]);
+
+  useRegisterModuleActions(
+    <ModuleToolbarActions onAdd={handleAdd} addLabel={config.addLabel} />,
+    [handleAdd, config.addLabel],
+  );
+
   return (
     <>
-    <div className={MODULE_LIST_SHELL}>
-      <ListToolbar title={config.title} subtitle={config.subtitle} search={search} onSearchChange={setSearch} searchPlaceholder={`Search ${config.title.toLowerCase()}...`} onAdd={() => { resetForm(); setView('form'); }} addLabel={config.addLabel} filters={<FilterTabs tabs={tabs} active={statusFilter} onChange={setStatusFilter} />} />
+      <ListToolbar
+        search={search}
+        onSearchChange={setSearch}
+        searchPlaceholder={`Search ${config.title.toLowerCase()}...`}
+        filters={<FilterTabs tabs={tabs} active={statusFilter} onChange={setStatusFilter} />}
+      />
       {kpis.length > 0 && <KpiCards items={kpis} />}
       <AppTable
         columns={config.columns.map((col) => ({
@@ -129,7 +143,6 @@ export function InventoryMasterModule({ config }: { config: InventoryMasterConfi
         )}
       />
       <Footer />
-    </div>
     <AppFormModal
       open={view === 'form'}
       onClose={handleBack}

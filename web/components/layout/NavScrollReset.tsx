@@ -1,20 +1,19 @@
-'use client';
-
-import { useEffect } from 'react';
-import { usePathname } from 'next/navigation';
-
-/** Reset module scroll position on route change without a loading skeleton flash. */
-export function NavScrollReset() {
-  const pathname = usePathname();
-
-  useEffect(() => {
-    const main = document.querySelector('main');
-    if (!main) return;
-    const scrollable = main.querySelector('.overflow-y-auto');
-    if (scrollable instanceof HTMLElement) {
-      scrollable.scrollTop = 0;
-    }
-  }, [pathname]);
-
-  return null;
-}
+'use client';
+
+import { useLayoutEffect } from 'react';
+import { usePathname } from 'next/navigation';
+import { MODULE_SCROLL_ID } from '@/lib/ui/module-layout';
+
+/** Reset module scroll position on route change (before paint to avoid visible jump). */
+export function NavScrollReset() {
+  const pathname = usePathname();
+
+  useLayoutEffect(() => {
+    const scrollable = document.getElementById(MODULE_SCROLL_ID);
+    if (scrollable) {
+      scrollable.scrollTop = 0;
+    }
+  }, [pathname]);
+
+  return null;
+}

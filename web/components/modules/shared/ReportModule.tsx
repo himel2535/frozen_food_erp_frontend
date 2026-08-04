@@ -4,7 +4,6 @@ import { useMemo, useState } from 'react';
 import { Footer } from '@/components/layout/Footer';
 import { ListToolbar } from '@/components/shared/ListToolbar';
 import { KpiCards, type KpiCardItem } from '@/components/shared/KpiCards';
-import { MODULE_LIST_SHELL } from '@/lib/ui/module-layout';
 import { AppTable } from '@/components/shared/AppTable';
 import { StatusBadge } from '@/components/shared/StatusBadge';
 import { useAppStore } from '@/lib/state/app-store';
@@ -72,10 +71,8 @@ export function ReportModule({ config }: { config: ReportModuleConfig }) {
   const kpis = useMemo(() => config.kpi(rows), [config, rows]);
 
   return (
-    <div className={MODULE_LIST_SHELL}>
+    <>
       <ListToolbar
-        title={config.title}
-        subtitle={config.subtitle}
         search={search}
         onSearchChange={setSearch}
         searchPlaceholder={`Search ${config.title.toLowerCase()}...`}
@@ -115,6 +112,6 @@ export function ReportModule({ config }: { config: ReportModuleConfig }) {
         emptyMessage="No records found matching filters."
       />
       <Footer />
-    </div>
+    </>
   );
 }

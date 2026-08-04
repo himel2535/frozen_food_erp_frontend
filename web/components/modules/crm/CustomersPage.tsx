@@ -2,13 +2,13 @@
 
 import { confirmAction, toast } from '@/lib/ui/feedback';
 
-import { Suspense, useEffect, useMemo, useState } from 'react';
+import { Suspense, useEffect, useMemo, useState, useCallback } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Download, Upload, Printer } from 'lucide-react';
 import { Footer } from '@/components/layout/Footer';
-import { PageHeader } from '@/components/shared/PageHeader';
+import { useChromeSuppressed, useRegisterModuleActions } from '@/components/layout/ModuleActionsContext';
+import { ModuleToolbarActions } from '@/components/shared/ListToolbar';
 import { KpiCards } from '@/components/shared/KpiCards';
-import { MODULE_LIST_SHELL } from '@/lib/ui/module-layout';
 import { FilterTabs } from '@/components/shared/FilterTabs';
 import { BulkActionBar } from '@/components/shared/BulkActionBar';
 import { AppTable, type AppTableColumn } from '@/components/shared/AppTable';
@@ -200,10 +200,19 @@ function CustomersPageContent() {
     setFormKey((k) => k + 1);
   };
 
-  const openCreate = () => {
+  const openCreate = useCallback(() => {
     resetForm();
     setView('form');
-  };
+  }, []);
+
+  useChromeSuppressed(view !== 'main');
+
+  useRegisterModuleActions(
+    view === 'main' ? (
+      <ModuleToolbarActions onAdd={openCreate} addLabel={`+ ${t('crm.add_customer')}`} />
+    ) : null,
+    [view, openCreate, t],
+  );
 
   const openEdit = (row: Record<string, unknown>) => {
     const id = String(row.id);
@@ -354,17 +363,7 @@ function CustomersPageContent() {
   }
 
   return (
-    <div className={MODULE_LIST_SHELL}>
-      <PageHeader
-        title={t('crm.customers_title')}
-        subtitle={t('crm.customers_subtitle')}
-        actions={
-          <button type="button" onClick={openCreate} className="bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold px-4 py-2.5 rounded-xl cursor-pointer self-start">
-            + {t('crm.add_customer')}
-          </button>
-        }
-      />
-
+    <>
       <KpiCards items={kpis} />
 
       <div className="bg-white p-4 rounded-xl border border-slate-200/80 premium-shadow space-y-4">
@@ -420,6 +419,6 @@ function CustomersPageContent() {
       />
 
       <Footer />
-    </div>
+    </>
   );
 }

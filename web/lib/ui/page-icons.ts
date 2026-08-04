@@ -99,3 +99,15 @@ export function getPageIconEntry(pathname: string): PageIconEntry {
 export function getPageIcon(pathname: string): string {
   return getPageIconEntry(pathname).icon;
 }
+
+/** All unique Iconify icon strings used for page headers — preload on boot. */
+export function getAllPageIcons(): string[] {
+  const icons = new Set<string>([DEFAULT_ICON]);
+  for (const entry of Object.values(PAGE_ICON_MAP)) {
+    icons.add(entry.icon);
+  }
+  for (const entry of Object.values(SEGMENT_FALLBACK)) {
+    icons.add(entry.icon);
+  }
+  return [...icons];
+}

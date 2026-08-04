@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { ArrowLeft } from 'lucide-react';
 import { toast } from '@/lib/ui/feedback';
 import { Footer } from '@/components/layout/Footer';
-import { MODULE_LIST_SHELL } from '@/lib/ui/module-layout';
+import { useChromeSuppressed } from '@/components/layout/ModuleActionsContext';
 import { useAppStore } from '@/lib/state/app-store';
 import { updateSupplier } from '@/lib/services/purchases-service';
 import { getSupplierDetailProfile } from '@/lib/services/suppliers-service';
@@ -33,6 +33,8 @@ export function SupplierDetailPage({ supplierId }: { supplierId: string }) {
   const [, bump] = useState(0);
   const [activeTab, setActiveTab] = useState<SupplierDetailTabId>('overview');
 
+  useChromeSuppressed(true);
+
   const profile = useMemo(
     () => (supplierId ? getSupplierDetailProfile(appState, supplierId) : null),
     [appState, supplierId, bump],
@@ -51,7 +53,7 @@ export function SupplierDetailPage({ supplierId }: { supplierId: string }) {
 
   if (!profile) {
     return (
-      <div className={MODULE_LIST_SHELL}>
+      <>
         <div className="premium-card premium-shadow p-8 text-center space-y-4 max-w-lg mx-auto mt-12">
           <h2 className="text-lg font-extrabold text-slate-900">Supplier not found</h2>
           <p className="text-xs text-slate-500">
@@ -66,12 +68,12 @@ export function SupplierDetailPage({ supplierId }: { supplierId: string }) {
           </Link>
         </div>
         <Footer />
-      </div>
+      </>
     );
   }
 
   return (
-    <div className={MODULE_LIST_SHELL}>
+    <>
       <SupplierDetailHeader profile={profile} onDeactivate={handleDeactivate} />
       <SupplierDetailMetrics metrics={profile.metrics} />
       <SupplierCreditBar profile={profile} />
@@ -83,6 +85,6 @@ export function SupplierDetailPage({ supplierId }: { supplierId: string }) {
       )}
 
       <Footer />
-    </div>
+    </>
   );
 }

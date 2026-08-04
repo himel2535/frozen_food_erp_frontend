@@ -6,13 +6,12 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { FileSpreadsheet, Filter, Plus, Package, History, FileText, Paperclip, MessageSquare, X } from 'lucide-react';
 import { Footer } from '@/components/layout/Footer';
-import { PageHeader } from '@/components/shared/PageHeader';
+import { useChromeSuppressed, useRegisterModuleActions } from '@/components/layout/ModuleActionsContext';
 import { FilterTabs } from '@/components/shared/FilterTabs';
 import { KpiCards } from '@/components/shared/KpiCards';
 import { StatusBadge } from '@/components/shared/StatusBadge';
 import { TableIconAction } from '@/components/shared/TableIconAction';
 import { AppTable, type AppTableColumn } from '@/components/shared/AppTable';
-import { MODULE_LIST_SHELL } from '@/lib/ui/module-layout';
 import { CF_BTN_OUTLINE, CF_BTN_PRIMARY } from '@/components/modules/crm/customer-form/customer-form-styles';
 import { useAppStore } from '@/lib/state/app-store';
 import {
@@ -432,6 +431,23 @@ export function PurchaseRmPage() {
     }
   };
 
+  useChromeSuppressed(view !== 'main');
+
+  useRegisterModuleActions(
+    <>
+      <button type="button" onClick={() => toast.info('Feature coming soon', { module: 'Purchases', description: "Import Excel" })} className={CF_BTN_OUTLINE}>
+        <FileSpreadsheet className="w-4 h-4" /> Import Excel
+      </button>
+      <button type="button" onClick={() => setLowStockOnly((v) => !v)} className={`${CF_BTN_OUTLINE} ${lowStockOnly ? 'ring-2 ring-blue-300' : ''}`}>
+        Low Stock
+      </button>
+      <button type="button" onClick={openCreate} className={CF_BTN_PRIMARY}>
+        <Plus className="w-4 h-4" /> Create RM Order
+      </button>
+    </>,
+    [lowStockOnly, openCreate],
+  );
+
   if (view === 'form') {
     return (
       <PurchaseRmForm
@@ -454,25 +470,7 @@ export function PurchaseRmPage() {
   const timeline = Array.isArray(selectedPo?.timeline) ? selectedPo.timeline : [];
 
   return (
-    <div className={MODULE_LIST_SHELL}>
-      <PageHeader
-        title="Purchase RM"
-        subtitle="Raw material RM orders — create, track, and receive."
-        actions={
-          <>
-            <button type="button" onClick={() => toast.info('Feature coming soon', { module: 'Purchases', description: "Import Excel" })} className={CF_BTN_OUTLINE}>
-              <FileSpreadsheet className="w-4 h-4" /> Import Excel
-            </button>
-            <button type="button" onClick={() => setLowStockOnly((v) => !v)} className={`${CF_BTN_OUTLINE} ${lowStockOnly ? 'ring-2 ring-blue-300' : ''}`}>
-              Low Stock
-            </button>
-            <button type="button" onClick={openCreate} className={CF_BTN_PRIMARY}>
-              <Plus className="w-4 h-4" /> Create RM Order
-            </button>
-          </>
-        }
-      />
-
+    <>
       <KpiCards items={kpis} />
 
       <div className="bg-white p-4 rounded-xl border border-slate-200/80 premium-shadow space-y-3">
@@ -813,6 +811,6 @@ export function PurchaseRmPage() {
           if (receiveModalPoId) handleReceiveSubmit(receiveModalPoId, payload);
         }}
       />
-    </div>
+    </>
   );
 }

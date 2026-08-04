@@ -5,9 +5,8 @@ import { toast, confirmAction } from '@/lib/ui/feedback';
 import { useMemo, useState } from 'react';
 import { ChevronDown, Download, Plus } from 'lucide-react';
 import { Footer } from '@/components/layout/Footer';
-import { PageHeader } from '@/components/shared/PageHeader';
+import { useRegisterModuleActions } from '@/components/layout/ModuleActionsContext';
 import { AppFormFields, AppFormModal } from '@/components/shared/AppForm';
-import { MODULE_LIST_SHELL } from '@/lib/ui/module-layout';
 import { useAppStore } from '@/lib/state/app-store';
 import type { PortField } from '@/lib/modules/port-types';
 import {
@@ -170,41 +169,37 @@ export function BalanceSheetPage() {
     setForm((prev) => ({ ...prev, [key]: value }));
   };
 
+  useRegisterModuleActions(
+    <>
+      <input
+        type="date"
+        value={asOnDate}
+        onChange={(e) => setAsOnDate(e.target.value)}
+        className="rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-xs font-medium text-slate-700 cursor-pointer"
+      />
+      <button
+        type="button"
+        onClick={() => toast.info('Feature coming soon', { module: 'Balance Sheet', description: "Export coming soon." })}
+        className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 cursor-pointer"
+      >
+        <Download className="w-4 h-4" />
+        Export
+        <ChevronDown className="w-3.5 h-3.5 text-slate-400" />
+      </button>
+      <button
+        type="button"
+        onClick={openAdd}
+        className="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold px-4 py-2.5 rounded-xl transition-colors cursor-pointer"
+      >
+        <Plus className="w-4 h-4" />
+        Add Line
+      </button>
+    </>,
+    [asOnDate, openAdd],
+  );
+
   return (
     <>
-      <div className={MODULE_LIST_SHELL}>
-        <PageHeader
-          title="Balance Sheet"
-          subtitle="Track assets, liabilities, and equity at a glance."
-          actions={
-            <>
-              <input
-                type="date"
-                value={asOnDate}
-                onChange={(e) => setAsOnDate(e.target.value)}
-                className="rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-xs font-medium text-slate-700 cursor-pointer"
-              />
-              <button
-                type="button"
-                onClick={() => toast.info('Feature coming soon', { module: 'Balance Sheet', description: "Export coming soon." })}
-                className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 cursor-pointer"
-              >
-                <Download className="w-4 h-4" />
-                Export
-                <ChevronDown className="w-3.5 h-3.5 text-slate-400" />
-              </button>
-              <button
-                type="button"
-                onClick={openAdd}
-                className="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold px-4 py-2.5 rounded-xl transition-colors cursor-pointer"
-              >
-                <Plus className="w-4 h-4" />
-                Add Line
-              </button>
-            </>
-          }
-        />
-
         <BalanceSheetMetrics metrics={metrics} />
         <BalanceSheetEquationBar metrics={metrics} />
         <BalanceSheetFilterBar filters={filters} onChange={setFilters} />
@@ -220,7 +215,6 @@ export function BalanceSheetPage() {
         </div>
 
         <Footer />
-      </div>
 
       <AppFormModal
         open={showModal}

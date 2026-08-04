@@ -5,7 +5,7 @@ import { toast } from '@/lib/ui/feedback';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { ChevronDown, Info, Upload } from 'lucide-react';
 import { Footer } from '@/components/layout/Footer';
-import { PageHeader } from '@/components/shared/PageHeader';
+import { useRegisterModuleActions } from '@/components/layout/ModuleActionsContext';
 import { SalarySheetFilters } from '@/components/modules/payroll/salary-sheet/SalarySheetFilters';
 import { SalarySheetKpiBar } from '@/components/modules/payroll/salary-sheet/SalarySheetKpiBar';
 import { SalarySheetTable } from '@/components/modules/payroll/salary-sheet/SalarySheetTable';
@@ -20,7 +20,6 @@ import {
   type SheetFilterState,
   type SheetRowView,
 } from '@/components/modules/payroll/salary-sheet/salary-sheet-types';
-import { MODULE_LIST_SHELL } from '@/lib/ui/module-layout';
 import { useAppStore } from '@/lib/state/app-store';
 import { getSalaryStructureById } from '@/lib/services/payroll-service';
 import {
@@ -120,26 +119,23 @@ export function MonthlySalarySheetPage() {
     return d.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
   }, [filters.period]);
 
-  return (
-    <div className={`${MODULE_LIST_SHELL} space-y-4`}>
-      <PageHeader
-        title={`Monthly Salary Sheet — ${periodLabel}`}
-        subtitle="Enter and manage attendance, overtime, bonus, deductions and other salary details."
-        actions={
-          <>
-            <button type="button" className={SS_BTN_OUTLINE} onClick={() => toast.info('Feature coming soon', { module: 'Salary Sheet', description: "Import Excel coming soon." })}>
-              <Upload className="w-3.5 h-3.5 inline mr-1" /> Import Excel
-            </button>
-            <button type="button" className={SS_BTN_OUTLINE} onClick={() => toast.info('Feature coming soon', { module: 'Salary Sheet', description: "More actions coming soon." })}>
-              More Actions <ChevronDown className="w-3.5 h-3.5 inline ml-1" />
-            </button>
-            <button type="button" className={SS_BTN_PRIMARY} onClick={() => toast.info('Feature coming soon', { module: 'Salary Sheet', description: "Summary overview coming soon." })}>
-              Summary Overview
-            </button>
-          </>
-        }
-      />
+  useRegisterModuleActions(
+    <>
+      <button type="button" className={SS_BTN_OUTLINE} onClick={() => toast.info('Feature coming soon', { module: 'Salary Sheet', description: "Import Excel coming soon." })}>
+        <Upload className="w-3.5 h-3.5 inline mr-1" /> Import Excel
+      </button>
+      <button type="button" className={SS_BTN_OUTLINE} onClick={() => toast.info('Feature coming soon', { module: 'Salary Sheet', description: "More actions coming soon." })}>
+        More Actions <ChevronDown className="w-3.5 h-3.5 inline ml-1" />
+      </button>
+      <button type="button" className={SS_BTN_PRIMARY} onClick={() => toast.info('Feature coming soon', { module: 'Salary Sheet', description: "Summary overview coming soon." })}>
+        Summary Overview
+      </button>
+    </>,
+    [],
+  );
 
+  return (
+    <div className="space-y-4">
       <section className={SS_CARD_CLS}>
         <SalarySheetFilters
           filters={filters}

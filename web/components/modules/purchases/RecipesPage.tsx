@@ -8,8 +8,9 @@ import { Icon } from '@iconify/react';
 import { ArrowDown, ArrowUp, Calculator, Layers, Package, Paperclip } from 'lucide-react';
 import { Footer } from '@/components/layout/Footer';
 import { FormHeader } from '@/components/layout/FormHeader';
+import { useChromeSuppressed, useRegisterModuleActions } from '@/components/layout/ModuleActionsContext';
 import { AppFormFields, AppFormModal } from '@/components/shared/AppForm';
-import { ListToolbar } from '@/components/shared/ListToolbar';
+import { ListToolbar, ModuleToolbarActions } from '@/components/shared/ListToolbar';
 import { AppTable, type AppTableColumn } from '@/components/shared/AppTable';
 import { StatusBadge } from '@/components/shared/StatusBadge';
 import { TableIconAction } from '@/components/shared/TableIconAction';
@@ -413,6 +414,15 @@ export function RecipesPage({ variant = 'finished-goods' }: { variant?: RecipeVa
     saveAppState();
   };
 
+  useChromeSuppressed(view !== 'main');
+
+  useRegisterModuleActions(
+    view === 'main' ? (
+      <ModuleToolbarActions onAdd={() => setView('form')} addLabel="Create Recipe" />
+    ) : null,
+    [view],
+  );
+
   if (view === 'plan' && planRecipe) {
     return (
       <>
@@ -517,15 +527,10 @@ export function RecipesPage({ variant = 'finished-goods' }: { variant?: RecipeVa
 
   return (
     <>
-    <div className="flex-1 overflow-y-auto p-2 md:p-4 space-y-2 flex flex-col">
       <ListToolbar
-        title={config.title}
-        subtitle={config.subtitle}
         search={search}
         onSearchChange={setSearch}
         searchPlaceholder={config.searchPlaceholder}
-        onAdd={() => setView('form')}
-        addLabel="Create Recipe"
         filters={
           <div className="inline-flex rounded-xl border border-slate-200 bg-slate-50 p-0.5 shrink-0">
             <button
@@ -603,7 +608,6 @@ export function RecipesPage({ variant = 'finished-goods' }: { variant?: RecipeVa
       )}
 
       <Footer />
-    </div>
     <AppFormModal
       open={view === 'form'}
       onClose={() => setView('main')}

@@ -11,19 +11,33 @@ interface SidebarIconProps {
 }
 
 export function SidebarIcon({ imageIcon, iconifyIcon, className = '', size = 26 }: SidebarIconProps) {
+  const slotStyle = { width: size, height: size };
+
   if (iconifyIcon) {
-    return <Icon icon={iconifyIcon} width={size} height={size} className={`sidebar-icon shrink-0 ${className}`} />;
+    return (
+      <span
+        className="inline-flex shrink-0 items-center justify-center"
+        style={slotStyle}
+      >
+        <Icon icon={iconifyIcon} width={size} height={size} className={`sidebar-icon ${className}`} />
+      </span>
+    );
   }
   if (imageIcon) {
     return (
-      <Image
-        src={imageIcon}
-        alt=""
-        width={size}
-        height={size}
-        className={`sidebar-icon object-contain shrink-0 ${className}`}
-      />
+      <span
+        className="inline-flex shrink-0 items-center justify-center"
+        style={slotStyle}
+      >
+        <Image
+          src={imageIcon}
+          alt=""
+          width={size}
+          height={size}
+          className={`sidebar-icon object-contain ${className}`}
+        />
+      </span>
     );
   }
-  return null;
+  return <span className="inline-flex shrink-0" style={slotStyle} aria-hidden />;
 }

@@ -4,11 +4,10 @@ import { useMemo, useState } from 'react';
 import { Plus } from 'lucide-react';
 import { AppFormFields, AppFormModal } from '@/components/shared/AppForm';
 import { Footer } from '@/components/layout/Footer';
-import { PageHeader } from '@/components/shared/PageHeader';
+import { useChromeSuppressed, useRegisterModuleActions } from '@/components/layout/ModuleActionsContext';
 import { StatusBadge } from '@/components/shared/StatusBadge';
 import { useAppStore } from '@/lib/state/app-store';
 import type { PortField } from '@/lib/modules/port-types';
-import { MODULE_LIST_SHELL } from '@/lib/ui/module-layout';
 import { createSupportTicket, ensureCrmState } from '@/lib/services/crm-service';
 import { listFromState, updateInState, deleteFromState } from '@/lib/services/domain-service';
 import { translateStatus } from '@/lib/i18n/resolve-label';
@@ -69,16 +68,19 @@ export function ComplaintsPage() {
     saveAppState();
   };
 
+  useChromeSuppressed(view === 'form');
+
+  useRegisterModuleActions(
+    view === 'main' ? (
+      <button type="button" onClick={() => setView('form')} className="bg-blue-600 text-white text-xs font-bold px-4 py-2.5 rounded-xl cursor-pointer flex items-center gap-2">
+        <Plus className="w-4 h-4" /> {t('crm.add_complaint')}
+      </button>
+    ) : null,
+    [view, t],
+  );
+
   return (
     <>
-    <div className={MODULE_LIST_SHELL}>
-      <PageHeader
-        title={t('crm.complaints_title_short')}
-        subtitle={t('crm.complaints_subtitle')}
-        actions={
-          <button type="button" onClick={() => setView('form')} className="bg-blue-600 text-white text-xs font-bold px-4 py-2.5 rounded-xl cursor-pointer flex items-center gap-2"><Plus className="w-4 h-4" /> {t('crm.add_complaint')}</button>
-        }
-      />
       <div className="flex flex-col lg:flex-row gap-4 flex-1 min-h-[480px]">
         <aside className="lg:w-48 shrink-0 bg-white rounded-xl border border-slate-200 p-3 space-y-1">
           {folders.map((f) => (
@@ -113,7 +115,6 @@ export function ComplaintsPage() {
         </div>
       </div>
       <Footer />
-    </div>
     <AppFormModal
       open={view === 'form'}
       onClose={() => setView('main')}

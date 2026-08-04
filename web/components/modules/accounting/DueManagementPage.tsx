@@ -5,9 +5,8 @@ import { toast } from '@/lib/ui/feedback';
 import { useMemo, useState } from 'react';
 import { Plus } from 'lucide-react';
 import { Footer } from '@/components/layout/Footer';
-import { PageHeader } from '@/components/shared/PageHeader';
+import { useRegisterModuleActions } from '@/components/layout/ModuleActionsContext';
 import { AppFormFields, AppFormModal } from '@/components/shared/AppForm';
-import { MODULE_LIST_SHELL } from '@/lib/ui/module-layout';
 import { useAppStore } from '@/lib/state/app-store';
 import type { PortField } from '@/lib/modules/port-types';
 import {
@@ -111,27 +110,23 @@ export function DueManagementPage() {
     setReceiveTarget(null);
   };
 
+  useRegisterModuleActions(
+    <button
+      type="button"
+      onClick={() => {
+        setOpeningForm((f) => ({ ...f, type: activeTab }));
+        setShowOpeningModal(true);
+      }}
+      className="bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold px-4 py-2.5 rounded-xl transition-colors flex items-center gap-2 cursor-pointer self-start xl:self-auto"
+    >
+      <Plus className="w-4 h-4" />
+      Opening Due
+    </button>,
+    [activeTab],
+  );
+
   return (
     <>
-      <div className={MODULE_LIST_SHELL}>
-        <PageHeader
-          title="Due Management"
-          subtitle="Track and collect outstanding payments."
-          actions={
-            <button
-              type="button"
-              onClick={() => {
-                setOpeningForm((f) => ({ ...f, type: activeTab }));
-                setShowOpeningModal(true);
-              }}
-              className="bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold px-4 py-2.5 rounded-xl transition-colors flex items-center gap-2 cursor-pointer self-start xl:self-auto"
-            >
-              <Plus className="w-4 h-4" />
-              Opening Due
-            </button>
-          }
-        />
-
         <DueMetrics metrics={metrics} />
 
         <div className={`grid gap-3 items-start ${selectedPartyId ? 'grid-cols-1 xl:grid-cols-[1fr_360px]' : 'grid-cols-1'}`}>
@@ -170,7 +165,6 @@ export function DueManagementPage() {
 
         <DueInfoBanner />
         <Footer />
-      </div>
 
       <AppFormModal
         open={showOpeningModal}

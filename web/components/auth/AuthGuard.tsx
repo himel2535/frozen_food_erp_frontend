@@ -9,6 +9,7 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const isLoggedIn = useAppStore((s) => s.appState.isLoggedIn);
   const hydrated = useAppStore((s) => s.hydrated);
+  const ready = useAppStore((s) => s.ready);
 
   useEffect(() => {
     if (!hydrated) return;
@@ -17,7 +18,7 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
     }
   }, [hydrated, isLoggedIn, pathname, router]);
 
-  if (!hydrated) {
+  if (!hydrated || !ready) {
     return null;
   }
 

@@ -1,5 +1,4 @@
-import { ModuleListSkeleton } from '@/components/shared/ModuleListSkeleton';
-
+/** Avoid unmounting page content during in-app navigation — overlay handles loading UX. */
 export default function TenantLoading() {
-  return <ModuleListSkeleton />;
+  return null;
 }

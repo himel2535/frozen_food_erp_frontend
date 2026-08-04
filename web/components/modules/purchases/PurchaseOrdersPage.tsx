@@ -9,10 +9,7 @@ import { useRouter } from 'next/navigation';
 import { Plus } from 'lucide-react';
 
 import { Footer } from '@/components/layout/Footer';
-import { PageHeader } from '@/components/shared/PageHeader';
-
-import { MODULE_LIST_SHELL } from '@/lib/ui/module-layout';
-
+import { useRegisterModuleActions } from '@/components/layout/ModuleActionsContext';
 import { useAppStore } from '@/lib/state/app-store';
 
 import {
@@ -165,30 +162,20 @@ export function PurchaseOrdersPage() {
 
   const save = () => saveAppState();
 
-
+  useRegisterModuleActions(
+    <button
+      type="button"
+      onClick={() => router.push('/purchases/orders/new')}
+      className={`${PO_BTN_PRIMARY} self-start`}
+    >
+      <Plus className="w-4 h-4" />
+      Create PO
+    </button>,
+    [router],
+  );
 
   return (
-
-    <div className={MODULE_LIST_SHELL}>
-
-      <PageHeader
-        title="Purchase Orders"
-        subtitle="Create and track purchase orders with supplier workflows."
-        size="compact"
-        actions={
-          <button
-            type="button"
-            onClick={() => router.push('/purchases/orders/new')}
-            className={`${PO_BTN_PRIMARY} self-start`}
-          >
-            <Plus className="w-4 h-4" />
-            Create PO
-          </button>
-        }
-      />
-
-
-
+    <>
       <PurchaseOrdersMetrics metrics={metrics} />
 
 
@@ -267,10 +254,7 @@ export function PurchaseOrdersPage() {
 
 
       <Footer />
-
-    </div>
-
+    </>
   );
-
 }
 

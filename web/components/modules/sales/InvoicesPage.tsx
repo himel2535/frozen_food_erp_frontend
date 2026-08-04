@@ -6,12 +6,11 @@ import { useMemo, useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Download, Plus } from 'lucide-react';
 import { Footer } from '@/components/layout/Footer';
-import { PageHeader } from '@/components/shared/PageHeader';
+import { useChromeSuppressed, useRegisterModuleActions } from '@/components/layout/ModuleActionsContext';
 import { FilterTabs } from '@/components/shared/FilterTabs';
 import { AppTable, type AppTableColumn } from '@/components/shared/AppTable';
 import { StatusBadge } from '@/components/shared/StatusBadge';
 import { TableIconAction } from '@/components/shared/TableIconAction';
-import { MODULE_LIST_SHELL } from '@/lib/ui/module-layout';
 import { useAppStore } from '@/lib/state/app-store';
 import { getCustomerList, approveInvoice, getSalesDashboardSummary } from '@/lib/services/crm-service';
 import { listInvoices } from '@/lib/modules/sales-configs';
@@ -303,6 +302,30 @@ export function InvoicesPage() {
     />
   ) : null;
 
+  useChromeSuppressed(view !== 'main');
+
+  useRegisterModuleActions(
+    view === 'main' ? (
+      <>
+        <button
+          type="button"
+          onClick={handleExport}
+          className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl border border-slate-200 text-xs font-bold text-slate-600 hover:bg-slate-50 cursor-pointer"
+        >
+          <Download className="w-4 h-4" /> Export CSV
+        </button>
+        <button
+          type="button"
+          onClick={openCreate}
+          className="bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold px-4 py-2.5 rounded-xl transition-colors flex items-center gap-2 cursor-pointer"
+        >
+          <Plus className="w-4 h-4" /> Create Invoice
+        </button>
+      </>
+    ) : null,
+    [view, handleExport, openCreate],
+  );
+
   if (view === 'form') {
     return (
       <>
@@ -325,30 +348,6 @@ export function InvoicesPage() {
 
   return (
     <>
-      <div className={MODULE_LIST_SHELL}>
-        <PageHeader
-          title="Invoices"
-          subtitle="Invoice lifecycle, collections, credit exposure, recurring billing, and AR visibility in one operating screen."
-          actions={
-            <>
-              <button
-                type="button"
-                onClick={handleExport}
-                className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl border border-slate-200 text-xs font-bold text-slate-600 hover:bg-slate-50 cursor-pointer"
-              >
-                <Download className="w-4 h-4" /> Export CSV
-              </button>
-              <button
-                type="button"
-                onClick={openCreate}
-                className="bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold px-4 py-2.5 rounded-xl transition-colors flex items-center gap-2 cursor-pointer"
-              >
-                <Plus className="w-4 h-4" /> Create Invoice
-              </button>
-            </>
-          }
-        />
-
         <InvoiceDashboardMetrics summary={dashboardSummary} />
         <InvoiceAgingSnapshot aging={dashboardSummary.aging} />
 
@@ -380,7 +379,6 @@ export function InvoicesPage() {
         />
 
         <Footer />
-      </div>
 
       {printPreview}
     </>

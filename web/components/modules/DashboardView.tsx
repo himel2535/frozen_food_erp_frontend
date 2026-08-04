@@ -138,7 +138,7 @@ export function DashboardView() {
   );
 
   return (
-    <div className="flex-1 overflow-y-auto p-2 space-y-2 flex flex-col">
+    <div className="space-y-2 flex flex-col">
       <section className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
         {KPI_CARDS.map((card) => {
           const data = metricValues[card.key];

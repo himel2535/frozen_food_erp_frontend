@@ -2,10 +2,9 @@
 
 import type { FormEvent, ReactNode } from 'react';
 import { Footer } from '@/components/layout/Footer';
-import { PageHeader } from '@/components/shared/PageHeader';
+import { useRegisterModuleActions } from '@/components/layout/ModuleActionsContext';
 import { AppFormModal } from '@/components/shared/AppForm';
 import { KpiCards, type KpiCardItem } from '@/components/shared/KpiCards';
-import { MODULE_LIST_SHELL } from '@/lib/ui/module-layout';
 import {
   FORM_BTN_PRIMARY,
   FORM_BTN_SECONDARY,
@@ -39,16 +38,13 @@ export function InventoryListLayout({
   children: React.ReactNode;
   pagination?: React.ReactNode;
 }) {
+  useRegisterModuleActions(
+    <button type="button" onClick={onAdd} className={BTN_PRIMARY}>+ {addLabel}</button>,
+    [onAdd, addLabel],
+  );
+
   return (
-    <div className={MODULE_LIST_SHELL}>
-      <PageHeader
-        title={title}
-        subtitle={subtitle}
-        size="compact"
-        actions={
-          <button type="button" onClick={onAdd} className={BTN_PRIMARY}>+ {addLabel}</button>
-        }
-      />
+    <>
       {kpis.length > 0 && (
         kpiGridClassName
           ? <KpiCards gridClassName={kpiGridClassName} items={kpis} />
@@ -58,7 +54,7 @@ export function InventoryListLayout({
       {children}
       {pagination}
       <Footer />
-    </div>
+    </>
   );
 }
 

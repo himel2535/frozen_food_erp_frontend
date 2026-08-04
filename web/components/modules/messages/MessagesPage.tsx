@@ -4,8 +4,6 @@ import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { Icon } from '@iconify/react';
 import { Footer } from '@/components/layout/Footer';
-import { PageHeader } from '@/components/shared/PageHeader';
-import { MODULE_LIST_SHELL } from '@/lib/ui/module-layout';
 import { useAppStore } from '@/lib/state/app-store';
 import { useNavMessages } from '@/components/modules/messages/useNavMessages';
 import {
@@ -48,12 +46,7 @@ export function MessagesPage() {
     filter === 'all' ? messages.length : messages.filter((m) => m.channel === filter).length;
 
   return (
-    <div className={MODULE_LIST_SHELL}>
-      <PageHeader
-        title={t('messages.title')}
-        subtitle={t('messages.subtitle')}
-      />
-
+    <>
       <div className={ALERT_FILTER_ROW}>
         {FILTER_CHANNELS.map((filter) => {
           const count = countFor(filter);
@@ -117,6 +110,6 @@ export function MessagesPage() {
       </div>
 
       <Footer />
-    </div>
+    </>
   );
 }

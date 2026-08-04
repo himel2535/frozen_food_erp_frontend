@@ -6,8 +6,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Plus } from 'lucide-react';
 import { Footer } from '@/components/layout/Footer';
-import { PageHeader } from '@/components/shared/PageHeader';
-import { MODULE_LIST_SHELL } from '@/lib/ui/module-layout';
+import { useChromeSuppressed, useRegisterModuleActions } from '@/components/layout/ModuleActionsContext';
 import { useAppStore } from '@/lib/state/app-store';
 import { createSupplier, updateSupplier } from '@/lib/services/purchases-service';
 import {
@@ -62,6 +61,18 @@ export function SuppliersPage() {
     setFormKey((k) => k + 1);
     setView('add-form');
   };
+
+  useChromeSuppressed(view !== 'main');
+
+  useRegisterModuleActions(
+    view === 'main' ? (
+      <button type="button" onClick={openCreate} className={`${SUPPLIER_BTN_PRIMARY} self-start`}>
+        <Plus className="w-4 h-4" />
+        Add Supplier
+      </button>
+    ) : null,
+    [view],
+  );
 
   const openEdit = (supplier: EnrichedSupplier) => {
     setEditingId(supplier.id);
@@ -135,19 +146,7 @@ export function SuppliersPage() {
   }
 
   return (
-    <div className={MODULE_LIST_SHELL}>
-      <PageHeader
-        title="Suppliers"
-        subtitle="Manage supplier relationships, purchases and payments."
-        size="compact"
-        actions={
-          <button type="button" onClick={openCreate} className={`${SUPPLIER_BTN_PRIMARY} self-start`}>
-            <Plus className="w-4 h-4" />
-            Add Supplier
-          </button>
-        }
-      />
-
+    <>
       <SuppliersMetrics metrics={metrics} />
 
       <div className={SUPPLIER_CARD_CLS}>
@@ -173,6 +172,6 @@ export function SuppliersPage() {
       </div>
 
       <Footer />
-    </div>
+    </>
   );
 }

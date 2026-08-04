@@ -5,6 +5,7 @@ import { useParams } from 'next/navigation';
 import { ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 import { Footer } from '@/components/layout/Footer';
+import { useChromeSuppressed } from '@/components/layout/ModuleActionsContext';
 import { CustomerDetailHeader } from '@/components/modules/crm/customer-detail/CustomerDetailHeader';
 import { CustomerDetailMetrics } from '@/components/modules/crm/customer-detail/CustomerDetailMetrics';
 import { CustomerDetailTabs } from '@/components/modules/crm/customer-detail/CustomerDetailTabs';
@@ -22,7 +23,6 @@ import {
   getReturnColumns,
   TransactionsTab,
 } from '@/components/modules/crm/customer-detail/tabs/EntityTabs';
-import { MODULE_LIST_SHELL } from '@/lib/ui/module-layout';
 import { useAppStore } from '@/lib/state/app-store';
 import { useLocaleFormat } from '@/hooks/useLocaleFormat';
 import {
@@ -39,6 +39,8 @@ export function CustomerDetailPage() {
   const appState = useAppStore((s) => s.appState);
   const { formatMoney } = useLocaleFormat();
   const [activeTab, setActiveTab] = useState<CustomerDetailTabId>('overview');
+
+  useChromeSuppressed(true);
 
   const invoiceColumns = useMemo(() => getInvoiceColumns(formatMoney), [formatMoney]);
   const orderColumns = useMemo(() => getOrderColumns(formatMoney), [formatMoney]);
@@ -74,7 +76,7 @@ export function CustomerDetailPage() {
 
   if (!profile || !metrics) {
     return (
-      <div className={MODULE_LIST_SHELL}>
+      <>
         <div className="premium-card premium-shadow p-8 text-center space-y-4 max-w-lg mx-auto mt-12">
           <h2 className="text-lg font-extrabold text-slate-900">Customer not found</h2>
           <p className="text-xs text-slate-500">The customer ID &quot;{customerId}&quot; does not exist or was removed.</p>
@@ -87,7 +89,7 @@ export function CustomerDetailPage() {
           </Link>
         </div>
         <Footer />
-      </div>
+      </>
     );
   }
 
@@ -105,7 +107,7 @@ export function CustomerDetailPage() {
   const quotations = (profile.quotations ?? []) as Array<Record<string, unknown>>;
 
   return (
-    <div className={MODULE_LIST_SHELL}>
+    <>
       <div className="space-y-4 flex flex-col">
       <CustomerDetailHeader
         customerId={customerId}
@@ -176,6 +178,6 @@ export function CustomerDetailPage() {
 
       </div>
       <Footer />
-    </div>
+    </>
   );
 }

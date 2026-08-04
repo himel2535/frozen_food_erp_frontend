@@ -3,10 +3,9 @@
 import { toast } from '@/lib/ui/feedback';
 
 import { useEffect, useMemo, useState } from 'react';
-import { Plus, Info } from 'lucide-react';
-import { PageHeader } from '@/components/shared/PageHeader';
+import { Plus } from 'lucide-react';
+import { useRegisterModuleActions } from '@/components/layout/ModuleActionsContext';
 import { AppFormFields, AppFormModal } from '@/components/shared/AppForm';
-import { MODULE_LIST_SHELL } from '@/lib/ui/module-layout';
 import { useAppStore } from '@/lib/state/app-store';
 import type { PortField } from '@/lib/modules/port-types';
 import { getCustomerList } from '@/lib/services/crm-service';
@@ -153,42 +152,33 @@ export function CustomerDuePage() {
     setReceiveTarget(null);
   };
 
+  useRegisterModuleActions(
+    <>
+      <button
+        type="button"
+        onClick={() => setShowAddDueModal(true)}
+        className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition-colors cursor-pointer"
+      >
+        <Plus className="w-4 h-4" />
+        Add Due
+      </button>
+      <button
+        type="button"
+        onClick={() => {
+          const target = selectedCustomer ?? allCustomers.find((c) => c.totalDue > 0);
+          if (target) openReceive(target);
+          else toast.error('Action required', { module: 'Accounting', description: 'Select a customer with outstanding due first.' });
+        }}
+        className="bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold px-4 py-2.5 rounded-xl transition-colors flex items-center gap-2 cursor-pointer"
+      >
+        Receive Payment
+      </button>
+    </>,
+    [selectedCustomer, allCustomers, openReceive],
+  );
+
   return (
     <>
-      <div className={MODULE_LIST_SHELL}>
-        <PageHeader
-          title={
-            <span className="inline-flex items-center gap-2">
-              Customer Due &amp; Collection
-              <Info className="w-4 h-4 text-slate-400" aria-hidden />
-            </span>
-          }
-          subtitle="Manage receivables, follow-ups and collections."
-          actions={
-            <>
-              <button
-                type="button"
-                onClick={() => setShowAddDueModal(true)}
-                className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition-colors cursor-pointer"
-              >
-                <Plus className="w-4 h-4" />
-                Add Due
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  const target = selectedCustomer ?? allCustomers.find((c) => c.totalDue > 0);
-                  if (target) openReceive(target);
-                  else toast.error('Action required', { module: 'Accounting', description: 'Select a customer with outstanding due first.' });
-                }}
-                className="bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold px-4 py-2.5 rounded-xl transition-colors flex items-center gap-2 cursor-pointer"
-              >
-                Receive Payment
-              </button>
-            </>
-          }
-        />
-
         <CustomerDueMetrics metrics={metrics} />
 
         <CustomerDueCollectionBar
@@ -227,7 +217,6 @@ export function CustomerDuePage() {
             onClose={() => setSelectedCustomerId(null)}
           />
         </div>
-      </div>
 
       <AppFormModal
         open={showAddDueModal}

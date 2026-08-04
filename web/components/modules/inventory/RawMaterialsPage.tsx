@@ -5,7 +5,7 @@ import { toast, confirmAction } from '@/lib/ui/feedback';
 import { useMemo, useState } from 'react';
 import { Download, Package, Settings2 } from 'lucide-react';
 import { Footer } from '@/components/layout/Footer';
-import { PageHeader } from '@/components/shared/PageHeader';
+import { useChromeSuppressed, useRegisterModuleActions } from '@/components/layout/ModuleActionsContext';
 import { AppFormFields, AppFormModal, FORM_GRID_CLS, FORM_LABEL_CLS } from '@/components/shared/AppForm';
 import { AppTable, type AppTableColumn } from '@/components/shared/AppTable';
 import { FilterTabs } from '@/components/shared/FilterTabs';
@@ -14,7 +14,6 @@ import { StatusBadge } from '@/components/shared/StatusBadge';
 import { TableIconAction } from '@/components/shared/TableIconAction';
 import { FilterBar, FilterSelect, SearchInput } from '@/components/modules/inventory/shared/inventory-ui';
 import { SupplierSelect, WarehouseSelect } from '@/components/modules/inventory/shared/selects';
-import { MODULE_LIST_SHELL } from '@/lib/ui/module-layout';
 import { useAppStore } from '@/lib/state/app-store';
 import type { PortField } from '@/lib/modules/port-types';
 import {
@@ -290,24 +289,23 @@ export function RawMaterialsPage() {
     return pages;
   }, [page, totalPages]);
 
+  useChromeSuppressed(view === 'form');
+
+  useRegisterModuleActions(
+    view === 'main' ? (
+      <button
+        type="button"
+        onClick={() => { resetForm(); setView('form'); }}
+        className="bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold px-4 py-2.5 rounded-xl cursor-pointer"
+      >
+        + Add Raw Material
+      </button>
+    ) : null,
+    [view],
+  );
+
   return (
     <>
-      <div className={MODULE_LIST_SHELL}>
-        <PageHeader
-          title="Raw Materials"
-          subtitle="Manage raw material inventory, suppliers, and stock levels."
-          size="compact"
-          actions={
-            <button
-              type="button"
-              onClick={() => { resetForm(); setView('form'); }}
-              className="bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold px-4 py-2.5 rounded-xl cursor-pointer"
-            >
-              + Add Raw Material
-            </button>
-          }
-        />
-
         <KpiCards
           gridClassName="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2"
           items={[
@@ -445,7 +443,6 @@ export function RawMaterialsPage() {
           </div>
         </div>
         <Footer />
-      </div>
 
       <AppFormModal
         open={view === 'form'}

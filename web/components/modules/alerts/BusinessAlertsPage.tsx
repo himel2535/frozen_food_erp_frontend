@@ -4,8 +4,7 @@ import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { Icon } from '@iconify/react';
 import { Footer } from '@/components/layout/Footer';
-import { PageHeader } from '@/components/shared/PageHeader';
-import { MODULE_LIST_SHELL } from '@/lib/ui/module-layout';
+import { useRegisterModuleActions } from '@/components/layout/ModuleActionsContext';
 import { useAppStore } from '@/lib/state/app-store';
 import { BusinessAlertCard } from '@/components/modules/alerts/BusinessAlertCard';
 import { useBusinessAlerts } from '@/components/modules/alerts/useBusinessAlerts';
@@ -38,22 +37,19 @@ export function BusinessAlertsPage() {
   const displayed =
     activeCategory === 'all' ? alerts : alerts.filter((a) => a.category === activeCategory);
 
-  return (
-    <div className={MODULE_LIST_SHELL}>
-      <PageHeader
-        title={t('alerts.title')}
-        subtitle={t('alerts.subtitle')}
-        actions={
-          <Link
-            href="/settings/alert-settings"
-            className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition-colors cursor-pointer self-start xl:self-center shrink-0"
-          >
-            <Icon icon="fluent-color:settings-24" width={18} height={18} />
-            {t('alerts.settings_link')}
-          </Link>
-        }
-      />
+  useRegisterModuleActions(
+    <Link
+      href="/settings/alert-settings"
+      className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition-colors cursor-pointer self-start xl:self-center shrink-0"
+    >
+      <Icon icon="fluent-color:settings-24" width={18} height={18} />
+      {t('alerts.settings_link')}
+    </Link>,
+    [t],
+  );
 
+  return (
+    <>
       <div className={ALERT_FILTER_ROW}>
         <Link
           href="/alerts"
@@ -99,6 +95,6 @@ export function BusinessAlertsPage() {
       </div>
 
       <Footer />
-    </div>
+    </>
   );
 }

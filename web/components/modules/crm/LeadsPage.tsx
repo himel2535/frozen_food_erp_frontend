@@ -2,10 +2,10 @@
 
 import { toast } from '@/lib/ui/feedback';
 
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useCallback } from 'react';
 import { MessageCircle, MoreVertical, Phone, Plus, Search, Upload } from 'lucide-react';
 import { Footer } from '@/components/layout/Footer';
-import { PageHeader } from '@/components/shared/PageHeader';
+import { useChromeSuppressed, useRegisterModuleActions } from '@/components/layout/ModuleActionsContext';
 import { useAppStore } from '@/lib/state/app-store';
 import { useLocaleFormat } from '@/hooks/useLocaleFormat';
 import { translateStatus } from '@/lib/i18n/resolve-label';
@@ -25,7 +25,6 @@ import { AppTable, type AppTableColumn } from '@/components/shared/AppTable';
 import { StatusBadge } from '@/components/shared/StatusBadge';
 import { KpiCards } from '@/components/shared/KpiCards';
 import { FilterTabs } from '@/components/shared/FilterTabs';
-import { MODULE_LIST_SHELL } from '@/lib/ui/module-layout';
 import {
   LeadForm,
   EMPTY_LEAD_FORM,
@@ -206,10 +205,34 @@ export function LeadsPage() {
     setFormKey((k) => k + 1);
   };
 
-  const openCreate = () => {
+  const openCreate = useCallback(() => {
     resetForm();
     setView('form');
-  };
+  }, []);
+
+  useChromeSuppressed(view !== 'main');
+
+  useRegisterModuleActions(
+    view === 'main' ? (
+      <div className="flex items-center gap-2 self-start">
+        <button
+          type="button"
+          onClick={() => toast.info('Feature coming soon', { module: 'Leads', description: "Import leads" })}
+          className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-600 border border-slate-200 bg-white hover:bg-slate-50 px-4 py-2.5 rounded-xl cursor-pointer"
+        >
+          <Upload className="w-4 h-4" /> {t('crm.import_leads')}
+        </button>
+        <button
+          type="button"
+          onClick={openCreate}
+          className="bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold px-4 py-2.5 rounded-xl transition-colors flex items-center gap-2 cursor-pointer"
+        >
+          <Plus className="w-4 h-4" /> {t('crm.add_lead')}
+        </button>
+      </div>
+    ) : null,
+    [view, openCreate, t],
+  );
 
   const openEdit = (lead: Record<string, unknown>) => {
     setEditingId(String(lead.id));
@@ -366,31 +389,7 @@ export function LeadsPage() {
   }
 
   return (
-    <div className={MODULE_LIST_SHELL}>
-      <PageHeader
-        title={t('crm.leads_title')}
-        subtitle={t('crm.leads_subtitle')}
-        size="compact"
-        actions={
-          <div className="flex items-center gap-2 self-start">
-            <button
-              type="button"
-              onClick={() => toast.info('Feature coming soon', { module: 'Leads', description: "Import leads" })}
-              className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-600 border border-slate-200 bg-white hover:bg-slate-50 px-4 py-2.5 rounded-xl cursor-pointer"
-            >
-              <Upload className="w-4 h-4" /> {t('crm.import_leads')}
-            </button>
-            <button
-              type="button"
-              onClick={openCreate}
-              className="bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold px-4 py-2.5 rounded-xl transition-colors flex items-center gap-2 cursor-pointer"
-            >
-              <Plus className="w-4 h-4" /> {t('crm.add_lead')}
-            </button>
-          </div>
-        }
-      />
-
+    <>
       <KpiCards
         gridClassName="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2"
         items={[
@@ -531,6 +530,6 @@ export function LeadsPage() {
       </div>
 
       <Footer />
-    </div>
+    </>
   );
 }

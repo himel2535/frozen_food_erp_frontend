@@ -5,7 +5,6 @@ import { toast } from '@/lib/ui/feedback';
 import { useMemo, useState } from 'react';
 import { Search, ShoppingCart, Trash2 } from 'lucide-react';
 import { Footer } from '@/components/layout/Footer';
-import { PageHeader } from '@/components/shared/PageHeader';
 import { useAppStore } from '@/lib/state/app-store';
 import { useLocaleFormat } from '@/hooks/useLocaleFormat';
 import { posCheckout } from '@/lib/services/sales-service';
@@ -84,14 +83,7 @@ export function PosPage() {
   };
 
   return (
-    <div className="flex-1 overflow-y-auto p-6 md:p-8 space-y-6 flex flex-col">
-      <PageHeader
-        title={t('sales.pos_title')}
-        subtitle={t('sales.pos_subtitle')}
-        size="compact"
-        layout="title-only"
-      />
-
+    <>
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 flex-1">
         <div className="lg:col-span-2 space-y-4">
           <div className="relative">
@@ -176,6 +168,6 @@ export function PosPage() {
         </div>
       </div>
       <Footer />
-    </div>
+    </>
   );
 }

@@ -5,9 +5,8 @@ import { toast } from '@/lib/ui/feedback';
 import { useMemo, useState } from 'react';
 import { Plus } from 'lucide-react';
 import { Footer } from '@/components/layout/Footer';
-import { PageHeader } from '@/components/shared/PageHeader';
+import { useRegisterModuleActions } from '@/components/layout/ModuleActionsContext';
 import { AppFormFields, AppFormModal } from '@/components/shared/AppForm';
-import { MODULE_LIST_SHELL } from '@/lib/ui/module-layout';
 import { useAppStore } from '@/lib/state/app-store';
 import type { PortField } from '@/lib/modules/port-types';
 import {
@@ -122,24 +121,20 @@ export function ProfitLossPage() {
     setGeneratedAt(formatGeneratedAt(new Date()));
   };
 
+  useRegisterModuleActions(
+    <button
+      type="button"
+      onClick={() => openAdd()}
+      className="inline-flex items-center gap-2 self-start xl:self-auto bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold px-4 py-2.5 rounded-xl transition-colors cursor-pointer"
+    >
+      <Plus className="w-4 h-4" />
+      Add Line
+    </button>,
+    [openAdd],
+  );
+
   return (
     <>
-      <div className={MODULE_LIST_SHELL}>
-        <PageHeader
-          title="Profit &amp; Loss Statement"
-          subtitle="View your business performance over a selected period."
-          actions={
-            <button
-              type="button"
-              onClick={() => openAdd()}
-              className="inline-flex items-center gap-2 self-start xl:self-auto bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold px-4 py-2.5 rounded-xl transition-colors cursor-pointer"
-            >
-              <Plus className="w-4 h-4" />
-              Add Line
-            </button>
-          }
-        />
-
         <ProfitLossPeriodBar
           period={period}
           onPeriodChange={setPeriod}
@@ -153,7 +148,6 @@ export function ProfitLossPage() {
         </div>
 
         <Footer />
-      </div>
 
       <AppFormModal
         open={showModal}

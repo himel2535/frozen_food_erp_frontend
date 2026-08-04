@@ -2,13 +2,12 @@
 
 import { confirmAction, toast } from '@/lib/ui/feedback';
 
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useCallback } from 'react';
 import { Footer } from '@/components/layout/Footer';
-import { FormHeader } from '@/components/layout/FormHeader';
+import { useChromeSuppressed, useRegisterModuleActions } from '@/components/layout/ModuleActionsContext';
 import { AppFormPage, FORM_GRID_CLS, FORM_INPUT_CLS, FORM_LABEL_CLS, FORM_SELECT_CLS, FORM_TEXTAREA_CLS } from '@/components/shared/AppForm';
-import { ListToolbar } from '@/components/shared/ListToolbar';
+import { ListToolbar, ModuleToolbarActions } from '@/components/shared/ListToolbar';
 import { KpiCards, type KpiCardItem } from '@/components/shared/KpiCards';
-import { MODULE_FORM_SHELL, MODULE_LIST_SHELL } from '@/lib/ui/module-layout';
 import { FilterTabs } from '@/components/shared/FilterTabs';
 import { DetailViewShell } from '@/components/shared/DetailViewShell';
 import { LineItemsEditor, type LineItem } from '@/components/shared/LineItemsEditor';
@@ -100,6 +99,18 @@ export function SalesDocumentModule({ config }: { config: SalesDocumentConfig })
     setEditingId(null);
     setShowAdvanced(false);
   };
+
+  useChromeSuppressed(view !== 'main');
+
+  const handleAdd = useCallback(() => {
+    resetForm();
+    setView('form');
+  }, []);
+
+  useRegisterModuleActions(
+    view === 'main' ? <ModuleToolbarActions onAdd={handleAdd} addLabel={config.addLabel} /> : null,
+    [view, handleAdd, config.addLabel],
+  );
 
   const openEdit = (row: Record<string, unknown>) => {
     setEditingId(String(row.id));
@@ -235,15 +246,11 @@ export function SalesDocumentModule({ config }: { config: SalesDocumentConfig })
   const tabs = config.statusFilterTabs ?? [{ id: 'all', label: t('common.all') }, ...config.statusOptions.map((s) => ({ id: s, label: translateStatus(t, s) }))];
 
   return (
-    <div className={MODULE_LIST_SHELL}>
+    <>
       <ListToolbar
-        title={config.title}
-        subtitle={config.subtitle}
         search={search}
         onSearchChange={setSearch}
         searchPlaceholder={t('crm.search_module', { title: config.title.toLowerCase() })}
-        onAdd={() => { resetForm(); setView('form'); }}
-        addLabel={config.addLabel}
         filters={<FilterTabs tabs={tabs} active={statusFilter} onChange={setStatusFilter} />}
       />
       {kpis.length > 0 && <KpiCards items={kpis} />}
@@ -272,6 +279,6 @@ export function SalesDocumentModule({ config }: { config: SalesDocumentConfig })
         )}
       />
       <Footer />
-    </div>
+    </>
   );
 }

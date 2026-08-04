@@ -7,9 +7,7 @@ import { useMemo, useState } from 'react';
 import { Download, Filter, Printer, Search } from 'lucide-react';
 
 import { Footer } from '@/components/layout/Footer';
-import { PageHeader } from '@/components/shared/PageHeader';
-
-import { MODULE_LIST_SHELL } from '@/lib/ui/module-layout';
+import { useRegisterModuleActions } from '@/components/layout/ModuleActionsContext';
 
 import { useAppStore } from '@/lib/state/app-store';
 
@@ -197,38 +195,31 @@ export function SalesReportsPage() {
 
 
 
+  useRegisterModuleActions(
+    <>
+      <button
+        type="button"
+        onClick={() => printSection('full')}
+        className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition-colors cursor-pointer"
+      >
+        <Printer className="w-4 h-4" />
+        {t('reports.print_full')}
+      </button>
+      <button
+        type="button"
+        onClick={handleExport}
+        className="bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold px-4 py-2.5 rounded-xl transition-colors flex items-center gap-2 cursor-pointer"
+      >
+        <Download className="w-4 h-4" />
+        {t('reports.sales_export')}
+      </button>
+    </>,
+    [printSection, handleExport, t],
+  );
+
   return (
 
     <>
-
-      <div className={MODULE_LIST_SHELL}>
-
-        <PageHeader
-          title={t('reports.sales_title')}
-          subtitle={t('reports.sales_subtitle')}
-          actions={
-            <>
-              <button
-                type="button"
-                onClick={() => printSection('full')}
-                className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition-colors cursor-pointer"
-              >
-                <Printer className="w-4 h-4" />
-                {t('reports.print_full')}
-              </button>
-              <button
-                type="button"
-                onClick={handleExport}
-                className="bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold px-4 py-2.5 rounded-xl transition-colors flex items-center gap-2 cursor-pointer"
-              >
-                <Download className="w-4 h-4" />
-                {t('reports.sales_export')}
-              </button>
-            </>
-          }
-        />
-
-
 
         <div className="bg-white p-4 rounded-xl border border-slate-200/80 premium-shadow">
 
@@ -397,10 +388,6 @@ export function SalesReportsPage() {
 
 
         <Footer />
-
-      </div>
-
-
 
       <SalesPrintFrame
 

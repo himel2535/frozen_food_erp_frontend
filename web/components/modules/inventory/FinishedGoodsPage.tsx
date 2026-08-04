@@ -5,7 +5,7 @@ import { toast } from '@/lib/ui/feedback';
 import { useMemo, useState } from 'react';
 import { ChevronDown, Calculator, Download, Info, Layers, Package, Settings2 } from 'lucide-react';
 import { Footer } from '@/components/layout/Footer';
-import { PageHeader } from '@/components/shared/PageHeader';
+import { useChromeSuppressed, useRegisterModuleActions } from '@/components/layout/ModuleActionsContext';
 import { AppFormFields, AppFormModal, FORM_GRID_CLS, FORM_LABEL_CLS } from '@/components/shared/AppForm';
 import { AppTable, type AppTableColumn } from '@/components/shared/AppTable';
 import { FilterTabs } from '@/components/shared/FilterTabs';
@@ -19,7 +19,6 @@ import { InventoryStockSummaryView } from '@/components/modules/inventory/shared
 import { InventoryProductionCapacityView } from '@/components/modules/inventory/shared/InventoryProductionCapacityView';
 import { InventoryMaterialRequirementView } from '@/components/modules/inventory/shared/InventoryMaterialRequirementView';
 import { ProductSelect, RecipeSelect, WarehouseSelect } from '@/components/modules/inventory/shared/selects';
-import { MODULE_LIST_SHELL } from '@/lib/ui/module-layout';
 import { useAppStore } from '@/lib/state/app-store';
 import type { PortField } from '@/lib/modules/port-types';
 import {
@@ -442,6 +441,51 @@ export function FinishedGoodsPage() {
     setView('materials');
   };
 
+  useChromeSuppressed(view !== 'main');
+
+  useRegisterModuleActions(
+    view === 'main' ? (
+      <div className="relative self-start">
+        <div className="flex">
+          <button
+            type="button"
+            onClick={openCreate}
+            className="bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold px-4 py-2.5 rounded-l-xl cursor-pointer"
+          >
+            + Add Finished Product
+          </button>
+          <button
+            type="button"
+            onClick={() => setShowAddMenu((v) => !v)}
+            className="bg-blue-600 hover:bg-blue-700 text-white px-2.5 py-2.5 rounded-r-xl border-l border-blue-500 cursor-pointer"
+            aria-label="More add options"
+          >
+            <ChevronDown className="w-4 h-4" />
+          </button>
+        </div>
+        {showAddMenu ? (
+          <div className="absolute right-0 top-full mt-1 z-20 min-w-[160px] rounded-xl border border-slate-200 bg-white shadow-lg py-1">
+            <button
+              type="button"
+              onClick={() => { setShowAddMenu(false); toast.info('Feature coming soon', { module: 'Inventory', description: "Import products" }); }}
+              className="w-full text-left px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 cursor-pointer"
+            >
+              Import Products
+            </button>
+            <button
+              type="button"
+              onClick={() => { setShowAddMenu(false); toast.info('Feature coming soon', { module: 'Inventory', description: "Bulk add" }); }}
+              className="w-full text-left px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 cursor-pointer"
+            >
+              Bulk Add
+            </button>
+          </div>
+        ) : null}
+      </div>
+    ) : null,
+    [view, showAddMenu, openCreate],
+  );
+
   if (view === 'detail' && detailRow) {
     return (
       <InventoryProductDetailView
@@ -520,52 +564,6 @@ export function FinishedGoodsPage() {
 
   return (
     <>
-      <div className={MODULE_LIST_SHELL}>
-        <PageHeader
-          title="Finished Goods Inventory"
-          subtitle="Manage completed and ready-to-deliver product inventory."
-          size="compact"
-          actions={
-            <div className="relative self-start">
-              <div className="flex">
-                <button
-                  type="button"
-                  onClick={openCreate}
-                  className="bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold px-4 py-2.5 rounded-l-xl cursor-pointer"
-                >
-                  + Add Finished Product
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setShowAddMenu((v) => !v)}
-                  className="bg-blue-600 hover:bg-blue-700 text-white px-2.5 py-2.5 rounded-r-xl border-l border-blue-500 cursor-pointer"
-                  aria-label="More add options"
-                >
-                  <ChevronDown className="w-4 h-4" />
-                </button>
-              </div>
-              {showAddMenu ? (
-                <div className="absolute right-0 top-full mt-1 z-20 min-w-[160px] rounded-xl border border-slate-200 bg-white shadow-lg py-1">
-                  <button
-                    type="button"
-                    onClick={() => { setShowAddMenu(false); toast.info('Feature coming soon', { module: 'Inventory', description: "Import products" }); }}
-                    className="w-full text-left px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 cursor-pointer"
-                  >
-                    Import Products
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => { setShowAddMenu(false); toast.info('Feature coming soon', { module: 'Inventory', description: "Bulk add" }); }}
-                    className="w-full text-left px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 cursor-pointer"
-                  >
-                    Bulk Add
-                  </button>
-                </div>
-              ) : null}
-            </div>
-          }
-        />
-
         <KpiCards
           gridClassName="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2"
           items={[
@@ -742,7 +740,6 @@ export function FinishedGoodsPage() {
           </div>
         </div>
         <Footer />
-      </div>
 
       <AppFormModal
         open={view === 'form'}

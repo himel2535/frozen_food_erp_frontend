@@ -7,6 +7,7 @@ import { useParams } from 'next/navigation';
 import { ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 import { Footer } from '@/components/layout/Footer';
+import { useChromeSuppressed } from '@/components/layout/ModuleActionsContext';
 import { AppFormFields, AppFormModal } from '@/components/shared/AppForm';
 import { EmployeeDetailHeader } from '@/components/modules/hrm/employee-detail/EmployeeDetailHeader';
 import { EmployeeDetailMetrics } from '@/components/modules/hrm/employee-detail/EmployeeDetailMetrics';
@@ -17,7 +18,6 @@ import { AttendanceTab } from '@/components/modules/hrm/employee-detail/tabs/Att
 import { PayrollTab } from '@/components/modules/hrm/employee-detail/tabs/PayrollTab';
 import { NotesTab } from '@/components/modules/hrm/employee-detail/tabs/NotesTab';
 import { useLegacyParityConfig } from '@/hooks/use-legacy-parity-config';
-import { MODULE_LIST_SHELL } from '@/lib/ui/module-layout';
 import { useAppStore } from '@/lib/state/app-store';
 import {
   getEmployeeProfile,
@@ -37,6 +37,8 @@ export function EmployeeDetailPage() {
 
   const config = useLegacyParityConfig('hrm-employees');
   const fields = config?.fields ?? [];
+
+  useChromeSuppressed(true);
 
   const profile = useMemo(
     () => (employeeId ? getEmployeeProfile(appState, employeeId) : null),
@@ -79,7 +81,7 @@ export function EmployeeDetailPage() {
 
   if (!profile || !metrics) {
     return (
-      <div className={MODULE_LIST_SHELL}>
+      <>
         <div className="premium-card premium-shadow p-8 text-center space-y-4 max-w-lg mx-auto mt-12">
           <h2 className="text-lg font-extrabold text-slate-900">Employee not found</h2>
           <p className="text-xs text-slate-500">
@@ -94,7 +96,7 @@ export function EmployeeDetailPage() {
           </Link>
         </div>
         <Footer />
-      </div>
+      </>
     );
   }
 
@@ -102,7 +104,7 @@ export function EmployeeDetailPage() {
   const departmentInfo = profile.departmentInfo as Record<string, unknown> | null;
 
   return (
-    <div className={MODULE_LIST_SHELL}>
+    <>
       <div className="space-y-4 flex flex-col">
         <EmployeeDetailHeader
           employee={employee}
@@ -153,6 +155,6 @@ export function EmployeeDetailPage() {
           onToggleAdvanced={() => setShowAdvanced((v) => !v)}
         />
       </AppFormModal>
-    </div>
+    </>
   );
 }

@@ -6,13 +6,12 @@ import { useEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Plus } from 'lucide-react';
 import { Footer } from '@/components/layout/Footer';
-import { PageHeader } from '@/components/shared/PageHeader';
+import { useChromeSuppressed, useRegisterModuleActions } from '@/components/layout/ModuleActionsContext';
 import { FilterTabs } from '@/components/shared/FilterTabs';
 import { KpiCards } from '@/components/shared/KpiCards';
 import { AppTable, type AppTableColumn } from '@/components/shared/AppTable';
 import { StatusBadge } from '@/components/shared/StatusBadge';
 import { TableIconAction } from '@/components/shared/TableIconAction';
-import { MODULE_LIST_SHELL } from '@/lib/ui/module-layout';
 import { useAppStore } from '@/lib/state/app-store';
 import { useLocaleFormat } from '@/hooks/useLocaleFormat';
 import { translateStatus } from '@/lib/i18n/resolve-label';
@@ -276,6 +275,21 @@ export function DeliveriesPage() {
         )
       : null;
 
+  useChromeSuppressed(view !== 'main');
+
+  useRegisterModuleActions(
+    view === 'main' ? (
+      <button
+        type="button"
+        onClick={openCreate}
+        className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold px-4 py-2.5 rounded-xl transition-colors flex items-center gap-2 cursor-pointer self-start"
+      >
+        <Plus className="w-4 h-4" /> {t('sales.new_challan')}
+      </button>
+    ) : null,
+    [view, openCreate, t],
+  );
+
   if (view === 'form') {
     return (
       <>
@@ -300,21 +314,6 @@ export function DeliveriesPage() {
 
   return (
     <>
-      <div className={MODULE_LIST_SHELL}>
-        <PageHeader
-          title={t('sales.deliveries_title')}
-          subtitle={t('sales.deliveries_subtitle')}
-          actions={
-            <button
-              type="button"
-              onClick={openCreate}
-              className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold px-4 py-2.5 rounded-xl transition-colors flex items-center gap-2 cursor-pointer self-start"
-            >
-              <Plus className="w-4 h-4" /> {t('sales.new_challan')}
-            </button>
-          }
-        />
-
         <KpiCards items={kpis} />
 
         <div className="bg-white p-4 rounded-xl border border-slate-200/80 premium-shadow space-y-4">
@@ -358,7 +357,6 @@ export function DeliveriesPage() {
         />
 
         <Footer />
-      </div>
 
       {printPortal}
     </>

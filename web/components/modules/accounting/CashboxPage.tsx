@@ -4,8 +4,7 @@ import { toast, confirmAction } from '@/lib/ui/feedback';
 
 import { useMemo, useState } from 'react';
 import { Footer } from '@/components/layout/Footer';
-import { PageHeader } from '@/components/shared/PageHeader';
-import { MODULE_LIST_SHELL } from '@/lib/ui/module-layout';
+import { useChromeSuppressed } from '@/components/layout/ModuleActionsContext';
 import { useAppStore } from '@/lib/state/app-store';
 import {
   createCashboxEntry,
@@ -103,14 +102,11 @@ export function CashboxPage() {
     toast.info('Feature coming soon', { module: 'Cashbox', description: "Transfer between cashboxes is coming soon." });
   };
 
+  useChromeSuppressed(view === 'form');
+
   return (
     <>
-      <div className={MODULE_LIST_SHELL}>
-        <PageHeader
-          title="Cashbox"
-          subtitle="Track cash in, cash out, and transfers across your business."
-        />
-        <div className="space-y-3 min-w-0">
+      <div className="space-y-3 min-w-0">
           <CashboxMetrics metrics={metrics} />
           <CashboxActionBar
             onCashIn={() => openCreateForm('cash_in')}
@@ -140,8 +136,7 @@ export function CashboxPage() {
             netTotal={totals.netTotal}
           />
         </div>
-        <Footer />
-      </div>
+      <Footer />
 
       <CashboxForm
         open={view === 'form'}

@@ -43,6 +43,38 @@ const SUBMENU_ACCENT: Record<
   },
 };
 
+function nestedGroupKey(sectionId: string, item: SidebarItem) {
+  return `${sectionId}-${item.view ?? item.href}`;
+}
+
+function isNestedGroupActiveForView(item: SidebarItem, activeView: string | null) {
+  if (!item.children?.length || !activeView) return false;
+  if (activeView === item.view) return true;
+  return item.children.some((child) => child.view === activeView);
+}
+
+function buildInitialSubmenus(activeModule: string) {
+  const initial: Record<string, boolean> = {};
+  TENANT_SIDEBAR_SECTIONS.forEach((section) => {
+    if (section.items.length > 0) {
+      initial[section.id] = section.id === activeModule;
+    }
+  });
+  return initial;
+}
+
+function buildInitialNestedGroups(activeModule: string, activeView: string | null) {
+  const initial: Record<string, boolean> = {};
+  TENANT_SIDEBAR_SECTIONS.forEach((section) => {
+    section.items.forEach((item) => {
+      if (item.children?.length && section.id === activeModule && isNestedGroupActiveForView(item, activeView)) {
+        initial[nestedGroupKey(section.id, item)] = true;
+      }
+    });
+  });
+  return initial;
+}
+
 export function Sidebar() {
   const pathname = usePathname();
   const collapsed = useAppStore((s) => s.appState.sidebarCollapsed);
@@ -50,39 +82,19 @@ export function Sidebar() {
   const t = useAppStore((s) => s.t);
   const activeModule = getActiveSidebarModule(pathname);
   const activeView = getActiveSidebarView(pathname);
-  const [openSubmenus, setOpenSubmenus] = useState<Record<string, boolean>>({});
-  const [openNestedGroups, setOpenNestedGroups] = useState<Record<string, boolean>>({});
+  const [openSubmenus, setOpenSubmenus] = useState(() => buildInitialSubmenus(activeModule));
+  const [openNestedGroups, setOpenNestedGroups] = useState(() =>
+    buildInitialNestedGroups(activeModule, activeView),
+  );
 
-  const nestedGroupKey = (sectionId: string, item: SidebarItem) => `${sectionId}-${item.view ?? item.href}`;
-
-  const isNestedGroupActive = (item: SidebarItem) => {
-    if (!item.children?.length) return false;
-    if (activeView === item.view) return true;
-    return item.children.some((child) => child.view === activeView);
-  };
+  const isNestedGroupActive = (item: SidebarItem) => isNestedGroupActiveForView(item, activeView);
 
   useEffect(() => {
-    const nestedInitial: Record<string, boolean> = {};
-    TENANT_SIDEBAR_SECTIONS.forEach((section) => {
-      section.items.forEach((item) => {
-        if (item.children?.length && section.id === activeModule && isNestedGroupActive(item)) {
-          nestedInitial[nestedGroupKey(section.id, item)] = true;
-        }
-      });
-    });
-    setOpenNestedGroups((prev) => ({ ...prev, ...nestedInitial }));
+    setOpenNestedGroups(buildInitialNestedGroups(activeModule, activeView));
   }, [activeModule, activeView]);
 
   useEffect(() => {
-    setOpenSubmenus((prev) => {
-      const next = { ...prev };
-      TENANT_SIDEBAR_SECTIONS.forEach((section) => {
-        if (section.items.length > 0) {
-          next[section.id] = section.id === activeModule;
-        }
-      });
-      return next;
-    });
+    setOpenSubmenus(buildInitialSubmenus(activeModule));
   }, [activeModule]);
 
   const toggleSubmenu = (id: string) => {

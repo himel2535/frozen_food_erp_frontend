@@ -2,13 +2,13 @@
 
 import { toast, confirmAction } from '@/lib/ui/feedback';
 
-import { useMemo, useState, type ReactNode } from 'react';
+import { useMemo, useState, useCallback, type ReactNode } from 'react';
 import { Footer } from '@/components/layout/Footer';
 import { AppFormFields, AppFormModal } from '@/components/shared/AppForm';
-import { ListToolbar } from '@/components/shared/ListToolbar';
+import { ListToolbar, ModuleToolbarActions } from '@/components/shared/ListToolbar';
+import { useRegisterModuleActions } from '@/components/layout/ModuleActionsContext';
 import { KpiCards, type KpiCardItem } from '@/components/shared/KpiCards';
 import { getKpiGridClassName } from '@/lib/ui/kpi-grid';
-import { MODULE_LIST_SHELL } from '@/lib/ui/module-layout';
 import { FilterTabs } from '@/components/shared/FilterTabs';
 import { AppTable } from '@/components/shared/AppTable';
 import { StatusBadge } from '@/components/shared/StatusBadge';
@@ -57,11 +57,7 @@ export function DedicatedModule({
   const activeConfig = config ?? loadedConfig;
 
   if (!activeConfig) {
-    return (
-      <div className={MODULE_LIST_SHELL}>
-        <AppTable columns={[{ key: 'a', label: 'Loading' }]} rows={[]} loading />
-      </div>
-    );
+    return <AppTable columns={[{ key: 'a', label: 'Loading' }]} rows={[]} loading />;
   }
 
   return <DedicatedModuleView config={activeConfig} configId={configId} />;
@@ -208,24 +204,30 @@ function DedicatedModuleView({ config, configId }: { config: DedicatedModuleConf
     { id: 'pending', label: 'common.pending' },
   ]).map((tab) => ({ ...tab, label: resolveLabel(t, tab.label) }));
 
+  const handleAdd = useCallback(() => {
+    if (config.onAdd) {
+      config.onAdd();
+      return;
+    }
+    resetForm();
+    setView('form');
+  }, [config, resetForm]);
+
+  const resolvedAddLabel = config.addLabel
+    ? resolveLabel(t, config.addLabel)
+    : resolveModuleText(t, configId, config, 'addLabel') || t('crm.add_entity', { entity: entityLabel });
+
+  useRegisterModuleActions(
+    <ModuleToolbarActions onAdd={handleAdd} addLabel={resolvedAddLabel} />,
+    [handleAdd, resolvedAddLabel],
+  );
+
   return (
     <>
-    <div className={MODULE_LIST_SHELL}>
       <ListToolbar
-        title={moduleTitle}
-        subtitle={moduleSubtitle}
         search={search}
         onSearchChange={setSearch}
         searchPlaceholder={resolveModuleText(t, configId, config, 'searchPlaceholder')}
-        onAdd={() => {
-          if (config.onAdd) {
-            config.onAdd();
-            return;
-          }
-          resetForm();
-          setView('form');
-        }}
-        addLabel={config.addLabel ? resolveLabel(t, config.addLabel) : resolveModuleText(t, configId, config, 'addLabel') || t('crm.add_entity', { entity: entityLabel })}
         filters={
           <>
             <FilterTabs tabs={tabs} active={statusFilter} onChange={setStatusFilter} />
@@ -296,7 +298,6 @@ function DedicatedModuleView({ config, configId }: { config: DedicatedModuleConf
         )}
       />
       <Footer />
-    </div>
     {!config.hideInlineForm && (
     <AppFormModal
       open={view === 'form'}

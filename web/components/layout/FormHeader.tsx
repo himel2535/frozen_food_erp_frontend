@@ -4,6 +4,7 @@ import { ArrowLeft } from 'lucide-react';
 import { Icon } from '@iconify/react';
 import { usePathname } from 'next/navigation';
 import { getPageIcon } from '@/lib/ui/page-icons';
+import { PageHeaderLayout } from '@/components/shared/PageHeaderLayout';
 
 interface FormHeaderProps {
   title: string;
@@ -28,7 +29,7 @@ export function FormHeader({
   const resolvedIcon = icon ?? getPageIcon(pathname);
 
   return (
-    <div className={`flex items-center gap-4 ${compact ? 'mb-3' : 'mb-6'}`}>
+    <div className={`flex items-start gap-3 ${compact ? 'mb-3' : 'mb-6'}`}>
       <button
         type="button"
         onClick={onBack}
@@ -37,19 +38,20 @@ export function FormHeader({
       >
         <ArrowLeft className="w-5 h-5" />
       </button>
-      {resolvedIcon ? (
-        <span className="inline-flex items-center justify-center shrink-0">
-          <Icon icon={resolvedIcon} width={32} height={32} />
-        </span>
-      ) : null}
-      <div>
+      <div className="min-w-0 flex-1">
         {backLabel ? (
           <p className="text-[11px] font-bold text-slate-500 mb-1">{backLabel}</p>
         ) : null}
-        <h3 id={titleId} className="text-xl font-extrabold text-slate-900 tracking-tight">
-          {title}
-        </h3>
-        {subtitle && <p className="text-xs font-semibold text-slate-500 mt-0.5">{subtitle}</p>}
+        <PageHeaderLayout
+          size="compact"
+          title={<span id={titleId}>{title}</span>}
+          subtitle={subtitle}
+          icon={
+            resolvedIcon ? (
+              <Icon icon={resolvedIcon} width={32} height={32} />
+            ) : undefined
+          }
+        />
       </div>
     </div>
   );

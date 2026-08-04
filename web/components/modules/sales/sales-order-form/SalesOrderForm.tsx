@@ -15,7 +15,8 @@ import {
   User,
 } from 'lucide-react';
 import { FormHeader } from '@/components/layout/FormHeader';
-import { MODULE_LIST_SHELL } from '@/lib/ui/module-layout';
+import { useChromeSuppressed } from '@/components/layout/ModuleActionsContext';
+import { MODULE_FORM_SHELL } from '@/lib/ui/module-layout';
 import { IconInput, IconSelect, IconTextarea } from '@/components/modules/crm/customer-form/IconField';
 import { InvoiceCustomerSearch } from '@/components/modules/sales/invoice-form/InvoiceCustomerSearch';
 import { PoItemsTable } from '@/components/modules/purchases/purchase-order-form/PoItemsTable';
@@ -73,6 +74,8 @@ export function SalesOrderForm({
   const [errors, setErrors] = useState<SoFieldError>({});
   const saveActionRef = useRef<SoSaveAction>('draft');
   const formRef = useRef<HTMLFormElement>(null);
+
+  useChromeSuppressed(true);
 
   const productOptions = useMemo(
     () => listInventoryProductOptions(appState).map((p) => ({
@@ -143,7 +146,7 @@ export function SalesOrderForm({
   const statusMeta = SO_STATUS_OPTIONS.find((s) => s.value === form.status) ?? SO_STATUS_OPTIONS[0];
 
   return (
-    <div className={MODULE_LIST_SHELL}>
+    <div className={MODULE_FORM_SHELL}>
       <form ref={formRef} onSubmit={handleSubmit} noValidate className="w-full flex flex-col min-h-full pb-4">
         <div className="pt-3 md:pt-4 mb-3 flex flex-col lg:flex-row lg:items-start lg:justify-between gap-3">
           <FormHeader

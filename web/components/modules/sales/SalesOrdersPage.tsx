@@ -6,13 +6,12 @@ import { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Plus } from 'lucide-react';
 import { Footer } from '@/components/layout/Footer';
-import { PageHeader } from '@/components/shared/PageHeader';
+import { useRegisterModuleActions } from '@/components/layout/ModuleActionsContext';
 import { FilterTabs } from '@/components/shared/FilterTabs';
 import { KpiCards } from '@/components/shared/KpiCards';
 import { AppTable, type AppTableColumn } from '@/components/shared/AppTable';
 import { StatusBadge } from '@/components/shared/StatusBadge';
 import { TableIconAction } from '@/components/shared/TableIconAction';
-import { MODULE_LIST_SHELL } from '@/lib/ui/module-layout';
 import { CF_BTN_PRIMARY } from '@/components/modules/crm/customer-form/customer-form-styles';
 import { useAppStore } from '@/lib/state/app-store';
 import { useLocaleFormat } from '@/hooks/useLocaleFormat';
@@ -136,22 +135,19 @@ export function SalesOrdersPage() {
     saveAppState();
   };
 
-  return (
-    <div className={MODULE_LIST_SHELL}>
-      <PageHeader
-        title={t('sales.orders_title')}
-        subtitle={t('sales.orders_subtitle')}
-        actions={
-          <button
-            type="button"
-            onClick={() => router.push('/sales/orders/new')}
-            className={CF_BTN_PRIMARY}
-          >
-            <Plus className="w-4 h-4" /> {t('sales.create_order')}
-          </button>
-        }
-      />
+  useRegisterModuleActions(
+    <button
+      type="button"
+      onClick={() => router.push('/sales/orders/new')}
+      className={CF_BTN_PRIMARY}
+    >
+      <Plus className="w-4 h-4" /> {t('sales.create_order')}
+    </button>,
+    [router, t],
+  );
 
+  return (
+    <>
       <div className="mt-4">
         <KpiCards items={kpis} />
       </div>
@@ -183,6 +179,6 @@ export function SalesOrdersPage() {
       </div>
 
       <Footer />
-    </div>
+    </>
   );
 }

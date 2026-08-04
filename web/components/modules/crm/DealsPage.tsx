@@ -5,7 +5,7 @@ import { toast } from '@/lib/ui/feedback';
 import { useMemo, useState } from 'react';
 import { Plus } from 'lucide-react';
 import { Footer } from '@/components/layout/Footer';
-import { PageHeader } from '@/components/shared/PageHeader';
+import { useChromeSuppressed, useRegisterModuleActions } from '@/components/layout/ModuleActionsContext';
 import { AppFormFields, AppFormModal, FORM_GRID_CLS, FORM_LABEL_CLS, FORM_SELECT_CLS } from '@/components/shared/AppForm';
 import { AppTable, type AppTableColumn } from '@/components/shared/AppTable';
 import { KanbanBoard, type KanbanCard } from '@/components/shared/KanbanBoard';
@@ -27,7 +27,6 @@ import {
   markDealLost,
 } from '@/lib/services/crm-service';
 import { KpiCards } from '@/components/shared/KpiCards';
-import { MODULE_LIST_SHELL } from '@/lib/ui/module-layout';
 import type { PortField } from '@/lib/modules/port-types';
 import { ProfileDrawer } from '@/components/shared/ProfileDrawer';
 
@@ -213,31 +212,28 @@ export function DealsPage() {
     resetForm();
   };
 
+  useChromeSuppressed(view === 'form');
+
+  useRegisterModuleActions(
+    <div className="flex items-center gap-2">
+      <button type="button" onClick={() => setLayoutMode('kanban')} className={`px-3 py-1.5 rounded-lg text-xs font-bold cursor-pointer ${layoutMode === 'kanban' ? 'bg-blue-600 text-white' : 'bg-slate-100'}`}>{t('crm.layout_kanban')}</button>
+      <button type="button" onClick={() => setLayoutMode('table')} className={`px-3 py-1.5 rounded-lg text-xs font-bold cursor-pointer ${layoutMode === 'table' ? 'bg-blue-600 text-white' : 'bg-slate-100'}`}>{t('crm.layout_table')}</button>
+      <input
+        type="search"
+        placeholder={t('crm.search_deals')}
+        value={search}
+        onChange={(e) => setSearch(e.target.value)}
+        className="bg-slate-50 border border-slate-200 text-xs rounded-xl px-3 py-2 w-48"
+      />
+      <button type="button" onClick={openCreate} className="flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold px-4 py-2.5 rounded-xl cursor-pointer">
+        <Plus className="w-4 h-4" /> {t('crm.add_deal')}
+      </button>
+    </div>,
+    [layoutMode, search, t, openCreate],
+  );
+
   return (
     <>
-    <div className={MODULE_LIST_SHELL}>
-      <PageHeader
-        title={t('crm.deals_title')}
-        subtitle={`${t('crm.deals_subtitle')} · ${formatCount(deals.length)} · ${formatMoney(pipelineValue)}`}
-        size="compact"
-        actions={
-          <div className="flex items-center gap-2">
-            <button type="button" onClick={() => setLayoutMode('kanban')} className={`px-3 py-1.5 rounded-lg text-xs font-bold cursor-pointer ${layoutMode === 'kanban' ? 'bg-blue-600 text-white' : 'bg-slate-100'}`}>{t('crm.layout_kanban')}</button>
-            <button type="button" onClick={() => setLayoutMode('table')} className={`px-3 py-1.5 rounded-lg text-xs font-bold cursor-pointer ${layoutMode === 'table' ? 'bg-blue-600 text-white' : 'bg-slate-100'}`}>{t('crm.layout_table')}</button>
-            <input
-              type="search"
-              placeholder={t('crm.search_deals')}
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="bg-slate-50 border border-slate-200 text-xs rounded-xl px-3 py-2 w-48"
-            />
-            <button type="button" onClick={openCreate} className="flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold px-4 py-2.5 rounded-xl cursor-pointer">
-              <Plus className="w-4 h-4" /> {t('crm.add_deal')}
-            </button>
-          </div>
-        }
-      />
-
       <KpiCards items={[
         { key: 'open', label: t('sales.kpi_open'), value: formatCount(Number(metrics.totalDeals ?? 0)), sub: formatMoney(Number(metrics.pipelineValue ?? 0)) },
         { key: 'won', label: translateStatus(t, 'won'), value: formatCount(Number(metrics.wonDeals ?? 0)) },
@@ -284,7 +280,6 @@ export function DealsPage() {
       </ProfileDrawer>
 
       <Footer />
-    </div>
     <AppFormModal
       open={view === 'form'}
       onClose={() => { setView('main'); resetForm(); }}

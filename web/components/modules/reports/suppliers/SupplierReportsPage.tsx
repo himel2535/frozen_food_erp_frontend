@@ -3,8 +3,7 @@
 import { useMemo, useState } from 'react';
 import { Download, Filter, Printer, Search } from 'lucide-react';
 import { Footer } from '@/components/layout/Footer';
-import { PageHeader } from '@/components/shared/PageHeader';
-import { MODULE_LIST_SHELL } from '@/lib/ui/module-layout';
+import { useRegisterModuleActions } from '@/components/layout/ModuleActionsContext';
 import { useAppStore } from '@/lib/state/app-store';
 import { toast } from '@/lib/ui/feedback';
 import { formatCurrency } from '@/lib/services/domain-service';
@@ -110,34 +109,22 @@ export function SupplierReportsPage() {
     full: t('reports.suppliers_title'),
   };
 
+  useRegisterModuleActions(
+    <>
+      <button type="button" onClick={() => printSection('full')} className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition-colors cursor-pointer">
+        <Printer className="w-4 h-4" />
+        {t('reports.suppliers_print_report')}
+      </button>
+      <button type="button" onClick={handleExport} className="bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold px-4 py-2.5 rounded-xl transition-colors flex items-center gap-2 cursor-pointer">
+        <Download className="w-4 h-4" />
+        {t('reports.suppliers_export')}
+      </button>
+    </>,
+    [printSection, handleExport, t],
+  );
+
   return (
     <>
-      <div className={MODULE_LIST_SHELL}>
-        <PageHeader
-          title={t('reports.suppliers_title')}
-          subtitle={t('reports.suppliers_subtitle')}
-          actions={
-            <>
-              <button
-                type="button"
-                onClick={() => printSection('full')}
-                className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition-colors cursor-pointer"
-              >
-                <Printer className="w-4 h-4" />
-                {t('reports.suppliers_print_report')}
-              </button>
-              <button
-                type="button"
-                onClick={handleExport}
-                className="bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold px-4 py-2.5 rounded-xl transition-colors flex items-center gap-2 cursor-pointer"
-              >
-                <Download className="w-4 h-4" />
-                {t('reports.suppliers_export')}
-              </button>
-            </>
-          }
-        />
-
         <div className="bg-white p-4 rounded-xl border border-slate-200/80 premium-shadow">
           <div className="flex flex-col xl:flex-row xl:items-center xl:justify-between gap-3">
             <div className="relative min-w-[240px] flex-1 max-w-md">
@@ -220,7 +207,6 @@ export function SupplierReportsPage() {
         </div>
 
         <Footer />
-      </div>
 
       <SupplierPrintFrame
         printTarget={printTarget}
