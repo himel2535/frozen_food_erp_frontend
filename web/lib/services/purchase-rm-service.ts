@@ -332,12 +332,12 @@ export function getPurchaseRmMetrics(state: AppState) {
   }).reduce((s, r) => s + Number(r.grandTotal ?? r.total ?? 0), 0);
 
   return [
-    { key: 'total', label: 'Total PO Value', value: fmt(totalValue), sub: 'This Month' },
-    { key: 'pending', label: 'Pending Approval', value: fmt(sumByStatus(['pending_approval'])), sub: `${rows.filter((r) => r.status === 'pending_approval').length} orders` },
-    { key: 'waiting', label: 'Waiting Delivery', value: fmt(sumByStatus(['sent'])), sub: `${rows.filter((r) => r.status === 'sent').length} orders` },
-    { key: 'partial', label: 'Partially Received', value: fmt(sumByStatus(['partially_received'])), sub: `${rows.filter((r) => r.status === 'partially_received').length} orders` },
-    { key: 'completed', label: 'Completed', value: fmt(sumByStatus(['completed'])), sub: `${rows.filter((r) => r.status === 'completed').length} orders` },
-    { key: 'overdue', label: 'Overdue Orders', value: fmt(overdueValue), sub: `${overdueCount} orders` },
+    { key: 'total', label: 'Total PO Value', value: fmt(totalValue), sub: 'This Month', iconify: 'flat-color-icons:currency-exchange' },
+    { key: 'pending', label: 'Pending Approval', value: fmt(sumByStatus(['pending_approval'])), sub: `${rows.filter((r) => r.status === 'pending_approval').length} orders`, iconify: 'flat-color-icons:clock' },
+    { key: 'waiting', label: 'Waiting Delivery', value: fmt(sumByStatus(['sent'])), sub: `${rows.filter((r) => r.status === 'sent').length} orders`, iconify: 'flat-color-icons:shipped' },
+    { key: 'partial', label: 'Partially Received', value: fmt(sumByStatus(['partially_received'])), sub: `${rows.filter((r) => r.status === 'partially_received').length} orders`, iconify: 'flat-color-icons:medium-priority' },
+    { key: 'completed', label: 'Completed', value: fmt(sumByStatus(['completed'])), sub: `${rows.filter((r) => r.status === 'completed').length} orders`, iconify: 'flat-color-icons:approval' },
+    { key: 'overdue', label: 'Overdue Orders', value: fmt(overdueValue), sub: `${overdueCount} orders`, iconify: 'flat-color-icons:alarm-clock' },
   ];
 }
 

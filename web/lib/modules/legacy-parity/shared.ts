@@ -37,12 +37,18 @@ export function sumField(rows: Row[], field: string): number {
   return rows.reduce((s, r) => s + Number(r[field] ?? 0), 0);
 }
 
+import { resolveKpiIcon } from '@/lib/ui/kpi-icons';
+
 export function kpiCount(key: string, label: string, value: number | string) {
-  return { key, label, value: String(value) };
+  return { key, label, value: String(value), iconify: resolveKpiIcon(key, label) };
 }
 
 export function kpiMoneySum(key: string, label: string, rows: Row[], field: string) {
-  return { key, label, value: money(sumField(rows, field)) };
+  return { key, label, value: money(sumField(rows, field)), iconify: resolveKpiIcon(key, label) };
+}
+
+export function kpiValue(key: string, label: string, value: string, extra?: { sub?: string; alert?: boolean }) {
+  return { key, label, value, iconify: resolveKpiIcon(key, label), ...extra };
 }
 
 export { React, toast, confirmAction };

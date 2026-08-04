@@ -3,7 +3,7 @@
 import { createPortal } from 'react-dom';
 import { Icon } from '@iconify/react';
 import { RP_PRINT_BODY, RP_PRINT_SECTION, RP_PRINT_TABLE, RP_PRINT_TD, RP_PRINT_TH, RP_ROOT } from '@/components/modules/reports/shared/report-print-styles';
-import { resolveKpiIcon } from '@/lib/ui/kpi-icons';
+import { resolveKpiIconsForRow } from '@/lib/ui/kpi-icons';
 import type { KpiCardItem } from '@/components/shared/KpiCards';
 import type { HrPrintSectionId } from '@/components/modules/reports/hr/hr-report-styles';
 import type {
@@ -104,6 +104,8 @@ export function HrPrintFrame(props: HrPrintFrameProps) {
     totalLabel,
   } = props;
 
+  const kpiIconIds = resolveKpiIconsForRow(kpis);
+
   const generatedAt = new Date().toLocaleString('en-GB', {
     day: '2-digit',
     month: '2-digit',
@@ -151,11 +153,11 @@ export function HrPrintFrame(props: HrPrintFrameProps) {
             <h2>{sectionTitles.metrics}</h2>
             {printTarget === 'full' ? (
               <div className="supplier-print-kpi-row hr-print-kpi-row">
-                {kpis.map((item) => {
-                  const iconId = item.iconify ?? resolveKpiIcon(item.key, item.label);
+                {kpis.map((item, index) => {
+                  const iconId = kpiIconIds[index];
                   return (
                     <div key={item.key} className="supplier-print-kpi-card">
-                      <Icon icon={iconId} width={24} height={24} />
+                      {iconId ? <Icon icon={iconId} width={24} height={24} /> : null}
                       <span className="supplier-print-kpi-label">{item.label}</span>
                       <span className="supplier-print-kpi-value">{item.value}</span>
                       {item.sub ? <span className="supplier-print-kpi-sub">{item.sub}</span> : null}

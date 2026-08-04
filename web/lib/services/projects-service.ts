@@ -6,6 +6,7 @@ import {
   updateInState,
 } from '@/lib/services/domain-service';
 import { listEmployees } from '@/lib/services/hrm-service';
+import { resolveKpiIcon } from '@/lib/ui/kpi-icons';
 import type { ProjectFormValues, ProjectLineItem, ProjectSaveAction } from '@/components/modules/projects/project-form/project-form-types';
 
 type Row = Record<string, unknown>;
@@ -224,21 +225,23 @@ export function summarizeProjects(rows: Row[]) {
   const pipelineValue = rows.reduce((sum, row) => sum + projectBudget(row), 0);
 
   return [
-    { key: 'total', label: 'Total Projects', value: String(total), sub: 'All orders & projects' },
-    { key: 'active', label: 'Active', value: String(active), sub: 'In production pipeline' },
-    { key: 'draft', label: 'Draft Orders', value: String(draft), sub: 'Awaiting completion' },
+    { key: 'total', label: 'Total Projects', value: String(total), sub: 'All orders & projects', iconify: resolveKpiIcon('total', 'Total Projects') },
+    { key: 'active', label: 'Active', value: String(active), sub: 'In production pipeline', iconify: resolveKpiIcon('active', 'Active') },
+    { key: 'draft', label: 'Draft Orders', value: String(draft), sub: 'Awaiting completion', iconify: resolveKpiIcon('draft', 'Draft Orders') },
     {
       key: 'risk',
       label: 'At Risk',
       value: String(atRisk),
       alert: atRisk > 0,
       sub: atRisk > 0 ? 'Needs attention' : 'All on track',
+      iconify: resolveKpiIcon('risk', 'At Risk'),
     },
     {
       key: 'pipeline',
       label: 'Pipeline Value',
       value: formatCurrency(pipelineValue),
       sub: 'Total order value',
+      iconify: resolveKpiIcon('pipeline', 'Pipeline Value'),
     },
   ];
 }

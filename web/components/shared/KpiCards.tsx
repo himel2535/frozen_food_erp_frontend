@@ -1,7 +1,8 @@
 'use client';
 
+import { useMemo } from 'react';
 import { Icon } from '@iconify/react';
-import { resolveKpiIcon } from '@/lib/ui/kpi-icons';
+import { resolveKpiIconsForRow } from '@/lib/ui/kpi-icons';
 import { getKpiGridClassName } from '@/lib/ui/kpi-grid';
 
 export interface KpiCardItem {
@@ -22,11 +23,12 @@ export function KpiCards({
   gridClassName?: string;
 }) {
   const grid = gridClassName ?? getKpiGridClassName(items.length);
+  const iconIds = useMemo(() => resolveKpiIconsForRow(items), [items]);
 
   return (
     <section className={grid}>
-      {items.map((item) => {
-        const iconId = item.iconify ?? resolveKpiIcon(item.key, item.label);
+      {items.map((item, index) => {
+        const iconId = iconIds[index];
         return (
           <div
             key={item.key}
@@ -42,7 +44,7 @@ export function KpiCards({
               ) : null}
             </div>
             <div className="flex items-center justify-center shrink-0">
-              {item.icon ?? <Icon icon={iconId} width={38} height={38} className="shrink-0" />}
+              {item.icon ?? <Icon icon={iconId || 'flat-color-icons:statistics'} width={38} height={38} className="shrink-0" />}
             </div>
           </div>
         );

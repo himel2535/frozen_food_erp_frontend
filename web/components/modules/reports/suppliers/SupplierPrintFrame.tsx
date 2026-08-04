@@ -4,7 +4,7 @@ import { createPortal } from 'react-dom';
 import { Icon } from '@iconify/react';
 import { RP_PRINT_BODY, RP_PRINT_SECTION, RP_PRINT_TABLE, RP_PRINT_TD, RP_PRINT_TH, RP_ROOT } from '@/components/modules/reports/shared/report-print-styles';
 import { formatCurrency } from '@/lib/services/domain-service';
-import { resolveKpiIcon } from '@/lib/ui/kpi-icons';
+import { resolveKpiIconsForRow } from '@/lib/ui/kpi-icons';
 import type { KpiCardItem } from '@/components/shared/KpiCards';
 import type { SupplierPrintSectionId } from '@/components/modules/reports/suppliers/supplier-report-styles';
 import type {
@@ -132,6 +132,8 @@ export function SupplierPrintFrame(props: SupplierPrintFrameProps) {
     suppliersLabel,
   } = props;
 
+  const kpiIconIds = resolveKpiIconsForRow(kpis);
+
   const generatedAt = new Date().toLocaleString('en-GB', {
     day: '2-digit',
     month: '2-digit',
@@ -180,11 +182,11 @@ export function SupplierPrintFrame(props: SupplierPrintFrameProps) {
             <h2>{sectionTitles.metrics}</h2>
             {printTarget === 'full' ? (
               <div className="supplier-print-kpi-row">
-                {kpis.map((item) => {
-                  const iconId = item.iconify ?? resolveKpiIcon(item.key, item.label);
+                {kpis.map((item, index) => {
+                  const iconId = kpiIconIds[index];
                   return (
                     <div key={item.key} className="supplier-print-kpi-card">
-                      <Icon icon={iconId} width={24} height={24} />
+                      {iconId ? <Icon icon={iconId} width={24} height={24} /> : null}
                       <span className="supplier-print-kpi-label">{item.label}</span>
                       <span className="supplier-print-kpi-value">{item.value}</span>
                       {item.sub ? <span className="supplier-print-kpi-sub">{item.sub}</span> : null}
@@ -335,11 +337,11 @@ export function SupplierPrintFrame(props: SupplierPrintFrameProps) {
               <div className="supplier-print-summary-list">
                 <h2>{sectionTitles.metrics}</h2>
                 <ul>
-                  {kpis.map((item) => {
-                    const iconId = item.iconify ?? resolveKpiIcon(item.key, item.label);
+                  {kpis.map((item, index) => {
+                    const iconId = kpiIconIds[index];
                     return (
                       <li key={item.key}>
-                        <Icon icon={iconId} width={18} height={18} />
+                        {iconId ? <Icon icon={iconId} width={18} height={18} /> : null}
                         <span><strong>{item.label}:</strong> {item.value}</span>
                       </li>
                     );

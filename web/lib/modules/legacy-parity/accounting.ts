@@ -6,7 +6,7 @@ import {
 } from '@/lib/services/accounting-service';
 import { listSuppliers, updateSupplier } from '@/lib/services/purchases-service';
 import { listFromState, createInState, updateInState, deleteFromState } from '@/lib/services/domain-service';
-import { adapter, money, countStatus, kpiCount, kpiMoneySum, type DedicatedModuleConfig } from './shared';
+import { adapter, money, countStatus, kpiCount, kpiMoneySum, kpiValue, type DedicatedModuleConfig } from './shared';
 export const CONFIGS: Record<string, DedicatedModuleConfig> = {
   'accounting-journals': {
     id: 'accounting-journals',
@@ -34,8 +34,8 @@ export const CONFIGS: Record<string, DedicatedModuleConfig> = {
       const totalCredit = rows.reduce((s, r) => s + Number(r.credit ?? 0), 0);
       return [
         kpiCount('entries', 'Total Entries', m.totalEntries),
-        { key: 'debit', label: 'Total Debit Volume', value: money(m.totalDebit) },
-        { key: 'credit', label: 'Total Credit Volume', value: money(totalCredit) },
+        kpiValue('debit', 'Total Debit Volume', money(m.totalDebit)),
+        kpiValue('credit', 'Total Credit Volume', money(totalCredit)),
         kpiCount('pending', 'Pending Approvals', m.pending),
       ];
     },
@@ -76,9 +76,9 @@ export const CONFIGS: Record<string, DedicatedModuleConfig> = {
       const totalCredit = rows.reduce((s, r) => s + Number(r.credit ?? 0), 0);
       return [
         kpiCount('entries', 'Total Entries', m.totalEntries),
-        { key: 'balance', label: 'Net Balance', value: money(m.netBalance) },
-        { key: 'debit', label: 'Total Debit', value: money(totalDebit) },
-        { key: 'credit', label: 'Total Credit', value: money(totalCredit) },
+        kpiValue('balance', 'Net Balance', money(m.netBalance)),
+        kpiValue('debit', 'Total Debit', money(totalDebit)),
+        kpiValue('credit', 'Total Credit', money(totalCredit)),
       ];
     },
     adapter: adapter({
@@ -119,9 +119,9 @@ export const CONFIGS: Record<string, DedicatedModuleConfig> = {
       const recv = rows.filter((r) => r.type === 'receivable').reduce((s, r) => s + Number(r.due ?? 0), 0);
       const pay = rows.filter((r) => r.type === 'payable').reduce((s, r) => s + Number(r.due ?? 0), 0);
       return [
-        { key: 'recv', label: 'Receivables', value: money(recv) },
-        { key: 'pay', label: 'Payables', value: money(pay) },
-        { key: 'net', label: 'Net Due', value: money(recv - pay) },
+        kpiValue('recv', 'Receivables', money(recv)),
+        kpiValue('pay', 'Payables', money(pay)),
+        kpiValue('net', 'Net Due', money(recv - pay)),
         kpiCount('records', 'Due Records', rows.length),
       ];
     },
