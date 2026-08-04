@@ -15,6 +15,13 @@ import {
 } from '@/lib/navigation/tenant-sidebar';
 import { useAppStore } from '@/lib/state/app-store';
 import { SidebarIcon } from './SidebarIcon';
+import { SidebarCollapsedTooltip } from './SidebarCollapsedTooltip';
+
+function sidebarLabel(t: (k: string) => string, key: string, fallback: string) {
+  const id = `sidebar.${key}`;
+  const translated = t(id);
+  return translated !== id ? translated : fallback;
+}
 
 const SUBMENU_ACCENT: Record<
   SidebarAccent,
@@ -169,22 +176,29 @@ export function Sidebar() {
                 <div
                   className={`sidebar-group flex items-center justify-between rounded-2xl transition-all duration-200 overflow-hidden ${containerClasses}`}
                 >
-                  <Link
-                    href={section.href}
-                    id={`side-${section.id}`}
-                    className={`side-btn sidebar-primary-link flex min-w-0 flex-1 items-center px-3.5 py-2.5 text-sm tracking-[0.01em] transition-all ${linkClasses}`}
+                  <SidebarCollapsedTooltip
+                    label={sidebarLabel(t, section.id, section.label)}
+                    collapsed={collapsed}
                   >
-                    <span className="flex items-center justify-center shrink-0">
-                      <SidebarIcon
-                        imageIcon={section.imageIcon}
-                        iconifyIcon={section.iconifyIcon}
-                        size={28}
-                      />
-                    </span>
-                    {!collapsed && (
-                      <span className="sidebar-label truncate ml-3 text-sm font-extrabold">{t(`sidebar.${section.id}`) !== `sidebar.${section.id}` ? t(`sidebar.${section.id}`) : section.label}</span>
-                    )}
-                  </Link>
+                    <Link
+                      href={section.href}
+                      id={`side-${section.id}`}
+                      className={`side-btn sidebar-primary-link flex min-w-0 flex-1 items-center px-3.5 py-2.5 text-sm tracking-[0.01em] transition-all ${linkClasses}`}
+                    >
+                      <span className="flex items-center justify-center shrink-0">
+                        <SidebarIcon
+                          imageIcon={section.imageIcon}
+                          iconifyIcon={section.iconifyIcon}
+                          size={28}
+                        />
+                      </span>
+                      {!collapsed && (
+                        <span className="sidebar-label truncate ml-3 text-sm font-extrabold">
+                          {sidebarLabel(t, section.id, section.label)}
+                        </span>
+                      )}
+                    </Link>
+                  </SidebarCollapsedTooltip>
                   {hasSubmenu && !collapsed && (
                     <button
                       type="button"

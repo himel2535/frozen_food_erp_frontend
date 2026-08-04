@@ -1,8 +1,7 @@
 'use client';
 
-import Link from 'next/link';
 import dynamic from 'next/dynamic';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo } from 'react';
 import { Icon } from '@iconify/react';
 import { Footer } from '@/components/layout/Footer';
 import { useAppStore } from '@/lib/state/app-store';
@@ -87,34 +86,11 @@ const KPI_CARDS: { key: string; labelKey: string; icon: string; alert?: boolean 
   { key: 'supplier-due', labelKey: 'dashboard.supplier_due', icon: 'fluent-color:building-store-24' },
 ];
 
-const QUICK_ACTIONS: { href: string; labelKey: string; icon: string; className: string }[] = [
-  {
-    href: '/sales/orders',
-    labelKey: 'dashboard.new_sale',
-    icon: 'fluent-color:clipboard-task-24',
-    className: 'bg-sky-50 text-sky-900 border border-sky-200/80 hover:bg-sky-100/80 shadow-xs',
-  },
-  {
-    href: '/purchases/purchase-rm',
-    labelKey: 'dashboard.purchase_rm',
-    icon: 'fluent-color:document-add-24',
-    className: 'bg-violet-50 text-violet-900 border border-violet-200/80 hover:bg-violet-100/80 shadow-xs',
-  },
-  {
-    href: '/inventory/stock-in',
-    labelKey: 'dashboard.receive_goods',
-    icon: 'flat-color-icons:download',
-    className: 'bg-emerald-50 text-emerald-900 border border-emerald-200/80 hover:bg-emerald-100/80 shadow-xs',
-  },
-];
-
 export function DashboardView() {
   const appState = useAppStore((s) => s.appState);
   const t = useAppStore((s) => s.t);
-  const [date, setDate] = useState('');
 
   useEffect(() => {
-    setDate(new Date().toISOString().slice(0, 10));
     document.body.classList.add('dashboard-page');
     return () => document.body.classList.remove('dashboard-page');
   }, []);
@@ -162,42 +138,6 @@ export function DashboardView() {
 
   return (
     <div className="flex-1 overflow-y-auto p-2 space-y-2 flex flex-col">
-      <section className="flex flex-col md:flex-row md:items-center justify-between gap-2">
-        <div className="hidden md:flex overflow-x-auto gap-2 min-w-0">
-          {QUICK_ACTIONS.map((action) => (
-            <Link
-              key={action.href}
-              href={action.href}
-              className={`flex items-center gap-2.5 whitespace-nowrap px-4 py-2.5 rounded-xl font-bold text-xs transition-all shrink-0 cursor-pointer ${action.className}`}
-            >
-              <Icon icon={action.icon} width={22} height={22} className="shrink-0" />
-              {t(action.labelKey)}
-            </Link>
-          ))}
-        </div>
-        <div className="flex items-center gap-2 justify-end shrink-0 md:ml-auto">
-          <input
-            type="date"
-            value={date}
-            onChange={(e) => setDate(e.target.value)}
-            className="bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold text-slate-700 premium-shadow focus:outline-none focus:ring-2 focus:ring-blue-500/20 cursor-pointer"
-          />
-        </div>
-      </section>
-
-      <section className="flex md:hidden overflow-x-auto gap-2 pb-1">
-        {QUICK_ACTIONS.map((action) => (
-          <Link
-            key={action.href}
-            href={action.href}
-            className={`flex items-center gap-2.5 whitespace-nowrap px-4 py-2.5 rounded-xl font-bold text-xs transition-all shrink-0 cursor-pointer ${action.className}`}
-          >
-            <Icon icon={action.icon} width={22} height={22} className="shrink-0" />
-            {t(action.labelKey)}
-          </Link>
-        ))}
-      </section>
-
       <section className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
         {KPI_CARDS.map((card) => {
           const data = metricValues[card.key];

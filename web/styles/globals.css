@@ -686,6 +686,23 @@ body.lang-bn .uppercase {
   padding-right: 0;
 }
 
+#sidebar.sidebar-is-collapsed .sidebar-group {
+  overflow: visible;
+}
+
+#sidebar.sidebar-is-collapsed nav {
+  overflow: visible;
+}
+
+#sidebar.sidebar-is-collapsed {
+  overflow: visible;
+  z-index: 40;
+}
+
+.sidebar-collapsed-tooltip {
+  backdrop-filter: blur(12px);
+}
+
 .sidebar-icon {
   display: inline-flex;
   align-items: center;

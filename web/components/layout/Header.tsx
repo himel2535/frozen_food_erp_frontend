@@ -3,16 +3,20 @@
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { HeaderAlertsDropdown } from '@/components/layout/HeaderAlertsDropdown';
-import { useState, useRef, useEffect, useMemo } from 'react';
+import { HeaderMessagesDropdown } from '@/components/layout/HeaderMessagesDropdown';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Search, User, Settings, LogOut } from 'lucide-react';
 import { Icon } from '@iconify/react';
 import { useAppStore } from '@/lib/state/app-store';
 import { getProfileView } from '@/lib/services/settings-service';
 import { employeeInitials } from '@/lib/services/hrm-service';
+import { useClickOutside } from '@/hooks/useClickOutside';
 
 interface HeaderProps {
   title?: string;
 }
+
+type HeaderPanel = 'messages' | 'alerts' | 'profile' | null;
 
 export function Header({ title }: HeaderProps) {
   const router = useRouter();
@@ -20,8 +24,9 @@ export function Header({ title }: HeaderProps) {
   const toggleLanguage = useAppStore((s) => s.toggleLanguage);
   const setLoggedIn = useAppStore((s) => s.setLoggedIn);
   const lang = useAppStore((s) => s.appState.lang);
-  const [menuOpen, setMenuOpen] = useState(false);
-  const menuRef = useRef<HTMLDivElement>(null);
+  const [openPanel, setOpenPanel] = useState<HeaderPanel>(null);
+  const [navDate, setNavDate] = useState('');
+  const profileMenuRef = useRef<HTMLDivElement>(null);
   const displayTitle = title && title !== 'Enterprise Workspace' ? title : 'Toys Factory Operations Hub';
 
   const profile = useMemo(() => getProfileView(appState), [appState]);
@@ -29,15 +34,29 @@ export function Header({ title }: HeaderProps) {
   const userEmail = profile.email || '';
   const userInitials = employeeInitials(userName);
 
+  const setMessagesOpen = useCallback(
+    (open: boolean) => setOpenPanel(open ? 'messages' : null),
+    [],
+  );
+  const setAlertsOpen = useCallback(
+    (open: boolean) => setOpenPanel(open ? 'alerts' : null),
+    [],
+  );
+  const closeProfile = useCallback(() => setOpenPanel((p) => (p === 'profile' ? null : p)), []);
+  useClickOutside(profileMenuRef, closeProfile, openPanel === 'profile');
+
   useEffect(() => {
-    const handler = (e: MouseEvent) => {
-      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
-        setMenuOpen(false);
-      }
-    };
-    document.addEventListener('click', handler);
-    return () => document.removeEventListener('click', handler);
+    setNavDate(new Date().toISOString().slice(0, 10));
   }, []);
+
+  useEffect(() => {
+    if (!openPanel) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setOpenPanel(null);
+    };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [openPanel]);
 
   const handleLogout = () => {
     setLoggedIn(false);
@@ -75,36 +94,43 @@ export function Header({ title }: HeaderProps) {
         </div>
       </div>
 
-      {/* Middle: Compact Modern Search */}
-      <div className="flex-1 max-w-md px-3 hidden lg:block">
-        <div className="relative group">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 group-focus-within:text-blue-600 transition-colors" />
-          <input
-            type="text"
-            className="w-full bg-white/40 hover:bg-white/70 focus:bg-white border border-white/80 focus:border-blue-500/80 text-xs font-semibold rounded-xl pl-8.5 pr-10 py-1.5 shadow-2xs transition-all placeholder:text-slate-400 text-slate-800"
-            placeholder="Search anything..."
-          />
-          <div className="absolute inset-y-0 right-0 pr-2 flex items-center pointer-events-none">
-            <span className="text-[9px] font-extrabold text-slate-400 bg-white/80 border border-slate-200/80 px-1.5 py-0.5 rounded-md shadow-2xs">
-              ⌘K
-            </span>
+      {/* Center: Search + Date */}
+      <div className="flex items-center gap-2 flex-1 justify-end px-3 min-w-0">
+        <div className="flex-1 max-w-md hidden lg:block">
+          <div className="relative group">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 group-focus-within:text-blue-600 transition-colors" />
+            <input
+              type="text"
+              className="w-full bg-white/40 hover:bg-white/70 focus:bg-white border border-white/80 focus:border-blue-500/80 text-xs font-semibold rounded-xl pl-8.5 pr-10 py-1.5 shadow-2xs transition-all placeholder:text-slate-400 text-slate-800"
+              placeholder="Search anything..."
+            />
+            <div className="absolute inset-y-0 right-0 pr-2 flex items-center pointer-events-none">
+              <span className="text-[9px] font-extrabold text-slate-400 bg-white/80 border border-slate-200/80 px-1.5 py-0.5 rounded-md shadow-2xs">
+                ⌘K
+              </span>
+            </div>
           </div>
         </div>
+        <input
+          type="date"
+          value={navDate}
+          onChange={(e) => setNavDate(e.target.value)}
+          aria-label="Business date"
+          className="h-9 bg-white/50 hover:bg-white/90 border border-white/80 rounded-xl px-3 text-xs font-semibold text-slate-700 shadow-xs focus:outline-none focus:ring-2 focus:ring-blue-500/20 cursor-pointer shrink-0"
+        />
       </div>
 
       {/* Right: Vibrant Colorful Controls & Matching Brand Avatar */}
-      <div className="flex items-center gap-2">
-        {/* Messages Button with Vibrant Colorful Icon */}
-        <button
-          type="button"
-          className="h-9 w-9 rounded-xl bg-white/50 hover:bg-white/90 border border-white/80 shadow-xs flex items-center justify-center transition-all cursor-pointer"
-          title="Messages"
-        >
-          <Icon icon="fluent-color:comment-multiple-24" width={20} height={20} className="shrink-0" />
-        </button>
+      <div className="flex items-center gap-2 shrink-0 relative z-30">
+        <HeaderMessagesDropdown
+          open={openPanel === 'messages'}
+          onOpenChange={setMessagesOpen}
+        />
 
-        {/* Notifications Button with Vibrant Colorful Icon */}
-        <HeaderAlertsDropdown />
+        <HeaderAlertsDropdown
+          open={openPanel === 'alerts'}
+          onOpenChange={setAlertsOpen}
+        />
 
         {/* Language Switcher with Vibrant Colorful Globe Icon */}
         <button
@@ -118,17 +144,20 @@ export function Header({ title }: HeaderProps) {
         </button>
 
         {/* User Profile Circular Avatar with Matching Toys Amber Brand Palette (NO violet!) */}
-        <div className="relative" ref={menuRef}>
+        <div className="relative" ref={profileMenuRef}>
           <button
             type="button"
-            onClick={() => setMenuOpen(!menuOpen)}
-            className="h-9 w-9 rounded-full bg-gradient-to-br from-amber-500 via-amber-600 to-amber-700 text-white flex items-center justify-center font-black text-xs shadow-md shadow-amber-500/25 border-2 border-white hover:scale-105 transition-all cursor-pointer focus:outline-none"
+            onClick={() => setOpenPanel((p) => (p === 'profile' ? null : 'profile'))}
+            onMouseDown={(e) => e.stopPropagation()}
+            className="relative z-[60] h-9 w-9 rounded-full bg-gradient-to-br from-amber-500 via-amber-600 to-amber-700 text-white flex items-center justify-center font-black text-xs shadow-md shadow-amber-500/25 border-2 border-white hover:scale-105 transition-all cursor-pointer focus:outline-none"
             title="User Profile"
+            aria-expanded={openPanel === 'profile'}
+            aria-haspopup="true"
           >
             {userInitials}
           </button>
 
-          {menuOpen && (
+          {openPanel === 'profile' && (
             <div className="absolute right-0 top-full mt-2 w-52 rounded-2xl bg-white/95 backdrop-blur-2xl border border-white/90 shadow-2xl z-50 p-1.5 space-y-1">
               <div className="p-2.5 border-b border-slate-100/80 bg-amber-50/50 rounded-xl mb-1">
                 <p className="text-xs font-extrabold text-slate-900">{userName}</p>
@@ -136,12 +165,14 @@ export function Header({ title }: HeaderProps) {
               </div>
               <Link
                 href="/settings/profile"
+                onClick={() => setOpenPanel(null)}
                 className="flex items-center gap-2.5 px-3 py-2 text-xs font-bold text-slate-600 hover:text-slate-900 hover:bg-slate-100/70 rounded-xl transition-all cursor-pointer"
               >
                 <User className="w-4 h-4 text-amber-600" /> My Profile
               </Link>
               <Link
                 href="/settings/company"
+                onClick={() => setOpenPanel(null)}
                 className="flex items-center gap-2.5 px-3 py-2 text-xs font-bold text-slate-600 hover:text-slate-900 hover:bg-slate-100/70 rounded-xl transition-all cursor-pointer"
               >
                 <Settings className="w-4 h-4 text-cyan-600" /> Company Settings
