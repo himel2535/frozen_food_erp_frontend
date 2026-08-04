@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useMemo } from 'react';
 import { Icon } from '@iconify/react';
 import { useAppStore } from '@/lib/state/app-store';
+import { useLocaleFormat } from '@/hooks/useLocaleFormat';
 import {
   buildBusinessAlerts,
   filterAlertsByRole,
@@ -26,6 +27,7 @@ const CATEGORY_LABEL_KEYS: Record<AlertCategory, string> = {
 export function DashboardBusinessAlerts() {
   const appState = useAppStore((s) => s.appState);
   const t = useAppStore((s) => s.t);
+  const { formatNumber } = useLocaleFormat();
 
   const summaries = useMemo(() => {
     const settings = getAlertSettings(appState);
@@ -56,7 +58,7 @@ export function DashboardBusinessAlerts() {
             >
               <span className={`w-2.5 h-2.5 rounded-full shrink-0 ${priorityDotClass(item.priority)}`} aria-hidden />
               <span className="text-xs font-bold text-slate-800 group-hover:text-blue-700 flex-1 min-w-0 truncate">
-                {item.count} {t(CATEGORY_LABEL_KEYS[item.category])}
+                {formatNumber(item.count)} {t(CATEGORY_LABEL_KEYS[item.category])}
               </span>
             </Link>
           ))

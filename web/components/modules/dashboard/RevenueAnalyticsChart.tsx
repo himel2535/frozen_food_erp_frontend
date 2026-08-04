@@ -1,25 +1,33 @@
 'use client';
 
+import { useMemo } from 'react';
 import { Icon } from '@iconify/react';
 import { useAppStore } from '@/lib/state/app-store';
+import { useLocaleFormat } from '@/hooks/useLocaleFormat';
 
-const BARS = [
-  { height: '38%', label: '$340K' },
-  { height: '48%', label: '$420K' },
-  { height: '42%', label: '$390K' },
-  { height: '60%', label: '$520K' },
-  { height: '82%', label: '$820,650', active: true },
-  { height: '54%', label: '$480K' },
-  { height: '65%', label: '$590K' },
-  { height: '52%', label: '$470K' },
-  { height: '70%', label: '$620K' },
-  { height: '72%', label: '$680K' },
-];
-
-const MONTHS = ['Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov'];
+const BAR_VALUES = [340000, 420000, 390000, 520000, 820650, 480000, 590000, 470000, 620000, 680000];
+const BAR_HEIGHTS = ['38%', '48%', '42%', '60%', '82%', '54%', '65%', '52%', '70%', '72%'];
+const MONTH_INDICES = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
 
 export function RevenueAnalyticsChart() {
   const t = useAppStore((s) => s.t);
+  const { formatCompactMoney, formatMonthShort } = useLocaleFormat();
+
+  const bars = useMemo(
+    () =>
+      BAR_VALUES.map((value, idx) => ({
+        value,
+        height: BAR_HEIGHTS[idx],
+        label: formatCompactMoney(value),
+        active: idx === 4,
+      })),
+    [formatCompactMoney],
+  );
+
+  const monthLabels = useMemo(
+    () => MONTH_INDICES.map((monthIndex) => formatMonthShort(monthIndex)),
+    [formatMonthShort],
+  );
 
   return (
     <div className="premium-card p-4 premium-shadow lg:col-span-1 flex flex-col">
@@ -34,7 +42,7 @@ export function RevenueAnalyticsChart() {
         </select>
       </div>
       <div className="h-56 flex items-end justify-between gap-1.5 relative pt-4 pb-6">
-        {BARS.map((bar, idx) => (
+        {bars.map((bar, idx) => (
           <div key={idx} className="flex-1 flex flex-col items-center h-full justify-end group">
             <div
               className={`${bar.active ? 'bg-blue-600/20 group-hover:bg-blue-600' : 'bg-blue-600/10 group-hover:bg-blue-600'} w-full rounded-md transition-all cursor-pointer relative`}
@@ -49,7 +57,7 @@ export function RevenueAnalyticsChart() {
           </div>
         ))}
         <div className="absolute bottom-0 left-0 w-full flex justify-between text-[9px] font-bold text-slate-400/80 pt-2 border-t border-slate-100">
-          {MONTHS.map((m) => (
+          {monthLabels.map((m) => (
             <span key={m}>{m}</span>
           ))}
         </div>

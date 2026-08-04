@@ -226,6 +226,12 @@ export const en = {
     "dashboard.business_alerts": "Business Alerts",
     "dashboard.customize_title": "Customize Dashboard",
     "dashboard.customize_hint": "Toggle the visibility of your metrics widgets.",
+    "dashboard.activity_invoice_created": "{user} created invoice {invoiceId}",
+    "dashboard.activity_payment_received": "Payment received from {customer} ({amount})",
+    "dashboard.activity_stock_updated": "Stock updated for {product} by {user}",
+    "dashboard.activity_time_2m": "2 minutes ago",
+    "dashboard.activity_time_15m": "15 minutes ago",
+    "dashboard.activity_time_1h": "1 hour ago",
 
     // Business Alerts
     "alerts.title": "Business Alerts",

@@ -227,6 +227,12 @@ export const bn = {
     "dashboard.business_alerts": "ব্যবসায়িক সতর্কতা",
     "dashboard.customize_title": "নিয়ন্ত্রণ প্যানেল সাজান",
     "dashboard.customize_hint": "মেট্রিক উইজেটের দৃশ্যমানতা চালু বা বন্ধ করুন।",
+    "dashboard.activity_invoice_created": "{user} চালান {invoiceId} তৈরি করেছেন",
+    "dashboard.activity_payment_received": "{customer} থেকে পরিশোধ গৃহীত ({amount})",
+    "dashboard.activity_stock_updated": "{product}-এর স্টক {user} আপডেট করেছেন",
+    "dashboard.activity_time_2m": "২ মিনিট আগে",
+    "dashboard.activity_time_15m": "১৫ মিনিট আগে",
+    "dashboard.activity_time_1h": "১ ঘণ্টা আগে",
 
     // Business Alerts
     "alerts.title": "ব্যবসায়িক সতর্কতা",

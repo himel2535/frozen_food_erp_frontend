@@ -1,4 +1,5 @@
 import type { Lang } from '@/lib/state/types';
+import { formatNumber } from '@/lib/i18n/locale-format';
 import { en } from './translations/en';
 
 type TranslationMap = Record<string, string>;
@@ -26,7 +27,10 @@ export function translate(key: string, vars?: Record<string, string | number>, l
   let text = getTranslationMap(activeLang)[key] ?? getTranslationMap('en')[key] ?? key;
   if (vars) {
     Object.keys(vars).forEach((k) => {
-      text = text.replace(new RegExp(`\\{${k}\\}`, 'g'), String(vars[k]));
+      const raw = vars[k];
+      const value =
+        typeof raw === 'number' && activeLang === 'bn' ? formatNumber(raw, 'bn') : String(raw);
+      text = text.replace(new RegExp(`\\{${k}\\}`, 'g'), value);
     });
   }
   return text;

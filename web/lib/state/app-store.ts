@@ -62,6 +62,16 @@ export function translate(key: string, vars?: Record<string, string | number>, l
   return translateKey(key, vars, lang ?? 'en');
 }
 
+function createT(lang: Lang) {
+  return (key: string, vars?: Record<string, string | number>) => translateKey(key, vars, lang);
+}
+
+function applyLanguageDom(lang: Lang) {
+  document.documentElement.lang = lang;
+  document.body.classList.toggle('lang-bn', lang === 'bn');
+  window.dispatchEvent(new CustomEvent('hookerp:language-changed', { detail: { lang } }));
+}
+
 interface AppStore {
   appState: AppState;
   ready: boolean;
@@ -87,17 +97,22 @@ export const useAppStore = create<AppStore>((set, get) => ({
   lastSyncedState: '',
   ignoreRemoteEcho: false,
   remoteListenerStarted: false,
+  t: createT(DEFAULT_STATE.lang ?? 'en'),
 
   setHydrated: () => {
     const appState = loadInitialState();
+    const lang = (appState.lang ?? 'en') as Lang;
     set({
       appState,
       hydrated: true,
       ready: true,
       lastSyncedState: JSON.stringify(appState),
+      t: createT(lang),
     });
-    if (appState.lang === 'bn') {
-      void ensureBnTranslations();
+    if (lang === 'bn') {
+      void ensureBnTranslations().then(() => {
+        set((s) => ({ t: createT((s.appState.lang ?? 'bn') as Lang) }));
+      });
     }
   },
 
@@ -130,7 +145,13 @@ export const useAppStore = create<AppStore>((set, get) => ({
                 const sidebar = current.appState.sidebarCollapsed;
                 hydrated.isLoggedIn = loggedIn;
                 hydrated.sidebarCollapsed = sidebar;
-                set({ ignoreRemoteEcho: true, appState: hydrated, lastSyncedState: serialized });
+                const lang = (hydrated.lang ?? 'en') as Lang;
+                set({
+                  ignoreRemoteEcho: true,
+                  appState: hydrated,
+                  lastSyncedState: serialized,
+                  t: createT(lang),
+                });
                 localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(hydrated));
                 set({ ignoreRemoteEcho: false });
                 if (typeof window !== 'undefined') {
@@ -172,7 +193,8 @@ export const useAppStore = create<AppStore>((set, get) => ({
     const hydrated = hydrateAppState({ ...current, ...next });
     hydrated.isLoggedIn = current.isLoggedIn;
     hydrated.sidebarCollapsed = current.sidebarCollapsed;
-    set({ appState: hydrated });
+    const lang = (hydrated.lang ?? 'en') as Lang;
+    set({ appState: hydrated, t: createT(lang) });
     get().saveAppState();
   },
 
@@ -187,23 +209,24 @@ export const useAppStore = create<AppStore>((set, get) => ({
   },
 
   toggleLanguage: () => {
-    set((s) => {
-      const lang: Lang = s.appState.lang === 'bn' ? 'en' : 'bn';
-      return { appState: { ...s.appState, lang } };
-    });
+    const nextLang: Lang = get().appState.lang === 'bn' ? 'en' : 'bn';
+    set((s) => ({
+      appState: { ...s.appState, lang: nextLang },
+      t: createT(nextLang),
+    }));
     get().saveAppState();
-    if (typeof window !== 'undefined') {
-      const lang = get().appState.lang;
-      if (lang === 'bn') {
-        void ensureBnTranslations();
-      }
-      document.documentElement.lang = lang ?? 'en';
-      document.body.classList.toggle('lang-bn', lang === 'bn');
-      window.dispatchEvent(new CustomEvent('hookerp:language-changed', { detail: { lang } }));
+
+    if (typeof window === 'undefined') return;
+
+    if (nextLang === 'bn') {
+      applyLanguageDom('bn');
+      void ensureBnTranslations().then(() => {
+        set((s) => ({ t: createT((s.appState.lang ?? 'bn') as Lang) }));
+      });
+    } else {
+      applyLanguageDom('en');
     }
   },
-
-  t: (key, vars) => translateKey(key, vars, get().appState.lang as Lang),
 }));
 
 export function useAppState() {
@@ -212,6 +235,12 @@ export function useAppState() {
 
 export function useIsLoggedIn() {
   return useAppStore((s) => s.appState.isLoggedIn);
+}
+
+export function useTranslation() {
+  const lang = useAppStore((s) => s.appState.lang ?? 'en');
+  const t = useAppStore((s) => s.t);
+  return { lang, t };
 }
 
 export let appReadyPromise: Promise<void> = Promise.resolve();

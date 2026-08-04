@@ -6,6 +6,7 @@ import { Icon } from '@iconify/react';
 import { Footer } from '@/components/layout/Footer';
 import { useAppStore } from '@/lib/state/app-store';
 import type { AppState } from '@/lib/state/types';
+import { useLocaleFormat } from '@/hooks/useLocaleFormat';
 import { DashboardBusinessAlerts } from '@/components/modules/dashboard/DashboardBusinessAlerts';
 import { DashboardBottomPanels } from '@/components/modules/dashboard/DashboardBottomPanels';
 
@@ -17,10 +18,6 @@ const RevenueAnalyticsChart = dynamic(
   () => import('@/components/modules/dashboard/RevenueAnalyticsChart').then((m) => m.RevenueAnalyticsChart),
   { ssr: false },
 );
-
-function formatMoney(value: number) {
-  return `৳ ${Number(value || 0).toLocaleString('en-US', { maximumFractionDigits: 0 })}`;
-}
 
 function stockValue(list: Array<Record<string, unknown>>) {
   return list.reduce((sum, product) => sum + Number(product.stock || 0) * Number(product.cost || 0), 0);
@@ -89,6 +86,7 @@ const KPI_CARDS: { key: string; labelKey: string; icon: string; alert?: boolean 
 export function DashboardView() {
   const appState = useAppStore((s) => s.appState);
   const t = useAppStore((s) => s.t);
+  const { formatMoney } = useLocaleFormat();
 
   useEffect(() => {
     document.body.classList.add('dashboard-page');
@@ -97,44 +95,47 @@ export function DashboardView() {
 
   const metrics = useMemo(() => getDashboardMetrics(appState), [appState]);
 
-  const metricValues: Record<string, { value: string; sub?: string }> = {
-    'production-summary': {
-      value: t('dashboard.metric_completed', { n: metrics.productionSummary.completed }),
-      sub: t('dashboard.metric_pcs_produced', { n: metrics.productionSummary.qty.toLocaleString() }),
-    },
-    'purchase-summary': {
-      value: t('dashboard.metric_orders_lower', { n: metrics.purchaseSummary.count }),
-      sub: t('dashboard.metric_total_suffix', { amount: formatMoney(metrics.purchaseSummary.total) }),
-    },
-    'sales-summary': {
-      value: t('dashboard.metric_orders_lower', { n: metrics.salesSummary.count }),
-      sub: t('dashboard.metric_total_suffix', { amount: formatMoney(metrics.salesSummary.total) }),
-    },
-    'rm-stock': { value: formatMoney(metrics.rmStockValue), sub: t('dashboard.raw_materials') },
-    'sf-stock': { value: formatMoney(metrics.sfStockValue), sub: t('dashboard.metric_parts_wip') },
-    'fg-stock': { value: formatMoney(metrics.fgStockValue), sub: t('dashboard.ready_dispatch') },
-    'low-stock': { value: t('dashboard.metric_items', { n: metrics.lowStock }) },
-    'pending-production': {
-      value: t('dashboard.metric_orders', { n: metrics.pendingProduction }),
-      sub: t('dashboard.metric_pcs_planned', { n: metrics.pendingProductionQty.toLocaleString() }),
-    },
-    'pending-purchase': {
-      value: t('dashboard.metric_orders', { n: metrics.pendingPurchase }),
-      sub: t('dashboard.raw_materials'),
-    },
-    'pending-sales': {
-      value: t('dashboard.metric_orders', { n: metrics.pendingSales }),
-      sub: t('dashboard.awaiting_dispatch'),
-    },
-    'customer-due': {
-      value: formatMoney(metrics.customerDue),
-      sub: t('dashboard.metric_across_customers', { n: metrics.customerDueCount }),
-    },
-    'supplier-due': {
-      value: formatMoney(metrics.supplierDue),
-      sub: t('dashboard.metric_across_suppliers', { n: metrics.supplierDueCount }),
-    },
-  };
+  const metricValues = useMemo<Record<string, { value: string; sub?: string }>>(
+    () => ({
+      'production-summary': {
+        value: t('dashboard.metric_completed', { n: metrics.productionSummary.completed }),
+        sub: t('dashboard.metric_pcs_produced', { n: metrics.productionSummary.qty }),
+      },
+      'purchase-summary': {
+        value: t('dashboard.metric_orders_lower', { n: metrics.purchaseSummary.count }),
+        sub: t('dashboard.metric_total_suffix', { amount: formatMoney(metrics.purchaseSummary.total) }),
+      },
+      'sales-summary': {
+        value: t('dashboard.metric_orders_lower', { n: metrics.salesSummary.count }),
+        sub: t('dashboard.metric_total_suffix', { amount: formatMoney(metrics.salesSummary.total) }),
+      },
+      'rm-stock': { value: formatMoney(metrics.rmStockValue), sub: t('dashboard.raw_materials') },
+      'sf-stock': { value: formatMoney(metrics.sfStockValue), sub: t('dashboard.metric_parts_wip') },
+      'fg-stock': { value: formatMoney(metrics.fgStockValue), sub: t('dashboard.ready_dispatch') },
+      'low-stock': { value: t('dashboard.metric_items', { n: metrics.lowStock }) },
+      'pending-production': {
+        value: t('dashboard.metric_orders', { n: metrics.pendingProduction }),
+        sub: t('dashboard.metric_pcs_planned', { n: metrics.pendingProductionQty }),
+      },
+      'pending-purchase': {
+        value: t('dashboard.metric_orders', { n: metrics.pendingPurchase }),
+        sub: t('dashboard.raw_materials'),
+      },
+      'pending-sales': {
+        value: t('dashboard.metric_orders', { n: metrics.pendingSales }),
+        sub: t('dashboard.awaiting_dispatch'),
+      },
+      'customer-due': {
+        value: formatMoney(metrics.customerDue),
+        sub: t('dashboard.metric_across_customers', { n: metrics.customerDueCount }),
+      },
+      'supplier-due': {
+        value: formatMoney(metrics.supplierDue),
+        sub: t('dashboard.metric_across_suppliers', { n: metrics.supplierDueCount }),
+      },
+    }),
+    [t, formatMoney, metrics],
+  );
 
   return (
     <div className="flex-1 overflow-y-auto p-2 space-y-2 flex flex-col">
