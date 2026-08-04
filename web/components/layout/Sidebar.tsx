@@ -62,21 +62,28 @@ export function Sidebar() {
   };
 
   useEffect(() => {
-    const initial: Record<string, boolean> = {};
     const nestedInitial: Record<string, boolean> = {};
     TENANT_SIDEBAR_SECTIONS.forEach((section) => {
-      if (section.items.length > 0) {
-        initial[section.id] = section.id === activeModule;
-      }
       section.items.forEach((item) => {
         if (item.children?.length && section.id === activeModule && isNestedGroupActive(item)) {
           nestedInitial[nestedGroupKey(section.id, item)] = true;
         }
       });
     });
-    setOpenSubmenus(initial);
     setOpenNestedGroups((prev) => ({ ...prev, ...nestedInitial }));
   }, [activeModule, activeView]);
+
+  useEffect(() => {
+    setOpenSubmenus((prev) => {
+      const next = { ...prev };
+      TENANT_SIDEBAR_SECTIONS.forEach((section) => {
+        if (section.items.length > 0) {
+          next[section.id] = section.id === activeModule;
+        }
+      });
+      return next;
+    });
+  }, [activeModule]);
 
   const toggleSubmenu = (id: string) => {
     if (collapsed) toggleSidebar();

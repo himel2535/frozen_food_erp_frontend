@@ -7,9 +7,12 @@ const TABLE_ROWS = 5;
 export function ModuleListSkeleton() {
   return (
     <div className={MODULE_LIST_SHELL} aria-busy="true" aria-label="Loading module">
-      <div className="space-y-1">
-        <SkeletonBlock className="h-7 w-48 max-w-full rounded-lg" />
-        <SkeletonBlock className="h-4 w-72 max-w-full rounded-md" />
+      <div className="flex items-start gap-3 min-w-0">
+        <SkeletonBlock className="w-8 h-8 rounded-lg shrink-0" />
+        <div className="space-y-1 min-h-[44px] min-w-0 flex-1">
+          <SkeletonBlock className="h-7 w-48 max-w-full rounded-lg" />
+          <SkeletonBlock className="h-4 w-72 max-w-full rounded-md" />
+        </div>
       </div>
 
       <section className="grid grid-cols-2 md:grid-cols-4 gap-2">

@@ -6,11 +6,13 @@ import { AuthGuard } from '@/components/auth/AuthGuard';
 import { AppToastHost } from '@/components/shared/AppToastHost';
 import { AppConfirmDialog } from '@/components/shared/AppConfirmDialog';
 import { BengaliFontLoader } from '@/components/shared/BengaliFontLoader';
+import { NavScrollReset } from '@/components/layout/NavScrollReset';
 
 export function TenantShell({ children }: { children: React.ReactNode }) {
   return (
     <>
       <BengaliFontLoader />
+      <NavScrollReset />
       <AppToastHost />
       <AppConfirmDialog />
       <div id="screen-workspace" className="min-h-screen flex">

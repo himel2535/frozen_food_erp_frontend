@@ -4,6 +4,7 @@ import type { ReactNode } from 'react';
 import { usePathname } from 'next/navigation';
 import { Icon } from '@iconify/react';
 import { getPageIcon } from '@/lib/ui/page-icons';
+import { PageHeaderLayout } from '@/components/shared/PageHeaderLayout';
 
 export interface PageHeaderProps {
   title: ReactNode;
@@ -21,34 +22,24 @@ export function PageHeader({
   subtitle,
   icon,
   actions,
-  size = 'default',
+  size = 'compact',
   className = '',
   layout = 'split',
 }: PageHeaderProps) {
   const pathname = usePathname();
   const resolvedIcon = icon ?? getPageIcon(pathname);
 
-  const titleClass =
-    size === 'compact'
-      ? 'text-lg font-bold text-slate-900'
-      : 'text-xl font-extrabold text-slate-900 tracking-tight';
-  const subtitleClass =
-    size === 'compact'
-      ? 'text-xs text-slate-500 mt-0.5'
-      : 'text-xs text-slate-500 mt-1 font-medium';
-
   const titleBlock = (
-    <div className="flex items-center gap-3 min-w-0">
-      {resolvedIcon ? (
-        <span className="inline-flex items-center justify-center shrink-0">
+    <PageHeaderLayout
+      size={size}
+      title={title}
+      subtitle={subtitle}
+      icon={
+        resolvedIcon ? (
           <Icon icon={resolvedIcon} width={32} height={32} />
-        </span>
-      ) : null}
-      <div className="min-w-0">
-        <h2 className={titleClass}>{title}</h2>
-        {subtitle ? <p className={subtitleClass}>{subtitle}</p> : null}
-      </div>
-    </div>
+        ) : undefined
+      }
+    />
   );
 
   if (layout === 'title-only') {
