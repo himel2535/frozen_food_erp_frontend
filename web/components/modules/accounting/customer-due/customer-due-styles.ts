@@ -42,5 +42,3 @@ export function nextActionTimeCls(type?: string, isMissed?: boolean): string {
   if (type === 'follow_up') return 'text-amber-600 font-semibold';
   return 'text-slate-500';
 }
-
-export const KPI_ICON_WRAPPER = 'inline-flex h-10 w-10 items-center justify-center rounded-xl shrink-0';

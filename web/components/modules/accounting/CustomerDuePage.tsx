@@ -186,10 +186,7 @@ export function CustomerDuePage() {
           </div>
         </div>
 
-        <CustomerDueMetrics
-          metrics={metrics}
-          onViewPromises={() => { setStatusFilter('promised'); setPage(1); }}
-        />
+        <CustomerDueMetrics metrics={metrics} />
 
         <CustomerDueCollectionBar
           stats={todayStats}
