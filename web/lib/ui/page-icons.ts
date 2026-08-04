@@ -8,24 +8,6 @@ export interface PageIconEntry {
   sectionId: string;
 }
 
-/** Icon box background/text classes keyed by sidebar section id */
-const SECTION_ICON_BOX: Record<string, string> = {
-  dashboard: 'bg-slate-50 text-slate-600',
-  'sales-crm': 'bg-emerald-50 text-emerald-600',
-  inventory: 'bg-blue-50 text-blue-600',
-  purchases: 'bg-amber-50 text-amber-600',
-  factory: 'bg-rose-50 text-rose-600',
-  accounts: 'bg-indigo-50 text-indigo-600',
-  hrm: 'bg-teal-50 text-teal-600',
-  payroll: 'bg-cyan-50 text-cyan-600',
-  projects: 'bg-orange-50 text-orange-600',
-  assets: 'bg-fuchsia-50 text-fuchsia-600',
-  approvals: 'bg-rose-50 text-rose-600',
-  reports: 'bg-slate-50 text-slate-600',
-  administration: 'bg-slate-50 text-slate-600',
-  settings: 'bg-slate-50 text-slate-600',
-};
-
 const DEFAULT_ICON = 'fluent-color:apps-24';
 
 /** Routes not covered by sidebar nav (forms, aliases, utility pages) */
@@ -116,9 +98,4 @@ export function getPageIconEntry(pathname: string): PageIconEntry {
 
 export function getPageIcon(pathname: string): string {
   return getPageIconEntry(pathname).icon;
-}
-
-export function getPageIconBoxClass(pathname: string): string {
-  const { sectionId } = getPageIconEntry(pathname);
-  return SECTION_ICON_BOX[sectionId] ?? SECTION_ICON_BOX.dashboard;
 }

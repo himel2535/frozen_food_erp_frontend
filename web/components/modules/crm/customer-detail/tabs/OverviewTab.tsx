@@ -1,5 +1,6 @@
 'use client';
 
+import { useMemo } from 'react';
 import { BarChart3, Building2, Clock, FileText, Paperclip, Tag } from 'lucide-react';
 import { AppTable, type AppTableColumn } from '@/components/shared/AppTable';
 import { StatusBadge } from '@/components/shared/StatusBadge';
@@ -18,7 +19,7 @@ import {
   formatFileSize,
   monthsSince,
 } from '@/components/modules/crm/customer-detail/customer-detail-utils';
-import { formatMoney } from '@/lib/services/sales-service';
+import { useLocaleFormat } from '@/hooks/useLocaleFormat';
 
 type OverviewTabProps = {
   customerId: string;
@@ -63,6 +64,7 @@ export function OverviewTab({
   transactions,
   onViewAllNotes,
 }: OverviewTabProps) {
+  const { formatMoney, formatPercent, formatCount } = useLocaleFormat();
   const primary = contacts.find((c) => c.primary) ?? contacts[0];
   const billing = addresses.find((a) => a.type === 'billing') ?? addresses[0];
   const shipping = addresses.find((a) => a.type === 'shipping') ?? addresses[1];
@@ -71,23 +73,23 @@ export function OverviewTab({
     shipping &&
     formatAddressBlock(billing) === formatAddressBlock(shipping);
 
-  const txColumns: AppTableColumn<Record<string, unknown>>[] = [
+  const txColumns: AppTableColumn<Record<string, unknown>>[] = useMemo(() => [
     { key: 'type', label: 'Type', render: (row) => <span className="font-bold">{String(row.type)}</span> },
     { key: 'docNo', label: 'Doc No.' },
     { key: 'date', label: 'Date', render: (row) => formatDetailDate(row.date) },
-    { key: 'amount', label: 'Amount', render: (row) => formatMoney(Number(row.amount ?? 0)) },
-    { key: 'paid', label: 'Paid', render: (row) => formatMoney(Number(row.paid ?? 0)) },
+    { key: 'amount', label: 'Amount', render: (row) => formatMoney(Number(row.amount ?? 0), { decimals: 2 }) },
+    { key: 'paid', label: 'Paid', render: (row) => formatMoney(Number(row.paid ?? 0), { decimals: 2 }) },
     {
       key: 'due',
       label: 'Due',
       render: (row) => (
         <span className={Number(row.due) > 0 ? 'text-rose-600 font-bold' : ''}>
-          {formatMoney(Number(row.due ?? 0))}
+          {formatMoney(Number(row.due ?? 0), { decimals: 2 })}
         </span>
       ),
     },
     { key: 'status', label: 'Status', render: (row) => <StatusBadge status={String(row.status)} /> },
-  ];
+  ], [formatMoney]);
 
   const months = monthsSince(metrics.customerSince);
 
@@ -151,7 +153,7 @@ export function OverviewTab({
             <div className="space-y-2">
               <div className={`flex justify-between ${CD_LABEL}`}>
                 <span>Credit Limit Used</span>
-                <span>{metrics.creditUsedPercent.toFixed(1)}%</span>
+                <span>{formatPercent(metrics.creditUsedPercent)}</span>
               </div>
               <div className="h-2.5 rounded-full bg-slate-100 overflow-hidden">
                 <div
@@ -159,8 +161,8 @@ export function OverviewTab({
                   style={{ width: `${metrics.creditUsedPercent}%` }}
                 />
               </div>
-              <InfoRow label="Current Balance" value={formatMoney(metrics.totalDue)} />
-              <InfoRow label="Overdue Amount" value={formatMoney(metrics.overdueAmount)} />
+              <InfoRow label="Current Balance" value={formatMoney(metrics.totalDue, { decimals: 2 })} />
+              <InfoRow label="Overdue Amount" value={formatMoney(metrics.overdueAmount, { decimals: 2 })} />
               <InfoRow label="Last Payment" value={formatDetailDate(metrics.lastPaymentDate)} />
               <InfoRow label="Last Order" value={formatDetailDate(metrics.lastPurchaseDate)} />
             </div>
@@ -203,7 +205,7 @@ export function OverviewTab({
           <div className="flex items-start gap-2 rounded-xl bg-blue-50 border border-blue-100 px-4 py-2.5 text-sm text-blue-800">
             <Clock className="w-5 h-5 shrink-0 mt-0.5" />
             <p>
-              This customer has been with us for {months} month{months === 1 ? '' : 's'} and has a good payment history.
+              This customer has been with us for {formatCount(months)} month{months === 1 ? '' : 's'} and has a good payment history.
             </p>
           </div>
         ) : null}

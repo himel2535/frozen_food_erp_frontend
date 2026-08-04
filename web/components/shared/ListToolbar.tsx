@@ -15,7 +15,6 @@ interface ListToolbarProps {
   onExport?: () => void;
   filters?: React.ReactNode;
   icon?: string;
-  iconBoxClass?: string;
 }
 
 export function ListToolbar({
@@ -29,7 +28,6 @@ export function ListToolbar({
   onExport,
   filters,
   icon,
-  iconBoxClass,
 }: ListToolbarProps) {
   const t = useAppStore((s) => s.t);
   const resolvedSearchPlaceholder = searchPlaceholder ?? `${t('common.search')}...`;
@@ -64,7 +62,6 @@ export function ListToolbar({
         title={title}
         subtitle={subtitle}
         icon={icon}
-        iconBoxClass={iconBoxClass}
         actions={onExport || onAdd ? actionButtons : undefined}
       />
       <div className="bg-white p-4 rounded-xl border border-slate-200/80 premium-shadow space-y-4">

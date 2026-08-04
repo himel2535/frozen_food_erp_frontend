@@ -3,7 +3,7 @@
 import { ArrowLeft } from 'lucide-react';
 import { Icon } from '@iconify/react';
 import { usePathname } from 'next/navigation';
-import { getPageIcon, getPageIconBoxClass } from '@/lib/ui/page-icons';
+import { getPageIcon } from '@/lib/ui/page-icons';
 
 interface FormHeaderProps {
   title: string;
@@ -13,7 +13,6 @@ interface FormHeaderProps {
   titleId?: string;
   compact?: boolean;
   icon?: string;
-  iconBoxClass?: string;
 }
 
 export function FormHeader({
@@ -24,11 +23,9 @@ export function FormHeader({
   titleId,
   compact = false,
   icon,
-  iconBoxClass,
 }: FormHeaderProps) {
   const pathname = usePathname();
   const resolvedIcon = icon ?? getPageIcon(pathname);
-  const resolvedBoxClass = iconBoxClass ?? getPageIconBoxClass(pathname);
 
   return (
     <div className={`flex items-center gap-4 ${compact ? 'mb-3' : 'mb-6'}`}>
@@ -41,10 +38,8 @@ export function FormHeader({
         <ArrowLeft className="w-5 h-5" />
       </button>
       {resolvedIcon ? (
-        <span
-          className={`inline-flex h-11 w-11 items-center justify-center rounded-2xl shrink-0 ${resolvedBoxClass}`}
-        >
-          <Icon icon={resolvedIcon} width={28} height={28} />
+        <span className="inline-flex items-center justify-center shrink-0">
+          <Icon icon={resolvedIcon} width={32} height={32} />
         </span>
       ) : null}
       <div>

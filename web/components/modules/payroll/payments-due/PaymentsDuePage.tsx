@@ -5,6 +5,7 @@ import { toast } from '@/lib/ui/feedback';
 import { useEffect, useMemo, useState } from 'react';
 import { ArrowRight, Download, Filter, Info } from 'lucide-react';
 import { Footer } from '@/components/layout/Footer';
+import { PageHeader } from '@/components/shared/PageHeader';
 import { PaymentsDueFilters } from '@/components/modules/payroll/payments-due/PaymentsDueFilters';
 import { PaymentsDueKpiBar } from '@/components/modules/payroll/payments-due/PaymentsDueKpiBar';
 import { PaymentsDueSidebar } from '@/components/modules/payroll/payments-due/PaymentsDueSidebar';
@@ -98,30 +99,28 @@ export function PaymentsDuePage() {
 
   return (
     <div className={MODULE_LIST_SHELL}>
-      <div className="flex flex-col xl:flex-row xl:items-start xl:justify-between gap-3">
-        <div>
-          <h2 className="text-xl font-extrabold text-slate-900 tracking-tight">Payments &amp; Due</h2>
-          <p className="text-xs text-slate-500 mt-1 font-medium">
-            Track salary payments, partial payments and due amounts.
-          </p>
-        </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <button
-            type="button"
-            className={PD_BTN_OUTLINE}
-            onClick={() => setShowFilters((v) => !v)}
-          >
-            <Filter className="w-3.5 h-3.5 inline mr-1" /> Filters
-          </button>
-          <button
-            type="button"
-            className={PD_EXPORT_BTN_CLS}
-            onClick={() => toast.info('Feature coming soon', { module: 'Payments Due', description: "Export coming soon." })}
-          >
-            <Download className="w-3.5 h-3.5" /> Export
-          </button>
-        </div>
-      </div>
+      <PageHeader
+        title="Payments &amp; Due"
+        subtitle="Track salary payments, partial payments and due amounts."
+        actions={
+          <>
+            <button
+              type="button"
+              className={PD_BTN_OUTLINE}
+              onClick={() => setShowFilters((v) => !v)}
+            >
+              <Filter className="w-3.5 h-3.5 inline mr-1" /> Filters
+            </button>
+            <button
+              type="button"
+              className={PD_EXPORT_BTN_CLS}
+              onClick={() => toast.info('Feature coming soon', { module: 'Payments Due', description: "Export coming soon." })}
+            >
+              <Download className="w-3.5 h-3.5" /> Export
+            </button>
+          </>
+        }
+      />
 
       <PaymentsDueKpiBar metrics={metrics} />
 

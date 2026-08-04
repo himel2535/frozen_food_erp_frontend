@@ -2,7 +2,7 @@
 
 import { PO_LABEL_CLS, PO_SIDEBAR_CARD_CLS } from '@/components/modules/purchases/purchase-order-form/po-form-styles';
 import { PO_PAYMENT_STATUS_OPTIONS } from '@/components/modules/purchases/purchase-order-form/po-form-options';
-import { formatMoney } from '@/lib/services/purchases-service';
+import { useLocaleFormat } from '@/hooks/useLocaleFormat';
 
 export function PoPaymentInfo({
   paymentStatus,
@@ -17,6 +17,7 @@ export function PoPaymentInfo({
   onPaymentStatusChange: (status: 'unpaid' | 'partial' | 'paid') => void;
   onPaidAmountChange: (value: string) => void;
 }) {
+  const { formatMoney } = useLocaleFormat();
   return (
     <div className={PO_SIDEBAR_CARD_CLS}>
       <h3 className="text-sm font-extrabold text-slate-900">Payment Information</h3>
@@ -52,7 +53,7 @@ export function PoPaymentInfo({
       </div>
       <div className="flex items-center justify-between pt-1">
         <span className="text-xs font-bold text-slate-600">Balance Due</span>
-        <span className="text-sm font-extrabold text-rose-600">{formatMoney(balanceDue)}</span>
+        <span className="text-sm font-extrabold text-rose-600">{formatMoney(balanceDue, { decimals: 2 })}</span>
       </div>
     </div>
   );

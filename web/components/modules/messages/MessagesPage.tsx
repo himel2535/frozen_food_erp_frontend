@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { Icon } from '@iconify/react';
 import { Footer } from '@/components/layout/Footer';
+import { PageHeader } from '@/components/shared/PageHeader';
 import { MODULE_LIST_SHELL } from '@/lib/ui/module-layout';
 import { useAppStore } from '@/lib/state/app-store';
 import { useNavMessages } from '@/components/modules/messages/useNavMessages';
@@ -48,17 +49,10 @@ export function MessagesPage() {
 
   return (
     <div className={MODULE_LIST_SHELL}>
-      <div className="flex flex-col xl:flex-row xl:items-center xl:justify-between gap-4">
-        <div className="flex items-start gap-4 min-w-0">
-          <div className="w-14 h-14 rounded-full bg-amber-500 flex items-center justify-center shrink-0 shadow-md shadow-amber-500/25">
-            <Icon icon="fluent-color:comment-multiple-24" width={32} height={32} className="shrink-0" />
-          </div>
-          <div className="min-w-0">
-            <h2 className="text-2xl font-extrabold text-slate-900 tracking-tight">{t('messages.title')}</h2>
-            <p className="text-sm text-slate-500 mt-1 font-medium">{t('messages.subtitle')}</p>
-          </div>
-        </div>
-      </div>
+      <PageHeader
+        title={t('messages.title')}
+        subtitle={t('messages.subtitle')}
+      />
 
       <div className={ALERT_FILTER_ROW}>
         {FILTER_CHANNELS.map((filter) => {

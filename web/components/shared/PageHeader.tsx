@@ -3,13 +3,12 @@
 import type { ReactNode } from 'react';
 import { usePathname } from 'next/navigation';
 import { Icon } from '@iconify/react';
-import { getPageIcon, getPageIconBoxClass } from '@/lib/ui/page-icons';
+import { getPageIcon } from '@/lib/ui/page-icons';
 
 export interface PageHeaderProps {
   title: ReactNode;
   subtitle?: string;
   icon?: string;
-  iconBoxClass?: string;
   actions?: ReactNode;
   /** compact = text-lg (Suppliers-style); default = text-xl (ListToolbar-style) */
   size?: 'default' | 'compact';
@@ -21,7 +20,6 @@ export function PageHeader({
   title,
   subtitle,
   icon,
-  iconBoxClass,
   actions,
   size = 'default',
   className = '',
@@ -29,7 +27,6 @@ export function PageHeader({
 }: PageHeaderProps) {
   const pathname = usePathname();
   const resolvedIcon = icon ?? getPageIcon(pathname);
-  const resolvedBoxClass = iconBoxClass ?? getPageIconBoxClass(pathname);
 
   const titleClass =
     size === 'compact'
@@ -41,12 +38,10 @@ export function PageHeader({
       : 'text-xs text-slate-500 mt-1 font-medium';
 
   const titleBlock = (
-    <div className="flex items-start gap-3 min-w-0">
+    <div className="flex items-center gap-3 min-w-0">
       {resolvedIcon ? (
-        <span
-          className={`inline-flex h-11 w-11 items-center justify-center rounded-2xl shrink-0 ${resolvedBoxClass}`}
-        >
-          <Icon icon={resolvedIcon} width={28} height={28} />
+        <span className="inline-flex items-center justify-center shrink-0">
+          <Icon icon={resolvedIcon} width={32} height={32} />
         </span>
       ) : null}
       <div className="min-w-0">

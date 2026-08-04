@@ -13,7 +13,7 @@ import {
   type PoLineItem,
 } from '@/components/modules/purchases/purchase-order-form/po-form-types';
 import { recalcPoLineItem } from '@/lib/services/purchases-service';
-import { formatMoney } from '@/lib/services/purchases-service';
+import { useLocaleFormat } from '@/hooks/useLocaleFormat';
 
 const UNITS = ['pcs', 'kg', 'liter', 'box', 'meter', 'set'];
 
@@ -30,6 +30,7 @@ export function PoItemsTable({
   onAddItem?: () => void;
   error?: string;
 }) {
+  const { formatMoney } = useLocaleFormat();
   const updateItem = (id: string, patch: Partial<PoLineItem>) => {
     onChange(items.map((item) => (item.id === id ? recalcPoLineItem({ ...item, ...patch }) : item)));
   };
@@ -217,7 +218,7 @@ export function PoItemsTable({
                     </select>
                   </td>
                   <td className="px-2 py-2 text-right font-bold text-slate-800 align-top whitespace-nowrap">
-                    {formatMoney(calc.amount)}
+                    {formatMoney(calc.amount, { decimals: 2 })}
                   </td>
                   <td className="px-2 py-2 align-top">
                     <div className="flex items-center justify-center gap-0.5">

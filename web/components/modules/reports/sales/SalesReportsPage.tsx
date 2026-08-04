@@ -6,9 +6,8 @@ import { useMemo, useState } from 'react';
 
 import { Download, Filter, Printer, Search } from 'lucide-react';
 
-import { Icon } from '@iconify/react';
-
 import { Footer } from '@/components/layout/Footer';
+import { PageHeader } from '@/components/shared/PageHeader';
 
 import { MODULE_LIST_SHELL } from '@/lib/ui/module-layout';
 
@@ -204,59 +203,30 @@ export function SalesReportsPage() {
 
       <div className={MODULE_LIST_SHELL}>
 
-        <div className="flex flex-col xl:flex-row xl:items-center xl:justify-between gap-4">
-
-          <div className="flex items-start gap-3 min-w-0">
-
-            <Icon icon="fluent-color:data-trending-24" width={32} height={32} className="shrink-0 mt-0.5" />
-
-            <div className="min-w-0">
-
-              <h2 className="text-xl font-extrabold text-slate-900 tracking-tight">{t('reports.sales_title')}</h2>
-
-              <p className="text-xs text-slate-500 mt-1 font-medium">{t('reports.sales_subtitle')}</p>
-
-            </div>
-
-          </div>
-
-          <div className="flex flex-wrap items-center gap-2 self-start xl:self-center shrink-0">
-
-            <button
-
-              type="button"
-
-              onClick={() => printSection('full')}
-
-              className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition-colors cursor-pointer"
-
-            >
-
-              <Printer className="w-4 h-4" />
-
-              {t('reports.print_full')}
-
-            </button>
-
-            <button
-
-              type="button"
-
-              onClick={handleExport}
-
-              className="bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold px-4 py-2.5 rounded-xl transition-colors flex items-center gap-2 cursor-pointer"
-
-            >
-
-              <Download className="w-4 h-4" />
-
-              {t('reports.sales_export')}
-
-            </button>
-
-          </div>
-
-        </div>
+        <PageHeader
+          title={t('reports.sales_title')}
+          subtitle={t('reports.sales_subtitle')}
+          actions={
+            <>
+              <button
+                type="button"
+                onClick={() => printSection('full')}
+                className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition-colors cursor-pointer"
+              >
+                <Printer className="w-4 h-4" />
+                {t('reports.print_full')}
+              </button>
+              <button
+                type="button"
+                onClick={handleExport}
+                className="bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold px-4 py-2.5 rounded-xl transition-colors flex items-center gap-2 cursor-pointer"
+              >
+                <Download className="w-4 h-4" />
+                {t('reports.sales_export')}
+              </button>
+            </>
+          }
+        />
 
 
 

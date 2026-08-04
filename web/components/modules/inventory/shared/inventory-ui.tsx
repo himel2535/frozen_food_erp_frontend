@@ -2,6 +2,7 @@
 
 import type { FormEvent, ReactNode } from 'react';
 import { Footer } from '@/components/layout/Footer';
+import { PageHeader } from '@/components/shared/PageHeader';
 import { AppFormModal } from '@/components/shared/AppForm';
 import { KpiCards, type KpiCardItem } from '@/components/shared/KpiCards';
 import { MODULE_LIST_SHELL } from '@/lib/ui/module-layout';
@@ -40,13 +41,14 @@ export function InventoryListLayout({
 }) {
   return (
     <div className={MODULE_LIST_SHELL}>
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-lg font-bold text-slate-900">{title}</h1>
-          <p className="text-xs text-slate-500 mt-0.5">{subtitle}</p>
-        </div>
-        <button type="button" onClick={onAdd} className={BTN_PRIMARY}>+ {addLabel}</button>
-      </div>
+      <PageHeader
+        title={title}
+        subtitle={subtitle}
+        size="compact"
+        actions={
+          <button type="button" onClick={onAdd} className={BTN_PRIMARY}>+ {addLabel}</button>
+        }
+      />
       {kpis.length > 0 && (
         kpiGridClassName
           ? <KpiCards gridClassName={kpiGridClassName} items={kpis} />

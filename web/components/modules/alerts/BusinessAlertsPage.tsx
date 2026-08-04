@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { Icon } from '@iconify/react';
 import { Footer } from '@/components/layout/Footer';
+import { PageHeader } from '@/components/shared/PageHeader';
 import { MODULE_LIST_SHELL } from '@/lib/ui/module-layout';
 import { useAppStore } from '@/lib/state/app-store';
 import { BusinessAlertCard } from '@/components/modules/alerts/BusinessAlertCard';
@@ -14,7 +15,6 @@ import {
   ALERT_FILTER_PILL,
   ALERT_FILTER_PILL_ACTIVE,
   ALERT_FILTER_ROW,
-  ALERT_PAGE_ICON_BOX,
   categoryFilterDotClass,
 } from '@/components/modules/alerts/alert-page-styles';
 import { ALERT_CATEGORY_ORDER, type AlertCategory } from '@/lib/services/business-alert-service';
@@ -40,24 +40,19 @@ export function BusinessAlertsPage() {
 
   return (
     <div className={MODULE_LIST_SHELL}>
-      <div className="flex flex-col xl:flex-row xl:items-center xl:justify-between gap-4">
-        <div className="flex items-start gap-4 min-w-0">
-          <div className={ALERT_PAGE_ICON_BOX}>
-            <Icon icon="fluent-color:alert-badge-24" width={32} height={32} className="shrink-0" />
-          </div>
-          <div className="min-w-0">
-            <h2 className="text-2xl font-extrabold text-slate-900 tracking-tight">{t('alerts.title')}</h2>
-            <p className="text-sm text-slate-500 mt-1 font-medium">{t('alerts.subtitle')}</p>
-          </div>
-        </div>
-        <Link
-          href="/settings/alert-settings"
-          className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition-colors cursor-pointer self-start xl:self-center shrink-0"
-        >
-          <Icon icon="fluent-color:settings-24" width={18} height={18} />
-          {t('alerts.settings_link')}
-        </Link>
-      </div>
+      <PageHeader
+        title={t('alerts.title')}
+        subtitle={t('alerts.subtitle')}
+        actions={
+          <Link
+            href="/settings/alert-settings"
+            className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition-colors cursor-pointer self-start xl:self-center shrink-0"
+          >
+            <Icon icon="fluent-color:settings-24" width={18} height={18} />
+            {t('alerts.settings_link')}
+          </Link>
+        }
+      />
 
       <div className={ALERT_FILTER_ROW}>
         <Link
