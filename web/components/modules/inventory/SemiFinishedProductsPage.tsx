@@ -3,7 +3,7 @@
 import { toast } from '@/lib/ui/feedback';
 
 import { useMemo, useState } from 'react';
-import { ChevronDown, Calculator, Download, Info, Layers, ListTree, Package, Settings2 } from 'lucide-react';
+import { ChevronDown, Calculator, Download, Info, Layers, Package, Settings2 } from 'lucide-react';
 import { Footer } from '@/components/layout/Footer';
 import { AppFormFields, AppFormModal, FORM_GRID_CLS, FORM_LABEL_CLS } from '@/components/shared/AppForm';
 import { AppTable, type AppTableColumn } from '@/components/shared/AppTable';
@@ -358,6 +358,11 @@ export function SemiFinishedProductsPage() {
   );
   const stockSummary = useMemo(() => buildSemiFinishedStockSummary(appState), [appState]);
 
+  const openBom = (row: Record<string, unknown>) => {
+    setBomId(String(row.id));
+    setView('bom');
+  };
+
   const openDetail = (row: Record<string, unknown>) => {
     setDetailId(String(row.id));
     setView('detail');
@@ -371,11 +376,6 @@ export function SemiFinishedProductsPage() {
   const openMaterials = (row: Record<string, unknown>) => {
     setMaterialsId(String(row.id));
     setView('materials');
-  };
-
-  const openBom = (row: Record<string, unknown>) => {
-    setBomId(String(row.id));
-    setView('bom');
   };
 
   if (view === 'detail' && detailRow) {
@@ -589,14 +589,10 @@ export function SemiFinishedProductsPage() {
               >
                 <Download className="w-4 h-4" />
               </button>
-              <button
-                type="button"
-                title="Manage BOM / Parts"
+              <TableIconAction
+                variant="bom"
                 onClick={() => openBom(row)}
-                className="app-table-icon-btn cursor-pointer"
-              >
-                <ListTree className="w-4 h-4" />
-              </button>
+              />
               <button
                 type="button"
                 title="Material Requirements"

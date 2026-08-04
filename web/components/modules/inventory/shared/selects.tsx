@@ -3,7 +3,7 @@
 import type { AppState } from '@/lib/state/types';
 import { listInventory, listWarehouses, listCategories, listUnits } from '@/lib/services/inventory-service';
 import { listSuppliers } from '@/lib/services/purchases-service';
-import { findRecipeForProduct, listRecipes } from '@/lib/services/recipes-service';
+import { findRecipeForProduct, listRecipes, listRecipesForVariant, type RecipeVariant } from '@/lib/services/recipes-service';
 import { SELECT_CLS } from '@/components/modules/inventory/shared/inventory-ui';
 
 export function ProductSelect({
@@ -41,14 +41,17 @@ export function RecipeSelect({
   onChange,
   required,
   filterProduct,
+  variant,
 }: {
   state: AppState;
   value: string;
   onChange: (v: string) => void;
   required?: boolean;
   filterProduct?: { id?: string; sku?: string; name?: string };
+  variant?: RecipeVariant;
 }) {
-  const active = listRecipes(state).filter((r) => r.status === 'active');
+  const active = (variant ? listRecipesForVariant(state, variant) : listRecipes(state))
+    .filter((r) => r.status === 'active');
   const matched = filterProduct
     ? findRecipeForProduct(state, filterProduct)
     : null;

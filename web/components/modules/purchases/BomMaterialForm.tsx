@@ -100,8 +100,19 @@ export function BomMaterialForm({
 }: BomMaterialFormProps) {
   const [materialSearch, setMaterialSearch] = useState('');
   const [supplierSearch, setSupplierSearch] = useState('');
+  const [materialSuggestOpen, setMaterialSuggestOpen] = useState(false);
+  const [supplierSuggestOpen, setSupplierSuggestOpen] = useState(false);
   const [form, setForm] = useState<BomMaterialFormValues>({ ...EMPTY_FORM, ...initialValues });
   const supplierTouchedRef = useRef(false);
+  const materialBlurTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const supplierBlurTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (materialBlurTimerRef.current) clearTimeout(materialBlurTimerRef.current);
+      if (supplierBlurTimerRef.current) clearTimeout(supplierBlurTimerRef.current);
+    };
+  }, []);
 
   useEffect(() => {
     if (initialValues) {
@@ -109,6 +120,8 @@ export function BomMaterialForm({
       setMaterialSearch(initialValues.name ?? '');
       setSupplierSearch(initialValues.preferredSupplier ?? '');
       supplierTouchedRef.current = Boolean(initialValues.preferredSupplier?.trim());
+      setMaterialSuggestOpen(false);
+      setSupplierSuggestOpen(false);
     }
   }, [initialValues, editingMaterialId]);
 
@@ -149,7 +162,7 @@ export function BomMaterialForm({
 
   const filteredMaterials = useMemo(() => {
     const q = materialSearch.trim().toLowerCase();
-    if (!q) return materialOptions.slice(0, 12);
+    if (!q) return materialOptions;
     return materialOptions.filter(
       (m) =>
         m.name.toLowerCase().includes(q) ||
@@ -160,14 +173,39 @@ export function BomMaterialForm({
 
   const filteredSuppliers = useMemo(() => {
     const q = supplierSearch.trim().toLowerCase();
-    if (!q) return supplierOptions.slice(0, 8);
+    if (!q) return supplierOptions;
     return supplierOptions.filter((s) => s.name.toLowerCase().includes(q));
   }, [supplierOptions, supplierSearch]);
 
   const selectedMaterial = materialOptions.find((m) => m.id === form.materialId);
-  const selectedSupplier = supplierOptions.find(
-    (s) => s.name.toLowerCase() === supplierSearch.trim().toLowerCase(),
-  );
+
+  const closeMaterialSuggest = () => {
+    if (materialBlurTimerRef.current) clearTimeout(materialBlurTimerRef.current);
+    setMaterialSuggestOpen(false);
+  };
+
+  const closeSupplierSuggest = () => {
+    if (supplierBlurTimerRef.current) clearTimeout(supplierBlurTimerRef.current);
+    setSupplierSuggestOpen(false);
+  };
+
+  const handleMaterialFocus = () => {
+    if (materialBlurTimerRef.current) clearTimeout(materialBlurTimerRef.current);
+    setMaterialSuggestOpen(true);
+  };
+
+  const handleMaterialBlur = () => {
+    materialBlurTimerRef.current = setTimeout(() => setMaterialSuggestOpen(false), 150);
+  };
+
+  const handleSupplierFocus = () => {
+    if (supplierBlurTimerRef.current) clearTimeout(supplierBlurTimerRef.current);
+    setSupplierSuggestOpen(true);
+  };
+
+  const handleSupplierBlur = () => {
+    supplierBlurTimerRef.current = setTimeout(() => setSupplierSuggestOpen(false), 150);
+  };
 
   const pickMaterial = (option: MaterialOption) => {
     supplierTouchedRef.current = false;
@@ -189,17 +227,20 @@ export function BomMaterialForm({
       preferredSupplier,
     }));
     setMaterialSearch(option.name);
+    closeMaterialSuggest();
   };
 
   const pickSupplier = (name: string) => {
     supplierTouchedRef.current = true;
     setForm((p) => ({ ...p, preferredSupplier: name }));
     setSupplierSearch(name);
+    closeSupplierSuggest();
   };
 
   const handleMaterialInput = (value: string) => {
     supplierTouchedRef.current = false;
     setMaterialSearch(value);
+    setMaterialSuggestOpen(true);
     setForm((prev) => ({
       ...prev,
       materialId: '',
@@ -211,6 +252,7 @@ export function BomMaterialForm({
   const handleSupplierInput = (value: string) => {
     supplierTouchedRef.current = true;
     setSupplierSearch(value);
+    setSupplierSuggestOpen(true);
     setForm((p) => ({ ...p, preferredSupplier: value }));
   };
 
@@ -286,17 +328,20 @@ export function BomMaterialForm({
                 required
                 value={materialSearch}
                 onChange={(e) => handleMaterialInput(e.target.value)}
+                onFocus={handleMaterialFocus}
+                onBlur={handleMaterialBlur}
                 placeholder="Search material name or code..."
                 className={`${INPUT_CLS} pr-10 uppercase placeholder:normal-case`}
               />
               <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
             </div>
-            {materialSearch && filteredMaterials.length > 0 && !selectedMaterial && (
+            {materialSuggestOpen && filteredMaterials.length > 0 && (
               <div className="absolute z-20 left-0 right-0 mt-1 max-h-52 overflow-y-auto rounded-lg border border-slate-200 bg-white shadow-lg">
                 {filteredMaterials.map((m) => (
                   <button
                     key={m.id}
                     type="button"
+                    onMouseDown={(e) => e.preventDefault()}
                     onClick={() => pickMaterial(m)}
                     className="w-full flex items-start gap-3 px-3 py-2.5 text-left hover:bg-slate-50 cursor-pointer border-b border-slate-100 last:border-0"
                   >
@@ -379,17 +424,20 @@ export function BomMaterialForm({
                   type="search"
                   value={supplierSearch}
                   onChange={(e) => handleSupplierInput(e.target.value)}
+                  onFocus={handleSupplierFocus}
+                  onBlur={handleSupplierBlur}
                   placeholder="Search for preferred..."
                   className={`${INPUT_CLS} pr-10`}
                 />
                 <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
               </div>
-              {supplierSearch && filteredSuppliers.length > 0 && !selectedSupplier && (
+              {supplierSuggestOpen && filteredSuppliers.length > 0 && (
                 <div className="absolute z-20 left-0 right-0 mt-1 max-h-40 overflow-y-auto rounded-lg border border-slate-200 bg-white shadow-lg">
                   {filteredSuppliers.map((s) => (
                     <button
                       key={s.id}
                       type="button"
+                      onMouseDown={(e) => e.preventDefault()}
                       onClick={() => pickSupplier(s.name)}
                       className="w-full px-3 py-2 text-left text-xs font-semibold text-slate-700 hover:bg-slate-50 cursor-pointer border-b border-slate-100 last:border-0"
                     >

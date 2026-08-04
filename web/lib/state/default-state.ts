@@ -1025,7 +1025,7 @@ export const DEFAULT_STATE: AppState = {
   ],
   journals: [],
   departments: [{ name: 'IT', head: 'Sarah Connor', status: 'active' }, { name: 'Sales', head: 'Marcus Wright', status: 'active' }, { name: 'HR', head: 'Arthur Dent', status: 'active' }],
-  recipes: [
+  finishedGoodsRecipes: [
     {
       id: 'RCP-001',
       recipeNumber: 'RCP-001',
@@ -1061,6 +1061,8 @@ export const DEFAULT_STATE: AppState = {
         { id: 'af-mat-4', materialId: 'RM-011', name: 'Sticker', category: 'Packaging', unit: 'pcs', qtyPerProduct: 1, wastagePct: 0, effectiveQty: 1, standardCost: 2.5, costPerProduct: 2.5, preferredSupplier: 'Toy Packaging Ltd.', remarks: '' },
       ],
     },
+  ],
+  semiFinishedRecipes: [
     {
       id: 'RCP-003',
       recipeNumber: 'RCP-003',

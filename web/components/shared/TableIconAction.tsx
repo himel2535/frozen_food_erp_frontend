@@ -5,6 +5,7 @@ import {
   Ban,
   CheckCircle,
   Eye,
+  ListTree,
   Pencil,
   RotateCcw,
   Trash2,
@@ -16,7 +17,8 @@ export type TableIconActionVariant =
   | 'view'
   | 'approve'
   | 'discontinue'
-  | 'restore';
+  | 'restore'
+  | 'bom';
 
 const VARIANT_CONFIG: Record<
   TableIconActionVariant,
@@ -51,6 +53,11 @@ const VARIANT_CONFIG: Record<
     icon: <RotateCcw className="w-4 h-4" />,
     label: 'Restore',
     className: 'app-table-icon-btn app-table-icon-btn--restore',
+  },
+  bom: {
+    icon: <ListTree className="w-4 h-4" />,
+    label: 'Manage BOM',
+    className: 'app-table-icon-btn app-table-icon-btn--bom',
   },
 };
 

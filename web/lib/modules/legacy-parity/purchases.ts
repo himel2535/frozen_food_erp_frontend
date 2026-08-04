@@ -7,6 +7,11 @@ import {
   listGoodsReceived, listVendorBills, listPurchasePayments, listPurchaseReturns, listRecipes,
   createGoodsReceived,
 } from '@/lib/services/purchases-service';
+import {
+  createRecipe,
+  updateRecipe,
+  deleteRecipe,
+} from '@/lib/services/recipes-service';
 import { createInState, updateInState, deleteFromState } from '@/lib/services/domain-service';
 import { PORT_CONFIGS } from '@/lib/modules/port-configs';
 import { adapter, money, React, toast, confirmAction, type DedicatedModuleConfig } from './shared';
@@ -284,9 +289,18 @@ export const CONFIGS: Record<string, DedicatedModuleConfig> = {
     ],
     adapter: adapter({
       list: listRecipes,
-      create: (s, p) => createInState(s, 'recipes', p, 'RCP'),
-      update: (s, id, p) => updateInState(s, 'recipes', id, p),
-      delete: (s, id) => deleteFromState(s, 'recipes', id),
+      create: (s, p) => {
+        const product = String(p.product ?? '');
+        const model = String(p.model ?? p.productSku ?? product);
+        return createRecipe(s, {
+          product,
+          model,
+          status: String(p.status ?? 'active'),
+          notes: String(p.notes ?? ''),
+        }, 'finished-goods');
+      },
+      update: (s, id, p) => updateRecipe(s, id, p),
+      delete: (s, id) => deleteRecipe(s, id),
     }),
   },
 } as Record<string, DedicatedModuleConfig>;

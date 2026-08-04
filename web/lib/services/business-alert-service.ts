@@ -1,6 +1,7 @@
 import type { AppState } from '@/lib/state/types';
 import { getCollectionOverlay } from '@/lib/state/customer-collection-seed';
 import { buildCustomerFollowUpHref } from '@/lib/services/customer-receivables-service';
+import { listRecipes } from '@/lib/services/recipes-service';
 import {
   ALL_ALERT_CATEGORIES,
   DEFAULT_ALERT_SETTINGS,
@@ -305,19 +306,19 @@ function buildProductionAlerts(state: AppState): BusinessAlert[] {
   const orders = (Array.isArray(state.productionOrders) ? state.productionOrders : []).filter((o) =>
     ['Planned', 'In Progress', 'planned', 'in progress'].includes(String(o.status ?? '')),
   );
-  const recipes = Array.isArray(state.recipes) ? state.recipes : [];
+  const recipes = listRecipes(state);
   const alerts: BusinessAlert[] = [];
 
   orders.forEach((order) => {
     const product = String(order.product ?? '');
     const recipe = recipes.find(
-      (r) => String(r.product) === product || String(r.productSku) === product || String(r.model) === product,
+      (r) => r.product === product || r.productSku === product || r.model === product,
     );
     const plannedQty = Number(order.plannedQuantity ?? order.qty ?? 0);
     const missing: string[] = [];
 
-    if (recipe && Array.isArray(recipe.materials)) {
-      recipe.materials.forEach((mat: Record<string, unknown>) => {
+    if (recipe && recipe.materials.length) {
+      recipe.materials.forEach((mat) => {
         const perUnit = Number(mat.effectiveQty ?? mat.qtyPerProduct ?? 0);
         const needed = perUnit * plannedQty;
         const stock = findMaterialStock(state, String(mat.materialId ?? ''), String(mat.name ?? ''));
@@ -343,7 +344,7 @@ function buildProductionAlerts(state: AppState): BusinessAlert[] {
       ],
       href: '/manufacturing/wastage',
       actions: [
-        { label: 'View BOM', href: '/purchases/recipes', variant: 'primary' },
+        { label: 'View BOM', href: '/purchases/recipes/finished-goods', variant: 'primary' },
         { label: 'View Production', href: '/manufacturing/wastage', variant: 'outline' },
       ],
       sortKey: missing.length * 10000 + plannedQty,

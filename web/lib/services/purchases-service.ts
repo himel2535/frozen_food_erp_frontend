@@ -313,7 +313,7 @@ export function listGoodsReceived(state: AppState) { return listFromState(state,
 export function listVendorBills(state: AppState) { return listFromState(state, 'vendorBills'); }
 export function listPurchasePayments(state: AppState) { return listFromState(state, 'purchasePayments'); }
 export function listPurchaseReturns(state: AppState) { return listFromState(state, 'purchaseReturns'); }
-export function listRecipes(state: AppState) { return listFromState(state, 'recipes'); }
+export { listRecipes } from '@/lib/services/recipes-service';
 
 export function createGoodsReceived(state: AppState, payload: Row) {
   const result = createInState(state, 'goodsReceived', payload, 'GRN');

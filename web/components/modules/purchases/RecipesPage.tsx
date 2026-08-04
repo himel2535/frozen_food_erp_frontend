@@ -2,7 +2,8 @@
 
 import { toast, confirmAction } from '@/lib/ui/feedback';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { Icon } from '@iconify/react';
 import { ArrowDown, ArrowUp, Calculator, Layers, Package, Paperclip } from 'lucide-react';
 import { Footer } from '@/components/layout/Footer';
@@ -15,13 +16,14 @@ import { TableIconAction } from '@/components/shared/TableIconAction';
 import { BomMaterialForm, type BomMaterialFormValues } from '@/components/modules/purchases/BomMaterialForm';
 import { PlanProductionModal } from '@/components/modules/purchases/PlanProductionModal';
 import { RecipeCard } from '@/components/modules/purchases/RecipeCard';
+import { RecipesBomMetrics } from '@/components/modules/purchases/RecipesBomMetrics';
 import { RecipeProductionPlanView } from '@/components/modules/purchases/RecipeProductionPlanView';
 import { useAppStore } from '@/lib/state/app-store';
 import type { PortField } from '@/lib/modules/port-types';
 import {
-  listRecipes,
+  listRecipesForVariant,
   getRecipe,
-  getRecipeMetrics,
+  getRecipeBomKpiMetrics,
   getRecipeBomCost,
   getRecipeBomTotals,
   listMaterialOptions,
@@ -33,14 +35,40 @@ import {
   removeMaterialFromRecipe,
   reorderMaterialInRecipe,
   formatMoney,
+  resolveRecipeForInventoryRow,
   type Recipe,
   type BomMaterial,
 } from '@/lib/services/recipes-service';
 
 type View = 'main' | 'form' | 'bom' | 'plan';
 type RecipeListLayout = 'cards' | 'table';
+type RecipeVariant = 'finished-goods' | 'semi-finished';
 
-const RECIPES_LAYOUT_KEY = 'recipes-list-layout';
+const VARIANT_CONFIG: Record<RecipeVariant, {
+  title: string;
+  subtitle: string;
+  searchPlaceholder: string;
+  emptyMessage: string;
+  breadcrumb: string;
+  layoutKey: string;
+}> = {
+  'finished-goods': {
+    title: 'Finished Goods BOM',
+    subtitle: 'Create a recipe first, then build the bill of materials for each finished product.',
+    searchPlaceholder: 'Search finished product, model, or recipe...',
+    emptyMessage: 'No finished goods BOM found. Click Create Recipe to start.',
+    breadcrumb: 'Finished Goods BOM',
+    layoutKey: 'recipes-list-layout-finished',
+  },
+  'semi-finished': {
+    title: 'Semi-Finished BOM',
+    subtitle: 'Create a recipe first, then build the parts list for each semi-finished product.',
+    searchPlaceholder: 'Search semi-finished product, model, or recipe...',
+    emptyMessage: 'No semi-finished BOM found. Click Create Recipe to start.',
+    breadcrumb: 'Semi-Finished BOM',
+    layoutKey: 'recipes-list-layout-semi-finished',
+  },
+};
 
 const UNIT_OPTIONS = ['pcs', 'kg', 'liter', 'box', 'meter', 'set'];
 
@@ -110,9 +138,11 @@ function BomSummaryStrip({
   );
 }
 
-export function RecipesPage() {
+export function RecipesPage({ variant = 'finished-goods' }: { variant?: RecipeVariant }) {
   const appState = useAppStore((s) => s.appState);
   const saveAppState = useAppStore((s) => s.saveAppState);
+  const searchParams = useSearchParams();
+  const config = VARIANT_CONFIG[variant];
 
   const [view, setView] = useState<View>('main');
   const [search, setSearch] = useState('');
@@ -127,16 +157,19 @@ export function RecipesPage() {
   const [planModalOpen, setPlanModalOpen] = useState(false);
   const [listLayout, setListLayout] = useState<RecipeListLayout>(() => {
     if (typeof window === 'undefined') return 'cards';
-    const saved = window.localStorage.getItem(RECIPES_LAYOUT_KEY);
+    const saved = window.localStorage.getItem(config.layoutKey);
     return saved === 'table' ? 'table' : 'cards';
   });
 
   const setListLayoutPersisted = (layout: RecipeListLayout) => {
     setListLayout(layout);
-    window.localStorage.setItem(RECIPES_LAYOUT_KEY, layout);
+    window.localStorage.setItem(config.layoutKey, layout);
   };
 
-  const recipes = useMemo(() => listRecipes(appState), [appState]);
+  const recipes = useMemo(
+    () => listRecipesForVariant(appState, variant),
+    [appState, variant],
+  );
   const materialOptions = useMemo(() => listMaterialOptions(appState), [appState]);
   const supplierOptions = useMemo(() => listSupplierOptions(appState), [appState]);
 
@@ -152,7 +185,7 @@ export function RecipesPage() {
     );
   }, [recipes, search]);
 
-  const metrics = useMemo(() => getRecipeMetrics(recipes), [recipes]);
+  const bomKpiMetrics = useMemo(() => getRecipeBomKpiMetrics(recipes), [recipes]);
   const activeRecipe = useMemo(
     () => (bomRecipeId ? getRecipe(appState, bomRecipeId) : null),
     [appState, bomRecipeId],
@@ -220,6 +253,28 @@ export function RecipesPage() {
     setMaterialFormKey((k) => k + 1);
     setView('bom');
   };
+
+  useEffect(() => {
+    const recipeParam = searchParams.get('recipe');
+    if (recipeParam) {
+      const match = recipes.find(
+        (recipe) => recipe.id === recipeParam || recipe.recipeNumber === recipeParam,
+      );
+      if (match) openBom(match.id);
+      return;
+    }
+    const productParam = searchParams.get('product');
+    if (!productParam) return;
+    const linked = resolveRecipeForInventoryRow(appState, {
+      id: productParam,
+      sku: productParam,
+      name: productParam,
+    });
+    if (linked && recipes.some((recipe) => recipe.id === linked.id)) {
+      openBom(linked.id);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams, recipes]);
 
   const openPlanInput = (recipeId: string) => {
     const recipe = getRecipe(appState, recipeId);
@@ -342,7 +397,7 @@ export function RecipesPage() {
       model: newRecipe.model,
       recipeNumber: newRecipe.recipeNumber || undefined,
       status: 'active',
-    });
+    }, variant);
     if (!result.ok) {
       toast.error('Operation failed', { module: 'Recipes', description: 'error' in result ? String(result.error) : 'Failed to create recipe' });
       return;
@@ -384,7 +439,7 @@ export function RecipesPage() {
         <div className="flex flex-col xl:flex-row xl:items-start xl:justify-between gap-3">
           <div className="space-y-2 min-w-0 flex-1">
             <p className="text-xs font-semibold text-slate-500">
-              Recipes (BOM) &gt; {activeRecipe.model} - {activeRecipe.product} &gt; Add Material
+              {config.breadcrumb} &gt; {activeRecipe.model} - {activeRecipe.product} &gt; Add Material
             </p>
             <div className="flex flex-wrap items-center gap-3 [&>div]:mb-0">
               <FormHeader
@@ -464,11 +519,11 @@ export function RecipesPage() {
     <>
     <div className="flex-1 overflow-y-auto p-2 md:p-4 space-y-2 flex flex-col">
       <ListToolbar
-        title="Recipes (BOM)"
-        subtitle="Create a recipe first, then build the bill of materials for each product."
+        title={config.title}
+        subtitle={config.subtitle}
         search={search}
         onSearchChange={setSearch}
-        searchPlaceholder="Search product, model, or recipe..."
+        searchPlaceholder={config.searchPlaceholder}
         onAdd={() => setView('form')}
         addLabel="Create Recipe"
         filters={
@@ -499,39 +554,11 @@ export function RecipesPage() {
         }
       />
 
-      <section className="grid grid-cols-2 md:grid-cols-3 gap-2">
-        <div className="premium-card premium-shadow p-3.5 flex items-center justify-between gap-3 transition-all hover:border-slate-300 hover:shadow-md min-h-[72px]">
-          <div className="min-w-0">
-            <span className="text-xs font-bold text-slate-500 tracking-wide block">Total Recipes</span>
-            <span className="text-lg font-extrabold text-slate-900 leading-tight">{metrics.total}</span>
-          </div>
-          <div className="flex items-center justify-center shrink-0">
-            <Icon icon="flat-color-icons:serial-tasks" width={38} height={38} className="shrink-0" />
-          </div>
-        </div>
-        <div className="premium-card premium-shadow p-3.5 flex items-center justify-between gap-3 transition-all hover:border-slate-300 hover:shadow-md min-h-[72px]">
-          <div className="min-w-0">
-            <span className="text-xs font-bold text-slate-500 tracking-wide block">Active</span>
-            <span className="text-lg font-extrabold text-slate-900 leading-tight">{metrics.active}</span>
-          </div>
-          <div className="flex items-center justify-center shrink-0">
-            <Icon icon="fluent-color:checkmark-circle-24" width={38} height={38} className="shrink-0" />
-          </div>
-        </div>
-        <div className="premium-card premium-shadow p-3.5 flex items-center justify-between gap-3 transition-all hover:border-slate-300 hover:shadow-md min-h-[72px] col-span-2 md:col-span-1">
-          <div className="min-w-0">
-            <span className="text-xs font-bold text-slate-500 tracking-wide block">Avg BOM Cost</span>
-            <span className="text-lg font-extrabold text-slate-900 leading-tight truncate">{formatMoney(metrics.avgCost)}</span>
-          </div>
-          <div className="flex items-center justify-center shrink-0">
-            <Icon icon="flat-color-icons:currency-exchange" width={38} height={38} className="shrink-0" />
-          </div>
-        </div>
-      </section>
+      <RecipesBomMetrics variant={variant} metrics={bomKpiMetrics} />
 
       {filteredRecipes.length === 0 ? (
         <div className="premium-card premium-shadow p-6 text-center">
-          <p className="text-sm font-semibold text-slate-500">No recipes found. Click Create Recipe to start.</p>
+          <p className="text-sm font-semibold text-slate-500">{config.emptyMessage}</p>
         </div>
       ) : listLayout === 'cards' ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2 md:gap-3">
@@ -550,7 +577,7 @@ export function RecipesPage() {
           columns={recipeListColumns}
           rows={filteredRecipes}
           rowKey={(row) => row.id}
-          emptyMessage="No recipes found. Click Create Recipe to start."
+          emptyMessage={config.emptyMessage}
           renderActions={(row) => (
             <>
               <button

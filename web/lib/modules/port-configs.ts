@@ -110,7 +110,7 @@ export const PORT_CONFIGS: Record<string, PortModuleConfig> = {
     { key: 'notes', label: 'Notes', type: 'textarea', advanced: true },
   ]),
 
-  'purchases-recipes': stateModule('purchases-recipes', 'recipes', 'RCP', [
+  'purchases-recipes': stateModule('purchases-recipes', 'finishedGoodsRecipes', 'RCP', [
     { key: 'product', label: 'Product', type: 'text', required: true },
     { key: 'status', label: 'Status', type: 'select', options: ['active', 'inactive'] },
     { key: 'notes', label: 'Notes', type: 'textarea', advanced: true },

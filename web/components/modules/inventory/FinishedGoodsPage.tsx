@@ -13,6 +13,7 @@ import { StatusBadge } from '@/components/shared/StatusBadge';
 import { TableIconAction } from '@/components/shared/TableIconAction';
 import { FilterBar, FilterSelect, SearchInput } from '@/components/modules/inventory/shared/inventory-ui';
 import { InventoryProductDetailView } from '@/components/modules/inventory/shared/InventoryProductDetailView';
+import { InventoryProductBomView } from '@/components/modules/inventory/shared/InventoryProductBomView';
 import { InventoryStockSummaryView } from '@/components/modules/inventory/shared/InventoryStockSummaryView';
 import { InventoryProductionCapacityView } from '@/components/modules/inventory/shared/InventoryProductionCapacityView';
 import { InventoryMaterialRequirementView } from '@/components/modules/inventory/shared/InventoryMaterialRequirementView';
@@ -94,10 +95,11 @@ function ProductThumb({ category }: { category: string }) {
 export function FinishedGoodsPage() {
   const appState = useAppStore((s) => s.appState);
   const saveAppState = useAppStore((s) => s.saveAppState);
-  const [view, setView] = useState<'main' | 'form' | 'detail' | 'summary' | 'capacity' | 'materials'>('main');
+  const [view, setView] = useState<'main' | 'form' | 'detail' | 'summary' | 'capacity' | 'materials' | 'bom'>('main');
   const [detailId, setDetailId] = useState<string | null>(null);
   const [capacityId, setCapacityId] = useState<string | null>(null);
   const [materialsId, setMaterialsId] = useState<string | null>(null);
+  const [bomId, setBomId] = useState<string | null>(null);
   const [search, setSearch] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('all');
   const [warehouseFilter, setWarehouseFilter] = useState('all');
@@ -413,7 +415,16 @@ export function FinishedGoodsPage() {
     () => (materialsId ? allProducts.find((row) => String(row.id) === materialsId) ?? null : null),
     [allProducts, materialsId],
   );
+  const bomRow = useMemo(
+    () => (bomId ? allProducts.find((row) => String(row.id) === bomId) ?? null : null),
+    [allProducts, bomId],
+  );
   const stockSummary = useMemo(() => buildFinishedGoodsStockSummary(appState), [appState]);
+
+  const openBom = (row: Record<string, unknown>) => {
+    setBomId(String(row.id));
+    setView('bom');
+  };
 
   const openDetail = (row: Record<string, unknown>) => {
     setDetailId(String(row.id));
@@ -438,6 +449,19 @@ export function FinishedGoodsPage() {
         appState={appState}
         onBack={() => { setView('main'); setDetailId(null); }}
         onEdit={() => openEdit(detailRow)}
+        onManageBom={() => openBom(detailRow)}
+      />
+    );
+  }
+
+  if (view === 'bom' && bomRow) {
+    return (
+      <InventoryProductBomView
+        variant="finished-goods"
+        row={bomRow}
+        appState={appState}
+        onBack={() => { setView('main'); setBomId(null); }}
+        onSave={saveAppState}
       />
     );
   }
@@ -629,6 +653,10 @@ export function FinishedGoodsPage() {
               >
                 <Download className="w-4 h-4" />
               </button>
+              <TableIconAction
+                variant="bom"
+                onClick={() => openBom(row)}
+              />
               <button
                 type="button"
                 title="Material Requirements"

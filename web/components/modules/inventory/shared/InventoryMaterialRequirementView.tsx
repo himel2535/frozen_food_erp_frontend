@@ -363,7 +363,7 @@ export function InventoryMaterialRequirementView({
                 </button>
               ) : null}
               <Link
-                href="/purchases/recipes"
+                href={variant === 'finished-goods' ? '/purchases/recipes/finished-goods' : '/purchases/recipes/semi-finished'}
                 className="inline-flex items-center gap-1.5 text-xs font-bold text-blue-700 border border-blue-200 bg-blue-50 hover:bg-blue-100 px-3 py-2 rounded-xl cursor-pointer"
               >
                 Open Recipes

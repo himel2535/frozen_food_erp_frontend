@@ -13,6 +13,7 @@ import { BomMaterialForm, type BomMaterialFormValues } from '@/components/module
 import type { AppState } from '@/lib/state/types';
 import {
   addMaterialToRecipe,
+  ensureFinishedGoodRecipe,
   ensureSemiFinishedRecipe,
   formatMoney,
   getRecipe,
@@ -93,7 +94,7 @@ export function InventoryProductBomView({
   onBack,
   onSave,
 }: {
-  variant: 'semi-finished';
+  variant: 'finished-goods' | 'semi-finished';
   row: Record<string, unknown>;
   appState: AppState;
   onBack: () => void;
@@ -109,11 +110,18 @@ export function InventoryProductBomView({
   const productName = String(row.name ?? productId);
 
   useEffect(() => {
-    const result = ensureSemiFinishedRecipe(appState, {
-      id: row.id as string | number,
-      name: productName,
-      recipeId: row.recipeId as string | number | undefined,
-    });
+    const result = variant === 'finished-goods'
+      ? ensureFinishedGoodRecipe(appState, {
+          id: row.id as string | number,
+          sku: String(row.sku ?? row.id ?? ''),
+          name: productName,
+          recipeId: row.recipeId as string | number | undefined,
+        })
+      : ensureSemiFinishedRecipe(appState, {
+          id: row.id as string | number,
+          name: productName,
+          recipeId: row.recipeId as string | number | undefined,
+        });
     if (!result.ok) {
       toast.error('BOM setup failed', { module: 'Inventory', description: result.error });
       setReady(true);
@@ -253,7 +261,7 @@ export function InventoryProductBomView({
   }
 
   const bomCost = getRecipeBomCost(activeRecipe);
-  const variantLabel = variant === 'semi-finished' ? 'Semi-Finished BOM' : 'BOM';
+  const variantLabel = variant === 'semi-finished' ? 'Semi-Finished BOM' : 'Finished Goods BOM';
 
   return (
     <div className="flex-1 overflow-y-auto p-6 md:p-8 space-y-6 flex flex-col">

@@ -296,7 +296,7 @@ export function InventoryProductionCapacityView({
                 </button>
               ) : null}
               <Link
-                href="/purchases/recipes"
+                href={variant === 'finished-goods' ? '/purchases/recipes/finished-goods' : '/purchases/recipes/semi-finished'}
                 className="inline-flex items-center gap-1.5 text-xs font-bold text-blue-700 border border-blue-200 bg-blue-50 hover:bg-blue-100 px-3 py-2 rounded-xl cursor-pointer"
               >
                 Open Recipes
@@ -528,7 +528,7 @@ export function InventoryProductionCapacityView({
                 Create production order for <span className="font-bold">{capacity.maxProducibleUnits.toLocaleString()} {unit}</span> with available materials.
               </p>
               <Link
-                href="/purchases/recipes"
+                href={variant === 'finished-goods' ? '/purchases/recipes/finished-goods' : '/purchases/recipes/semi-finished'}
                 className="inline-flex items-center gap-1.5 text-xs font-bold text-blue-700 border border-blue-200 bg-blue-50 hover:bg-blue-100 px-3 py-2 rounded-xl cursor-pointer"
               >
                 Create Production Order
@@ -561,7 +561,9 @@ export function InventoryProductionCapacityView({
                 Check the complete Bill of Materials for this product.
               </p>
               <Link
-                href={`/purchases/recipes?recipe=${encodeURIComponent(recipe.recipeNumber)}`}
+                href={variant === 'finished-goods'
+                  ? `/purchases/recipes/finished-goods?product=${encodeURIComponent(String(row.id))}`
+                  : `/purchases/recipes/semi-finished?product=${encodeURIComponent(String(row.id))}`}
                 className="inline-flex items-center gap-1.5 text-xs font-bold text-blue-700 border border-blue-200 bg-blue-50 hover:bg-blue-100 px-3 py-2 rounded-xl cursor-pointer"
               >
                 View BOM

@@ -107,6 +107,7 @@ export const bn = {
     "sidebar.sales-crm": "বিক্রয় ও গ্রাহক সম্পর্ক",
     "sidebar.inventory": "মজুদ",
     "sidebar.purchases": "ক্রয়",
+    "sidebar.recipes-bom": "রেসিপি (BOM)",
     "sidebar.factory": "কারখানা",
     "sidebar.accounts": "হিসাব",
     "sidebar.hrm": "কর্মী ব্যবস্থাপনা",
@@ -182,6 +183,8 @@ export const bn = {
     "sidebar.company": "কোম্পানি সেটিংস",
     "sidebar.signatures": "স্বাক্ষর",
     "sidebar.audit-logs": "নিরীক্ষা লগ",
+    "sidebar.finished-goods-bom": "তৈরি পণ্য BOM",
+    "sidebar.semi-finished-bom": "অর্ধ-তৈরি BOM",
 
     // Dashboard
     "dashboard.welcome_john": "আবার স্বাগতম, জন! 👋",

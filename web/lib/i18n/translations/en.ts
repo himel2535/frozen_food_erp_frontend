@@ -106,6 +106,7 @@ export const en = {
     "sidebar.sales-crm": "Sales & CRM",
     "sidebar.inventory": "Inventory",
     "sidebar.purchases": "Purchases",
+    "sidebar.recipes-bom": "Recipes (BOM)",
     "sidebar.factory": "Factory",
     "sidebar.accounts": "Accounts",
     "sidebar.hrm": "HR",
@@ -181,6 +182,8 @@ export const en = {
     "sidebar.company": "Company Settings",
     "sidebar.signatures": "Signatures",
     "sidebar.audit-logs": "Audit Logs",
+    "sidebar.finished-goods-bom": "Finished Goods BOM",
+    "sidebar.semi-finished-bom": "Semi-Finished BOM",
 
     // Dashboard
     "dashboard.welcome_john": "Welcome back, John! 👋",

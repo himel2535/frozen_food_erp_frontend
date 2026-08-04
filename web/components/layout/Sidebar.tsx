@@ -10,10 +10,31 @@ import {
   getActiveSidebarModule,
   getActiveSidebarView,
   getSectionColor,
+  type SidebarItem,
+  type SidebarAccent,
 } from '@/lib/navigation/tenant-sidebar';
 import { useAppStore } from '@/lib/state/app-store';
-import { Icon } from '@iconify/react';
 import { SidebarIcon } from './SidebarIcon';
+
+const SUBMENU_ACCENT: Record<
+  SidebarAccent,
+  { activeRing: string; activeText: string; connector: string; nestedBorder: string; childBorder: string }
+> = {
+  blue: {
+    activeRing: 'ring-blue-500/20',
+    activeText: 'text-blue-600',
+    connector: 'before:bg-blue-500/30',
+    nestedBorder: 'border-blue-500/30',
+    childBorder: 'border-blue-500/20',
+  },
+  violet: {
+    activeRing: 'ring-violet-500/20',
+    activeText: 'text-violet-700',
+    connector: 'before:bg-violet-500/30',
+    nestedBorder: 'border-violet-500/30',
+    childBorder: 'border-violet-500/20',
+  },
+};
 
 export function Sidebar() {
   const pathname = usePathname();
@@ -23,16 +44,32 @@ export function Sidebar() {
   const activeModule = getActiveSidebarModule(pathname);
   const activeView = getActiveSidebarView(pathname);
   const [openSubmenus, setOpenSubmenus] = useState<Record<string, boolean>>({});
+  const [openNestedGroups, setOpenNestedGroups] = useState<Record<string, boolean>>({});
+
+  const nestedGroupKey = (sectionId: string, item: SidebarItem) => `${sectionId}-${item.view ?? item.href}`;
+
+  const isNestedGroupActive = (item: SidebarItem) => {
+    if (!item.children?.length) return false;
+    if (activeView === item.view) return true;
+    return item.children.some((child) => child.view === activeView);
+  };
 
   useEffect(() => {
     const initial: Record<string, boolean> = {};
+    const nestedInitial: Record<string, boolean> = {};
     TENANT_SIDEBAR_SECTIONS.forEach((section) => {
       if (section.items.length > 0) {
         initial[section.id] = section.id === activeModule;
       }
+      section.items.forEach((item) => {
+        if (item.children?.length && section.id === activeModule && isNestedGroupActive(item)) {
+          nestedInitial[nestedGroupKey(section.id, item)] = true;
+        }
+      });
     });
     setOpenSubmenus(initial);
-  }, [activeModule]);
+    setOpenNestedGroups((prev) => ({ ...prev, ...nestedInitial }));
+  }, [activeModule, activeView]);
 
   const toggleSubmenu = (id: string) => {
     if (collapsed) toggleSidebar();
@@ -44,6 +81,37 @@ export function Sidebar() {
       next[id] = !prev[id];
       return next;
     });
+  };
+
+  const toggleNestedGroup = (key: string) => {
+    setOpenNestedGroups((prev) => ({ ...prev, [key]: !prev[key] }));
+  };
+
+  const renderSidebarItemLink = (
+    item: SidebarItem,
+    isActiveItem: boolean,
+    key: string,
+    size = 22,
+    accent: SidebarAccent = 'blue',
+  ) => {
+    const a = SUBMENU_ACCENT[accent];
+    const itemClasses = isActiveItem
+      ? `bg-white/95 border border-white shadow-md ring-1 ${a.activeRing} ${a.activeText} font-black`
+      : 'bg-white/45 hover:bg-white/75 backdrop-blur-md border border-white/80 shadow-[0_4px_16px_rgba(31,38,135,0.03)] text-slate-700 hover:text-slate-950 font-extrabold';
+    return (
+      <Link
+        key={key}
+        href={item.href}
+        className={`group/item relative rounded-2xl px-3 py-2.5 text-sm tracking-[0.01em] transition-all flex items-center gap-2.5 ${itemClasses} before:absolute before:-left-3.5 before:top-1/2 before:-translate-y-1/2 before:w-2.5 before:h-[2px] ${a.connector} before:rounded-full`}
+      >
+        <span className="flex items-center justify-center shrink-0">
+          <SidebarIcon imageIcon={item.imageIcon} iconifyIcon={item.iconifyIcon} size={size} />
+        </span>
+        <span className="truncate text-xs md:text-sm font-extrabold">
+          {t(`sidebar.${item.view}`) !== `sidebar.${item.view}` ? t(`sidebar.${item.view}`) : item.label}
+        </span>
+      </Link>
+    );
   };
 
   return (
@@ -132,23 +200,58 @@ export function Sidebar() {
                 {hasSubmenu && openSubmenus[section.id] && !collapsed && (
                   <div className="sidebar-submenu sidebar-label relative ml-4 pl-3.5 border-l-2 border-blue-500/30 space-y-2 my-1">
                     {section.items.map((item) => {
-                      const isActiveItem = isActiveModule && activeView === item.view;
-                      const itemClasses = isActiveItem
-                        ? 'bg-white/95 border border-white shadow-md ring-1 ring-blue-500/20 text-blue-600 font-black'
-                        : 'bg-white/45 hover:bg-white/75 backdrop-blur-md border border-white/80 shadow-[0_4px_16px_rgba(31,38,135,0.03)] text-slate-700 hover:text-slate-950 font-extrabold';
-                      return (
-                        <Link
-                          key={item.href}
-                          href={item.href}
-                          className={`group/item relative rounded-2xl px-3 py-2.5 text-sm tracking-[0.01em] transition-all flex items-center gap-2.5 ${itemClasses} before:absolute before:-left-3.5 before:top-1/2 before:-translate-y-1/2 before:w-2.5 before:h-[2px] before:bg-blue-500/30 before:rounded-full`}
-                        >
-                          <span className="flex items-center justify-center shrink-0">
-                            <SidebarIcon imageIcon={item.imageIcon} iconifyIcon={item.iconifyIcon} size={22} />
-                          </span>
-                          <span className="truncate text-xs md:text-sm font-extrabold">
-                            {t(`sidebar.${item.view}`) !== `sidebar.${item.view}` ? t(`sidebar.${item.view}`) : item.label}
-                          </span>
-                        </Link>
+                      if (item.children?.length) {
+                        const groupKey = nestedGroupKey(section.id, item);
+                        const accent = item.accent ?? 'blue';
+                        const a = SUBMENU_ACCENT[accent];
+                        const groupActive = isActiveModule && isNestedGroupActive(item);
+                        const groupClasses = groupActive
+                          ? `bg-white/95 border border-white shadow-md ring-1 ${a.activeRing} ${a.activeText} font-black`
+                          : 'bg-white/45 hover:bg-white/75 backdrop-blur-md border border-white/80 shadow-[0_4px_16px_rgba(31,38,135,0.03)] text-slate-700 hover:text-slate-950 font-extrabold';
+                        return (
+                          <div key={groupKey} className="space-y-2">
+                            <div className={`relative rounded-2xl transition-all flex items-center justify-between ${groupClasses} before:absolute before:-left-3.5 before:top-1/2 before:-translate-y-1/2 before:w-2.5 before:h-[2px] ${a.connector} before:rounded-full`}>
+                              <Link
+                                href={item.href}
+                                className="group/item flex min-w-0 flex-1 items-center gap-2.5 px-3 py-2.5 text-sm tracking-[0.01em]"
+                              >
+                                <span className="flex items-center justify-center shrink-0">
+                                  <SidebarIcon imageIcon={item.imageIcon} iconifyIcon={item.iconifyIcon} size={22} />
+                                </span>
+                                <span className="truncate text-xs md:text-sm font-extrabold">
+                                  {t(`sidebar.${item.view}`) !== `sidebar.${item.view}` ? t(`sidebar.${item.view}`) : item.label}
+                                </span>
+                              </Link>
+                              <button
+                                type="button"
+                                onClick={() => toggleNestedGroup(groupKey)}
+                                className="mr-2 flex h-7 w-7 items-center justify-center rounded-xl text-slate-400 transition-all hover:bg-black/5 hover:text-slate-700 focus:outline-none cursor-pointer"
+                                aria-label={`Toggle ${item.label} submenu`}
+                              >
+                                <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${openNestedGroups[groupKey] ? 'rotate-180' : ''}`} />
+                              </button>
+                            </div>
+                            {openNestedGroups[groupKey] && (
+                              <div className={`relative ml-3 pl-3 border-l-2 ${a.childBorder} space-y-2`}>
+                                {item.children.map((child) =>
+                                  renderSidebarItemLink(
+                                    child,
+                                    isActiveModule && activeView === child.view,
+                                    child.href,
+                                    20,
+                                    accent,
+                                  ),
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        );
+                      }
+
+                      return renderSidebarItemLink(
+                        item,
+                        isActiveModule && activeView === item.view,
+                        item.href,
                       );
                     })}
                   </div>

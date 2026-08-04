@@ -119,6 +119,8 @@ export interface AppState {
   companyProfile?: CompanyProfile;
   companySignatures?: CompanySignature[];
   alertSettings?: AlertSettings;
+  finishedGoodsRecipes?: Array<Record<string, unknown>>;
+  semiFinishedRecipes?: Array<Record<string, unknown>>;
   crmUi?: Record<string, unknown>;
   crmData?: Record<string, unknown>;
   [key: string]: unknown;

@@ -448,6 +448,16 @@ body.lang-bn .uppercase {
   color: #0e7490;
 }
 
+.app-table-icon-btn--bom {
+  color: #7c3aed;
+}
+
+.app-table-icon-btn--bom:hover {
+  background: #f5f3ff;
+  border-color: rgba(167, 139, 250, 0.35);
+  color: #6d28d9;
+}
+
 .app-skeleton,
 .app-table-skeleton {
   background: linear-gradient(90deg, rgba(226, 232, 240, 0.6) 25%, rgba(241, 245, 249, 0.9) 50%, rgba(226, 232, 240, 0.6) 75%);

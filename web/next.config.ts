@@ -39,7 +39,7 @@ const htmlRedirects = [
   ['purchases-bills.html', '/purchases/bills'],
   ['purchases-payments.html', '/purchases/payments'],
   ['purchases-returns.html', '/purchases/returns'],
-  ['purchases-recipes.html', '/purchases/recipes'],
+  ['purchases-recipes.html', '/purchases/recipes/finished-goods'],
   ['manufacturing-orders.html', '/manufacturing/machine-maintenance'],
   ['manufacturing-bom.html', '/manufacturing/machine-maintenance'],
   ['manufacturing-machine-maintenance.html', '/manufacturing/machine-maintenance'],
@@ -134,6 +134,8 @@ const nextConfig: NextConfig = {
       ]),
       { source: '/manufacturing/orders', destination: '/manufacturing/machine-maintenance', permanent: false },
       { source: '/manufacturing/bom', destination: '/manufacturing/machine-maintenance', permanent: false },
+      { source: '/recipes/finished-goods', destination: '/purchases/recipes/finished-goods', permanent: true },
+      { source: '/recipes/semi-finished', destination: '/purchases/recipes/semi-finished', permanent: true },
     ];
   },
 };

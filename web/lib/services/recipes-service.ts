@@ -78,8 +78,27 @@ export type MaterialOption = {
 
 type Row = Record<string, unknown>;
 
+export type RecipeVariant = 'finished-goods' | 'semi-finished';
+
+export const FINISHED_GOODS_RECIPES_KEY = 'finishedGoodsRecipes';
+export const SEMI_FINISHED_RECIPES_KEY = 'semiFinishedRecipes';
+const LEGACY_RECIPES_KEY = 'recipes';
+
+const RECIPE_COLLECTION: Record<RecipeVariant, string> = {
+  'finished-goods': FINISHED_GOODS_RECIPES_KEY,
+  'semi-finished': SEMI_FINISHED_RECIPES_KEY,
+};
+
+function listAllRecipeRows(state: AppState): Row[] {
+  ensureRecipesState(state);
+  return [
+    ...listFromState(state, FINISHED_GOODS_RECIPES_KEY),
+    ...listFromState(state, SEMI_FINISHED_RECIPES_KEY),
+  ];
+}
+
 function nextRecipeId(state: AppState): string {
-  const rows = listFromState(state, 'recipes');
+  const rows = listAllRecipeRows(state);
   const nums = rows
     .map((r) => String(r.id ?? r.recipeNumber ?? ''))
     .filter((id) => id.startsWith('RCP'))
@@ -317,7 +336,26 @@ export function getMaterialInsight(
 }
 
 export function listRecipes(state: AppState): Recipe[] {
-  return listFromState(state, 'recipes').map(normalizeRecipe);
+  return listAllRecipeRows(state).map(normalizeRecipe);
+}
+
+export function listRecipesForVariant(state: AppState, variant: RecipeVariant): Recipe[] {
+  ensureRecipesState(state);
+  return listFromState(state, RECIPE_COLLECTION[variant]).map(normalizeRecipe);
+}
+
+export function findRecipeLocation(
+  state: AppState,
+  id: string,
+): { collectionKey: string; recipe: Recipe } | null {
+  ensureRecipesState(state);
+  for (const key of [FINISHED_GOODS_RECIPES_KEY, SEMI_FINISHED_RECIPES_KEY]) {
+    const row = listFromState(state, key).find(
+      (r) => String(r.id) === id || String(r.recipeNumber) === id,
+    );
+    if (row) return { collectionKey: key, recipe: normalizeRecipe(row) };
+  }
+  return null;
 }
 
 function normalizeRecipe(row: Row): Recipe {
@@ -341,7 +379,7 @@ function normalizeRecipe(row: Row): Recipe {
 }
 
 export function getRecipe(state: AppState, id: string): Recipe | null {
-  return listRecipes(state).find((r) => r.id === id || r.recipeNumber === id) ?? null;
+  return findRecipeLocation(state, id)?.recipe ?? null;
 }
 
 export function getRecipeMetrics(recipes: Recipe[]) {
@@ -349,6 +387,22 @@ export function getRecipeMetrics(recipes: Recipe[]) {
   const costs = recipes.map((r) => r.materials.reduce((s, m) => s + m.costPerProduct, 0));
   const avgCost = costs.length ? costs.reduce((a, b) => a + b, 0) / costs.length : 0;
   return { total: recipes.length, active, avgCost };
+}
+
+export function getRecipeBomKpiMetrics(recipes: Recipe[]) {
+  const active = recipes.filter((r) => r.status === 'active').length;
+  const withMaterials = recipes.filter((r) => r.materials.length > 0).length;
+  const totalMaterialLines = recipes.reduce((sum, r) => sum + r.materials.length, 0);
+  const costs = recipes.map((r) => r.materials.reduce((s, m) => s + m.costPerProduct, 0));
+  const avgBomCost = costs.length ? costs.reduce((a, b) => a + b, 0) / costs.length : 0;
+  return {
+    total: recipes.length,
+    active,
+    inactive: recipes.length - active,
+    withMaterials,
+    totalMaterialLines,
+    avgBomCost,
+  };
 }
 
 export function getRecipeBomCost(recipe: Recipe) {
@@ -871,6 +925,7 @@ export function listSupplierOptions(state: AppState) {
 export function createRecipe(
   state: AppState,
   payload: { product: string; model: string; recipeNumber?: string; status?: string; notes?: string },
+  variant: RecipeVariant,
 ) {
   const model = payload.model.trim();
   const product = payload.product.trim();
@@ -883,7 +938,7 @@ export function createRecipe(
   const duplicateNumber = listRecipes(state).find((r) => r.recipeNumber === recipeNumber);
   if (duplicateNumber) return { ok: false as const, error: 'Recipe number already in use' };
 
-  return createInState(state, 'recipes', {
+  return createInState(state, RECIPE_COLLECTION[variant], {
     id: recipeNumber,
     recipeNumber,
     product,
@@ -897,19 +952,23 @@ export function createRecipe(
 }
 
 export function updateRecipe(state: AppState, id: string, payload: Partial<Recipe>) {
-  return updateInState(state, 'recipes', id, payload as Row);
+  const loc = findRecipeLocation(state, id);
+  if (!loc) return { ok: false as const, error: 'Recipe not found' };
+  return updateInState(state, loc.collectionKey, id, payload as Row);
 }
 
 export function deleteRecipe(state: AppState, id: string) {
-  return deleteFromState(state, 'recipes', id);
+  const loc = findRecipeLocation(state, id);
+  if (!loc) return { ok: false as const, error: 'Recipe not found' };
+  return deleteFromState(state, loc.collectionKey, id);
 }
 
 export function addMaterialToRecipe(state: AppState, recipeId: string, material: Partial<BomMaterial> & { name: string; unit: string }) {
-  const recipe = getRecipe(state, recipeId);
-  if (!recipe) return { ok: false as const, error: 'Recipe not found' };
+  const loc = findRecipeLocation(state, recipeId);
+  if (!loc) return { ok: false as const, error: 'Recipe not found' };
   const next = buildBomMaterial(material);
-  return updateInState(state, 'recipes', recipeId, {
-    materials: [...recipe.materials, next],
+  return updateInState(state, loc.collectionKey, recipeId, {
+    materials: [...loc.recipe.materials, next],
   });
 }
 
@@ -919,30 +978,30 @@ export function updateMaterialInRecipe(
   materialId: string,
   material: Partial<BomMaterial> & { name: string; unit: string },
 ) {
-  const recipe = getRecipe(state, recipeId);
-  if (!recipe) return { ok: false as const, error: 'Recipe not found' };
+  const loc = findRecipeLocation(state, recipeId);
+  if (!loc) return { ok: false as const, error: 'Recipe not found' };
   const nextMaterial = buildBomMaterial({ ...material, id: materialId, materialId: material.materialId ?? materialId });
-  const materials = recipe.materials.map((m) => (m.id === materialId ? nextMaterial : m));
-  return updateInState(state, 'recipes', recipeId, { materials });
+  const materials = loc.recipe.materials.map((m) => (m.id === materialId ? nextMaterial : m));
+  return updateInState(state, loc.collectionKey, recipeId, { materials });
 }
 
 export function removeMaterialFromRecipe(state: AppState, recipeId: string, materialId: string) {
-  const recipe = getRecipe(state, recipeId);
-  if (!recipe) return { ok: false as const, error: 'Recipe not found' };
-  const materials = recipe.materials.filter((m) => m.id !== materialId);
-  return updateInState(state, 'recipes', recipeId, { materials });
+  const loc = findRecipeLocation(state, recipeId);
+  if (!loc) return { ok: false as const, error: 'Recipe not found' };
+  const materials = loc.recipe.materials.filter((m) => m.id !== materialId);
+  return updateInState(state, loc.collectionKey, recipeId, { materials });
 }
 
 export function reorderMaterialInRecipe(state: AppState, recipeId: string, materialId: string, direction: 'up' | 'down') {
-  const recipe = getRecipe(state, recipeId);
-  if (!recipe) return { ok: false as const, error: 'Recipe not found' };
-  const idx = recipe.materials.findIndex((m) => m.id === materialId);
+  const loc = findRecipeLocation(state, recipeId);
+  if (!loc) return { ok: false as const, error: 'Recipe not found' };
+  const idx = loc.recipe.materials.findIndex((m) => m.id === materialId);
   if (idx < 0) return { ok: false as const, error: 'Material not found' };
   const swapIdx = direction === 'up' ? idx - 1 : idx + 1;
-  if (swapIdx < 0 || swapIdx >= recipe.materials.length) return { ok: true as const };
-  const materials = [...recipe.materials];
+  if (swapIdx < 0 || swapIdx >= loc.recipe.materials.length) return { ok: true as const };
+  const materials = [...loc.recipe.materials];
   [materials[idx], materials[swapIdx]] = [materials[swapIdx], materials[idx]];
-  return updateInState(state, 'recipes', recipeId, { materials });
+  return updateInState(state, loc.collectionKey, recipeId, { materials });
 }
 
 export type SemiFinishedRecipeRow = ProductRecipeLookup & {
@@ -978,7 +1037,7 @@ export function ensureSemiFinishedRecipe(
     product: sfName || sfId,
     model: sfId,
     status: 'active',
-  });
+  }, 'semi-finished');
   if (!created.ok) {
     return { ok: false, error: 'error' in created ? String(created.error) : 'Failed to create recipe' };
   }
@@ -1023,6 +1082,151 @@ export function syncSemiFinishedRecipeMeta(
   });
 
   return { ok: true };
+}
+
+export type FinishedGoodRecipeRow = ProductRecipeLookup & {
+  recipeId?: string | number;
+  sku?: string;
+};
+
+export function recipeBelongsToSemiFinished(state: AppState, recipe: Recipe): boolean {
+  const sfIds = new Set(listFromState(state, 'semiFinishedProducts').map((row) => String(row.id)));
+  const productId = recipe.productId != null ? String(recipe.productId) : '';
+  if (productId && sfIds.has(productId)) return true;
+  const model = recipe.model.trim();
+  return model.startsWith('SF-') || sfIds.has(model) || sfIds.has(recipe.productSku.trim());
+}
+
+export function recipeBelongsToFinishedGood(state: AppState, recipe: Recipe): boolean {
+  const fgRows = listFromState(state, 'finishedGoods');
+  const fgIds = new Set(fgRows.map((row) => String(row.id)));
+  const fgSkus = new Set(fgRows.map((row) => String(row.sku ?? '').trim()).filter(Boolean));
+  const fgRecipeIds = new Set(fgRows.map((row) => String(row.recipeId ?? '').trim()).filter(Boolean));
+  if (fgRecipeIds.has(recipe.id)) return true;
+  const productId = recipe.productId != null ? String(recipe.productId) : '';
+  if (productId && (fgIds.has(productId) || fgSkus.has(productId))) return true;
+  const model = recipe.model.trim();
+  const sku = recipe.productSku.trim();
+  if (model.startsWith('FG-') && fgIds.has(model)) return true;
+  return fgSkus.has(model) || fgSkus.has(sku) || fgIds.has(model);
+}
+
+export function filterRecipesByVariant(
+  state: AppState,
+  recipes: Recipe[],
+  variant: 'finished-goods' | 'semi-finished',
+): Recipe[] {
+  const sfRecipeIds = new Set(
+    listFromState(state, 'semiFinishedProducts')
+      .map((row) => String(row.recipeId ?? '').trim())
+      .filter(Boolean),
+  );
+
+  return recipes.filter((recipe) => {
+    const isSemiFinished = recipeBelongsToSemiFinished(state, recipe) || sfRecipeIds.has(recipe.id);
+    if (variant === 'semi-finished') return isSemiFinished;
+    return !isSemiFinished;
+  });
+}
+
+export function ensureFinishedGoodRecipe(
+  state: AppState,
+  fgRow: FinishedGoodRecipeRow,
+): { ok: true; recipe: Recipe; recipeId: string; stateChanged: boolean } | { ok: false; error: string } {
+  const fgId = String(fgRow.id ?? '').trim();
+  const fgSku = String(fgRow.sku ?? fgId).trim();
+  const fgName = String(fgRow.name ?? '').trim();
+  if (!fgId) return { ok: false, error: 'Finished good id is required' };
+
+  let stateChanged = false;
+  const existingRecipeId = String(fgRow.recipeId ?? '').trim();
+
+  if (existingRecipeId) {
+    const linked = getRecipe(state, existingRecipeId);
+    if (linked) return { ok: true, recipe: linked, recipeId: existingRecipeId, stateChanged: false };
+  }
+
+  const matched = findRecipeForProduct(state, { id: fgId, sku: fgSku, name: fgName });
+  if (matched && recipeBelongsToFinishedGood(state, matched)) {
+    if (existingRecipeId !== matched.id) {
+      updateInState(state, 'finishedGoods', fgId, { recipeId: matched.id });
+      stateChanged = true;
+    }
+    return { ok: true, recipe: matched, recipeId: matched.id, stateChanged };
+  }
+
+  const created = createRecipe(state, {
+    product: fgName || fgSku || fgId,
+    model: fgSku || fgId,
+    status: 'active',
+  }, 'finished-goods');
+  if (!created.ok) {
+    return { ok: false, error: 'error' in created ? String(created.error) : 'Failed to create recipe' };
+  }
+
+  const recipe = getRecipe(state, created.id);
+  if (!recipe) return { ok: false, error: 'Recipe was created but could not be loaded' };
+
+  updateRecipe(state, recipe.id, {
+    productId: fgId,
+    productSku: fgSku || fgId,
+  });
+  updateInState(state, 'finishedGoods', fgId, { recipeId: recipe.id });
+  stateChanged = true;
+
+  const updated = getRecipe(state, recipe.id);
+  if (!updated) return { ok: false, error: 'Recipe could not be loaded after linking' };
+
+  return { ok: true, recipe: updated, recipeId: updated.id, stateChanged };
+}
+
+export function syncFinishedGoodRecipeMeta(
+  state: AppState,
+  fgId: string,
+  recipeId: string,
+): { ok: true } | { ok: false; error: string } {
+  const id = fgId.trim();
+  const rid = recipeId.trim();
+  if (!id || !rid) return { ok: true };
+
+  const fgRow = listFromState(state, 'finishedGoods').find((row) => String(row.id) === id);
+  if (!fgRow) return { ok: false, error: 'Finished good not found' };
+
+  const recipe = getRecipe(state, rid);
+  if (!recipe) return { ok: false, error: 'Recipe not found' };
+
+  const name = String(fgRow.name ?? '').trim();
+  const sku = String(fgRow.sku ?? id).trim();
+  updateRecipe(state, rid, {
+    productId: id,
+    productSku: sku,
+    model: sku || id,
+    product: name || recipe.product,
+  });
+
+  return { ok: true };
+}
+
+export function ensureRecipesState(state: AppState): void {
+  const fg = state[FINISHED_GOODS_RECIPES_KEY];
+  const sf = state[SEMI_FINISHED_RECIPES_KEY];
+  if (Array.isArray(fg) && Array.isArray(sf)) return;
+
+  const legacy = listFromState(state, LEGACY_RECIPES_KEY);
+  const finished: Row[] = Array.isArray(fg) ? [...fg] : [];
+  const semi: Row[] = Array.isArray(sf) ? [...sf] : [];
+
+  if (legacy.length) {
+    for (const row of legacy) {
+      const recipe = normalizeRecipe(row);
+      if (recipeBelongsToSemiFinished(state, recipe)) semi.push(row);
+      else finished.push(row);
+    }
+  }
+
+  state[FINISHED_GOODS_RECIPES_KEY] = finished;
+  state[SEMI_FINISHED_RECIPES_KEY] = semi;
+  delete (state as Record<string, unknown>)[LEGACY_RECIPES_KEY];
 }
 
 export { formatCurrency as formatMoney };

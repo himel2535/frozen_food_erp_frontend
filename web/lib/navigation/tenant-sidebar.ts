@@ -1,9 +1,13 @@
+export type SidebarAccent = 'blue' | 'violet';
+
 export interface SidebarItem {
   label: string;
   href: string;
   view?: string;
   imageIcon?: string;
   iconifyIcon?: string;
+  accent?: SidebarAccent;
+  children?: SidebarItem[];
 }
 
 export interface SidebarSection {
@@ -61,7 +65,17 @@ export const TENANT_SIDEBAR_SECTIONS: SidebarSection[] = [
       { label: 'Vendor Bills', href: '/purchases/bills', view: 'bills', imageIcon: '/images/sidebar/purchases/bills.png', iconifyIcon: 'fluent-color:notebook-24' },
       { label: 'Payments', href: '/purchases/payments', view: 'payments', imageIcon: '/images/sidebar/purchases/payments.png', iconifyIcon: 'flat-color-icons:paid' },
       { label: 'Purchase Returns', href: '/purchases/returns', view: 'returns', imageIcon: '/images/sidebar/purchases/returns.png', iconifyIcon: 'flat-color-icons:undo' },
-      { label: 'Recipes (BOM)', href: '/purchases/recipes', view: 'recipes', imageIcon: '/images/sidebar/inventory/products.png', iconifyIcon: 'fluent-color:puzzle-piece-24' },
+      {
+        label: 'Recipes (BOM)',
+        href: '/purchases/recipes/finished-goods',
+        view: 'recipes-bom',
+        accent: 'violet',
+        iconifyIcon: 'flat-color-icons:todo-list',
+        children: [
+          { label: 'Finished Goods BOM', href: '/purchases/recipes/finished-goods', view: 'finished-goods-bom', iconifyIcon: 'flat-color-icons:approval' },
+          { label: 'Semi-Finished BOM', href: '/purchases/recipes/semi-finished', view: 'semi-finished-bom', iconifyIcon: 'fluent-color:puzzle-piece-24' },
+        ],
+      },
     ],
   },
   {
@@ -157,6 +171,7 @@ export function getActiveSidebarModule(pathname: string): string {
     sales: 'sales-crm',
     inventory: 'inventory',
     purchases: 'purchases',
+    recipes: 'purchases',
     manufacturing: 'factory',
     accounting: 'accounts',
     hrm: 'hrm',
@@ -173,6 +188,10 @@ export function getActiveSidebarModule(pathname: string): string {
 export function getActiveSidebarView(pathname: string): string | null {
   const parts = pathname.split('/').filter(Boolean);
   if (parts[0] === 'purchases' && parts[1] === 'orders') return 'purchase-orders';
+  if (parts[0] === 'purchases' && parts[1] === 'recipes' && parts[2] === 'finished-goods') return 'finished-goods-bom';
+  if (parts[0] === 'purchases' && parts[1] === 'recipes' && parts[2] === 'semi-finished') return 'semi-finished-bom';
+  if (parts[0] === 'recipes' && parts[1] === 'finished-goods') return 'finished-goods-bom';
+  if (parts[0] === 'recipes' && parts[1] === 'semi-finished') return 'semi-finished-bom';
   if (parts.length >= 2) return parts[1];
   return null;
 }
@@ -188,6 +207,7 @@ export const COLOR_MAP: Record<string, { bg: string; ring: string; text: string;
   fuchsia: { bg: 'bg-fuchsia-50/80', ring: 'ring-fuchsia-100', text: 'text-fuchsia-700', border: 'border-fuchsia-200/60' },
   slate: { bg: 'bg-slate-100/80', ring: 'ring-slate-200', text: 'text-slate-800', border: 'border-slate-300/60' },
   orange: { bg: 'bg-orange-50/80', ring: 'ring-orange-100', text: 'text-orange-700', border: 'border-orange-200/60' },
+  violet: { bg: 'bg-violet-50/80', ring: 'ring-violet-100', text: 'text-violet-700', border: 'border-violet-200/60' },
 };
 
 export function getSectionColor(section: SidebarSection) {

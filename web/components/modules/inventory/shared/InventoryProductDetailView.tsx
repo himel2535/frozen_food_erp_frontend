@@ -89,11 +89,11 @@ export function InventoryProductDetailView({
       onBack={onBack}
       actions={(
         <div className="flex items-center gap-2 shrink-0">
-          {variant === 'semi-finished' && onManageBom ? (
+          {onManageBom ? (
             <button
               type="button"
               onClick={onManageBom}
-              className="inline-flex items-center gap-1.5 text-xs font-bold text-blue-700 border border-blue-200 bg-blue-50 hover:bg-blue-100 px-3 py-2 rounded-xl cursor-pointer"
+              className="inline-flex items-center gap-1.5 text-xs font-bold text-violet-700 border border-violet-200 bg-violet-50 hover:bg-violet-100 px-3 py-2 rounded-xl cursor-pointer"
             >
               <ListTree className="w-3.5 h-3.5" />
               Manage BOM
@@ -178,7 +178,7 @@ export function InventoryProductDetailView({
               <button
                 type="button"
                 onClick={onManageBom}
-                className="inline-flex items-center gap-1.5 text-xs font-bold text-blue-600 hover:text-blue-700 cursor-pointer"
+                className="inline-flex items-center gap-1.5 text-xs font-bold text-violet-600 hover:text-violet-700 cursor-pointer"
               >
                 <ListTree className="w-3.5 h-3.5" />
                 Manage BOM
