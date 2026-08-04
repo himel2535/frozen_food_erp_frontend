@@ -229,7 +229,7 @@ export function DealsPage() {
         <Plus className="w-4 h-4" /> {t('crm.add_deal')}
       </button>
     </div>,
-    [layoutMode, search, t, openCreate],
+    [layoutMode, search, t],
   );
 
   return (
