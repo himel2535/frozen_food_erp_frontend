@@ -13,7 +13,7 @@ import { StatusBadge } from '@/components/shared/StatusBadge';
 import { TableIconAction } from '@/components/shared/TableIconAction';
 import { useAppStore } from '@/lib/state/app-store';
 import { getCustomerList, approveInvoice, getSalesDashboardSummary } from '@/lib/services/crm-service';
-import { listInvoices } from '@/lib/modules/sales-configs';
+import { listInvoices } from '@/lib/services/sales-service';
 import {
   createInvoice,
   deleteInvoice,

@@ -7,12 +7,15 @@ import {
   syncInvoiceBalances,
   transitionInvoiceLifecycle,
 } from '@/lib/services/crm-service';
-import { listInvoices } from '@/lib/modules/sales-configs';
 import {
   computeInvoiceTotalsFromItems,
   type InvoiceLineItem,
 } from '@/components/modules/sales/invoice-form/inv-form-types';
 import { listFromState, createInState, updateInState, deleteFromState } from '@/lib/services/domain-service';
+
+export function listInvoices(state: AppState) {
+  return Array.isArray(state.invoices) ? [...state.invoices] : [];
+}
 
 type Row = Record<string, unknown>;
 

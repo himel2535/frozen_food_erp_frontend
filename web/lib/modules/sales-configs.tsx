@@ -4,6 +4,7 @@ import type { AppState } from '@/lib/state/types';
 import { deleteFromState, updateInState } from '@/lib/services/domain-service';
 import type { TranslateFn } from '@/lib/i18n/resolve-label';
 import {
+  listInvoices,
   listQuotations,
   listSalesOrders,
   listDeliveries,
@@ -246,10 +247,6 @@ export function getPaymentsConfig(
     },
     customerField: true,
   };
-}
-
-export function listInvoices(state: AppState) {
-  return Array.isArray(state.invoices) ? [...state.invoices] : [];
 }
 
 export function getInvoicesConfig(
