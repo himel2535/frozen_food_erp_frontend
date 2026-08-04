@@ -5,6 +5,7 @@ import type { DeliveryChallanLineItem } from '@/components/modules/sales/deliver
 import { computeLineRemaining, summarizeChallanItems } from '@/components/modules/sales/delivery-challan-form/dc-form-types';
 import { CHALLAN_PRODUCT_CATALOG } from '@/components/modules/sales/delivery-challan-form/dc-form-options';
 import { DC_TABLE_FOOTER_CLS } from '@/components/modules/sales/delivery-challan-form/dc-form-styles';
+import { useLocaleFormat } from '@/hooks/useLocaleFormat';
 
 export function ChallanProductsTable({
   items,
@@ -15,6 +16,7 @@ export function ChallanProductsTable({
   onChange: (items: DeliveryChallanLineItem[]) => void;
   error?: string;
 }) {
+  const { formatCount } = useLocaleFormat();
   const { totalItems, totalDeliverQty } = summarizeChallanItems(items);
 
   const updateItem = (id: string, patch: Partial<DeliveryChallanLineItem>) => {
@@ -120,8 +122,8 @@ export function ChallanProductsTable({
                     </div>
                   </td>
                   <td className="px-3 py-2.5 font-semibold text-slate-700">{item.sku}</td>
-                  <td className="px-3 py-2.5 text-right font-semibold text-slate-700">{item.orderedQty.toLocaleString()}</td>
-                  <td className="px-3 py-2.5 text-right font-semibold text-slate-600">{item.previouslyDelivered.toLocaleString()}</td>
+                  <td className="px-3 py-2.5 text-right font-semibold text-slate-700">{formatCount(item.orderedQty)}</td>
+                  <td className="px-3 py-2.5 text-right font-semibold text-slate-600">{formatCount(item.previouslyDelivered)}</td>
                   <td className="px-3 py-2.5 text-right">
                     <input
                       type="number"
@@ -131,7 +133,7 @@ export function ChallanProductsTable({
                       className="w-24 ml-auto px-2 py-1.5 rounded-lg border border-slate-200 bg-white text-xs font-bold text-right focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-400"
                     />
                   </td>
-                  <td className="px-3 py-2.5 text-right font-bold text-emerald-600">{item.remainingQty.toLocaleString()}</td>
+                  <td className="px-3 py-2.5 text-right font-bold text-emerald-600">{formatCount(item.remainingQty)}</td>
                   <td className="px-3 py-2.5 font-semibold text-slate-600">{item.unit}</td>
                   <td className="px-3 py-2.5 text-center">
                     <button
@@ -152,7 +154,7 @@ export function ChallanProductsTable({
           <span>Total Items: <strong className="text-slate-800">{totalItems}</strong></span>
           <span>
             Total Deliver Now Qty:{' '}
-            <strong className="text-emerald-700">{totalDeliverQty.toLocaleString()} Pcs</strong>
+            <strong className="text-emerald-700">{formatCount(totalDeliverQty)} Pcs</strong>
           </span>
         </div>
       </div>

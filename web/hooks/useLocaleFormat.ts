@@ -19,6 +19,13 @@ export function useLocaleFormat() {
       lang,
       formatNumber: (value: number, options?: Intl.NumberFormatOptions) =>
         formatNumber(value, lang, options),
+      formatCount: (value: number) =>
+        formatNumber(value, lang, { maximumFractionDigits: 0 }),
+      formatPercent: (value: number, decimals = 1) =>
+        `${formatNumber(value, lang, {
+          minimumFractionDigits: decimals,
+          maximumFractionDigits: decimals,
+        })}%`,
       formatMoney: (value: number, options?: { decimals?: number }) =>
         formatMoney(value, lang, options),
       formatCompactMoney: (value: number) => formatCompactMoney(value, lang),

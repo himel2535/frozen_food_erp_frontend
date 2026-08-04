@@ -4,9 +4,9 @@ import { toast } from '@/lib/ui/feedback';
 
 import { useEffect, useMemo, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Icon } from '@iconify/react';
 import { Plus } from 'lucide-react';
 import { Footer } from '@/components/layout/Footer';
+import { PageHeader } from '@/components/shared/PageHeader';
 import { MODULE_LIST_SHELL } from '@/lib/ui/module-layout';
 import { useAppStore } from '@/lib/state/app-store';
 import { createSupplier, updateSupplier } from '@/lib/services/purchases-service';
@@ -136,21 +136,17 @@ export function SuppliersPage() {
 
   return (
     <div className={MODULE_LIST_SHELL}>
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div className="flex items-start gap-3">
-          <span className="inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-blue-50 text-blue-600 shrink-0">
-            <Icon icon="fluent-color:people-team-24" width={28} height={28} />
-          </span>
-          <div>
-            <h1 className="text-lg font-bold text-slate-900">Suppliers</h1>
-            <p className="text-xs text-slate-500 mt-0.5">Manage supplier relationships, purchases and payments.</p>
-          </div>
-        </div>
-        <button type="button" onClick={openCreate} className={`${SUPPLIER_BTN_PRIMARY} self-start`}>
-          <Plus className="w-4 h-4" />
-          Add Supplier
-        </button>
-      </div>
+      <PageHeader
+        title="Suppliers"
+        subtitle="Manage supplier relationships, purchases and payments."
+        size="compact"
+        actions={
+          <button type="button" onClick={openCreate} className={`${SUPPLIER_BTN_PRIMARY} self-start`}>
+            <Plus className="w-4 h-4" />
+            Add Supplier
+          </button>
+        }
+      />
 
       <SuppliersMetrics metrics={metrics} />
 

@@ -1,8 +1,17 @@
 'use client';
 
+import { useMemo } from 'react';
 import { SalesDocumentModule } from '@/components/modules/sales/SalesDocumentModule';
-import { RETURNS_CONFIG } from '@/lib/modules/sales-configs';
+import { getReturnsConfig } from '@/lib/modules/sales-configs';
+import { useAppStore } from '@/lib/state/app-store';
+import { useLocaleFormat } from '@/hooks/useLocaleFormat';
 
 export function ReturnsPage() {
-  return <SalesDocumentModule config={RETURNS_CONFIG} />;
+  const t = useAppStore((s) => s.t);
+  const { formatMoney, formatCount } = useLocaleFormat();
+  const config = useMemo(
+    () => getReturnsConfig(t, formatMoney, formatCount),
+    [t, formatMoney, formatCount],
+  );
+  return <SalesDocumentModule config={config} />;
 }

@@ -1,3 +1,8 @@
+'use client';
+
+import { useAppStore } from '@/lib/state/app-store';
+import { translateStatus as translateStatusLabel } from '@/lib/i18n/resolve-label';
+
 const PASTEL_BADGE =
   'inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-semibold capitalize border';
 
@@ -48,8 +53,9 @@ function normalizeStatus(status: string) {
 }
 
 export function StatusBadge({ status }: { status: string }) {
+  const t = useAppStore((s) => s.t);
   const key = normalizeStatus(status);
-  const label = String(status || '-').replace(/-/g, ' ');
+  const label = translateStatusLabel(t, status);
   return (
     <span className={`${PASTEL_BADGE} ${MAP[key] ?? 'bg-slate-50 text-slate-600 border-slate-200/60'}`}>
       {label}

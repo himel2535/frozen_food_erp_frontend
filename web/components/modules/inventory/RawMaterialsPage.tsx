@@ -5,6 +5,7 @@ import { toast, confirmAction } from '@/lib/ui/feedback';
 import { useMemo, useState } from 'react';
 import { Download, Package, Settings2 } from 'lucide-react';
 import { Footer } from '@/components/layout/Footer';
+import { PageHeader } from '@/components/shared/PageHeader';
 import { AppFormFields, AppFormModal, FORM_GRID_CLS, FORM_LABEL_CLS } from '@/components/shared/AppForm';
 import { AppTable, type AppTableColumn } from '@/components/shared/AppTable';
 import { FilterTabs } from '@/components/shared/FilterTabs';
@@ -292,19 +293,20 @@ export function RawMaterialsPage() {
   return (
     <>
       <div className={MODULE_LIST_SHELL}>
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div>
-            <h1 className="text-lg font-bold text-slate-900">Raw Materials</h1>
-            <p className="text-xs text-slate-500 mt-0.5">Manage raw material inventory, suppliers, and stock levels.</p>
-          </div>
-          <button
-            type="button"
-            onClick={() => { resetForm(); setView('form'); }}
-            className="bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold px-4 py-2.5 rounded-xl cursor-pointer"
-          >
-            + Add Raw Material
-          </button>
-        </div>
+        <PageHeader
+          title="Raw Materials"
+          subtitle="Manage raw material inventory, suppliers, and stock levels."
+          size="compact"
+          actions={
+            <button
+              type="button"
+              onClick={() => { resetForm(); setView('form'); }}
+              className="bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold px-4 py-2.5 rounded-xl cursor-pointer"
+            >
+              + Add Raw Material
+            </button>
+          }
+        />
 
         <KpiCards
           gridClassName="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2"

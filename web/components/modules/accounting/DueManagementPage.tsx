@@ -5,6 +5,7 @@ import { toast } from '@/lib/ui/feedback';
 import { useMemo, useState } from 'react';
 import { Plus } from 'lucide-react';
 import { Footer } from '@/components/layout/Footer';
+import { PageHeader } from '@/components/shared/PageHeader';
 import { AppFormFields, AppFormModal } from '@/components/shared/AppForm';
 import { MODULE_LIST_SHELL } from '@/lib/ui/module-layout';
 import { useAppStore } from '@/lib/state/app-store';
@@ -113,23 +114,23 @@ export function DueManagementPage() {
   return (
     <>
       <div className={MODULE_LIST_SHELL}>
-        <div className="flex flex-col xl:flex-row xl:items-center xl:justify-between gap-4">
-          <div>
-            <h2 className="text-xl font-extrabold text-slate-900 tracking-tight">Due Management</h2>
-            <p className="text-xs text-slate-500 mt-1 font-medium">Track and collect outstanding payments.</p>
-          </div>
-          <button
-            type="button"
-            onClick={() => {
-              setOpeningForm((f) => ({ ...f, type: activeTab }));
-              setShowOpeningModal(true);
-            }}
-            className="bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold px-4 py-2.5 rounded-xl transition-colors flex items-center gap-2 cursor-pointer self-start xl:self-auto"
-          >
-            <Plus className="w-4 h-4" />
-            Opening Due
-          </button>
-        </div>
+        <PageHeader
+          title="Due Management"
+          subtitle="Track and collect outstanding payments."
+          actions={
+            <button
+              type="button"
+              onClick={() => {
+                setOpeningForm((f) => ({ ...f, type: activeTab }));
+                setShowOpeningModal(true);
+              }}
+              className="bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold px-4 py-2.5 rounded-xl transition-colors flex items-center gap-2 cursor-pointer self-start xl:self-auto"
+            >
+              <Plus className="w-4 h-4" />
+              Opening Due
+            </button>
+          }
+        />
 
         <DueMetrics metrics={metrics} />
 

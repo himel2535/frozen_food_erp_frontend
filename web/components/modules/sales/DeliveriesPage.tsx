@@ -6,6 +6,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Plus } from 'lucide-react';
 import { Footer } from '@/components/layout/Footer';
+import { PageHeader } from '@/components/shared/PageHeader';
 import { FilterTabs } from '@/components/shared/FilterTabs';
 import { KpiCards } from '@/components/shared/KpiCards';
 import { AppTable, type AppTableColumn } from '@/components/shared/AppTable';
@@ -13,6 +14,8 @@ import { StatusBadge } from '@/components/shared/StatusBadge';
 import { TableIconAction } from '@/components/shared/TableIconAction';
 import { MODULE_LIST_SHELL } from '@/lib/ui/module-layout';
 import { useAppStore } from '@/lib/state/app-store';
+import { useLocaleFormat } from '@/hooks/useLocaleFormat';
+import { translateStatus } from '@/lib/i18n/resolve-label';
 import { getCustomerList } from '@/lib/services/crm-service';
 import {
   buildChallanItemsFromOrder,
@@ -34,12 +37,12 @@ import type { DeliveryChallanFormValues, DeliveryChallanLineItem } from '@/compo
 import { DeliveryChallanPrint } from '@/components/modules/sales/delivery-challan-form/DeliveryChallanPrint';
 import { deleteFromState } from '@/lib/services/domain-service';
 
-const STATUS_TABS = [
-  { id: 'all', label: 'All' },
-  { id: 'draft', label: 'Draft' },
-  { id: 'dispatched', label: 'Dispatched' },
-  { id: 'delivered', label: 'Delivered' },
-  { id: 'cancelled', label: 'Cancelled' },
+const statusTabsFor = (t: (key: string) => string) => [
+  { id: 'all', label: t('common.all') },
+  { id: 'draft', label: translateStatus(t, 'draft') },
+  { id: 'dispatched', label: translateStatus(t, 'dispatched') },
+  { id: 'delivered', label: translateStatus(t, 'delivered') },
+  { id: 'cancelled', label: translateStatus(t, 'cancelled') },
 ];
 
 function buildEmptyForm(warehouseId: string): DeliveryChallanFormValues {
@@ -70,6 +73,8 @@ function recordToFormValues(record: Record<string, unknown>, warehouseFallback: 
 }
 
 export function DeliveriesPage() {
+  const t = useAppStore((s) => s.t);
+  const { formatMoney, formatNumber, formatCount } = useLocaleFormat();
   const appState = useAppStore((s) => s.appState);
   const saveAppState = useAppStore((s) => s.saveAppState);
   const [view, setView] = useState<'main' | 'form'>('main');
@@ -119,12 +124,12 @@ export function DeliveriesPage() {
     const delivered = allRows.filter((r) => String(r.status).toLowerCase() === 'delivered').length;
     const totalQty = allRows.reduce((s, r) => s + Number(r.totalDeliverQty ?? 0), 0);
     return [
-      { key: 'count', label: 'Total Deliveries', value: String(allRows.length) },
-      { key: 'open', label: 'Open', value: String(open) },
-      { key: 'qty', label: 'Total Deliver Qty', value: `${totalQty.toLocaleString()} Pcs` },
-      { key: 'delivered', label: 'Delivered', value: String(delivered) },
+      { key: 'count', label: t('sales.deliveries_kpi_total'), value: formatCount(allRows.length) },
+      { key: 'open', label: t('sales.kpi_open'), value: formatCount(open) },
+      { key: 'qty', label: t('sales.deliveries_kpi_qty'), value: `${formatNumber(totalQty)} ${t('sales.pcs_suffix')}` },
+      { key: 'delivered', label: t('sales.deliveries_kpi_delivered'), value: formatCount(delivered) },
     ];
-  }, [appState]);
+  }, [appState, t, formatNumber, formatCount]);
 
   const challanPreviewId = useMemo(
     () => (editingId ? editingId : previewChallanNumber(appState, formValues.date)),
@@ -132,11 +137,11 @@ export function DeliveriesPage() {
   );
 
   const columns = useMemo<AppTableColumn<Record<string, unknown>>[]>(() => [
-    { key: 'id', label: 'Challan #', render: (row) => <span className="font-bold text-slate-900">{String(row.id)}</span> },
-    { key: 'customer', label: 'Customer', render: (row) => resolveChallanCustomerLabel(appState, row) },
-    { key: 'orderId', label: 'Order', render: (row) => String(row.orderId ?? '—') },
-    { key: 'status', label: 'Status', render: (row) => <StatusBadge status={String(row.status)} /> },
-  ], [appState]);
+    { key: 'id', label: t('sales.col_challan_number'), render: (row) => <span className="font-bold text-slate-900">{String(row.id)}</span> },
+    { key: 'customer', label: t('sales.col_customer'), render: (row) => resolveChallanCustomerLabel(appState, row) },
+    { key: 'orderId', label: t('sales.col_order'), render: (row) => String(row.orderId ?? '—') },
+    { key: 'status', label: t('sales.col_status'), render: (row) => <StatusBadge status={String(row.status)} /> },
+  ], [appState, t]);
 
   const resetForm = () => {
     setFormValues(buildEmptyForm(defaultWarehouseId));
@@ -296,29 +301,29 @@ export function DeliveriesPage() {
   return (
     <>
       <div className={MODULE_LIST_SHELL}>
-        <div className="flex flex-col xl:flex-row xl:items-center xl:justify-between gap-4">
-          <div>
-            <h2 className="text-xl font-extrabold text-slate-900 tracking-tight">Delivery Challan</h2>
-            <p className="text-xs text-slate-500 mt-1 font-medium">Create delivery challans linked to sales orders.</p>
-          </div>
-          <button
-            type="button"
-            onClick={openCreate}
-            className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold px-4 py-2.5 rounded-xl transition-colors flex items-center gap-2 cursor-pointer self-start"
-          >
-            <Plus className="w-4 h-4" /> New Challan
-          </button>
-        </div>
+        <PageHeader
+          title={t('sales.deliveries_title')}
+          subtitle={t('sales.deliveries_subtitle')}
+          actions={
+            <button
+              type="button"
+              onClick={openCreate}
+              className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold px-4 py-2.5 rounded-xl transition-colors flex items-center gap-2 cursor-pointer self-start"
+            >
+              <Plus className="w-4 h-4" /> {t('sales.new_challan')}
+            </button>
+          }
+        />
 
         <KpiCards items={kpis} />
 
         <div className="bg-white p-4 rounded-xl border border-slate-200/80 premium-shadow space-y-4">
-          <FilterTabs tabs={STATUS_TABS} active={statusFilter} onChange={setStatusFilter} />
+          <FilterTabs tabs={statusTabsFor(t)} active={statusFilter} onChange={setStatusFilter} />
           <input
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search challan, customer, order..."
+            placeholder={t('sales.search_challan')}
             className="w-full max-w-md px-4 py-2 rounded-xl border border-slate-200 bg-slate-50 text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500/10 focus:border-emerald-500 font-medium"
           />
         </div>
@@ -326,7 +331,7 @@ export function DeliveriesPage() {
         <AppTable
           columns={columns}
           rows={rows}
-          emptyMessage="No delivery challans found."
+          emptyMessage={t('sales.no_challans')}
           renderActions={(row) => (
             <>
               <TableIconAction variant="edit" onClick={() => openEdit(row)} />

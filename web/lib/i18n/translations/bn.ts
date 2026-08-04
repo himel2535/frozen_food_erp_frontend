@@ -1,4 +1,6 @@
 // @ts-nocheck
+import { salesCrmBn } from './sales-crm-bn';
+
 export const bn = {
     // Common
     "common.save": "সংরক্ষণ",
@@ -919,6 +921,8 @@ export const bn = {
     "assets.title": "সম্পদ ব্যবস্থাপনা",
     "approvals.title": "কর্মপ্রবাহ অনুমোদন",
     "notifications.title": "বিজ্ঞপ্তি",
+
+    ...salesCrmBn,
 } as Record<string, string>;
 
 /** Exact English UI phrases / enums → Bengali (runtime text-node fallback). */

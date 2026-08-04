@@ -1,6 +1,6 @@
 'use client';
 
-import { formatMoney } from '@/lib/services/sales-service';
+import { useLocaleFormat } from '@/hooks/useLocaleFormat';
 
 type AgingSummary = {
   current: number;
@@ -19,6 +19,8 @@ const BUCKETS = [
 ] as const;
 
 export function InvoiceAgingSnapshot({ aging }: { aging: AgingSummary }) {
+  const { formatMoney } = useLocaleFormat();
+
   return (
     <section className="space-y-3">
       <div>
@@ -35,7 +37,7 @@ export function InvoiceAgingSnapshot({ aging }: { aging: AgingSummary }) {
           >
             <span className="text-xs font-bold text-slate-500 uppercase tracking-wide">{bucket.label}</span>
             <span className={`text-lg font-extrabold mt-1 ${bucket.valueClass}`}>
-              {formatMoney(aging[bucket.key])}
+              {formatMoney(aging[bucket.key], { decimals: 2 })}
             </span>
           </div>
         ))}

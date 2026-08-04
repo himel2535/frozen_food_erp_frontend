@@ -1,7 +1,7 @@
 'use client';
 
 import { Icon } from '@iconify/react';
-import { formatMoney } from '@/lib/services/sales-service';
+import { useLocaleFormat } from '@/hooks/useLocaleFormat';
 
 type DashboardSummary = {
   monthlySales: number;
@@ -22,13 +22,14 @@ const METRICS = [
 ] as const;
 
 export function InvoiceDashboardMetrics({ summary }: { summary: DashboardSummary }) {
+  const { formatMoney, formatPercent } = useLocaleFormat();
   const values: Record<string, string> = {
-    monthlySales: formatMoney(summary.monthlySales),
-    collectedThisMonth: formatMoney(summary.collectedThisMonth),
-    openReceivables: formatMoney(summary.openReceivables),
-    overdueReceivables: formatMoney(summary.overdueReceivables),
-    collectionRate: `${summary.collectionRate.toFixed(1)}%`,
-    averageInvoiceValue: formatMoney(summary.averageInvoiceValue),
+    monthlySales: formatMoney(summary.monthlySales, { decimals: 2 }),
+    collectedThisMonth: formatMoney(summary.collectedThisMonth, { decimals: 2 }),
+    openReceivables: formatMoney(summary.openReceivables, { decimals: 2 }),
+    overdueReceivables: formatMoney(summary.overdueReceivables, { decimals: 2 }),
+    collectionRate: formatPercent(summary.collectionRate),
+    averageInvoiceValue: formatMoney(summary.averageInvoiceValue, { decimals: 2 }),
   };
 
   return (

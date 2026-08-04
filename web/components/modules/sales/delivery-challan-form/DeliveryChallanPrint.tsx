@@ -40,6 +40,7 @@ import {
   DC_PRINT_TABLE_HEAD,
   DC_PRINT_TABLE_WRAP,
 } from '@/components/modules/sales/delivery-challan-form/dc-print-styles';
+import { useLocaleFormat } from '@/hooks/useLocaleFormat';
 
 const signatureFont = Dancing_Script({ subsets: ['latin'], weight: ['600', '700'] });
 
@@ -65,6 +66,7 @@ export function DeliveryChallanPrint({
   challanId: string;
   data: DeliveryChallanPayload;
 }) {
+  const { formatCount } = useLocaleFormat();
   const { totalItems, totalDeliverQty } = summarizeChallanItems(data.items);
   const activeItems = data.items.filter((item) => item.productName.trim());
   const statusLabel = CHALLAN_STATUS_OPTIONS.find((s) => s.value === data.status)?.label ?? data.status;
@@ -207,10 +209,10 @@ export function DeliveryChallanPrint({
                     </div>
                   </td>
                   <td className="px-2 py-1.5 font-semibold">{item.sku}</td>
-                  <td className="px-2 py-1.5 text-right">{item.orderedQty.toLocaleString()}</td>
-                  <td className="px-2 py-1.5 text-right">{item.previouslyDelivered.toLocaleString()}</td>
-                  <td className="px-2 py-1.5 text-right font-bold text-blue-700">{item.deliverNow.toLocaleString()}</td>
-                  <td className="px-2 py-1.5 text-right font-bold text-emerald-600">{item.remainingQty.toLocaleString()}</td>
+                  <td className="px-2 py-1.5 text-right">{formatCount(item.orderedQty)}</td>
+                  <td className="px-2 py-1.5 text-right">{formatCount(item.previouslyDelivered)}</td>
+                  <td className="px-2 py-1.5 text-right font-bold text-blue-700">{formatCount(item.deliverNow)}</td>
+                  <td className="px-2 py-1.5 text-right font-bold text-emerald-600">{formatCount(item.remainingQty)}</td>
                   <td className="px-2 py-1.5">{item.unit}</td>
                 </tr>
               ))}
@@ -220,7 +222,7 @@ export function DeliveryChallanPrint({
             <span>Total Items: <strong>{totalItems}</strong></span>
             <span>
               Total Deliver Now Qty:{' '}
-              <strong className="text-blue-700">{totalDeliverQty.toLocaleString()} Pcs</strong>
+              <strong className="text-blue-700">{formatCount(totalDeliverQty)} Pcs</strong>
             </span>
           </div>
         </div>

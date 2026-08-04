@@ -4,6 +4,7 @@ import { useMemo } from 'react';
 import { Plus } from 'lucide-react';
 import { AppTable, type AppTableColumn } from '@/components/shared/AppTable';
 import { TableIconAction } from '@/components/shared/TableIconAction';
+import { useLocaleFormat } from '@/hooks/useLocaleFormat';
 
 export interface LineItem {
   id: string;
@@ -23,6 +24,8 @@ function lineTotal(item: LineItem) {
 }
 
 export function LineItemsEditor({ items, onChange, readOnly }: LineItemsEditorProps) {
+  const { formatNumber } = useLocaleFormat();
+
   const addRow = () => {
     onChange([
       ...items,
@@ -63,7 +66,7 @@ export function LineItemsEditor({ items, onChange, readOnly }: LineItemsEditorPr
       headerClassName: 'w-24',
       render: (row) =>
         readOnly ? (
-          row.qty
+          formatNumber(row.qty)
         ) : (
           <input
             type="number"
@@ -82,7 +85,7 @@ export function LineItemsEditor({ items, onChange, readOnly }: LineItemsEditorPr
       headerClassName: 'w-28',
       render: (row) =>
         readOnly ? (
-          row.rate.toLocaleString()
+          formatNumber(row.rate, { minimumFractionDigits: 2, maximumFractionDigits: 2 })
         ) : (
           <input
             type="number"
@@ -99,9 +102,10 @@ export function LineItemsEditor({ items, onChange, readOnly }: LineItemsEditorPr
       label: 'Amount',
       className: 'w-28 font-semibold text-slate-700',
       headerClassName: 'w-28',
-      render: (row) => lineTotal(row).toLocaleString(undefined, { minimumFractionDigits: 2 }),
+      render: (row) =>
+        formatNumber(lineTotal(row), { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
     },
-  ], [readOnly, items]);
+  ], [readOnly, items, formatNumber]);
 
   const footer =
     items.length > 0 ? (
@@ -110,7 +114,7 @@ export function LineItemsEditor({ items, onChange, readOnly }: LineItemsEditorPr
           Total
         </td>
         <td className="app-table-td font-bold text-slate-900">
-          {grandTotal.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+          {formatNumber(grandTotal, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
         </td>
         {!readOnly && <td className="app-table-td" />}
       </tr>

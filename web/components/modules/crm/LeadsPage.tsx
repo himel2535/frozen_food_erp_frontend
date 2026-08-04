@@ -5,7 +5,10 @@ import { toast } from '@/lib/ui/feedback';
 import { useMemo, useState } from 'react';
 import { MessageCircle, MoreVertical, Phone, Plus, Search, Upload } from 'lucide-react';
 import { Footer } from '@/components/layout/Footer';
+import { PageHeader } from '@/components/shared/PageHeader';
 import { useAppStore } from '@/lib/state/app-store';
+import { useLocaleFormat } from '@/hooks/useLocaleFormat';
+import { translateStatus } from '@/lib/i18n/resolve-label';
 import {
   convertLeadToCustomer,
   createLead,
@@ -34,12 +37,10 @@ import { LEAD_SOURCE_OPTIONS } from '@/components/modules/crm/lead-form/lead-for
 import { LeadDetailPanel } from '@/components/modules/crm/leads/LeadDetailPanel';
 import { LeadPipelineFunnel } from '@/components/modules/crm/leads/LeadPipelineFunnel';
 import {
-  formatLeadCurrency,
   formatLeadDateTime,
   formatRelativeActivity,
   leadAvatarClass,
   leadInitials,
-  leadStageLabel,
   NEXT_ACTION_ICONS,
   priorityLabel,
   priorityTagClass,
@@ -47,6 +48,13 @@ import {
 
 const PAGE_SIZE_OPTIONS = [10, 15, 25];
 const NEXT_ACTION_FILTERS = ['Call', 'WhatsApp', 'Email', 'Meeting', 'Follow-up'];
+const NEXT_ACTION_I18N: Record<string, string> = {
+  Call: 'crm.action_call',
+  WhatsApp: 'crm.action_whatsapp',
+  Email: 'crm.action_email',
+  Meeting: 'crm.action_meeting',
+  'Follow-up': 'crm.action_follow_up',
+};
 
 function buildEmptyLeadValues(ownerId: string): LeadFormValues {
   return { ...EMPTY_LEAD_FORM, assignedRepId: ownerId };
@@ -77,6 +85,8 @@ function leadRecordToFormValues(lead: Record<string, unknown>, ownerIdFallback: 
 }
 
 export function LeadsPage() {
+  const t = useAppStore((s) => s.t);
+  const { formatMoney, formatCount } = useLocaleFormat();
   const appState = useAppStore((s) => s.appState);
   const saveAppState = useAppStore((s) => s.saveAppState);
   const [view, setView] = useState<'main' | 'form'>('main');
@@ -247,7 +257,7 @@ export function LeadsPage() {
     },
     {
       key: 'name',
-      label: 'Lead',
+      label: t('crm.col_lead'),
       render: (row) => {
         const name = String(row.name ?? '');
         const priority = String(row.priority ?? 'warm');
@@ -274,7 +284,7 @@ export function LeadsPage() {
     },
     {
       key: 'contact',
-      label: 'Contact',
+      label: t('crm.col_contact'),
       render: (row) => (
         <div className="text-xs">
           <div className="font-semibold text-slate-800">{String(row.phone || '—')}</div>
@@ -284,14 +294,14 @@ export function LeadsPage() {
     },
     {
       key: 'status',
-      label: 'Stage',
-      render: (row) => <StatusBadge status={leadStageLabel(String(row.status))} />,
+      label: t('crm.col_stage'),
+      render: (row) => <StatusBadge status={String(row.status)} />,
     },
     {
       key: 'rep',
-      label: 'Assigned To',
+      label: t('crm.col_assigned_to'),
       render: (row) => {
-        const repName = String(row.assignedRepName || 'Unassigned');
+        const repName = String(row.assignedRepName || t('crm.unassigned'));
         return (
           <div className="flex items-center gap-2">
             <span className={`w-7 h-7 rounded-full flex items-center justify-center text-[9px] font-bold shrink-0 ${leadAvatarClass(repName)}`}>
@@ -304,7 +314,7 @@ export function LeadsPage() {
     },
     {
       key: 'lastActivity',
-      label: 'Last Activity',
+      label: t('crm.col_last_activity'),
       render: (row) => (
         <div className="text-xs min-w-[120px]">
           <div className="font-semibold text-slate-700">{formatRelativeActivity(row.lastActivityAt as string)}</div>
@@ -314,9 +324,9 @@ export function LeadsPage() {
     },
     {
       key: 'nextAction',
-      label: 'Next Action',
+      label: t('crm.col_next_action'),
       render: (row) => {
-        const actionType = String(row.nextActionType || 'Follow-up');
+        const actionType = String(row.nextActionType || t('crm.action_follow_up'));
         const isToday = Boolean(row.isFollowUpToday);
         const isOverdue = Boolean(row.isOverdue);
         return (
@@ -332,12 +342,12 @@ export function LeadsPage() {
     },
     {
       key: 'value',
-      label: 'Value',
+      label: t('crm.col_value'),
       render: (row) => (
-        <span className="text-xs font-extrabold text-slate-900">{formatLeadCurrency(Number(row.expectedValue || 0))}</span>
+        <span className="text-xs font-extrabold text-slate-900">{formatMoney(Number(row.expectedValue || 0))}</span>
       ),
     },
-  ], [selectedIds]);
+  ], [selectedIds, t, formatMoney]);
 
   if (view === 'form') {
     return (
@@ -357,37 +367,38 @@ export function LeadsPage() {
 
   return (
     <div className={MODULE_LIST_SHELL}>
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-lg font-bold text-slate-900">Leads</h1>
-          <p className="text-xs text-slate-500 mt-0.5">Capture prospects, track follow-ups and convert leads to deals.</p>
-        </div>
-        <div className="flex items-center gap-2 self-start">
-          <button
-            type="button"
-            onClick={() => toast.info('Feature coming soon', { module: 'Leads', description: "Import leads" })}
-            className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-600 border border-slate-200 bg-white hover:bg-slate-50 px-4 py-2.5 rounded-xl cursor-pointer"
-          >
-            <Upload className="w-4 h-4" /> Import Leads
-          </button>
-          <button
-            type="button"
-            onClick={openCreate}
-            className="bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold px-4 py-2.5 rounded-xl transition-colors flex items-center gap-2 cursor-pointer"
-          >
-            <Plus className="w-4 h-4" /> Add Lead
-          </button>
-        </div>
-      </div>
+      <PageHeader
+        title={t('crm.leads_title')}
+        subtitle={t('crm.leads_subtitle')}
+        size="compact"
+        actions={
+          <div className="flex items-center gap-2 self-start">
+            <button
+              type="button"
+              onClick={() => toast.info('Feature coming soon', { module: 'Leads', description: "Import leads" })}
+              className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-600 border border-slate-200 bg-white hover:bg-slate-50 px-4 py-2.5 rounded-xl cursor-pointer"
+            >
+              <Upload className="w-4 h-4" /> {t('crm.import_leads')}
+            </button>
+            <button
+              type="button"
+              onClick={openCreate}
+              className="bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold px-4 py-2.5 rounded-xl transition-colors flex items-center gap-2 cursor-pointer"
+            >
+              <Plus className="w-4 h-4" /> {t('crm.add_lead')}
+            </button>
+          </div>
+        }
+      />
 
       <KpiCards
         gridClassName="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2"
         items={[
-          { key: 'leads', label: 'New Leads', value: String(metrics.newThisWeek), sub: 'This week' },
-          { key: 'pending', label: 'Follow-up Today', value: String(metrics.followUpToday), sub: 'Leads to contact' },
-          { key: 'alert', label: 'Overdue Follow-ups', value: String(metrics.overdueFollowUps), alert: Number(metrics.overdueFollowUps) > 0, sub: Number(metrics.overdueFollowUps) > 0 ? 'Requires attention' : 'All caught up' },
-          { key: 'open', label: 'Unassigned Leads', value: String(metrics.unassigned), sub: 'Not assigned yet' },
-          { key: 'value', label: 'Active Pipeline Value', value: formatLeadCurrency(Number(metrics.pipelineValue)), sub: `Conversion Rate ${metrics.conversionRate}% this month` },
+          { key: 'leads', label: t('crm.kpi_new_leads'), value: formatCount(Number(metrics.newThisWeek)), sub: t('crm.kpi_this_week') },
+          { key: 'pending', label: t('crm.kpi_follow_up_today'), value: formatCount(Number(metrics.followUpToday)), sub: t('crm.kpi_leads_to_contact') },
+          { key: 'alert', label: t('crm.kpi_overdue_followups'), value: formatCount(Number(metrics.overdueFollowUps)), alert: Number(metrics.overdueFollowUps) > 0, sub: Number(metrics.overdueFollowUps) > 0 ? t('crm.kpi_requires_attention') : t('crm.kpi_all_caught_up') },
+          { key: 'open', label: t('crm.kpi_unassigned_leads'), value: formatCount(Number(metrics.unassigned)), sub: t('crm.kpi_not_assigned') },
+          { key: 'value', label: t('crm.kpi_pipeline_value'), value: formatMoney(Number(metrics.pipelineValue)), sub: t('crm.kpi_conversion_rate', { n: metrics.conversionRate }) },
         ]}
       />
 
@@ -399,11 +410,11 @@ export function LeadsPage() {
 
       <FilterTabs
         tabs={[
-          { id: 'mine', label: 'My Leads' },
-          { id: 'today', label: `Follow-up Today (${metrics.followUpToday})` },
-          { id: 'overdue', label: `Overdue (${metrics.overdueFollowUps})` },
-          { id: 'new', label: `New / Uncontacted (${metrics.newUncontacted})` },
-          { id: 'all', label: `All Leads (${metrics.totalLeads})` },
+          { id: 'mine', label: t('crm.filter_my_leads') },
+          { id: 'today', label: t('crm.filter_follow_up_today', { n: metrics.followUpToday }) },
+          { id: 'overdue', label: t('crm.filter_overdue', { n: metrics.overdueFollowUps }) },
+          { id: 'new', label: t('crm.filter_new_uncontacted', { n: metrics.newUncontacted }) },
+          { id: 'all', label: t('crm.filter_all_leads', { n: metrics.totalLeads }) },
         ]}
         active={listTab}
         onChange={(id) => { setListTab(id); setPage(1); }}
@@ -417,31 +428,31 @@ export function LeadsPage() {
               type="text"
               value={search}
               onChange={(e) => { setSearch(e.target.value); setPage(1); }}
-              placeholder="Search leads..."
+              placeholder={t('crm.search_leads')}
               className="w-full pl-9 pr-3 py-2 rounded-xl border border-slate-200 bg-slate-50 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 font-medium"
             />
           </div>
           <div className="flex flex-wrap gap-2">
             <select value={stageFilter} onChange={(e) => { setStageFilter(e.target.value); setPage(1); }} className="bg-slate-50 border border-slate-200 text-xs font-semibold text-slate-700 rounded-xl px-3 py-2 cursor-pointer">
-              <option value="all">Stage</option>
-              {Object.entries(LEAD_STAGE_LABELS).map(([value, label]) => (
-                <option key={value} value={value}>{label}</option>
+              <option value="all">{t('crm.filter_stage')}</option>
+              {Object.entries(LEAD_STAGE_LABELS).map(([value]) => (
+                <option key={value} value={value}>{translateStatus(t, value)}</option>
               ))}
             </select>
             <select value={ownerFilter} onChange={(e) => { setOwnerFilter(e.target.value); setPage(1); }} className="bg-slate-50 border border-slate-200 text-xs font-semibold text-slate-700 rounded-xl px-3 py-2 cursor-pointer">
-              <option value="all">Sales Rep</option>
+              <option value="all">{t('crm.filter_sales_rep')}</option>
               {owners.map((o: { id: string; name: string }) => <option key={o.id} value={o.id}>{o.name}</option>)}
             </select>
             <select value={sourceFilter} onChange={(e) => { setSourceFilter(e.target.value); setPage(1); }} className="bg-slate-50 border border-slate-200 text-xs font-semibold text-slate-700 rounded-xl px-3 py-2 cursor-pointer">
-              <option value="all">Source</option>
+              <option value="all">{t('crm.filter_source')}</option>
               {sourceFilterOptions.map((s) => <option key={s} value={s}>{s}</option>)}
             </select>
             <select value={nextActionFilter} onChange={(e) => { setNextActionFilter(e.target.value); setPage(1); }} className="bg-slate-50 border border-slate-200 text-xs font-semibold text-slate-700 rounded-xl px-3 py-2 cursor-pointer">
-              <option value="all">Next Action</option>
-              {NEXT_ACTION_FILTERS.map((a) => <option key={a} value={a}>{a}</option>)}
+              <option value="all">{t('crm.filter_next_action')}</option>
+              {NEXT_ACTION_FILTERS.map((a) => <option key={a} value={a}>{t(NEXT_ACTION_I18N[a] ?? a)}</option>)}
             </select>
             <button type="button" onClick={resetFilters} className="text-xs font-bold text-slate-500 hover:text-slate-700 cursor-pointer px-2 py-2">
-              Reset
+              {t('crm.reset')}
             </button>
           </div>
         </div>
@@ -456,13 +467,13 @@ export function LeadsPage() {
               onChange={toggleSelectAll}
               className="cursor-pointer"
             />
-            <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wide">Select page</span>
+            <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wide">{t('crm.select_page')}</span>
           </div>
           <AppTable
             className="flex-1"
             columns={columns}
             rows={paged}
-            emptyMessage="No leads found."
+            emptyMessage={t('crm.no_leads')}
             rowClassName={(row) => (String(row.id) === selectedId ? 'bg-blue-50/80' : '')}
             onRowClick={(row) => setSelectedId(String(row.id))}
             renderActions={(row) => (
@@ -481,16 +492,20 @@ export function LeadsPage() {
           />
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 text-xs text-slate-500">
             <span>
-              Showing {filtered.length === 0 ? 0 : (page - 1) * pageSize + 1} to {Math.min(page * pageSize, filtered.length)} of {filtered.length} leads
+              {t('crm.showing_leads', {
+                from: filtered.length === 0 ? 0 : (page - 1) * pageSize + 1,
+                to: Math.min(page * pageSize, filtered.length),
+                total: filtered.length,
+              })}
             </span>
             <div className="flex flex-wrap items-center gap-2">
-              <button type="button" disabled={page <= 1} onClick={() => setPage(page - 1)} className="px-3 py-1.5 border border-slate-200 rounded-lg cursor-pointer disabled:opacity-50">Previous</button>
+              <button type="button" disabled={page <= 1} onClick={() => setPage(page - 1)} className="px-3 py-1.5 border border-slate-200 rounded-lg cursor-pointer disabled:opacity-50">{t('crm.previous')}</button>
               {pageNumbers.map((n) => (
-                <button key={n} type="button" onClick={() => setPage(n)} className={`min-w-[32px] px-2 py-1.5 rounded-lg font-bold cursor-pointer ${n === page ? 'bg-blue-600 text-white' : 'border border-slate-200 hover:bg-slate-50'}`}>{n}</button>
+                <button key={n} type="button" onClick={() => setPage(n)} className={`min-w-[32px] px-2 py-1.5 rounded-lg font-bold cursor-pointer ${n === page ? 'bg-blue-600 text-white' : 'border border-slate-200 hover:bg-slate-50'}`}>{formatCount(n)}</button>
               ))}
-              <button type="button" disabled={page >= totalPages} onClick={() => setPage(page + 1)} className="px-3 py-1.5 border border-slate-200 rounded-lg cursor-pointer disabled:opacity-50">Next</button>
+              <button type="button" disabled={page >= totalPages} onClick={() => setPage(page + 1)} className="px-3 py-1.5 border border-slate-200 rounded-lg cursor-pointer disabled:opacity-50">{t('crm.next')}</button>
               <select value={pageSize} onChange={(e) => { setPageSize(Number(e.target.value)); setPage(1); }} className="bg-slate-50 border border-slate-200 rounded-lg px-2 py-1.5 cursor-pointer">
-                {PAGE_SIZE_OPTIONS.map((size) => <option key={size} value={size}>{size} / page</option>)}
+                {PAGE_SIZE_OPTIONS.map((size) => <option key={size} value={size}>{t('crm.per_page', { n: size })}</option>)}
               </select>
             </div>
           </div>
@@ -505,7 +520,7 @@ export function LeadsPage() {
           onConvert={() => {
             if (!selectedLead) return;
             const r = convertLeadToCustomer(appState, String(selectedLead.id), {});
-            if (r.ok) { saveAppState(); toast.success('Done', { module: 'Leads', description: "Converted to customer" }); }
+            if (r.ok) { saveAppState(); toast.success('Done', { module: t('crm.leads_title'), description: t('crm.converted_success') }); }
           }}
           onMarkLost={() => {
             if (!selectedLead) return;

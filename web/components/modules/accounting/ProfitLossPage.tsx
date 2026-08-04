@@ -5,6 +5,7 @@ import { toast } from '@/lib/ui/feedback';
 import { useMemo, useState } from 'react';
 import { Plus } from 'lucide-react';
 import { Footer } from '@/components/layout/Footer';
+import { PageHeader } from '@/components/shared/PageHeader';
 import { AppFormFields, AppFormModal } from '@/components/shared/AppForm';
 import { MODULE_LIST_SHELL } from '@/lib/ui/module-layout';
 import { useAppStore } from '@/lib/state/app-store';
@@ -124,22 +125,20 @@ export function ProfitLossPage() {
   return (
     <>
       <div className={MODULE_LIST_SHELL}>
-        <div className="flex flex-col xl:flex-row xl:items-center xl:justify-between gap-4">
-          <div>
-            <h2 className="text-xl font-extrabold text-slate-900 tracking-tight">Profit &amp; Loss Statement</h2>
-            <p className="text-xs text-slate-500 mt-1 font-medium">
-              View your business performance over a selected period.
-            </p>
-          </div>
-          <button
-            type="button"
-            onClick={() => openAdd()}
-            className="inline-flex items-center gap-2 self-start xl:self-auto bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold px-4 py-2.5 rounded-xl transition-colors cursor-pointer"
-          >
-            <Plus className="w-4 h-4" />
-            Add Line
-          </button>
-        </div>
+        <PageHeader
+          title="Profit &amp; Loss Statement"
+          subtitle="View your business performance over a selected period."
+          actions={
+            <button
+              type="button"
+              onClick={() => openAdd()}
+              className="inline-flex items-center gap-2 self-start xl:self-auto bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold px-4 py-2.5 rounded-xl transition-colors cursor-pointer"
+            >
+              <Plus className="w-4 h-4" />
+              Add Line
+            </button>
+          }
+        />
 
         <ProfitLossPeriodBar
           period={period}

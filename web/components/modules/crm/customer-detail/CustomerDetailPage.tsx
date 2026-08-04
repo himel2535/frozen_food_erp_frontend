@@ -13,17 +13,18 @@ import { OverviewTab } from '@/components/modules/crm/customer-detail/tabs/Overv
 import { ActivityTab } from '@/components/modules/crm/customer-detail/tabs/ActivityTab';
 import { NotesFilesTab } from '@/components/modules/crm/customer-detail/tabs/NotesFilesTab';
 import {
-  DELIVERY_COLUMNS,
   EntityListTab,
-  INVOICE_COLUMNS,
-  ORDER_COLUMNS,
-  PAYMENT_COLUMNS,
-  QUOTE_COLUMNS,
-  RETURN_COLUMNS,
+  getDeliveryColumns,
+  getInvoiceColumns,
+  getOrderColumns,
+  getPaymentColumns,
+  getQuoteColumns,
+  getReturnColumns,
   TransactionsTab,
 } from '@/components/modules/crm/customer-detail/tabs/EntityTabs';
 import { MODULE_LIST_SHELL } from '@/lib/ui/module-layout';
 import { useAppStore } from '@/lib/state/app-store';
+import { useLocaleFormat } from '@/hooks/useLocaleFormat';
 import {
   getCustomerProfile,
   getCustomerDetailMetrics,
@@ -36,7 +37,15 @@ export function CustomerDetailPage() {
   const params = useParams();
   const customerId = String(params?.id ?? '');
   const appState = useAppStore((s) => s.appState);
+  const { formatMoney } = useLocaleFormat();
   const [activeTab, setActiveTab] = useState<CustomerDetailTabId>('overview');
+
+  const invoiceColumns = useMemo(() => getInvoiceColumns(formatMoney), [formatMoney]);
+  const orderColumns = useMemo(() => getOrderColumns(formatMoney), [formatMoney]);
+  const paymentColumns = useMemo(() => getPaymentColumns(formatMoney), [formatMoney]);
+  const quoteColumns = useMemo(() => getQuoteColumns(formatMoney), [formatMoney]);
+  const deliveryColumns = useMemo(() => getDeliveryColumns(), []);
+  const returnColumns = useMemo(() => getReturnColumns(formatMoney), [formatMoney]);
 
   const profile = useMemo(
     () => (customerId ? getCustomerProfile(appState, customerId) : null),
@@ -131,27 +140,27 @@ export function CustomerDetailPage() {
       {activeTab === 'transactions' && <TransactionsTab transactions={transactions} />}
 
       {activeTab === 'invoices' && (
-        <EntityListTab rows={invoices} columns={INVOICE_COLUMNS} emptyMessage="No invoices for this customer." />
+        <EntityListTab rows={invoices} columns={invoiceColumns} emptyMessage="No invoices for this customer." />
       )}
 
       {activeTab === 'orders' && (
-        <EntityListTab rows={salesOrders} columns={ORDER_COLUMNS} emptyMessage="No orders for this customer." />
+        <EntityListTab rows={salesOrders} columns={orderColumns} emptyMessage="No orders for this customer." />
       )}
 
       {activeTab === 'payments' && (
-        <EntityListTab rows={payments} columns={PAYMENT_COLUMNS} emptyMessage="No payments recorded." />
+        <EntityListTab rows={payments} columns={paymentColumns} emptyMessage="No payments recorded." />
       )}
 
       {activeTab === 'quotes' && (
-        <EntityListTab rows={quotations} columns={QUOTE_COLUMNS} emptyMessage="No quotations for this customer." />
+        <EntityListTab rows={quotations} columns={quoteColumns} emptyMessage="No quotations for this customer." />
       )}
 
       {activeTab === 'deliveries' && (
-        <EntityListTab rows={deliveries} columns={DELIVERY_COLUMNS} emptyMessage="No delivery challans found." />
+        <EntityListTab rows={deliveries} columns={deliveryColumns} emptyMessage="No delivery challans found." />
       )}
 
       {activeTab === 'returns' && (
-        <EntityListTab rows={returns} columns={RETURN_COLUMNS} emptyMessage="No returns for this customer." />
+        <EntityListTab rows={returns} columns={returnColumns} emptyMessage="No returns for this customer." />
       )}
 
       {activeTab === 'activity' && <ActivityTab activities={activities} auditLogs={auditLogs} />}

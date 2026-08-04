@@ -4,6 +4,7 @@ import { toast, confirmAction } from '@/lib/ui/feedback';
 
 import { useMemo, useState } from 'react';
 import { Footer } from '@/components/layout/Footer';
+import { PageHeader } from '@/components/shared/PageHeader';
 import { KpiCards } from '@/components/shared/KpiCards';
 import { MODULE_LIST_SHELL } from '@/lib/ui/module-layout';
 import { AppTable, type AppTableColumn } from '@/components/shared/AppTable';
@@ -208,13 +209,14 @@ export function ProductsPage() {
 
   return (
     <div className={MODULE_LIST_SHELL}>
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-lg font-bold text-slate-900">Products Master</h1>
-          <p className="text-xs text-slate-500 mt-0.5">Manage catalog items, stock allocation, pricing, and reorder readiness.</p>
-        </div>
-        <button type="button" onClick={openCreate} className="bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold px-4 py-2.5 rounded-xl cursor-pointer">+ Add Product SKU</button>
-      </div>
+      <PageHeader
+        title="Products Master"
+        subtitle="Manage catalog items, stock allocation, pricing, and reorder readiness."
+        size="compact"
+        actions={
+          <button type="button" onClick={openCreate} className="bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold px-4 py-2.5 rounded-xl cursor-pointer">+ Add Product SKU</button>
+        }
+      />
 
       <KpiCards
         gridClassName="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-2"

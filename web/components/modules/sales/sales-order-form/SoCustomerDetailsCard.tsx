@@ -13,7 +13,7 @@ import {
 } from 'lucide-react';
 import type { SoCustomerSidebarProfile } from '@/components/modules/sales/sales-order-form/so-customer-profile';
 import { SO_SIDEBAR_CARD_CLS } from '@/components/modules/sales/sales-order-form/so-form-styles';
-import { formatMoney } from '@/lib/services/sales-service';
+import { useLocaleFormat } from '@/hooks/useLocaleFormat';
 import { StatusBadge } from '@/components/shared/StatusBadge';
 
 function StatCell({ label, value }: { label: string; value: string }) {
@@ -32,6 +32,7 @@ export function SoCustomerDetailsCard({
   customerId: string;
   profile: SoCustomerSidebarProfile | null;
 }) {
+  const { formatMoney, formatCount } = useLocaleFormat();
   return (
     <div className={`${SO_SIDEBAR_CARD_CLS} min-h-[320px] flex flex-col`}>
       <h3 className="text-sm font-extrabold text-slate-900">Customer Details</h3>
@@ -99,16 +100,16 @@ export function SoCustomerDetailsCard({
             <div className="grid grid-cols-2 gap-1.5">
               <StatCell
                 label="Credit Limit"
-                value={profile.creditLimit > 0 ? formatMoney(profile.creditLimit) : '—'}
+                value={profile.creditLimit > 0 ? formatMoney(profile.creditLimit, { decimals: 2 }) : '—'}
               />
-              <StatCell label="Outstanding" value={formatMoney(profile.outstanding)} />
-              <StatCell label="Open Orders" value={String(profile.salesOrderCount)} />
+              <StatCell label="Outstanding" value={formatMoney(profile.outstanding, { decimals: 2 })} />
+              <StatCell label="Open Orders" value={formatCount(profile.salesOrderCount)} />
               <StatCell label="Payment Terms" value={profile.paymentTerms} />
             </div>
             {profile.openReceivables > 0 ? (
               <p className="mt-2 flex items-center gap-1.5 text-[11px] text-amber-700 font-semibold">
                 <CreditCard className="w-3.5 h-3.5 shrink-0" />
-                Open receivables: {formatMoney(profile.openReceivables)}
+                Open receivables: {formatMoney(profile.openReceivables, { decimals: 2 })}
               </p>
             ) : null}
             {profile.lastOrderDate ? (

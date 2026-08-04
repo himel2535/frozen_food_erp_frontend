@@ -22,6 +22,7 @@ import {
 } from 'lucide-react';
 import { FormHeader } from '@/components/layout/FormHeader';
 import { MODULE_LIST_SHELL } from '@/lib/ui/module-layout';
+import { useAppStore } from '@/lib/state/app-store';
 import { FormSectionCard } from '@/components/modules/crm/customer-form/FormSectionCard';
 import { IconInput, IconSelect, IconTextarea } from '@/components/modules/crm/customer-form/IconField';
 import {
@@ -157,6 +158,7 @@ export function LeadForm({
   onCancel: () => void;
   onSave: (payload: LeadFormPayload) => void;
 }) {
+  const t = useAppStore((s) => s.t);
   const [form, setForm] = useState<LeadFormValues>(initialValues);
   const [errors, setErrors] = useState<LeadFormFieldError>({});
   const [showAdvanced, setShowAdvanced] = useState(false);
@@ -221,17 +223,17 @@ export function LeadForm({
         <div className="pt-3 md:pt-4 mb-3">
           <FormHeader
             compact
-            title={mode === 'edit' ? 'Edit Lead' : 'Create Lead'}
-            subtitle="Capture new lead information and assign for follow-up."
+            title={mode === 'edit' ? t('crm.edit_lead') : t('crm.create_lead')}
+            subtitle={t('crm.leads_subtitle')}
             onBack={onCancel}
           />
         </div>
 
         <div className="flex flex-col gap-4 flex-1">
-          <FormSectionCard number={1} title="Lead Information" subtitle="Basic information about the lead">
+          <FormSectionCard number={1} title={t('crm.form_lead_info')} subtitle={t('crm.form_lead_info_sub')}>
             <div className={LF_FIELD_GRID_CLS}>
               <IconInput
-                label="Lead Name"
+                label={t('crm.form_lead_name')}
                 icon={User}
                 required
                 fieldId="lf-field-name"
@@ -241,7 +243,7 @@ export function LeadForm({
                 placeholder="Enter full name"
               />
               <IconInput
-                label="Phone Number"
+                label={t('crm.form_phone')}
                 icon={Phone}
                 required
                 type="tel"
@@ -252,7 +254,7 @@ export function LeadForm({
                 placeholder="01XXXXXXXXX"
               />
               <IconInput
-                label="Alternative Phone"
+                label={t('crm.form_alt_phone')}
                 icon={Phone}
                 type="tel"
                 value={form.alternativePhone}
@@ -267,7 +269,7 @@ export function LeadForm({
                 placeholder="Enter company name (optional)"
               />
               <IconInput
-                label="Email"
+                label={t('common.email')}
                 icon={Mail}
                 type="email"
                 value={form.email}
@@ -275,7 +277,7 @@ export function LeadForm({
                 placeholder="Enter email address"
               />
               <IconSelect
-                label="Interested Product / Service"
+                label={t('crm.form_interested_product')}
                 icon={Package}
                 required
                 fieldId="lf-field-interestedProduct"
@@ -290,7 +292,7 @@ export function LeadForm({
               </IconSelect>
             </div>
             <IconTextarea
-              label="Customer Requirement"
+              label={t('crm.form_requirement')}
               icon={MessageSquare}
               className="mt-3"
               rows={3}
@@ -324,7 +326,7 @@ export function LeadForm({
             <FormSectionCard number={2} title="Source & Assignment" subtitle="Where did the lead come from and who will follow up">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-3 gap-y-3">
                 <IconSelect
-                  label="Lead Source"
+                  label={t('crm.form_lead_source')}
                   icon={Megaphone}
                   required
                   fieldId="lf-field-source"
@@ -363,7 +365,7 @@ export function LeadForm({
                   ))}
                 </IconSelect>
                 <IconSelect
-                  label="Assigned To"
+                  label={t('crm.form_assigned_to')}
                   icon={User}
                   required
                   fieldId="lf-field-assignedRepId"
@@ -383,7 +385,7 @@ export function LeadForm({
             <FormSectionCard number={3} title="Follow-up Information" subtitle="Lead status, priority, follow-up and deal information">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-3 gap-y-3">
                 <IconSelect
-                  label="Lead Status"
+                  label={t('crm.form_lead_status')}
                   icon={CircleDot}
                   required
                   fieldId="lf-field-status"
@@ -440,7 +442,7 @@ export function LeadForm({
                   </div>
                 </div>
                 <IconInput
-                  label="Estimated Deal Value (৳)"
+                  label={t('crm.form_estimated_value')}
                   icon={Banknote}
                   type="number"
                   min={0}
@@ -451,7 +453,7 @@ export function LeadForm({
                   className="sm:col-span-2"
                 />
                 <IconTextarea
-                  label="Notes"
+                  label={t('crm.form_notes')}
                   icon={FileText}
                   rows={3}
                   value={form.notes}

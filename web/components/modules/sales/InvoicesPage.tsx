@@ -6,6 +6,7 @@ import { useMemo, useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Download, Plus } from 'lucide-react';
 import { Footer } from '@/components/layout/Footer';
+import { PageHeader } from '@/components/shared/PageHeader';
 import { FilterTabs } from '@/components/shared/FilterTabs';
 import { AppTable, type AppTableColumn } from '@/components/shared/AppTable';
 import { StatusBadge } from '@/components/shared/StatusBadge';
@@ -17,13 +18,13 @@ import { listInvoices } from '@/lib/modules/sales-configs';
 import {
   createInvoice,
   deleteInvoice,
-  formatMoney,
   getCustomerBillingDefaults,
   markInvoiceSent,
   previewInvoiceNumber,
   resolveInvoiceCustomerLabel,
   updateInvoice,
 } from '@/lib/services/sales-service';
+import { useLocaleFormat } from '@/hooks/useLocaleFormat';
 import {
   InvoiceForm,
   EMPTY_INVOICE_FORM,
@@ -116,6 +117,7 @@ export function InvoicesPage() {
   const appState = useAppStore((s) => s.appState);
   const saveAppState = useAppStore((s) => s.saveAppState);
   const t = useAppStore((s) => s.t);
+  const { formatMoney } = useLocaleFormat();
   const [view, setView] = useState<'main' | 'form'>('main');
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
@@ -164,7 +166,7 @@ export function InvoicesPage() {
       render: (row) => formatMoney(Number(row.amount ?? row.total ?? 0)),
     },
     { key: 'status', label: 'Status', render: (row) => <StatusBadge status={String(row.status)} /> },
-  ], [appState]);
+  ], [appState, formatMoney]);
 
   const resetForm = () => {
     setFormValues({ ...EMPTY_INVOICE_FORM, items: [createEmptyLineItem()] });
@@ -324,30 +326,28 @@ export function InvoicesPage() {
   return (
     <>
       <div className={MODULE_LIST_SHELL}>
-        <div className="flex flex-col xl:flex-row xl:items-center xl:justify-between gap-4">
-          <div>
-            <h2 className="text-xl font-extrabold text-slate-900 tracking-tight">Invoices</h2>
-            <p className="text-xs text-slate-500 mt-1 font-medium max-w-2xl">
-              Invoice lifecycle, collections, credit exposure, recurring billing, and AR visibility in one operating screen.
-            </p>
-          </div>
-          <div className="flex flex-wrap items-center gap-2 self-start">
-            <button
-              type="button"
-              onClick={handleExport}
-              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl border border-slate-200 text-xs font-bold text-slate-600 hover:bg-slate-50 cursor-pointer"
-            >
-              <Download className="w-4 h-4" /> Export CSV
-            </button>
-            <button
-              type="button"
-              onClick={openCreate}
-              className="bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold px-4 py-2.5 rounded-xl transition-colors flex items-center gap-2 cursor-pointer"
-            >
-              <Plus className="w-4 h-4" /> Create Invoice
-            </button>
-          </div>
-        </div>
+        <PageHeader
+          title="Invoices"
+          subtitle="Invoice lifecycle, collections, credit exposure, recurring billing, and AR visibility in one operating screen."
+          actions={
+            <>
+              <button
+                type="button"
+                onClick={handleExport}
+                className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl border border-slate-200 text-xs font-bold text-slate-600 hover:bg-slate-50 cursor-pointer"
+              >
+                <Download className="w-4 h-4" /> Export CSV
+              </button>
+              <button
+                type="button"
+                onClick={openCreate}
+                className="bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold px-4 py-2.5 rounded-xl transition-colors flex items-center gap-2 cursor-pointer"
+              >
+                <Plus className="w-4 h-4" /> Create Invoice
+              </button>
+            </>
+          }
+        />
 
         <InvoiceDashboardMetrics summary={dashboardSummary} />
         <InvoiceAgingSnapshot aging={dashboardSummary.aging} />

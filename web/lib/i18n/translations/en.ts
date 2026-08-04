@@ -1,3 +1,5 @@
+import { salesCrmEn } from './sales-crm-en';
+
 export const en = {
     // Common
     "common.save": "Save",
@@ -917,5 +919,7 @@ export const en = {
     "projects.title": "Projects",
     "assets.title": "Asset Management",
     "approvals.title": "Workflow Approvals",
-    "notifications.title": "Notifications"
+    "notifications.title": "Notifications",
+
+    ...salesCrmEn,
 } as Record<string, string>;

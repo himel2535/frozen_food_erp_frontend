@@ -3,7 +3,7 @@
 import { Calculator, Pencil } from 'lucide-react';
 import { INV_SUMMARY_CLS } from '@/components/modules/sales/invoice-form/inv-form-styles';
 import type { InvoiceTotals } from '@/components/modules/sales/invoice-form/inv-form-types';
-import { formatMoney } from '@/lib/services/sales-service';
+import { useLocaleFormat } from '@/hooks/useLocaleFormat';
 
 export function InvoiceSummary({
   totals,
@@ -14,6 +14,7 @@ export function InvoiceSummary({
   onEditDiscount: () => void;
   onEditTax: () => void;
 }) {
+  const { formatMoney } = useLocaleFormat();
   return (
     <div className={INV_SUMMARY_CLS}>
       <div className="flex items-center gap-2 mb-4">
@@ -21,16 +22,16 @@ export function InvoiceSummary({
         <h3 className="text-sm font-extrabold text-slate-900">Summary</h3>
       </div>
       <div className="space-y-2.5">
-        <Row label="Subtotal" value={formatMoney(totals.subtotal)} />
+        <Row label="Subtotal" value={formatMoney(totals.subtotal, { decimals: 2 })} />
         <Row
           label="Discount"
-          value={formatMoney(totals.discountAmount)}
+          value={formatMoney(totals.discountAmount, { decimals: 2 })}
           onEdit={onEditDiscount}
         />
-        <Row label="Tax" value={formatMoney(totals.taxAmount)} onEdit={onEditTax} />
+        <Row label="Tax" value={formatMoney(totals.taxAmount, { decimals: 2 })} onEdit={onEditTax} />
         <div className="pt-3 border-t border-slate-200 flex items-center justify-between">
           <span className="text-sm font-extrabold text-blue-700">Total Amount</span>
-          <span className="text-lg font-extrabold text-blue-700">{formatMoney(totals.total)}</span>
+          <span className="text-lg font-extrabold text-blue-700">{formatMoney(totals.total, { decimals: 2 })}</span>
         </div>
       </div>
     </div>

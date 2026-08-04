@@ -6,11 +6,10 @@ import { useEffect, useMemo, useState } from 'react';
 
 import { useRouter } from 'next/navigation';
 
-import { Icon } from '@iconify/react';
-
 import { Plus } from 'lucide-react';
 
 import { Footer } from '@/components/layout/Footer';
+import { PageHeader } from '@/components/shared/PageHeader';
 
 import { MODULE_LIST_SHELL } from '@/lib/ui/module-layout';
 
@@ -172,43 +171,21 @@ export function PurchaseOrdersPage() {
 
     <div className={MODULE_LIST_SHELL}>
 
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-
-        <div className="flex items-start gap-3">
-
-          <span className="inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-amber-50 text-amber-600 shrink-0">
-
-            <Icon icon="fluent-color:document-add-24" width={28} height={28} />
-
-          </span>
-
-          <div>
-
-            <h1 className="text-lg font-bold text-slate-900">Purchase Orders</h1>
-
-            <p className="text-xs text-slate-500 mt-0.5">Create and track purchase orders with supplier workflows.</p>
-
-          </div>
-
-        </div>
-
-        <button
-
-          type="button"
-
-          onClick={() => router.push('/purchases/orders/new')}
-
-          className={`${PO_BTN_PRIMARY} self-start`}
-
-        >
-
-          <Plus className="w-4 h-4" />
-
-          Create PO
-
-        </button>
-
-      </div>
+      <PageHeader
+        title="Purchase Orders"
+        subtitle="Create and track purchase orders with supplier workflows."
+        size="compact"
+        actions={
+          <button
+            type="button"
+            onClick={() => router.push('/purchases/orders/new')}
+            className={`${PO_BTN_PRIMARY} self-start`}
+          >
+            <Plus className="w-4 h-4" />
+            Create PO
+          </button>
+        }
+      />
 
 
 

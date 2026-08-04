@@ -4,6 +4,7 @@ import { toast } from '@/lib/ui/feedback';
 
 import { useEffect, useMemo, useState } from 'react';
 import { Plus, Info } from 'lucide-react';
+import { PageHeader } from '@/components/shared/PageHeader';
 import { AppFormFields, AppFormModal } from '@/components/shared/AppForm';
 import { MODULE_LIST_SHELL } from '@/lib/ui/module-layout';
 import { useAppStore } from '@/lib/state/app-store';
@@ -155,36 +156,38 @@ export function CustomerDuePage() {
   return (
     <>
       <div className={MODULE_LIST_SHELL}>
-        <div className="flex flex-col xl:flex-row xl:items-center xl:justify-between gap-4">
-          <div>
-            <div className="flex items-center gap-2">
-              <h2 className="text-xl font-extrabold text-slate-900 tracking-tight">Customer Due &amp; Collection</h2>
+        <PageHeader
+          title={
+            <span className="inline-flex items-center gap-2">
+              Customer Due &amp; Collection
               <Info className="w-4 h-4 text-slate-400" aria-hidden />
-            </div>
-            <p className="text-xs text-slate-500 mt-1 font-medium">Manage receivables, follow-ups and collections.</p>
-          </div>
-          <div className="flex flex-wrap items-center gap-2 self-start xl:self-auto">
-            <button
-              type="button"
-              onClick={() => setShowAddDueModal(true)}
-              className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition-colors cursor-pointer"
-            >
-              <Plus className="w-4 h-4" />
-              Add Due
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                const target = selectedCustomer ?? allCustomers.find((c) => c.totalDue > 0);
-                if (target) openReceive(target);
-                else toast.error('Action required', { module: 'Accounting', description: 'Select a customer with outstanding due first.' });
-              }}
-              className="bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold px-4 py-2.5 rounded-xl transition-colors flex items-center gap-2 cursor-pointer"
-            >
-              Receive Payment
-            </button>
-          </div>
-        </div>
+            </span>
+          }
+          subtitle="Manage receivables, follow-ups and collections."
+          actions={
+            <>
+              <button
+                type="button"
+                onClick={() => setShowAddDueModal(true)}
+                className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition-colors cursor-pointer"
+              >
+                <Plus className="w-4 h-4" />
+                Add Due
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  const target = selectedCustomer ?? allCustomers.find((c) => c.totalDue > 0);
+                  if (target) openReceive(target);
+                  else toast.error('Action required', { module: 'Accounting', description: 'Select a customer with outstanding due first.' });
+                }}
+                className="bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold px-4 py-2.5 rounded-xl transition-colors flex items-center gap-2 cursor-pointer"
+              >
+                Receive Payment
+              </button>
+            </>
+          }
+        />
 
         <CustomerDueMetrics metrics={metrics} />
 

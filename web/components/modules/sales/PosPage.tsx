@@ -5,7 +5,9 @@ import { toast } from '@/lib/ui/feedback';
 import { useMemo, useState } from 'react';
 import { Search, ShoppingCart, Trash2 } from 'lucide-react';
 import { Footer } from '@/components/layout/Footer';
+import { PageHeader } from '@/components/shared/PageHeader';
 import { useAppStore } from '@/lib/state/app-store';
+import { useLocaleFormat } from '@/hooks/useLocaleFormat';
 import { posCheckout } from '@/lib/services/sales-service';
 
 interface CartItem {
@@ -16,16 +18,17 @@ interface CartItem {
   qty: number;
 }
 
-function formatCurrency(value: number) {
-  return `৳${Number(value || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-}
-
 export function PosPage() {
+  const t = useAppStore((s) => s.t);
   const appState = useAppStore((s) => s.appState);
   const saveAppState = useAppStore((s) => s.saveAppState);
+  const { formatMoney, formatNumber } = useLocaleFormat();
   const [search, setSearch] = useState('');
   const [cart, setCart] = useState<CartItem[]>([]);
-  const [customer, setCustomer] = useState('Walk-in Customer');
+  const [customer, setCustomer] = useState('');
+
+  const defaultCustomer = t('sales.pos_walk_in');
+  const customerValue = customer || defaultCustomer;
 
   const products = useMemo(() => {
     const inventory = Array.isArray(appState.inventory) ? appState.inventory : [];
@@ -48,7 +51,7 @@ export function PosPage() {
         ...prev,
         {
           id,
-          name: String(product.name ?? 'Product'),
+          name: String(product.name ?? t('common.product')),
           sku: String(product.sku ?? ''),
           price: Number(product.price ?? 0),
           qty: 1,
@@ -67,25 +70,27 @@ export function PosPage() {
 
   const checkout = () => {
     if (cart.length === 0) {
-      toast.error('Action required', { module: 'POS', description: "Cart is empty" });
+      toast.error('Action required', { module: 'POS', description: t('sales.pos_empty_cart') });
       return;
     }
-    const result = posCheckout(appState, { customer, cart: cart as unknown as Record<string, unknown>[], total: cartTotal });
+    const result = posCheckout(appState, { customer: customerValue, cart: cart as unknown as Record<string, unknown>[], total: cartTotal });
     if (!result.ok) {
       toast.error('Operation failed', { module: 'POS', description: 'error' in result ? String(result.error) : 'Checkout failed' });
       return;
     }
     saveAppState();
     setCart([]);
-    toast.info('Notice', { module: 'POS', description: `Sale complete! Order ${result.id} · ${formatCurrency(cartTotal)}` });
+    toast.info('Notice', { module: 'POS', description: `${result.id} · ${formatMoney(cartTotal)}` });
   };
 
   return (
     <div className="flex-1 overflow-y-auto p-6 md:p-8 space-y-6 flex flex-col">
-      <div>
-        <h1 className="text-lg font-bold text-slate-900">Point of Sale</h1>
-        <p className="text-xs text-slate-500 mt-0.5">Quick checkout terminal</p>
-      </div>
+      <PageHeader
+        title={t('sales.pos_title')}
+        subtitle={t('sales.pos_subtitle')}
+        size="compact"
+        layout="title-only"
+      />
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 flex-1">
         <div className="lg:col-span-2 space-y-4">
@@ -93,7 +98,7 @@ export function PosPage() {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
             <input
               type="search"
-              placeholder="Search products by name or SKU..."
+              placeholder={t('sales.pos_search_placeholder')}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 bg-white text-xs"
@@ -109,12 +114,12 @@ export function PosPage() {
               >
                 <p className="text-xs font-bold text-slate-800 truncate">{String(product.name)}</p>
                 <p className="text-[10px] text-slate-400">{String(product.sku ?? '')}</p>
-                <p className="text-xs text-blue-600 font-semibold mt-1">{formatCurrency(Number(product.price ?? 0))}</p>
-                <p className="text-[10px] text-slate-500">Stock: {String(product.stock ?? 0)}</p>
+                <p className="text-xs text-blue-600 font-semibold mt-1">{formatMoney(Number(product.price ?? 0))}</p>
+                <p className="text-[10px] text-slate-500">{t('sales.pos_stock')}: {formatNumber(Number(product.stock ?? 0))}</p>
               </button>
             ))}
             {products.length === 0 && (
-              <p className="col-span-full text-xs text-slate-400 text-center py-8">No products found</p>
+              <p className="col-span-full text-xs text-slate-400 text-center py-8">{t('sales.pos_no_products')}</p>
             )}
           </div>
         </div>
@@ -122,13 +127,14 @@ export function PosPage() {
         <div className="bg-white border border-slate-200 rounded-xl p-4 flex flex-col">
           <div className="flex items-center gap-2 mb-4">
             <ShoppingCart className="w-4 h-4 text-slate-600" />
-            <h2 className="text-sm font-bold text-slate-800">Cart ({cart.length})</h2>
+            <h2 className="text-sm font-bold text-slate-800">{t('sales.pos_cart')} ({cart.length})</h2>
           </div>
           <div className="mb-3">
-            <label className="text-[10px] font-semibold text-slate-500">Customer</label>
+            <label className="text-[10px] font-semibold text-slate-500">{t('sales.pos_customer')}</label>
             <input
               value={customer}
               onChange={(e) => setCustomer(e.target.value)}
+              placeholder={defaultCustomer}
               className="w-full mt-1 px-3 py-2 rounded-lg border border-slate-200 text-xs"
             />
           </div>
@@ -137,7 +143,7 @@ export function PosPage() {
               <div key={item.id} className="flex items-center gap-2 text-xs border-b border-slate-100 pb-2">
                 <div className="flex-1 min-w-0">
                   <p className="font-semibold text-slate-800 truncate">{item.name}</p>
-                  <p className="text-[10px] text-slate-400">{formatCurrency(item.price)} each</p>
+                  <p className="text-[10px] text-slate-400">{t('sales.pos_each', { amount: formatMoney(item.price) })}</p>
                 </div>
                 <input
                   type="number"
@@ -151,12 +157,12 @@ export function PosPage() {
                 </button>
               </div>
             ))}
-            {cart.length === 0 && <p className="text-xs text-slate-400 text-center py-6">Cart is empty</p>}
+            {cart.length === 0 && <p className="text-xs text-slate-400 text-center py-6">{t('sales.pos_empty_cart')}</p>}
           </div>
           <div className="mt-4 pt-4 border-t border-slate-200">
             <div className="flex justify-between text-sm font-bold text-slate-800 mb-3">
-              <span>Total</span>
-              <span>{formatCurrency(cartTotal)}</span>
+              <span>{t('sales.col_total')}</span>
+              <span>{formatMoney(cartTotal)}</span>
             </div>
             <button
               type="button"
@@ -164,7 +170,7 @@ export function PosPage() {
               disabled={cart.length === 0}
               className="w-full bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed text-white text-xs font-bold py-3 rounded-xl cursor-pointer"
             >
-              Complete Sale
+              {t('sales.pos_complete_sale')}
             </button>
           </div>
         </div>

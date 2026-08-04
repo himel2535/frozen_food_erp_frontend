@@ -22,6 +22,7 @@ export function leadAvatarClass(name: string) {
   return AVATAR_COLORS[code % AVATAR_COLORS.length];
 }
 
+/** @deprecated Use useLocaleFormat().formatMoney instead */
 export function formatLeadCurrency(value: number) {
   return `৳${Number(value || 0).toLocaleString('en-IN')}`;
 }

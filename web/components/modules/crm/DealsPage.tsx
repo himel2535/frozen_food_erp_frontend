@@ -5,10 +5,13 @@ import { toast } from '@/lib/ui/feedback';
 import { useMemo, useState } from 'react';
 import { Plus } from 'lucide-react';
 import { Footer } from '@/components/layout/Footer';
+import { PageHeader } from '@/components/shared/PageHeader';
 import { AppFormFields, AppFormModal, FORM_GRID_CLS, FORM_LABEL_CLS, FORM_SELECT_CLS } from '@/components/shared/AppForm';
 import { AppTable, type AppTableColumn } from '@/components/shared/AppTable';
 import { KanbanBoard, type KanbanCard } from '@/components/shared/KanbanBoard';
 import { useAppStore } from '@/lib/state/app-store';
+import { useLocaleFormat } from '@/hooks/useLocaleFormat';
+import { translateStatus } from '@/lib/i18n/resolve-label';
 import {
   DEAL_STAGES,
   DEAL_STAGE_LABELS,
@@ -42,11 +45,9 @@ const DEAL_FORM_FIELDS: PortField[] = [
   { key: 'notes', label: 'Notes', type: 'textarea', advanced: true },
 ];
 
-function formatCurrency(value: number) {
-  return `৳${Number(value || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-}
-
 export function DealsPage() {
+  const t = useAppStore((s) => s.t);
+  const { formatMoney, formatCount } = useLocaleFormat();
   const appState = useAppStore((s) => s.appState);
   const saveAppState = useAppStore((s) => s.saveAppState);
   const [view, setView] = useState<'main' | 'form'>('main');
@@ -82,7 +83,7 @@ export function DealsPage() {
   const columns = useMemo(() => {
     return DEAL_STAGES.map((stage) => ({
       id: stage,
-      title: DEAL_STAGE_LABELS[stage as keyof typeof DEAL_STAGE_LABELS] || stage,
+      title: translateStatus(t, stage),
       cards: deals
         .filter((d) => d.stage === stage)
         .map(
@@ -90,17 +91,17 @@ export function DealsPage() {
             id: String(d.id),
             title: String(d.title),
             subtitle: String(d.company),
-            meta: formatCurrency(Number(d.expectedValue || 0)),
+            meta: formatMoney(Number(d.expectedValue || 0)),
             stage,
           })
         ),
     }));
-  }, [deals]);
+  }, [deals, t, formatMoney]);
 
   const dealListColumns = useMemo<AppTableColumn<Record<string, unknown>>[]>(() => [
     {
       key: 'title',
-      label: 'Deal',
+      label: t('crm.col_deal'),
       render: (row) => (
         <>
           <div className="font-bold">{String(row.title)}</div>
@@ -110,15 +111,15 @@ export function DealsPage() {
     },
     {
       key: 'stage',
-      label: 'Stage',
-      render: (row) => DEAL_STAGE_LABELS[row.stage as keyof typeof DEAL_STAGE_LABELS] || String(row.stage),
+      label: t('crm.col_stage'),
+      render: (row) => translateStatus(t, String(row.stage)),
     },
     {
       key: 'value',
-      label: 'Value',
-      render: (row) => <span className="font-bold">{formatCurrency(Number(row.expectedValue || 0))}</span>,
+      label: t('crm.col_value'),
+      render: (row) => <span className="font-bold">{formatMoney(Number(row.expectedValue || 0))}</span>,
     },
-  ], []);
+  ], [t, formatMoney]);
 
   const resetForm = () => {
     setForm({
@@ -215,32 +216,33 @@ export function DealsPage() {
   return (
     <>
     <div className={MODULE_LIST_SHELL}>
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-lg font-bold text-slate-900">Deals & Pipeline</h1>
-          <p className="text-xs text-slate-500 mt-0.5">Track deal stages, values, and follow-ups · {deals.length} deals · {formatCurrency(pipelineValue)} pipeline</p>
-        </div>
-        <div className="flex items-center gap-2">
-          <button type="button" onClick={() => setLayoutMode('kanban')} className={`px-3 py-1.5 rounded-lg text-xs font-bold cursor-pointer ${layoutMode === 'kanban' ? 'bg-blue-600 text-white' : 'bg-slate-100'}`}>Kanban</button>
-          <button type="button" onClick={() => setLayoutMode('table')} className={`px-3 py-1.5 rounded-lg text-xs font-bold cursor-pointer ${layoutMode === 'table' ? 'bg-blue-600 text-white' : 'bg-slate-100'}`}>Table</button>
-          <input
-            type="search"
-            placeholder="Search deals..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="bg-slate-50 border border-slate-200 text-xs rounded-xl px-3 py-2 w-48"
-          />
-          <button type="button" onClick={openCreate} className="flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold px-4 py-2.5 rounded-xl cursor-pointer">
-            <Plus className="w-4 h-4" /> Add Deal
-          </button>
-        </div>
-      </div>
+      <PageHeader
+        title={t('crm.deals_title')}
+        subtitle={`${t('crm.deals_subtitle')} · ${formatCount(deals.length)} · ${formatMoney(pipelineValue)}`}
+        size="compact"
+        actions={
+          <div className="flex items-center gap-2">
+            <button type="button" onClick={() => setLayoutMode('kanban')} className={`px-3 py-1.5 rounded-lg text-xs font-bold cursor-pointer ${layoutMode === 'kanban' ? 'bg-blue-600 text-white' : 'bg-slate-100'}`}>{t('crm.layout_kanban')}</button>
+            <button type="button" onClick={() => setLayoutMode('table')} className={`px-3 py-1.5 rounded-lg text-xs font-bold cursor-pointer ${layoutMode === 'table' ? 'bg-blue-600 text-white' : 'bg-slate-100'}`}>{t('crm.layout_table')}</button>
+            <input
+              type="search"
+              placeholder={t('crm.search_deals')}
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="bg-slate-50 border border-slate-200 text-xs rounded-xl px-3 py-2 w-48"
+            />
+            <button type="button" onClick={openCreate} className="flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold px-4 py-2.5 rounded-xl cursor-pointer">
+              <Plus className="w-4 h-4" /> {t('crm.add_deal')}
+            </button>
+          </div>
+        }
+      />
 
       <KpiCards items={[
-        { key: 'open', label: 'Open Deals', value: String(metrics.totalDeals ?? 0), sub: formatCurrency(Number(metrics.pipelineValue ?? 0)) },
-        { key: 'won', label: 'Won Deals', value: String(metrics.wonDeals ?? 0) },
-        { key: 'forecast', label: 'Weighted Forecast', value: formatCurrency(Number(metrics.forecastValue ?? 0)) },
-        { key: 'avg', label: 'Avg Deal Size', value: formatCurrency(Number(metrics.averageDealSize ?? 0)) },
+        { key: 'open', label: t('sales.kpi_open'), value: formatCount(Number(metrics.totalDeals ?? 0)), sub: formatMoney(Number(metrics.pipelineValue ?? 0)) },
+        { key: 'won', label: translateStatus(t, 'won'), value: formatCount(Number(metrics.wonDeals ?? 0)) },
+        { key: 'forecast', label: t('sales.kpi_total_value'), value: formatMoney(Number(metrics.forecastValue ?? 0)) },
+        { key: 'avg', label: t('crm.col_value'), value: formatMoney(Number(metrics.averageDealSize ?? 0)) },
       ]} />
 
       {layoutMode === 'kanban' ? (
@@ -249,7 +251,7 @@ export function DealsPage() {
         <AppTable
           columns={dealListColumns}
           rows={deals}
-          emptyMessage="No deals found."
+          emptyMessage={t('crm.no_records_yet')}
           onRowClick={(row) => setDetailId(String(row.id))}
         />
       )}
@@ -267,15 +269,15 @@ export function DealsPage() {
           <div className="space-y-4 text-xs">
             <div className="grid grid-cols-2 gap-2">
               <div>Stage: <strong>{DEAL_STAGE_LABELS[detailDeal.stage as keyof typeof DEAL_STAGE_LABELS]}</strong></div>
-              <div>Value: <strong>{formatCurrency(Number(detailDeal.expectedValue || 0))}</strong></div>
+              <div>Value: <strong>{formatMoney(Number(detailDeal.expectedValue || 0))}</strong></div>
             </div>
             <ul className="space-y-2">{(timeline as Array<Record<string, unknown>>).map((e, i) => (
               <li key={i} className="border-l-2 border-blue-200 pl-3">{String(e.summary ?? e.type ?? e.note)}</li>
             ))}</ul>
             <div className="flex gap-2">
-              <button type="button" className="px-3 py-2 bg-emerald-600 text-white font-bold rounded-xl cursor-pointer" onClick={() => { markDealWon(appState, String(detailDeal.id), {}); saveAppState(); setDetailId(null); }}>Mark Won</button>
-              <button type="button" className="px-3 py-2 bg-rose-600 text-white font-bold rounded-xl cursor-pointer" onClick={() => { markDealLost(appState, String(detailDeal.id), {}); saveAppState(); setDetailId(null); }}>Mark Lost</button>
-              <button type="button" className="px-3 py-2 border border-slate-200 font-bold rounded-xl cursor-pointer" onClick={() => openEdit(String(detailDeal.id))}>Edit</button>
+              <button type="button" className="px-3 py-2 bg-emerald-600 text-white font-bold rounded-xl cursor-pointer" onClick={() => { markDealWon(appState, String(detailDeal.id), {}); saveAppState(); setDetailId(null); }}>{t('crm.mark_won')}</button>
+              <button type="button" className="px-3 py-2 bg-rose-600 text-white font-bold rounded-xl cursor-pointer" onClick={() => { markDealLost(appState, String(detailDeal.id), {}); saveAppState(); setDetailId(null); }}>{t('crm.mark_lost_deal')}</button>
+              <button type="button" className="px-3 py-2 border border-slate-200 font-bold rounded-xl cursor-pointer" onClick={() => openEdit(String(detailDeal.id))}>{t('common.edit')}</button>
             </div>
           </div>
         )}

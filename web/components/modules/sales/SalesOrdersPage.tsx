@@ -6,6 +6,7 @@ import { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Plus } from 'lucide-react';
 import { Footer } from '@/components/layout/Footer';
+import { PageHeader } from '@/components/shared/PageHeader';
 import { FilterTabs } from '@/components/shared/FilterTabs';
 import { KpiCards } from '@/components/shared/KpiCards';
 import { AppTable, type AppTableColumn } from '@/components/shared/AppTable';
@@ -14,54 +15,62 @@ import { TableIconAction } from '@/components/shared/TableIconAction';
 import { MODULE_LIST_SHELL } from '@/lib/ui/module-layout';
 import { CF_BTN_PRIMARY } from '@/components/modules/crm/customer-form/customer-form-styles';
 import { useAppStore } from '@/lib/state/app-store';
+import { useLocaleFormat } from '@/hooks/useLocaleFormat';
+import { translateStatus, type TranslateFn } from '@/lib/i18n/resolve-label';
 import {
   deleteSalesOrder,
-  formatMoney,
   listSalesOrders,
 } from '@/lib/services/sales-service';
 import type { PoLineItem } from '@/lib/services/purchases-service';
 
-const STATUS_TABS = [
-  { id: 'all', label: 'All' },
-  { id: 'draft', label: 'Draft' },
-  { id: 'confirmed', label: 'Confirmed' },
-  { id: 'processing', label: 'Processing' },
-  { id: 'fulfilled', label: 'Fulfilled' },
-];
-
-function summarizeItems(row: Record<string, unknown>): string {
+function summarizeItems(row: Record<string, unknown>, t: TranslateFn): string {
   const items = Array.isArray(row.items) ? (row.items as PoLineItem[]) : [];
   if (items.length) {
     const active = items.filter((i) => String(i.description ?? (i as Record<string, unknown>).name ?? '').trim() || i.productId);
     if (!active.length) return '—';
     if (active.length === 1) {
-      const desc = active[0].description || String((active[0] as Record<string, unknown>).name ?? '1 item');
+      const desc = active[0].description || String((active[0] as Record<string, unknown>).name ?? t('sales.one_item'));
       return desc;
     }
-    const first = active[0].description || String((active[0] as Record<string, unknown>).name ?? 'Item');
-    return `${first} +${active.length - 1} more`;
+    const first = active[0].description || String((active[0] as Record<string, unknown>).name ?? t('sales.item_label'));
+    return t('sales.items_more', { first, n: active.length - 1 });
   }
   return '—';
 }
 
-function orderKpis(rows: Record<string, unknown>[]) {
+function orderKpis(
+  rows: Record<string, unknown>[],
+  t: TranslateFn,
+  formatMoney: (n: number) => string,
+  formatCount: (n: number) => string,
+) {
   const total = rows.reduce((s, r) => s + Number(r.total ?? 0), 0);
   const open = rows.filter((r) => !['fulfilled', 'cancelled'].includes(String(r.status).toLowerCase())).length;
   const fulfilled = rows.filter((r) => String(r.status).toLowerCase() === 'fulfilled').length;
   return [
-    { key: 'count', label: 'Total Orders', value: String(rows.length) },
-    { key: 'open', label: 'Open Orders', value: String(open) },
-    { key: 'value', label: 'Total Value', value: formatMoney(total) },
-    { key: 'fulfilled', label: 'Fulfilled', value: String(fulfilled) },
+    { key: 'count', label: t('sales.orders_kpi_total'), value: formatCount(rows.length) },
+    { key: 'open', label: t('sales.orders_kpi_open'), value: formatCount(open) },
+    { key: 'value', label: t('sales.kpi_total_value'), value: formatMoney(total) },
+    { key: 'fulfilled', label: t('sales.orders_kpi_fulfilled'), value: formatCount(fulfilled) },
   ];
 }
 
 export function SalesOrdersPage() {
   const router = useRouter();
+  const t = useAppStore((s) => s.t);
   const appState = useAppStore((s) => s.appState);
   const saveAppState = useAppStore((s) => s.saveAppState);
+  const { formatMoney, formatCount } = useLocaleFormat();
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
+
+  const statusTabs = useMemo(() => [
+    { id: 'all', label: t('common.all') },
+    { id: 'draft', label: translateStatus(t, 'draft') },
+    { id: 'confirmed', label: translateStatus(t, 'confirmed') },
+    { id: 'processing', label: translateStatus(t, 'processing') },
+    { id: 'fulfilled', label: translateStatus(t, 'fulfilled') },
+  ], [t]);
 
   const allRows = useMemo(() => listSalesOrders(appState), [appState]);
 
@@ -70,85 +79,90 @@ export function SalesOrdersPage() {
     if (search) {
       const q = search.toLowerCase();
       data = data.filter((row) =>
-        `${row.id} ${row.customer} ${summarizeItems(row)}`.toLowerCase().includes(q),
+        `${row.id} ${row.customer} ${summarizeItems(row, t)}`.toLowerCase().includes(q),
       );
     }
     if (statusFilter !== 'all') {
       data = data.filter((row) => String(row.status).toLowerCase() === statusFilter);
     }
     return data;
-  }, [allRows, search, statusFilter]);
+  }, [allRows, search, statusFilter, t]);
 
-  const kpis = useMemo(() => orderKpis(allRows), [allRows]);
+  const kpis = useMemo(() => orderKpis(allRows, t, formatMoney, formatCount), [allRows, t, formatMoney, formatCount]);
 
   const columns = useMemo<AppTableColumn<Record<string, unknown>>[]>(() => [
     {
       key: 'id',
-      label: 'Order #',
+      label: t('sales.col_order_number'),
       render: (row) => <span className="font-bold text-slate-900">{String(row.id)}</span>,
     },
     {
       key: 'customer',
-      label: 'Customer',
+      label: t('sales.col_customer'),
       render: (row) => String(row.customer ?? row.customerName ?? '—'),
     },
     {
       key: 'items',
-      label: 'Items',
-      render: (row) => <span className="text-slate-600">{summarizeItems(row)}</span>,
+      label: t('common.items'),
+      render: (row) => <span className="text-slate-600">{summarizeItems(row, t)}</span>,
     },
     {
       key: 'total',
-      label: 'Total',
+      label: t('sales.col_total'),
       render: (row) => <span className="font-bold">{formatMoney(Number(row.total ?? 0))}</span>,
     },
     {
       key: 'date',
-      label: 'Date',
+      label: t('sales.col_date'),
       render: (row) => String(row.date ?? '—'),
     },
     {
       key: 'status',
-      label: 'Status',
+      label: t('sales.col_status'),
       render: (row) => <StatusBadge status={String(row.status)} />,
     },
-  ], []);
+  ], [t, formatMoney]);
 
   const handleDelete = async (id: string) => {
-    const __ok = await confirmAction({ title: "Delete this sales order", message: "Delete this sales order?", confirmLabel: 'Delete', tone: 'danger', module: 'Sales' }); if (!__ok) return;
+    const __ok = await confirmAction({
+      title: t('sales.delete_order'),
+      message: t('common.delete_confirm'),
+      confirmLabel: t('common.delete'),
+      tone: 'danger',
+      module: t('sales.orders_title'),
+    });
+    if (!__ok) return;
     deleteSalesOrder(appState, id);
     saveAppState();
   };
 
   return (
     <div className={MODULE_LIST_SHELL}>
-      <div className="flex flex-col xl:flex-row xl:items-center xl:justify-between gap-4">
-        <div>
-          <h2 className="text-xl font-extrabold text-slate-900 tracking-tight">Sales Orders</h2>
-          <p className="text-xs text-slate-500 mt-1 font-medium max-w-2xl">
-            Manage confirmed orders, fulfillment, and invoicing.
-          </p>
-        </div>
-        <button
-          type="button"
-          onClick={() => router.push('/sales/orders/new')}
-          className={CF_BTN_PRIMARY}
-        >
-          <Plus className="w-4 h-4" /> Create Order
-        </button>
-      </div>
+      <PageHeader
+        title={t('sales.orders_title')}
+        subtitle={t('sales.orders_subtitle')}
+        actions={
+          <button
+            type="button"
+            onClick={() => router.push('/sales/orders/new')}
+            className={CF_BTN_PRIMARY}
+          >
+            <Plus className="w-4 h-4" /> {t('sales.create_order')}
+          </button>
+        }
+      />
 
       <div className="mt-4">
         <KpiCards items={kpis} />
       </div>
 
       <div className="mt-4 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
-        <FilterTabs tabs={STATUS_TABS} active={statusFilter} onChange={setStatusFilter} />
+        <FilterTabs tabs={statusTabs} active={statusFilter} onChange={setStatusFilter} />
         <input
           type="search"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          placeholder="Search order #, customer, items..."
+          placeholder={t('sales.search_orders_placeholder')}
           className="w-full lg:w-72 px-3 py-2 rounded-xl border border-slate-200 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400"
         />
       </div>
@@ -158,6 +172,7 @@ export function SalesOrdersPage() {
           columns={columns}
           rows={rows}
           rowKey={(row) => String(row.id)}
+          emptyMessage={t('sales.no_orders')}
           renderActions={(row) => (
             <div className="flex items-center gap-2">
               <TableIconAction variant="edit" onClick={() => router.push(`/sales/orders/${String(row.id)}/edit`)} />

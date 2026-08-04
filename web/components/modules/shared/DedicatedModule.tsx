@@ -15,6 +15,8 @@ import { StatusBadge } from '@/components/shared/StatusBadge';
 import { TableIconAction } from '@/components/shared/TableIconAction';
 import { useLegacyParityConfig } from '@/hooks/use-legacy-parity-config';
 import { useAppStore } from '@/lib/state/app-store';
+import { useLocaleFormat } from '@/hooks/useLocaleFormat';
+import { DEDICATED_MODULE_I18N, resolveLabel, type TranslateFn } from '@/lib/i18n/resolve-label';
 import type { PortModuleConfig } from '@/lib/modules/port-types';
 import type { AppState } from '@/lib/state/types';
 
@@ -62,10 +64,30 @@ export function DedicatedModule({
     );
   }
 
-  return <DedicatedModuleView config={activeConfig} />;
+  return <DedicatedModuleView config={activeConfig} configId={configId} />;
 }
 
-function DedicatedModuleView({ config }: { config: DedicatedModuleConfig }) {
+function resolveModuleText(
+  t: TranslateFn,
+  configId: string | undefined,
+  config: DedicatedModuleConfig,
+  field: 'title' | 'subtitle' | 'addLabel' | 'searchPlaceholder',
+): string {
+  const keys = configId ? DEDICATED_MODULE_I18N[configId] : undefined;
+  if (keys?.[field]) return t(keys[field]!);
+  const raw = field === 'title' ? config.title
+    : field === 'subtitle' ? config.subtitle
+    : field === 'addLabel' ? (config.addLabel ?? '')
+    : '';
+  if (field === 'searchPlaceholder') {
+    return t('crm.search_module', { title: resolveLabel(t, config.title).toLowerCase() });
+  }
+  return resolveLabel(t, raw);
+}
+
+function DedicatedModuleView({ config, configId }: { config: DedicatedModuleConfig; configId?: string }) {
+  const t = useAppStore((s) => s.t);
+  const { formatCount, formatMoney } = useLocaleFormat();
   const appState = useAppStore((s) => s.appState);
   const saveAppState = useAppStore((s) => s.saveAppState);
   const [view, setView] = useState<'main' | 'form'>('main');
@@ -96,13 +118,38 @@ function DedicatedModuleView({ config }: { config: DedicatedModuleConfig }) {
     return data;
   }, [appState, config, search, filterValues, statusFilter]);
 
+  const moduleTitle = resolveModuleText(t, configId, config, 'title');
+  const moduleSubtitle = resolveModuleText(t, configId, config, 'subtitle');
+
+  const localizeKpiValue = (value: string): string => {
+    const raw = String(value ?? '').trim();
+    if (/^\d+$/.test(raw)) return formatCount(Number(raw));
+    // Money from legacy helpers: "৳1,234.56" or "৳1234"
+    const moneyMatch = raw.match(/^৳\s*([\d,]+(?:\.\d+)?)$/);
+    if (moneyMatch) {
+      const n = Number(moneyMatch[1].replace(/,/g, ''));
+      if (!Number.isNaN(n)) return formatMoney(n, { decimals: 2 });
+    }
+    return raw;
+  };
+
   const kpis = useMemo(() => {
-    if (config.kpi) return config.kpi(rows);
+    if (config.kpi) {
+      return config.kpi(rows).map((item) => ({
+        ...item,
+        label: resolveLabel(t, item.label),
+        value: localizeKpiValue(String(item.value ?? '')),
+      }));
+    }
     return [
-      { key: 'total', label: `Total ${config.title}`, value: String(rows.length) },
-      { key: 'active', label: 'Active Records', value: String(rows.filter((r) => ['active', 'approved', 'paid', 'completed', 'received', 'present'].includes(String(r.status ?? '').toLowerCase())).length) },
+      { key: 'total', label: t('common.total_entity', { title: moduleTitle }), value: formatCount(rows.length) },
+      {
+        key: 'active',
+        label: t('crm.kpi_active_records'),
+        value: formatCount(rows.filter((r) => ['active', 'approved', 'paid', 'completed', 'received', 'present'].includes(String(r.status ?? '').toLowerCase())).length),
+      },
     ];
-  }, [config, rows]);
+  }, [config, rows, t, moduleTitle, formatCount, formatMoney]);
 
   const buildFormState = (initial: Record<string, unknown>) => {
     const next: Record<string, string> = {};
@@ -153,19 +200,23 @@ function DedicatedModuleView({ config }: { config: DedicatedModuleConfig }) {
     resetForm();
   };
 
-  const entityLabel = config.title.replace(/s$/, '');
+  const entityLabel = moduleTitle.replace(/s$/, '');
 
-  const tabs = config.statusTabs ?? [{ id: 'all', label: 'All' }, { id: 'active', label: 'Active' }, { id: 'pending', label: 'Pending' }];
+  const tabs = (config.statusTabs ?? [
+    { id: 'all', label: 'common.all' },
+    { id: 'active', label: 'common.active' },
+    { id: 'pending', label: 'common.pending' },
+  ]).map((tab) => ({ ...tab, label: resolveLabel(t, tab.label) }));
 
   return (
     <>
     <div className={MODULE_LIST_SHELL}>
       <ListToolbar
-        title={config.title}
-        subtitle={config.subtitle}
+        title={moduleTitle}
+        subtitle={moduleSubtitle}
         search={search}
         onSearchChange={setSearch}
-        searchPlaceholder={`Search ${config.title.toLowerCase()}...`}
+        searchPlaceholder={resolveModuleText(t, configId, config, 'searchPlaceholder')}
         onAdd={() => {
           if (config.onAdd) {
             config.onAdd();
@@ -174,14 +225,14 @@ function DedicatedModuleView({ config }: { config: DedicatedModuleConfig }) {
           resetForm();
           setView('form');
         }}
-        addLabel={config.addLabel ?? `Add ${entityLabel}`}
+        addLabel={config.addLabel ? resolveLabel(t, config.addLabel) : resolveModuleText(t, configId, config, 'addLabel') || t('crm.add_entity', { entity: entityLabel })}
         filters={
           <>
             <FilterTabs tabs={tabs} active={statusFilter} onChange={setStatusFilter} />
             {config.filters?.map((f) => (
               <select key={f.key} value={filterValues[f.key] ?? 'all'} onChange={(e) => setFilterValues({ ...filterValues, [f.key]: e.target.value })} className="bg-slate-50 border border-slate-200 text-xs font-semibold rounded-xl px-3 py-2 cursor-pointer">
-                <option value="all">All {f.label}</option>
-                {f.options.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+                <option value="all">{t('common.all_filter', { label: resolveLabel(t, f.label) })}</option>
+                {f.options.map((o) => <option key={o.value} value={o.value}>{resolveLabel(t, o.label)}</option>)}
               </select>
             ))}
           </>
@@ -196,14 +247,14 @@ function DedicatedModuleView({ config }: { config: DedicatedModuleConfig }) {
       <AppTable
         columns={config.columns.map((col) => ({
           key: col.key,
-          label: col.label,
+          label: resolveLabel(t, col.label),
           render: (row) =>
             col.render?.(row)
             ?? config.columnRender?.[col.key]?.(row)
             ?? (col.key === 'status' ? <StatusBadge status={String(row.status ?? '—')} /> : String(row[col.key] ?? '—')),
         }))}
         rows={rows}
-        emptyMessage="No records yet"
+        emptyMessage={t('common.no_records_yet')}
         onRowClick={config.onRowClick}
         rowClassName={config.rowClassName}
         renderActions={(row) => (
@@ -225,7 +276,13 @@ function DedicatedModuleView({ config }: { config: DedicatedModuleConfig }) {
                   <TableIconAction
                     variant="delete"
                     onClick={() => {
-                      confirmAction({ title: 'Delete', message: 'Delete?', confirmLabel: 'Delete', tone: 'danger', module: 'Module' }).then((__ok) => {
+                      confirmAction({
+                        title: t('common.delete'),
+                        message: t('common.delete_confirm'),
+                        confirmLabel: t('common.delete'),
+                        tone: 'danger',
+                        module: moduleTitle,
+                      }).then((__ok) => {
                         if (!__ok) return;
                         config.adapter.delete!(appState, String(row.id));
                         saveAppState();
@@ -244,17 +301,17 @@ function DedicatedModuleView({ config }: { config: DedicatedModuleConfig }) {
     <AppFormModal
       open={view === 'form'}
       onClose={handleBack}
-      title={config.formModalTitle?.(editingId) ?? (editingId ? `Edit ${entityLabel}` : `Create ${entityLabel}`)}
-      subtitle={config.formModalSubtitle?.(editingId) ?? config.subtitle}
+      title={config.formModalTitle?.(editingId) ?? (editingId ? t('crm.edit_entity', { entity: entityLabel }) : t('crm.create_entity', { entity: entityLabel }))}
+      subtitle={config.formModalSubtitle?.(editingId) ?? moduleSubtitle}
       onSubmit={handleSubmit}
-      submitLabel={config.formSubmitLabel?.(editingId) ?? (editingId ? 'Save' : 'Create')}
+      submitLabel={config.formSubmitLabel?.(editingId) ?? (editingId ? t('common.save') : t('common.create'))}
       size={config.formModalSize ?? 'md'}
     >
       {config.customFormBody ? (
         config.customFormBody({ form, setField, editingId, appState })
       ) : (
         <AppFormFields
-          fields={config.fields}
+          fields={config.fields.map((f) => ({ ...f, label: resolveLabel(t, f.label) }))}
           values={form}
           onChange={setField}
           showAdvanced={showAdvanced}

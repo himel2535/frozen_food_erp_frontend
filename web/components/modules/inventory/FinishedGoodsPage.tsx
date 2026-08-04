@@ -5,6 +5,7 @@ import { toast } from '@/lib/ui/feedback';
 import { useMemo, useState } from 'react';
 import { ChevronDown, Calculator, Download, Info, Layers, Package, Settings2 } from 'lucide-react';
 import { Footer } from '@/components/layout/Footer';
+import { PageHeader } from '@/components/shared/PageHeader';
 import { AppFormFields, AppFormModal, FORM_GRID_CLS, FORM_LABEL_CLS } from '@/components/shared/AppForm';
 import { AppTable, type AppTableColumn } from '@/components/shared/AppTable';
 import { FilterTabs } from '@/components/shared/FilterTabs';
@@ -520,49 +521,50 @@ export function FinishedGoodsPage() {
   return (
     <>
       <div className={MODULE_LIST_SHELL}>
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div>
-            <h1 className="text-lg font-bold text-slate-900">Finished Goods Inventory</h1>
-            <p className="text-xs text-slate-500 mt-0.5">Manage completed and ready-to-deliver product inventory.</p>
-          </div>
-          <div className="relative self-start">
-            <div className="flex">
-              <button
-                type="button"
-                onClick={openCreate}
-                className="bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold px-4 py-2.5 rounded-l-xl cursor-pointer"
-              >
-                + Add Finished Product
-              </button>
-              <button
-                type="button"
-                onClick={() => setShowAddMenu((v) => !v)}
-                className="bg-blue-600 hover:bg-blue-700 text-white px-2.5 py-2.5 rounded-r-xl border-l border-blue-500 cursor-pointer"
-                aria-label="More add options"
-              >
-                <ChevronDown className="w-4 h-4" />
-              </button>
-            </div>
-            {showAddMenu ? (
-              <div className="absolute right-0 top-full mt-1 z-20 min-w-[160px] rounded-xl border border-slate-200 bg-white shadow-lg py-1">
+        <PageHeader
+          title="Finished Goods Inventory"
+          subtitle="Manage completed and ready-to-deliver product inventory."
+          size="compact"
+          actions={
+            <div className="relative self-start">
+              <div className="flex">
                 <button
                   type="button"
-                  onClick={() => { setShowAddMenu(false); toast.info('Feature coming soon', { module: 'Inventory', description: "Import products" }); }}
-                  className="w-full text-left px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 cursor-pointer"
+                  onClick={openCreate}
+                  className="bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold px-4 py-2.5 rounded-l-xl cursor-pointer"
                 >
-                  Import Products
+                  + Add Finished Product
                 </button>
                 <button
                   type="button"
-                  onClick={() => { setShowAddMenu(false); toast.info('Feature coming soon', { module: 'Inventory', description: "Bulk add" }); }}
-                  className="w-full text-left px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 cursor-pointer"
+                  onClick={() => setShowAddMenu((v) => !v)}
+                  className="bg-blue-600 hover:bg-blue-700 text-white px-2.5 py-2.5 rounded-r-xl border-l border-blue-500 cursor-pointer"
+                  aria-label="More add options"
                 >
-                  Bulk Add
+                  <ChevronDown className="w-4 h-4" />
                 </button>
               </div>
-            ) : null}
-          </div>
-        </div>
+              {showAddMenu ? (
+                <div className="absolute right-0 top-full mt-1 z-20 min-w-[160px] rounded-xl border border-slate-200 bg-white shadow-lg py-1">
+                  <button
+                    type="button"
+                    onClick={() => { setShowAddMenu(false); toast.info('Feature coming soon', { module: 'Inventory', description: "Import products" }); }}
+                    className="w-full text-left px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 cursor-pointer"
+                  >
+                    Import Products
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => { setShowAddMenu(false); toast.info('Feature coming soon', { module: 'Inventory', description: "Bulk add" }); }}
+                    className="w-full text-left px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 cursor-pointer"
+                  >
+                    Bulk Add
+                  </button>
+                </div>
+              ) : null}
+            </div>
+          }
+        />
 
         <KpiCards
           gridClassName="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2"

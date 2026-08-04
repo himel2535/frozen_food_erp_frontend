@@ -17,7 +17,8 @@ import { AppTable } from '@/components/shared/AppTable';
 import { StatusBadge } from '@/components/shared/StatusBadge';
 import { TableIconAction } from '@/components/shared/TableIconAction';
 import { useAppStore } from '@/lib/state/app-store';
-import { formatMoney } from '@/lib/services/sales-service';
+import { useLocaleFormat } from '@/hooks/useLocaleFormat';
+import { translateStatus } from '@/lib/i18n/resolve-label';
 
 export interface SalesDocColumn {
   key: string;
@@ -63,8 +64,10 @@ function lineItemsToPayload(items: LineItem[]) {
 }
 
 export function SalesDocumentModule({ config }: { config: SalesDocumentConfig }) {
+  const t = useAppStore((s) => s.t);
   const appState = useAppStore((s) => s.appState);
   const saveAppState = useAppStore((s) => s.saveAppState);
+  const { formatMoney } = useLocaleFormat();
   const [view, setView] = useState<'main' | 'form' | 'detail'>('main');
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
@@ -130,11 +133,11 @@ export function SalesDocumentModule({ config }: { config: SalesDocumentConfig })
   const handleDelete = async (id: string) => {
     if (!config.delete) return;
     const ok = await confirmAction({
-      title: 'Delete record',
-      message: 'Delete this record?',
-      confirmLabel: 'Delete',
+      title: t('sales.delete_record'),
+      message: t('sales.delete_record_confirm'),
+      confirmLabel: t('common.delete'),
       tone: 'danger',
-      module: 'Sales',
+      module: config.title,
     });
     if (!ok) return;
     config.delete(appState, id);
@@ -162,20 +165,20 @@ export function SalesDocumentModule({ config }: { config: SalesDocumentConfig })
                     else toast.error('Operation failed', { module: 'Sales', description: String(r.error ?? 'Failed') });
                   }}
                 >
-                  {config.convertLabel ?? 'Convert'}
+                  {config.convertLabel ?? t('common.convert')}
                 </button>
               )}
               <button type="button" onClick={() => openEdit(detailRow)} className="px-3 py-2 border border-slate-200 text-xs font-bold rounded-xl cursor-pointer">
-                Edit
+                {t('common.edit')}
               </button>
             </div>
           }
         >
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-xs">
-            <div><span className="text-slate-500 font-semibold">Status</span><div className="mt-1"><StatusBadge status={String(detailRow.status)} /></div></div>
-            <div><span className="text-slate-500 font-semibold">Customer</span><div className="mt-1 font-bold">{String(detailRow.customer ?? '—')}</div></div>
-            <div><span className="text-slate-500 font-semibold">Date</span><div className="mt-1 font-bold">{String(detailRow.date ?? '—')}</div></div>
-            <div><span className="text-slate-500 font-semibold">Total</span><div className="mt-1 font-extrabold">{formatMoney(docTotal)}</div></div>
+            <div><span className="text-slate-500 font-semibold">{t('sales.col_status')}</span><div className="mt-1"><StatusBadge status={String(detailRow.status)} /></div></div>
+            <div><span className="text-slate-500 font-semibold">{t('sales.col_customer')}</span><div className="mt-1 font-bold">{String(detailRow.customer ?? '—')}</div></div>
+            <div><span className="text-slate-500 font-semibold">{t('sales.col_date')}</span><div className="mt-1 font-bold">{String(detailRow.date ?? '—')}</div></div>
+            <div><span className="text-slate-500 font-semibold">{t('sales.col_total')}</span><div className="mt-1 font-extrabold">{formatMoney(docTotal)}</div></div>
           </div>
           {config.showLineItems && <LineItemsEditor items={items} onChange={() => {}} readOnly />}
           {detailRow.notes ? <p className="text-xs text-slate-600">{String(detailRow.notes)}</p> : null}
@@ -186,7 +189,7 @@ export function SalesDocumentModule({ config }: { config: SalesDocumentConfig })
   }
 
   if (view === 'form') {
-    const formTitle = editingId ? `Edit ${config.title}` : `Create ${config.title}`;
+    const formTitle = editingId ? t('crm.edit_entity', { entity: config.title }) : t('crm.create_entity', { entity: config.title });
 
     return (
       <AppFormPage
@@ -194,34 +197,34 @@ export function SalesDocumentModule({ config }: { config: SalesDocumentConfig })
         subtitle={config.subtitle}
         onBack={() => { setView('main'); resetForm(); }}
         onSubmit={handleSubmit}
-        submitLabel="Save"
+        submitLabel={t('common.save')}
       >
         <div className={FORM_GRID_CLS}>
           {config.customerField !== false && (
             <div>
-              <label className={FORM_LABEL_CLS}>Customer <span className="text-rose-500">*</span></label>
+              <label className={FORM_LABEL_CLS}>{t('sales.col_customer')} <span className="text-rose-500">*</span></label>
               <input required value={form.customer} onChange={(e) => setForm({ ...form, customer: e.target.value })} className={FORM_INPUT_CLS} />
             </div>
           )}
           <div>
-            <label className={FORM_LABEL_CLS}>Date</label>
+            <label className={FORM_LABEL_CLS}>{t('sales.col_date')}</label>
             <input type="date" value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })} className={`${FORM_INPUT_CLS} cursor-pointer`} />
           </div>
           <div>
-            <label className={FORM_LABEL_CLS}>Status</label>
+            <label className={FORM_LABEL_CLS}>{t('sales.col_status')}</label>
             <select value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value })} className={FORM_SELECT_CLS}>
-              {config.statusOptions.map((s) => <option key={s} value={s}>{s}</option>)}
+              {config.statusOptions.map((s) => <option key={s} value={s}>{translateStatus(t, s)}</option>)}
             </select>
           </div>
         </div>
         {config.showLineItems && <LineItemsEditor items={lineItems} onChange={setLineItems} />}
         {config.showLineItems && (
-          <div className="text-right text-sm font-extrabold text-slate-900">Total: {formatMoney(total)}</div>
+          <div className="text-right text-sm font-extrabold text-slate-900">{t('sales.col_total')}: {formatMoney(total)}</div>
         )}
         <AdvancedDetailsToggle open={showAdvanced} onToggle={() => setShowAdvanced(!showAdvanced)} />
         {showAdvanced && (
           <div>
-            <label className={FORM_LABEL_CLS}>Notes</label>
+            <label className={FORM_LABEL_CLS}>{t('crm.form_notes')}</label>
             <textarea rows={3} value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} className={FORM_TEXTAREA_CLS} />
           </div>
         )}
@@ -229,7 +232,7 @@ export function SalesDocumentModule({ config }: { config: SalesDocumentConfig })
     );
   }
 
-  const tabs = config.statusFilterTabs ?? [{ id: 'all', label: 'All' }, ...config.statusOptions.map((s) => ({ id: s, label: s.charAt(0).toUpperCase() + s.slice(1) }))];
+  const tabs = config.statusFilterTabs ?? [{ id: 'all', label: t('common.all') }, ...config.statusOptions.map((s) => ({ id: s, label: translateStatus(t, s) }))];
 
   return (
     <div className={MODULE_LIST_SHELL}>
@@ -238,7 +241,7 @@ export function SalesDocumentModule({ config }: { config: SalesDocumentConfig })
         subtitle={config.subtitle}
         search={search}
         onSearchChange={setSearch}
-        searchPlaceholder={`Search ${config.title.toLowerCase()}...`}
+        searchPlaceholder={t('crm.search_module', { title: config.title.toLowerCase() })}
         onAdd={() => { resetForm(); setView('form'); }}
         addLabel={config.addLabel}
         filters={<FilterTabs tabs={tabs} active={statusFilter} onChange={setStatusFilter} />}
@@ -251,7 +254,7 @@ export function SalesDocumentModule({ config }: { config: SalesDocumentConfig })
           render: (row) => (col.render ? col.render(row) : String(row[col.key] ?? '—')),
         }))}
         rows={rows}
-        emptyMessage="No records yet"
+        emptyMessage={t('common.no_records_yet')}
         renderActions={(row) => (
           <>
             <TableIconAction

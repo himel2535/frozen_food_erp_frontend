@@ -6,6 +6,7 @@ import { Suspense, useEffect, useMemo, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Download, Upload, Printer } from 'lucide-react';
 import { Footer } from '@/components/layout/Footer';
+import { PageHeader } from '@/components/shared/PageHeader';
 import { KpiCards } from '@/components/shared/KpiCards';
 import { MODULE_LIST_SHELL } from '@/lib/ui/module-layout';
 import { FilterTabs } from '@/components/shared/FilterTabs';
@@ -22,6 +23,7 @@ import {
 } from '@/components/modules/crm/CustomerForm';
 import type { CustomerSaveAction } from '@/components/modules/crm/customer-form/CustomerFormFooter';
 import { useAppStore } from '@/lib/state/app-store';
+import { useLocaleFormat } from '@/hooks/useLocaleFormat';
 import {
   getCustomerList,
   getCustomerProfile,
@@ -31,7 +33,6 @@ import {
   deleteCustomer,
   exportCustomersCsv,
 } from '@/lib/services/crm-service';
-import { formatMoney } from '@/lib/services/sales-service';
 
 const AVATAR_COLORS = [
   'bg-blue-100 text-blue-700',
@@ -52,14 +53,6 @@ function avatarClass(name: string) {
   const code = String(name).split('').reduce((s, c) => s + c.charCodeAt(0), 0);
   return AVATAR_COLORS[code % AVATAR_COLORS.length];
 }
-
-const STATUS_TABS = [
-  { id: 'all', label: 'All' },
-  { id: 'active', label: 'Active' },
-  { id: 'overdue', label: 'Overdue' },
-  { id: 'credit-hold', label: 'High-Risk' },
-  { id: 'enterprise', label: 'Enterprise' },
-];
 
 function buildEmptyFormValues(ownerId: string): CustomerFormValues {
   return { ...EMPTY_CUSTOMER_FORM, ownerId };
@@ -130,6 +123,8 @@ export function CustomersPage() {
 }
 
 function CustomersPageContent() {
+  const t = useAppStore((s) => s.t);
+  const { formatMoney, formatCount } = useLocaleFormat();
   const router = useRouter();
   const searchParams = useSearchParams();
   const appState = useAppStore((s) => s.appState);
@@ -177,6 +172,14 @@ function CustomersPageContent() {
     return rows;
   }, [appState, search, statusTab, sortKey]);
 
+  const statusTabs = useMemo(() => [
+    { id: 'all', label: t('common.all') },
+    { id: 'active', label: t('common.active') },
+    { id: 'overdue', label: t('crm.filter_overdue_tab') },
+    { id: 'credit-hold', label: t('crm.filter_high_risk') },
+    { id: 'enterprise', label: t('crm.filter_enterprise') },
+  ], [t]);
+
   const kpis = useMemo(() => {
     const all = getCustomerList(appState) as Array<Record<string, unknown>>;
     const active = all.filter((c) => c.status === 'active').length;
@@ -184,12 +187,12 @@ function CustomersPageContent() {
     const overdue = all.reduce((s, c) => s + Number(c.totalDue ?? 0), 0);
     const riskCount = all.filter((c) => Number(c.totalDue ?? 0) > 0).length;
     return [
-      { key: 'active', label: 'Active Customers', value: String(all.length), sub: `${active} active accounts` },
-      { key: 'reps', label: 'Total Reps', value: String(owners.length), sub: 'active owners' },
-      { key: 'avg', label: 'Average Spending', value: formatMoney(avg), sub: 'per customer' },
-      { key: 'due', label: 'Overdue / Credit Risk', value: formatMoney(overdue), sub: `${riskCount} customers on alert`, alert: riskCount > 0 },
+      { key: 'active', label: t('crm.kpi_total_customers'), value: formatCount(all.length), sub: `${formatCount(active)} ${t('crm.kpi_active_customers').toLowerCase()}` },
+      { key: 'reps', label: t('crm.kpi_total_sales'), value: formatCount(owners.length) },
+      { key: 'avg', label: t('crm.kpi_total_sales'), value: formatMoney(avg) },
+      { key: 'due', label: t('crm.kpi_overdue_balance'), value: formatMoney(overdue), sub: formatCount(riskCount), alert: riskCount > 0 },
     ];
-  }, [appState, owners.length]);
+  }, [appState, owners.length, t, formatMoney, formatCount]);
 
   const resetForm = () => {
     setFormValues(buildEmptyFormValues(owners[0]?.id ?? ''));
@@ -287,7 +290,7 @@ function CustomersPageContent() {
     },
     {
       key: 'name',
-      label: 'Customer / Company',
+      label: t('crm.customers_title'),
       render: (row) => (
         <div className="flex items-center gap-3 min-w-[200px]">
           <div className={`w-9 h-9 rounded-full flex items-center justify-center text-[10px] font-bold shrink-0 ${avatarClass(String(row.name))}`}>
@@ -301,10 +304,10 @@ function CustomersPageContent() {
         </div>
       ),
     },
-    { key: 'contact', label: 'Primary Contact', render: (row) => <span className="font-medium">{String(row.name)}</span> },
+    { key: 'contact', label: t('crm.form_contact_person'), render: (row) => <span className="font-medium">{String(row.name)}</span> },
     {
       key: 'contactInfo',
-      label: 'Contact Info',
+      label: t('crm.col_contact'),
       render: (row) => (
         <>
           <div className="font-medium">{String(row.phone ?? '—')}</div>
@@ -314,7 +317,7 @@ function CustomersPageContent() {
     },
     {
       key: 'rep',
-      label: 'Assigned Rep',
+      label: t('crm.col_assigned_to'),
       render: (row) => (
         <span className="inline-flex items-center gap-2 font-bold text-slate-700">
           <span className="w-6 h-6 rounded-full bg-indigo-100 text-indigo-700 text-[9px] flex items-center justify-center">
@@ -326,7 +329,7 @@ function CustomersPageContent() {
     },
     {
       key: 'spend',
-      label: 'Spend / Balance',
+      label: t('crm.kpi_total_sales'),
       render: (row) => (
         <>
           <div>Sales: <span className="font-bold">{formatMoney(Number(row.totalSales ?? 0))}</span></div>
@@ -334,8 +337,8 @@ function CustomersPageContent() {
         </>
       ),
     },
-    { key: 'status', label: 'Status', render: (row) => <StatusBadge status={String(row.status)} /> },
-  ], [selected]);
+    { key: 'status', label: t('sales.col_status'), render: (row) => <StatusBadge status={String(row.status)} /> },
+  ], [selected, t, formatMoney]);
 
   if (view === 'form') {
     return (
@@ -352,26 +355,26 @@ function CustomersPageContent() {
 
   return (
     <div className={MODULE_LIST_SHELL}>
-      <div className="flex flex-col xl:flex-row xl:items-center xl:justify-between gap-4">
-        <div>
-          <h2 className="text-xl font-extrabold text-slate-900">Customers</h2>
-          <p className="text-xs text-slate-500 mt-1">Customer master records, commercial terms, detail profiles, and activity logs.</p>
-        </div>
-        <button type="button" onClick={openCreate} className="bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold px-4 py-2.5 rounded-xl cursor-pointer self-start">
-          + Add Customer
-        </button>
-      </div>
+      <PageHeader
+        title={t('crm.customers_title')}
+        subtitle={t('crm.customers_subtitle')}
+        actions={
+          <button type="button" onClick={openCreate} className="bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold px-4 py-2.5 rounded-xl cursor-pointer self-start">
+            + {t('crm.add_customer')}
+          </button>
+        }
+      />
 
       <KpiCards items={kpis} />
 
       <div className="bg-white p-4 rounded-xl border border-slate-200/80 premium-shadow space-y-4">
-        <FilterTabs tabs={STATUS_TABS} active={statusTab} onChange={setStatusTab} />
+        <FilterTabs tabs={statusTabs} active={statusTab} onChange={setStatusTab} />
         <div className="flex flex-col lg:flex-row lg:items-center gap-3 justify-between">
           <input
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search customer, company, phone..."
+            placeholder={t('crm.search_customers')}
             className="flex-1 max-w-md px-4 py-2 rounded-xl border border-slate-200 bg-slate-50 text-xs"
           />
           <div className="flex flex-wrap gap-2">
@@ -394,7 +397,7 @@ function CustomersPageContent() {
         className="min-w-[900px]"
         columns={customerColumns}
         rows={customers}
-        emptyMessage="No customers found."
+        emptyMessage={t('crm.no_customers')}
         renderActions={(row) => (
           <>
             <TableIconAction

@@ -5,7 +5,7 @@ import {
   CD_METRIC_LABEL,
   CD_METRIC_VALUE,
 } from '@/components/modules/crm/customer-detail/customer-detail-styles';
-import { formatMoney } from '@/lib/services/sales-service';
+import { useLocaleFormat } from '@/hooks/useLocaleFormat';
 
 type Metrics = {
   totalSales: number;
@@ -27,19 +27,20 @@ const METRIC_CONFIG = [
 ] as const;
 
 export function CustomerDetailMetrics({ metrics }: { metrics: Metrics }) {
+  const { formatMoney, formatCount } = useLocaleFormat();
   const values: Record<string, { value: string; sub?: string; alert?: boolean }> = {
-    totalSales: { value: formatMoney(metrics.totalSales), sub: 'This Year' },
-    totalPaid: { value: formatMoney(metrics.totalPaid), sub: 'This Year' },
+    totalSales: { value: formatMoney(metrics.totalSales, { decimals: 2 }), sub: 'This Year' },
+    totalPaid: { value: formatMoney(metrics.totalPaid, { decimals: 2 }), sub: 'This Year' },
     totalDue: {
-      value: formatMoney(metrics.totalDue),
+      value: formatMoney(metrics.totalDue, { decimals: 2 }),
       sub: metrics.totalDue > 0 ? 'Overdue' : 'Clear',
       alert: metrics.totalDue > 0,
     },
-    totalOrders: { value: String(metrics.totalOrders), sub: 'All Time' },
-    avgOrderValue: { value: formatMoney(metrics.avgOrderValue) },
+    totalOrders: { value: formatCount(metrics.totalOrders), sub: 'All Time' },
+    avgOrderValue: { value: formatMoney(metrics.avgOrderValue, { decimals: 2 }) },
     creditLimit: {
-      value: formatMoney(metrics.creditLimit),
-      sub: `Remaining: ${formatMoney(metrics.creditRemaining)}`,
+      value: formatMoney(metrics.creditLimit, { decimals: 2 }),
+      sub: `Remaining: ${formatMoney(metrics.creditRemaining, { decimals: 2 })}`,
     },
   };
 

@@ -44,7 +44,7 @@ import {
   INV_PRINT_TOP_ROW,
   INV_PRINT_TOTALS_BAR,
 } from '@/components/modules/sales/invoice-form/inv-print-styles';
-import { formatMoney } from '@/lib/services/sales-service';
+import { useLocaleFormat } from '@/hooks/useLocaleFormat';
 
 const signatureFont = Dancing_Script({ subsets: ['latin'], weight: ['600', '700'] });
 
@@ -87,6 +87,8 @@ export function InvoicePrint({
   invoiceNo: string;
   data: InvoicePayload;
 }) {
+  const { formatMoney } = useLocaleFormat();
+  const money = (n: number) => formatMoney(n, { decimals: 2 });
   const activeItems = data.items.filter((item) => item.description.trim() || item.productId);
   const total = data.totals.total;
   const paid = Number(data.paidAmount ?? 0);
@@ -154,7 +156,7 @@ export function InvoicePrint({
               </tr>
               <tr>
                 <td className={INV_PRINT_META_LABEL}>Balance Due</td>
-                <td className="font-extrabold text-rose-600">{formatMoney(balance)}</td>
+                <td className="font-extrabold text-rose-600">{money(balance)}</td>
               </tr>
               {data.approvalStatus ? (
                 <tr>
@@ -169,15 +171,15 @@ export function InvoicePrint({
         <div className={INV_PRINT_SUMMARY_CARD}>
           <div className="flex justify-between text-[10px] mb-1">
             <span className="text-slate-500 font-medium">Total Amount</span>
-            <span className="font-extrabold text-blue-700 text-sm">{formatMoney(total)}</span>
+            <span className="font-extrabold text-blue-700 text-sm">{money(total)}</span>
           </div>
           <div className="flex justify-between text-[10px] mb-1">
             <span className="text-slate-500 font-medium">Paid Amount</span>
-            <span className="font-extrabold text-emerald-600">{formatMoney(paid)}</span>
+            <span className="font-extrabold text-emerald-600">{money(paid)}</span>
           </div>
           <div className="flex justify-between text-[10px] pt-2 border-t border-slate-200">
             <span className="font-bold text-slate-700">Balance Due</span>
-            <span className="font-extrabold text-rose-600">{formatMoney(balance)}</span>
+            <span className="font-extrabold text-rose-600">{money(balance)}</span>
           </div>
         </div>
       </div>
@@ -230,10 +232,10 @@ export function InvoicePrint({
                     {item.productId ? <p className="text-[9px] text-slate-500 mt-0.5">SKU: {item.productId}</p> : null}
                   </td>
                   <td className="px-2 py-2 text-right">{item.qty}</td>
-                  <td className="px-2 py-2 text-right">{formatMoney(item.rate)}</td>
+                  <td className="px-2 py-2 text-right">{money(item.rate)}</td>
                   <td className="px-2 py-2 text-right">{item.discountPct}%</td>
                   <td className="px-2 py-2 text-right">{item.taxLabel}</td>
-                  <td className="px-2 py-2 text-right font-bold">{formatMoney(item.amount)}</td>
+                  <td className="px-2 py-2 text-right font-bold">{money(item.amount)}</td>
                 </tr>
               ))}
             </tbody>
@@ -281,21 +283,21 @@ export function InvoicePrint({
         <div className="space-y-3">
           <div className={INV_PRINT_SECTION}>
             <div className="space-y-1.5 text-[10px]">
-              <div className="flex justify-between"><span className="text-slate-500">Subtotal</span><span className="font-bold">{formatMoney(data.totals.subtotal)}</span></div>
-              <div className="flex justify-between"><span className="text-slate-500">Discount</span><span className="font-bold">{formatMoney(data.totals.discountAmount)}</span></div>
-              <div className="flex justify-between"><span className="text-slate-500">Tax</span><span className="font-bold">{formatMoney(data.totals.taxAmount)}</span></div>
+              <div className="flex justify-between"><span className="text-slate-500">Subtotal</span><span className="font-bold">{money(data.totals.subtotal)}</span></div>
+              <div className="flex justify-between"><span className="text-slate-500">Discount</span><span className="font-bold">{money(data.totals.discountAmount)}</span></div>
+              <div className="flex justify-between"><span className="text-slate-500">Tax</span><span className="font-bold">{money(data.totals.taxAmount)}</span></div>
             </div>
             <div className={`${INV_PRINT_TOTALS_BAR} mt-2`}>
               <span>TOTAL AMOUNT</span>
-              <span>{formatMoney(total)}</span>
+              <span>{money(total)}</span>
             </div>
             <div className="flex justify-between text-[10px] mt-2">
               <span className="text-emerald-700 font-bold">Paid Amount</span>
-              <span className="font-extrabold text-emerald-600">- {formatMoney(paid)}</span>
+              <span className="font-extrabold text-emerald-600">- {money(paid)}</span>
             </div>
             <div className="flex justify-between text-[11px] mt-1 pt-1 border-t border-slate-200">
               <span className="font-extrabold text-rose-700">BALANCE DUE</span>
-              <span className="font-extrabold text-rose-600">{formatMoney(balance)}</span>
+              <span className="font-extrabold text-rose-600">{money(balance)}</span>
             </div>
           </div>
 

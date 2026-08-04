@@ -6,6 +6,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { FileSpreadsheet, Filter, Plus, Package, History, FileText, Paperclip, MessageSquare, X } from 'lucide-react';
 import { Footer } from '@/components/layout/Footer';
+import { PageHeader } from '@/components/shared/PageHeader';
 import { FilterTabs } from '@/components/shared/FilterTabs';
 import { KpiCards } from '@/components/shared/KpiCards';
 import { StatusBadge } from '@/components/shared/StatusBadge';
@@ -454,23 +455,23 @@ export function PurchaseRmPage() {
 
   return (
     <div className={MODULE_LIST_SHELL}>
-      <div className="flex flex-col xl:flex-row xl:items-center xl:justify-between gap-4">
-        <div>
-          <h2 className="text-xl font-extrabold text-slate-900 tracking-tight">Purchase RM</h2>
-          <p className="text-xs text-slate-500 mt-1 font-medium">Raw material RM orders — create, track, and receive.</p>
-        </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <button type="button" onClick={() => toast.info('Feature coming soon', { module: 'Purchases', description: "Import Excel" })} className={CF_BTN_OUTLINE}>
-            <FileSpreadsheet className="w-4 h-4" /> Import Excel
-          </button>
-          <button type="button" onClick={() => setLowStockOnly((v) => !v)} className={`${CF_BTN_OUTLINE} ${lowStockOnly ? 'ring-2 ring-blue-300' : ''}`}>
-            Low Stock
-          </button>
-          <button type="button" onClick={openCreate} className={CF_BTN_PRIMARY}>
-            <Plus className="w-4 h-4" /> Create RM Order
-          </button>
-        </div>
-      </div>
+      <PageHeader
+        title="Purchase RM"
+        subtitle="Raw material RM orders — create, track, and receive."
+        actions={
+          <>
+            <button type="button" onClick={() => toast.info('Feature coming soon', { module: 'Purchases', description: "Import Excel" })} className={CF_BTN_OUTLINE}>
+              <FileSpreadsheet className="w-4 h-4" /> Import Excel
+            </button>
+            <button type="button" onClick={() => setLowStockOnly((v) => !v)} className={`${CF_BTN_OUTLINE} ${lowStockOnly ? 'ring-2 ring-blue-300' : ''}`}>
+              Low Stock
+            </button>
+            <button type="button" onClick={openCreate} className={CF_BTN_PRIMARY}>
+              <Plus className="w-4 h-4" /> Create RM Order
+            </button>
+          </>
+        }
+      />
 
       <KpiCards items={kpis} />
 

@@ -13,12 +13,13 @@ import {
   UserRound,
 } from 'lucide-react';
 import { StatusBadge } from '@/components/shared/StatusBadge';
+import { useAppStore } from '@/lib/state/app-store';
+import { useLocaleFormat } from '@/hooks/useLocaleFormat';
+import { translateStatus } from '@/lib/i18n/resolve-label';
 import {
-  formatLeadCurrency,
   formatLeadDateTime,
   leadAvatarClass,
   leadInitials,
-  leadStageLabel,
   priorityLabel,
   priorityTagClass,
 } from './lead-display-utils';
@@ -29,11 +30,11 @@ type DetailTab = 'activity' | 'details' | 'notes' | 'files';
 
 const PANEL_SHELL = 'rounded-xl border border-slate-200 bg-white min-h-[580px] h-full flex flex-col overflow-hidden';
 
-const DETAIL_TABS: { id: DetailTab; label: string }[] = [
-  { id: 'activity', label: 'Activity' },
-  { id: 'details', label: 'Details' },
-  { id: 'notes', label: 'Notes' },
-  { id: 'files', label: 'Files' },
+const DETAIL_TABS: { id: DetailTab; labelKey: string }[] = [
+  { id: 'activity', labelKey: 'crm.tab_activity' },
+  { id: 'details', labelKey: 'crm.tab_details' },
+  { id: 'notes', labelKey: 'crm.tab_notes' },
+  { id: 'files', labelKey: 'crm.tab_files' },
 ];
 
 function InfoRow({ label, value }: { label: string; value: string }) {
@@ -62,6 +63,8 @@ export function LeadDetailPanel({
   onConvert: () => void;
   onMarkLost: () => void;
 }) {
+  const t = useAppStore((s) => s.t);
+  const { formatMoney } = useLocaleFormat();
   const timeline = useMemo(() => activities.slice(0, 8), [activities]);
 
   if (!lead) {
@@ -78,7 +81,7 @@ export function LeadDetailPanel({
         </div>
         <div className="flex border-t border-slate-200 opacity-50 pointer-events-none">
           {DETAIL_TABS.map((tab) => (
-            <span key={tab.id} className="flex-1 text-center py-2 text-[11px] text-slate-400">{tab.label}</span>
+            <span key={tab.id} className="flex-1 text-center py-2 text-[11px] text-slate-400">{t(tab.labelKey)}</span>
           ))}
         </div>
       </aside>
@@ -103,7 +106,7 @@ export function LeadDetailPanel({
             <h3 className="font-extrabold text-slate-900 truncate">{name}</h3>
             <p className="text-xs text-slate-500 truncate">{company}</p>
             <div className="flex flex-wrap items-center gap-1.5 mt-2">
-              <StatusBadge status={leadStageLabel(status)} />
+              <StatusBadge status={String(status)} />
               <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${priorityTagClass(priority)}`}>
                 {priorityLabel(priority) === 'Hot' ? 'Hot Lead' : `${priorityLabel(priority)} Lead`}
               </span>
@@ -113,11 +116,11 @@ export function LeadDetailPanel({
 
         <div className="flex flex-wrap gap-1.5 mt-3">
           {[
-            { icon: Phone, label: 'Call' },
-            { icon: MessageCircle, label: 'WhatsApp' },
-            { icon: Mail, label: 'Email' },
-            { icon: FileText, label: 'Quotation' },
-            { icon: MoreHorizontal, label: 'More' },
+            { icon: Phone, label: t('crm.action_call') },
+            { icon: MessageCircle, label: t('crm.action_whatsapp') },
+            { icon: Mail, label: t('crm.action_email') },
+            { icon: FileText, label: t('crm.action_quotation') },
+            { icon: MoreHorizontal, label: t('crm.action_more') },
           ].map(({ icon: Icon, label }) => (
             <button
               key={label}
@@ -134,11 +137,11 @@ export function LeadDetailPanel({
       </div>
 
       <div className="px-4 py-3 space-y-1 border-b border-slate-100">
-        <InfoRow label="Estimated Value" value={formatLeadCurrency(Number(lead.expectedValue || 0))} />
-        <InfoRow label="Assigned To" value={String(lead.assignedRepName || 'Unassigned')} />
-        <InfoRow label="Source" value={String(lead.source || '—')} />
-        <InfoRow label="Phone" value={String(lead.phone || '—')} />
-        <InfoRow label="Email" value={String(lead.email || '—')} />
+        <InfoRow label={t('crm.col_value')} value={formatMoney(Number(lead.expectedValue || 0))} />
+        <InfoRow label={t('crm.col_assigned_to')} value={String(lead.assignedRepName || t('crm.unassigned'))} />
+        <InfoRow label={t('crm.filter_source')} value={String(lead.source || '—')} />
+        <InfoRow label={t('common.phone')} value={String(lead.phone || '—')} />
+        <InfoRow label={t('common.email')} value={String(lead.email || '—')} />
         <InfoRow label="Location" value={String(lead.location || '—')} />
         <InfoRow label="Created" value={String(lead.createdAt || '—').slice(0, 10)} />
       </div>
@@ -183,7 +186,7 @@ export function LeadDetailPanel({
                 : 'border-transparent text-slate-500 hover:text-slate-700'
             }`}
           >
-            {tab.label}
+            {t(tab.labelKey)}
           </button>
         ))}
       </div>
@@ -237,13 +240,13 @@ export function LeadDetailPanel({
 
       <div className="p-4 border-t border-slate-100 flex flex-wrap gap-2 mt-auto">
         <button type="button" onClick={onEdit} className="flex-1 min-w-[100px] text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white rounded-xl py-2.5 cursor-pointer">
-          Edit Lead
+          {t('crm.edit_lead')}
         </button>
         <button type="button" onClick={onConvert} className="flex-1 min-w-[100px] text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl py-2.5 cursor-pointer">
-          Convert
+          {t('crm.convert_to_customer')}
         </button>
         <button type="button" onClick={onMarkLost} className="text-xs font-bold bg-rose-50 hover:bg-rose-100 text-rose-700 rounded-xl py-2.5 px-3 cursor-pointer">
-          Mark Lost
+          {t('crm.mark_lost')}
         </button>
       </div>
     </aside>

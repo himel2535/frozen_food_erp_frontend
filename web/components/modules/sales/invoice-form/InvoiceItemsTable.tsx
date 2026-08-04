@@ -12,7 +12,7 @@ import {
   recalcLineItem,
   type InvoiceLineItem,
 } from '@/components/modules/sales/invoice-form/inv-form-types';
-import { formatMoney } from '@/lib/services/sales-service';
+import { useLocaleFormat } from '@/hooks/useLocaleFormat';
 
 export function InvoiceItemsTable({
   items,
@@ -27,6 +27,7 @@ export function InvoiceItemsTable({
   onAddItem?: () => void;
   error?: string;
 }) {
+  const { formatMoney } = useLocaleFormat();
   const updateItem = (id: string, patch: Partial<InvoiceLineItem>) => {
     onChange(items.map((item) => (item.id === id ? recalcLineItem({ ...item, ...patch }) : item)));
   };
@@ -172,7 +173,7 @@ export function InvoiceItemsTable({
                     </select>
                   </td>
                   <td className="px-3 py-2 text-right font-bold text-slate-800">
-                    {formatMoney(calc.amount)}
+                    {formatMoney(calc.amount, { decimals: 2 })}
                   </td>
                   <td className="px-3 py-2">
                     <div className="flex items-center justify-center gap-1">

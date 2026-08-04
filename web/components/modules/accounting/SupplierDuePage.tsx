@@ -5,6 +5,7 @@ import { toast } from '@/lib/ui/feedback';
 import { useMemo, useState } from 'react';
 import { Plus, CreditCard } from 'lucide-react';
 import { Footer } from '@/components/layout/Footer';
+import { PageHeader } from '@/components/shared/PageHeader';
 import { AppFormFields, AppFormModal } from '@/components/shared/AppForm';
 import { MODULE_LIST_SHELL } from '@/lib/ui/module-layout';
 import { useAppStore } from '@/lib/state/app-store';
@@ -164,37 +165,37 @@ export function SupplierDuePage() {
   return (
     <>
       <div className={MODULE_LIST_SHELL}>
-        <div className="flex flex-col xl:flex-row xl:items-center xl:justify-between gap-4">
-          <div>
-            <h2 className="text-xl font-extrabold text-slate-900 tracking-tight">Supplier Due</h2>
-            <p className="text-xs text-slate-500 mt-1 font-medium">Track and manage outstanding payments to your suppliers.</p>
-          </div>
-          <div className="flex flex-wrap items-center gap-2 self-start xl:self-auto">
-            <button
-              type="button"
-              onClick={() => setShowAddPayableModal(true)}
-              className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition-colors cursor-pointer"
-            >
-              <Plus className="w-4 h-4" />
-              Add Payable
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                const target = selectedSupplier ?? allSuppliers.find((s) => s.totalDue > 0);
-                if (target) {
-                  openPay(target, selectedBillIds.length ? selectedBillIds : undefined);
-                } else {
-                  toast.error('Action required', { module: 'Accounting', description: "Select a supplier with outstanding due first." });
-                }
-              }}
-              className="bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold px-4 py-2.5 rounded-xl transition-colors flex items-center gap-2 cursor-pointer"
-            >
-              <CreditCard className="w-4 h-4" />
-              Make Payment
-            </button>
-          </div>
-        </div>
+        <PageHeader
+          title="Supplier Due"
+          subtitle="Track and manage outstanding payments to your suppliers."
+          actions={
+            <>
+              <button
+                type="button"
+                onClick={() => setShowAddPayableModal(true)}
+                className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition-colors cursor-pointer"
+              >
+                <Plus className="w-4 h-4" />
+                Add Payable
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  const target = selectedSupplier ?? allSuppliers.find((s) => s.totalDue > 0);
+                  if (target) {
+                    openPay(target, selectedBillIds.length ? selectedBillIds : undefined);
+                  } else {
+                    toast.error('Action required', { module: 'Accounting', description: "Select a supplier with outstanding due first." });
+                  }
+                }}
+                className="bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold px-4 py-2.5 rounded-xl transition-colors flex items-center gap-2 cursor-pointer"
+              >
+                <CreditCard className="w-4 h-4" />
+                Make Payment
+              </button>
+            </>
+          }
+        />
 
         <SupplierDueMetrics metrics={metrics} />
 
