@@ -3,5 +3,7 @@
 .vercel
 web/.next/
 web/node_modules/
+web/serviceAccount.json
+**/serviceAccount.json
 web/.legacy-ref/js/
 web/.legacy-ref/js/

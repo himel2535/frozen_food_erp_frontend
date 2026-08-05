@@ -1,5 +1,5 @@
-import { SettingsRolesPage } from '@/lib/modules/settings-pages';
+import { RolesAdminPage } from '@/components/modules/settings/roles/RolesAdminPage';
 
 export default function Page() {
-  return <SettingsRolesPage />;
+  return <RolesAdminPage />;
 }

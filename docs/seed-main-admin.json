@@ -1,0 +1,17 @@
+{
+  "toysfactory": {
+    "auth": {
+      "users": {
+        "kdnUotlpnOSBzEzSvX1VwGK6ZYA2": {
+          "uid": "kdnUotlpnOSBzEzSvX1VwGK6ZYA2",
+          "email": "admin@toysfactory.com",
+          "name": "Main Admin",
+          "isMainAdmin": true,
+          "allowedSections": ["*"],
+          "status": "active",
+          "createdAt": "2026-08-05T00:00:00.000Z"
+        }
+      }
+    }
+  }
+}

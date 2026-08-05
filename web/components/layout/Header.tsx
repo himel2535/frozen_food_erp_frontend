@@ -22,7 +22,7 @@ export function Header({ title }: HeaderProps) {
   const router = useRouter();
   const appState = useAppStore((s) => s.appState);
   const toggleLanguage = useAppStore((s) => s.toggleLanguage);
-  const setLoggedIn = useAppStore((s) => s.setLoggedIn);
+  const logout = useAppStore((s) => s.logout);
   const lang = useAppStore((s) => s.appState.lang);
   const [openPanel, setOpenPanel] = useState<HeaderPanel>(null);
   const [navDate, setNavDate] = useState('');
@@ -59,8 +59,9 @@ export function Header({ title }: HeaderProps) {
   }, [openPanel]);
 
   const handleLogout = () => {
-    setLoggedIn(false);
-    router.push('/login');
+    void logout().finally(() => {
+      router.push('/login');
+    });
   };
 
   return (

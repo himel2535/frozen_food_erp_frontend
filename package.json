@@ -8,6 +8,8 @@
     "build": "npm run build --prefix web",
     "start": "npm run start --prefix web",
     "lint": "npm run lint --prefix web",
-    "analyze": "npm run analyze --prefix web"
+    "analyze": "npm run analyze --prefix web",
+    "deploy:rules": "node web/scripts/deploy-rtdb-rules.mjs",
+    "cleanup:orphan-auth": "npm run cleanup:orphan-auth --prefix web"
   }
 }

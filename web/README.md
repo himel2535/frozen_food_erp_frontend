@@ -11,7 +11,22 @@ npm run dev
 
 Open [http://localhost:3000/login](http://localhost:3000/login)
 
-Default sandbox credentials: `admin@toysfactory.com` / `password123`
+### Login setup (automated)
+
+1. Download a Firebase **service account** JSON → save as `web/serviceAccount.json` (gitignored)
+2. Ensure Auth user `admin@toysfactory.com` exists in project **toys-erp**
+3. Seed the RTDB admin profile:
+
+```bash
+npm run seed:admin
+```
+
+4. Sign in with that email + your Firebase Auth password
+
+Full guide: [docs/FIREBASE_AUTH_BOOTSTRAP.md](../docs/FIREBASE_AUTH_BOOTSTRAP.md)
+
+In development, if login shows **User profile not found**, use the **Auto-setup admin profile** button on `/login` (requires `serviceAccount.json`).
+
 
 ## Structure
 

@@ -1,14 +1,20 @@
 import { create } from 'zustand';
 import { DEFAULT_STATE, LOCAL_STORAGE_KEY } from './default-state';
-import type { AppState, Lang } from './types';
+import type { AppState, AuthUserRecord, Lang } from './types';
 import { ensureCrmState } from '../services/crm-service';
 import { ensureSettingsState } from '../services/settings-service';
 import { ensureRecipesState } from '../services/recipes-service';
 import { ensureBnTranslations, translate as translateKey } from '../i18n/translations';
+import {
+  authUserToCurrentProfile,
+  onAuthSession,
+  signOut as authSignOut,
+} from '../services/auth-service';
 
 type FirebaseApi = typeof import('../firebase');
 
 let firebaseApi: FirebaseApi | null = null;
+let authListenerStarted = false;
 
 async function getFirebase(): Promise<FirebaseApi> {
   if (!firebaseApi) {
@@ -74,6 +80,8 @@ function applyLanguageDom(lang: Lang) {
 
 interface AppStore {
   appState: AppState;
+  authUser: AuthUserRecord | null;
+  authReady: boolean;
   ready: boolean;
   hydrated: boolean;
   lastSyncedState: string;
@@ -82,9 +90,12 @@ interface AppStore {
   setHydrated: () => void;
   initFromStorage: () => void;
   startSync: () => Promise<void>;
+  startAuthListener: () => void;
+  applyAuthSession: (authUser: AuthUserRecord | null) => void;
   saveAppState: () => void;
   replaceAppState: (next: Partial<AppState>) => void;
   setLoggedIn: (value: boolean) => void;
+  logout: () => Promise<void>;
   toggleSidebar: () => void;
   toggleLanguage: () => void;
   t: (key: string, vars?: Record<string, string | number>) => string;
@@ -92,6 +103,8 @@ interface AppStore {
 
 export const useAppStore = create<AppStore>((set, get) => ({
   appState: DEFAULT_STATE,
+  authUser: null,
+  authReady: false,
   ready: false,
   hydrated: false,
   lastSyncedState: '',
@@ -101,6 +114,8 @@ export const useAppStore = create<AppStore>((set, get) => ({
 
   setHydrated: () => {
     const appState = loadInitialState();
+    // Do not trust stale local isLoggedIn — Firebase Auth is source of truth
+    appState.isLoggedIn = false;
     const lang = (appState.lang ?? 'en') as Lang;
     set({
       appState,
@@ -119,6 +134,28 @@ export const useAppStore = create<AppStore>((set, get) => ({
   initFromStorage: () => {
     if (get().hydrated) return;
     get().setHydrated();
+  },
+
+  applyAuthSession: (authUser) => {
+    set((s) => {
+      const next = { ...s.appState, isLoggedIn: Boolean(authUser) };
+      if (authUser) {
+        next.currentUser = {
+          ...s.appState.currentUser,
+          ...authUserToCurrentProfile(authUser),
+        };
+      }
+      return { authUser, authReady: true, appState: next };
+    });
+    get().saveAppState();
+  },
+
+  startAuthListener: () => {
+    if (typeof window === 'undefined' || authListenerStarted) return;
+    authListenerStarted = true;
+    onAuthSession((session) => {
+      get().applyAuthSession(session?.authUser ?? null);
+    });
   },
 
   startSync: () =>
@@ -143,8 +180,15 @@ export const useAppStore = create<AppStore>((set, get) => ({
               if (serialized !== current.lastSyncedState) {
                 const loggedIn = current.appState.isLoggedIn;
                 const sidebar = current.appState.sidebarCollapsed;
+                const authUser = current.authUser;
                 hydrated.isLoggedIn = loggedIn;
                 hydrated.sidebarCollapsed = sidebar;
+                if (authUser) {
+                  hydrated.currentUser = {
+                    ...hydrated.currentUser,
+                    ...authUserToCurrentProfile(authUser),
+                  };
+                }
                 const lang = (hydrated.lang ?? 'en') as Lang;
                 set({
                   ignoreRemoteEcho: true,
@@ -193,6 +237,13 @@ export const useAppStore = create<AppStore>((set, get) => ({
     const hydrated = hydrateAppState({ ...current, ...next });
     hydrated.isLoggedIn = current.isLoggedIn;
     hydrated.sidebarCollapsed = current.sidebarCollapsed;
+    const authUser = get().authUser;
+    if (authUser) {
+      hydrated.currentUser = {
+        ...hydrated.currentUser,
+        ...authUserToCurrentProfile(authUser),
+      };
+    }
     const lang = (hydrated.lang ?? 'en') as Lang;
     set({ appState: hydrated, t: createT(lang) });
     get().saveAppState();
@@ -201,6 +252,15 @@ export const useAppStore = create<AppStore>((set, get) => ({
   setLoggedIn: (value) => {
     set((s) => ({ appState: { ...s.appState, isLoggedIn: value } }));
     get().saveAppState();
+  },
+
+  logout: async () => {
+    try {
+      await authSignOut();
+    } catch {
+      // still clear local session
+    }
+    get().applyAuthSession(null);
   },
 
   toggleSidebar: () => {
@@ -237,6 +297,10 @@ export function useIsLoggedIn() {
   return useAppStore((s) => s.appState.isLoggedIn);
 }
 
+export function useAuthUser() {
+  return useAppStore((s) => s.authUser);
+}
+
 export function useTranslation() {
   const lang = useAppStore((s) => s.appState.lang ?? 'en');
   const t = useAppStore((s) => s.t);
@@ -246,6 +310,7 @@ export function useTranslation() {
 export let appReadyPromise: Promise<void> = Promise.resolve();
 
 export function bootstrapAppStore() {
+  useAppStore.getState().startAuthListener();
   appReadyPromise = useAppStore.getState().startSync();
   return appReadyPromise;
 }

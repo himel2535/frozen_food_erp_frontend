@@ -93,6 +93,7 @@ const nextConfig: NextConfig = {
   reactStrictMode: true,
   compress: true,
   poweredByHeader: false,
+  serverExternalPackages: ['firebase-admin'],
   experimental: {
     staleTimes: {
       dynamic: 30,

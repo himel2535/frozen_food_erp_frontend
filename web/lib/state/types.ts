@@ -2,6 +2,48 @@ export type Lang = 'en' | 'bn';
 
 import type { AlertSettings } from '@/lib/services/business-alert-types';
 
+export type SectionId =
+  | 'dashboard'
+  | 'sales-crm'
+  | 'inventory'
+  | 'purchases'
+  | 'factory'
+  | 'accounts'
+  | 'hrm'
+  | 'payroll'
+  | 'projects'
+  | 'assets'
+  | 'approvals'
+  | 'reports'
+  | 'administration'
+  | 'settings';
+
+export interface RoleRecord {
+  id: string;
+  name: string;
+  description?: string;
+  contactEmail?: string;
+  notes?: string;
+  allowedSections: SectionId[];
+  status: 'active' | 'inactive';
+  isPreset?: boolean;
+  createdAt: string;
+  createdBy?: string;
+}
+
+export interface AuthUserRecord {
+  uid: string;
+  email: string;
+  name: string;
+  isMainAdmin?: boolean;
+  allowedSections: Array<SectionId | '*'>;
+  roleId?: string;
+  roleName?: string;
+  status: 'active' | 'disabled';
+  createdAt: string;
+  createdBy?: string;
+}
+
 export interface CurrentUserProfile {
   id: string;
   name: string;

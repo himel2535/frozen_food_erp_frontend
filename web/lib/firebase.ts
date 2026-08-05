@@ -1,19 +1,29 @@
 import { getApp, getApps, initializeApp } from 'firebase/app';
-import { getDatabase, onValue, ref, set } from 'firebase/database';
+import { getAuth } from 'firebase/auth';
+import { getDatabase, onValue, ref, set, get, update, remove } from 'firebase/database';
 
+/** toys-erp Firebase project — override via NEXT_PUBLIC_FIREBASE_* in .env.local */
 const firebaseConfig = {
-  apiKey: 'AIzaSyBlF3L5TW1cP-_25S3T_A4CMeOaPc2oCmk',
-  authDomain: 'aharbox-91135.firebaseapp.com',
-  databaseURL: 'https://aharbox-91135-default-rtdb.firebaseio.com',
-  projectId: 'aharbox-91135',
-  storageBucket: 'aharbox-91135.firebasestorage.app',
-  messagingSenderId: '713385684302',
-  appId: '1:713385684302:web:ae97d870a997fda36e821f',
-  measurementId: 'G-37RGXSN8LF',
+  apiKey:
+    process.env.NEXT_PUBLIC_FIREBASE_API_KEY ?? 'AIzaSyD7B3wDKJ-y37AbNNqGDsWdy7Kutwa3Tos',
+  authDomain:
+    process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN ?? 'toys-erp.firebaseapp.com',
+  databaseURL:
+    process.env.NEXT_PUBLIC_FIREBASE_DATABASE_URL ??
+    'https://toys-erp-default-rtdb.firebaseio.com',
+  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID ?? 'toys-erp',
+  storageBucket:
+    process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET ?? 'toys-erp.firebasestorage.app',
+  messagingSenderId:
+    process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID ?? '600573219203',
+  appId:
+    process.env.NEXT_PUBLIC_FIREBASE_APP_ID ?? '1:600573219203:web:e7672dbf1093a5de61a6b6',
+  measurementId: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID ?? '',
 };
 
 const firebaseApp = getApps().length ? getApp() : initializeApp(firebaseConfig);
 const database = getDatabase(firebaseApp, firebaseConfig.databaseURL);
+const auth = getAuth(firebaseApp);
 const appStateRef = ref(database, 'toysfactory/appState');
 
 function stripUndefinedDeep<T>(value: T): T {
@@ -38,4 +48,35 @@ export async function saveRemoteAppState(state: Record<string, unknown>) {
   await set(appStateRef, stripUndefinedDeep(state));
 }
 
-export { firebaseConfig };
+export function authUserRef(uid: string) {
+  return ref(database, `toysfactory/auth/users/${uid}`);
+}
+
+export function authUsersRef() {
+  return ref(database, 'toysfactory/auth/users');
+}
+
+export async function getAuthUserRecord(uid: string): Promise<Record<string, unknown> | null> {
+  const snapshot = await get(authUserRef(uid));
+  return snapshot.exists() ? (snapshot.val() as Record<string, unknown>) : null;
+}
+
+export async function setAuthUserRecord(uid: string, data: Record<string, unknown>) {
+  await set(authUserRef(uid), stripUndefinedDeep(data));
+}
+
+export async function updateAuthUserRecord(uid: string, data: Record<string, unknown>) {
+  await update(authUserRef(uid), stripUndefinedDeep(data));
+}
+
+export async function removeAuthUserRecord(uid: string) {
+  await remove(authUserRef(uid));
+}
+
+export async function listAuthUserRecords(): Promise<Record<string, Record<string, unknown>>> {
+  const snapshot = await get(authUsersRef());
+  if (!snapshot.exists()) return {};
+  return snapshot.val() as Record<string, Record<string, unknown>>;
+}
+
+export { firebaseConfig, auth, database, firebaseApp };

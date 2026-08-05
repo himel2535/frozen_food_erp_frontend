@@ -1,0 +1,24 @@
+npm warn Unknown env config "devdir". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+
+> hookerp@1.0.0 dev
+> npm run dev --prefix web
+
+npm warn Unknown env config "devdir". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+
+> web@0.1.0 dev
+> next dev --webpack
+
+⚠ Port 3000 is in use by process 47876, using available port 3002 instead.
+▲ Next.js 16.2.12 (webpack)
+- Local:         http://localhost:3002
+- Network:       http://172.20.20.6:3002
+✓ Ready in 648ms
+⨯ Another next dev server is already running.
+
+- Local:        http://localhost:3000
+- PID:          47876
+- Dir:          C:\Users\sdfsa\Desktop\toys_factory_erp\web
+- Log:          .next\dev\logs\next-development.log
+
+Run taskkill /PID 47876 /F to stop it.
+[?25h

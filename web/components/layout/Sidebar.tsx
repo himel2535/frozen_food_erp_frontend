@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname } from 'next/navigation';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { ChevronDown, ChevronLeft, ChevronRight, X } from 'lucide-react';
 import {
   TENANT_SIDEBAR_SECTIONS,
@@ -11,9 +11,11 @@ import {
   getActiveSidebarView,
   getSectionColor,
   type SidebarItem,
+  type SidebarSection,
   type SidebarAccent,
 } from '@/lib/navigation/tenant-sidebar';
 import { useAppStore } from '@/lib/state/app-store';
+import { getVisibleSections, isMainAdmin } from '@/lib/services/access-control-service';
 import { SidebarIcon } from './SidebarIcon';
 import { SidebarCollapsedTooltip } from './SidebarCollapsedTooltip';
 
@@ -53,9 +55,9 @@ function isNestedGroupActiveForView(item: SidebarItem, activeView: string | null
   return item.children.some((child) => child.view === activeView);
 }
 
-function buildInitialSubmenus(activeModule: string) {
+function buildInitialSubmenus(activeModule: string, sections: SidebarSection[]) {
   const initial: Record<string, boolean> = {};
-  TENANT_SIDEBAR_SECTIONS.forEach((section) => {
+  sections.forEach((section) => {
     if (section.items.length > 0) {
       initial[section.id] = section.id === activeModule;
     }
@@ -63,9 +65,13 @@ function buildInitialSubmenus(activeModule: string) {
   return initial;
 }
 
-function buildInitialNestedGroups(activeModule: string, activeView: string | null) {
+function buildInitialNestedGroups(
+  activeModule: string,
+  activeView: string | null,
+  sections: SidebarSection[],
+) {
   const initial: Record<string, boolean> = {};
-  TENANT_SIDEBAR_SECTIONS.forEach((section) => {
+  sections.forEach((section) => {
     section.items.forEach((item) => {
       if (item.children?.length && section.id === activeModule && isNestedGroupActiveForView(item, activeView)) {
         initial[nestedGroupKey(section.id, item)] = true;
@@ -80,28 +86,46 @@ export function Sidebar() {
   const collapsed = useAppStore((s) => s.appState.sidebarCollapsed);
   const toggleSidebar = useAppStore((s) => s.toggleSidebar);
   const t = useAppStore((s) => s.t);
+  const authUser = useAppStore((s) => s.authUser);
+
+  const visibleSections = useMemo(() => {
+    const sections = getVisibleSections(authUser);
+    if (isMainAdmin(authUser)) return sections;
+    return sections.map((section) => {
+      if (section.id !== 'administration') return section;
+      return {
+        ...section,
+        items: section.items.filter(
+          (item) => item.href !== '/settings/users' && item.href !== '/settings/roles',
+        ),
+      };
+    });
+  }, [authUser]);
+
   const activeModule = getActiveSidebarModule(pathname);
   const activeView = getActiveSidebarView(pathname);
-  const [openSubmenus, setOpenSubmenus] = useState(() => buildInitialSubmenus(activeModule));
+  const [openSubmenus, setOpenSubmenus] = useState(() =>
+    buildInitialSubmenus(activeModule, TENANT_SIDEBAR_SECTIONS),
+  );
   const [openNestedGroups, setOpenNestedGroups] = useState(() =>
-    buildInitialNestedGroups(activeModule, activeView),
+    buildInitialNestedGroups(activeModule, activeView, TENANT_SIDEBAR_SECTIONS),
   );
 
   const isNestedGroupActive = (item: SidebarItem) => isNestedGroupActiveForView(item, activeView);
 
   useEffect(() => {
-    setOpenNestedGroups(buildInitialNestedGroups(activeModule, activeView));
-  }, [activeModule, activeView]);
+    setOpenNestedGroups(buildInitialNestedGroups(activeModule, activeView, visibleSections));
+  }, [activeModule, activeView, visibleSections]);
 
   useEffect(() => {
-    setOpenSubmenus(buildInitialSubmenus(activeModule));
-  }, [activeModule]);
+    setOpenSubmenus(buildInitialSubmenus(activeModule, visibleSections));
+  }, [activeModule, visibleSections]);
 
   const toggleSubmenu = (id: string) => {
     if (collapsed) toggleSidebar();
     setOpenSubmenus((prev) => {
       const next: Record<string, boolean> = {};
-      TENANT_SIDEBAR_SECTIONS.forEach((s) => {
+      visibleSections.forEach((s) => {
         if (s.items.length > 0) next[s.id] = false;
       });
       next[id] = !prev[id];
@@ -181,7 +205,7 @@ export function Sidebar() {
         </div>
 
         <nav className="flex-1 overflow-y-auto px-3.5 py-3.5 space-y-2.5">
-          {TENANT_SIDEBAR_SECTIONS.map((section) => {
+          {visibleSections.map((section) => {
             const hasSubmenu = section.items.length > 0;
             const isActiveModule = activeModule === section.id;
             const c = getSectionColor(section);

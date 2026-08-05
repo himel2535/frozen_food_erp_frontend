@@ -3,15 +3,19 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev --turbo",
-    "build": "next build",
+    "dev": "next dev --webpack",
+    "dev:turbo": "node -e \"console.warn('WARNING: Admin APIs break on Windows with Turbopack. Use npm run dev instead.')\" && next dev --turbo",
+    "build": "next build --webpack",
     "start": "next start",
     "lint": "eslint",
-    "analyze": "cross-env ANALYZE=true next build --webpack"
+    "analyze": "cross-env ANALYZE=true next build --webpack",
+    "seed:admin": "node scripts/seed-main-admin.mjs",
+    "cleanup:orphan-auth": "node scripts/cleanup-orphan-auth.mjs"
   },
   "dependencies": {
     "@iconify/react": "^6.0.2",
     "firebase": "^12.16.0",
+    "firebase-admin": "^14.2.0",
     "jspdf": "^4.2.1",
     "jspdf-autotable": "^5.0.8",
     "lucide-react": "^1.27.0",
@@ -24,10 +28,10 @@
   "devDependencies": {
     "@next/bundle-analyzer": "^16.2.12",
     "@tailwindcss/postcss": "^4",
-    "cross-env": "^7.0.3",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "cross-env": "^7.0.3",
     "eslint": "^9",
     "eslint-config-next": "16.2.12",
     "tailwindcss": "^4",
