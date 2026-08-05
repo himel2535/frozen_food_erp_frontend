@@ -17,7 +17,7 @@ const isDev = process.env.NODE_ENV === 'development';
 export default function LoginPage() {
   const router = useRouter();
   const t = useAppStore((s) => s.t);
-  const lang = useAppStore((s) => s.appState.lang);
+  const lang = useAppStore((s) => s.appState.lang ?? 'en');
   const hydrated = useAppStore((s) => s.hydrated);
   const authReady = useAppStore((s) => s.authReady);
   const toggleLanguage = useAppStore((s) => s.toggleLanguage);

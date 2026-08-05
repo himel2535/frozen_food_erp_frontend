@@ -3,7 +3,6 @@
 import type { ReactNode } from 'react';
 import { useLocaleFormat } from '@/hooks/useLocaleFormat';
 import { isValidIsoDate } from '@/lib/i18n/date-utils';
-import { isoToDisplayDate } from '@/lib/i18n/date-utils';
 
 export type DateDisplayVariant = 'short' | 'slash' | 'long' | 'monthYear' | 'datetime';
 
@@ -33,11 +32,6 @@ export function DateDisplay({
 
   if (!hasDateValue(value)) {
     return <span className={className}>{empty}</span>;
-  }
-
-  const raw = value instanceof Date ? value : String(value).split('T')[0];
-  if (isValidIsoDate(raw) && variant === 'slash') {
-    return <span className={className}>{isoToDisplayDate(raw)}</span>;
   }
 
   const formatted =
