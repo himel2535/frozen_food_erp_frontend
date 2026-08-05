@@ -6,6 +6,7 @@ import { Footer } from '@/components/layout/Footer';
 import { useRegisterModuleActions } from '@/components/layout/ModuleActionsContext';
 import { useAppStore } from '@/lib/state/app-store';
 import { toast } from '@/lib/ui/feedback';
+import { DateInput } from '@/components/shared/DateInput';
 import { formatCurrency } from '@/lib/services/domain-service';
 import { SupplierReportMetrics } from '@/components/modules/reports/suppliers/SupplierReportMetrics';
 import { SupplierSummaryTable } from '@/components/modules/reports/suppliers/SupplierSummaryTable';
@@ -138,8 +139,8 @@ export function SupplierReportsPage() {
               />
             </div>
             <div className="flex flex-wrap items-center gap-2">
-              <input type="date" value={dateStart} onChange={(e) => setDateStart(e.target.value)} className={SR_FILTER_INPUT} aria-label={t('reports.suppliers_date_from')} />
-              <input type="date" value={dateEnd} onChange={(e) => setDateEnd(e.target.value)} className={SR_FILTER_INPUT} aria-label={t('reports.suppliers_date_to')} />
+              <DateInput value={dateStart} onChange={setDateStart} className={SR_FILTER_INPUT} aria-label={t('reports.suppliers_date_from')} />
+              <DateInput value={dateEnd} onChange={setDateEnd} className={SR_FILTER_INPUT} aria-label={t('reports.suppliers_date_to')} />
               <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className={SR_FILTER_INPUT}>
                 <option value="All">{t('reports.suppliers_all_status')}</option>
                 <option value="Active">{t('reports.suppliers_status_active')}</option>

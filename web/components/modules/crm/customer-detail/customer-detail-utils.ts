@@ -1,3 +1,5 @@
+import { formatAppDate } from '@/lib/i18n/locale-format';
+
 const AVATAR_COLORS = [
   'bg-blue-100 text-blue-700',
   'bg-emerald-100 text-emerald-700',
@@ -22,7 +24,7 @@ export function formatDetailDate(value: unknown) {
   if (!value) return '—';
   const d = new Date(String(value));
   if (Number.isNaN(d.getTime())) return String(value);
-  return d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+  return formatAppDate(d, { day: '2-digit', month: 'short', year: 'numeric' });
 }
 
 export function formatAddressBlock(addr: Record<string, unknown> | undefined) {

@@ -3,6 +3,7 @@
 import { Icon } from '@iconify/react';
 import { KpiCards } from '@/components/shared/KpiCards';
 import { amountInWords, formatMoney } from '@/lib/services/salary-sheet-service';
+import { formatAppDate } from '@/lib/i18n/locale-format';
 import {
   RP_CARD_CLS,
   RP_DEDUCTIONS_BOX_CLS,
@@ -22,7 +23,7 @@ export function EmployeeReviewFacts({
 }) {
   const joining = String(employee.joiningDate ?? '—').split('T')[0];
   const joiningLabel = joining !== '—'
-    ? new Date(joining).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
+    ? formatAppDate(joining, { day: '2-digit', month: 'short', year: 'numeric' })
     : '—';
 
   return (

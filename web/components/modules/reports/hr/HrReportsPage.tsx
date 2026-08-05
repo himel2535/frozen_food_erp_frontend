@@ -6,6 +6,7 @@ import { Footer } from '@/components/layout/Footer';
 import { useRegisterModuleActions } from '@/components/layout/ModuleActionsContext';
 import { useAppStore } from '@/lib/state/app-store';
 import { toast } from '@/lib/ui/feedback';
+import { DateInput } from '@/components/shared/DateInput';
 import { HrReportMetrics } from '@/components/modules/reports/hr/HrReportMetrics';
 import { HrDepartmentTable } from '@/components/modules/reports/hr/HrDepartmentTable';
 import { HrKeyMetrics } from '@/components/modules/reports/hr/HrKeyMetrics';
@@ -165,8 +166,8 @@ export function HrReportsPage() {
               />
             </div>
             <div className="flex flex-wrap items-center gap-2">
-              <input type="date" value={dateStart} onChange={(e) => setDateStart(e.target.value)} className={HR_FILTER_INPUT} aria-label={t('reports.hr_date_from')} />
-              <input type="date" value={dateEnd} onChange={(e) => setDateEnd(e.target.value)} className={HR_FILTER_INPUT} aria-label={t('reports.hr_date_to')} />
+              <DateInput value={dateStart} onChange={setDateStart} className={HR_FILTER_INPUT} aria-label={t('reports.hr_date_from')} />
+              <DateInput value={dateEnd} onChange={setDateEnd} className={HR_FILTER_INPUT} aria-label={t('reports.hr_date_to')} />
               <select value={departmentFilter} onChange={(e) => setDepartmentFilter(e.target.value)} className={HR_FILTER_INPUT}>
                 <option value="All">{t('reports.hr_dept_all')}</option>
                 {departmentOptions.map((dept) => (

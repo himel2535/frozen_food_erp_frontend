@@ -1,4 +1,5 @@
 import type { AppState } from '@/lib/state/types';
+import { formatAppDate } from '@/lib/i18n/locale-format';
 import { listFromState, createInState, updateInState, deleteFromState, formatCurrency } from '@/lib/services/domain-service';
 import { getSalaryStructureById } from '@/lib/services/payroll-service';
 
@@ -109,7 +110,7 @@ export function formatEmployeeDate(value: unknown) {
   if (!value) return '—';
   const d = new Date(String(value));
   if (Number.isNaN(d.getTime())) return String(value);
-  return d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+  return formatAppDate(d, { day: '2-digit', month: 'short', year: 'numeric' });
 }
 
 function getEmployeePayrollSlips(state: AppState, employee: Row) {

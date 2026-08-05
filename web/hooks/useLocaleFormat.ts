@@ -6,8 +6,11 @@ import { useAppStore } from '@/lib/state/app-store';
 import {
   formatCompactMoney,
   formatDate,
-  formatMoney,
+  formatDateSlash,
+  formatDateTime,
   formatMonthShort,
+  formatMonthYear,
+  formatMoney,
   formatNumber,
 } from '@/lib/i18n/locale-format';
 
@@ -31,7 +34,10 @@ export function useLocaleFormat() {
       formatCompactMoney: (value: number) => formatCompactMoney(value, lang),
       formatDate: (value: Date | string, options?: Intl.DateTimeFormatOptions) =>
         formatDate(value, lang, options),
+      formatDateSlash: (value: Date | string) => formatDateSlash(value, lang),
+      formatDateTime: (value: Date | string) => formatDateTime(value, lang),
       formatMonthShort: (monthIndex: number) => formatMonthShort(monthIndex, lang),
+      formatMonthYear: (value: Date | string) => formatMonthYear(value, lang),
     }),
     [lang],
   );

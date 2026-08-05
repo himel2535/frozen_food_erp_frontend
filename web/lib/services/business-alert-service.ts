@@ -1,4 +1,5 @@
 import type { AppState } from '@/lib/state/types';
+import { formatAppDate } from '@/lib/i18n/locale-format';
 import { getCollectionOverlay } from '@/lib/state/customer-collection-seed';
 import { buildCustomerFollowUpHref } from '@/lib/services/customer-receivables-service';
 import { listRecipes } from '@/lib/services/recipes-service';
@@ -63,7 +64,7 @@ function daysAgoLabel(dateStr: string | undefined, today = todayIso()): string {
 function formatDisplayDate(dateStr: string): string {
   if (!dateStr) return '—';
   const d = new Date(`${dateStr.slice(0, 10)}T12:00:00`);
-  return d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+  return formatAppDate(d, { day: '2-digit', month: 'short', year: 'numeric' });
 }
 
 function priorityRank(p: AlertPriority): number {

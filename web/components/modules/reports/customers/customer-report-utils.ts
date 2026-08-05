@@ -1,4 +1,5 @@
 import { formatCurrency } from '@/lib/services/domain-service';
+import { formatAppDate } from '@/lib/i18n/locale-format';
 import type { KpiCardItem } from '@/components/shared/KpiCards';
 
 export type CustomerReportRow = {
@@ -216,7 +217,7 @@ export function formatReportingPeriod(filters: CustomerReportFilters): string {
   if (filters.dateStart && filters.dateEnd) {
     const fmt = (d: string) => {
       const date = new Date(`${d}T00:00:00`);
-      return date.toLocaleDateString('en-GB');
+      return formatAppDate(date);
     };
     return `${fmt(filters.dateStart)} - ${fmt(filters.dateEnd)}`;
   }
@@ -226,7 +227,7 @@ export function formatReportingPeriod(filters: CustomerReportFilters): string {
 export function formatDisplayDate(dateStr: string): string {
   if (!dateStr) return '—';
   const date = new Date(`${dateStr}T00:00:00`);
-  return date.toLocaleDateString('en-GB');
+  return formatAppDate(date);
 }
 
 export function getSliceColors(

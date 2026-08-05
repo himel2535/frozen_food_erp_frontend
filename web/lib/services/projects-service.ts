@@ -8,6 +8,7 @@ import {
 import { listEmployees } from '@/lib/services/hrm-service';
 import { resolveKpiIcon } from '@/lib/ui/kpi-icons';
 import type { ProjectFormValues, ProjectLineItem, ProjectSaveAction } from '@/components/modules/projects/project-form/project-form-types';
+import { formatDate } from '@/lib/i18n/locale-format';
 
 type Row = Record<string, unknown>;
 
@@ -251,7 +252,7 @@ export function formatProjectDeadline(value: unknown) {
   if (!raw) return '—';
   const d = new Date(`${raw}T00:00:00`);
   if (Number.isNaN(d.getTime())) return raw;
-  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  return formatDate(d, 'en');
 }
 
 export function isProjectOverdue(value: unknown) {

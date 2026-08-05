@@ -17,6 +17,7 @@ import {
 import { FormHeader } from '@/components/layout/FormHeader';
 import { MODULE_LIST_SHELL } from '@/lib/ui/module-layout';
 import { IconInput, IconSelect, IconTextarea } from '@/components/modules/crm/customer-form/IconField';
+import { DateInput } from '@/components/shared/DateInput';
 import { PoSupplierSearch } from '@/components/modules/purchases/purchase-order-form/PoSupplierSearch';
 import { PoItemsTable } from '@/components/modules/purchases/purchase-order-form/PoItemsTable';
 import { PoOrderSummary } from '@/components/modules/purchases/purchase-order-form/PoOrderSummary';
@@ -196,10 +197,9 @@ export function PurchaseOrderForm({
                 </div>
                 <div id="po-field-date">
                   <label className={PO_LABEL_CLS}>Order Date <span className="text-rose-500 normal-case">*</span></label>
-                  <input
-                    type="date"
+                  <DateInput
                     value={form.date}
-                    onChange={(e) => updateForm({ date: e.target.value })}
+                    onChange={(date) => updateForm({ date })}
                     className={`${PO_INPUT_CLS}${errors.date ? ' border-rose-400' : ''}`}
                   />
                 </div>

@@ -222,7 +222,6 @@ export function ProfileSettingsForm({
                 className={FORM_SELECT_CLS}
               >
                 <option value="DD/MM/YYYY">DD/MM/YYYY</option>
-                <option value="MM/DD/YYYY">MM/DD/YYYY</option>
                 <option value="YYYY-MM-DD">YYYY-MM-DD</option>
               </select>
             </div>

@@ -6,6 +6,7 @@ import { Footer } from '@/components/layout/Footer';
 import { useRegisterModuleActions } from '@/components/layout/ModuleActionsContext';
 import { useAppStore } from '@/lib/state/app-store';
 import { toast } from '@/lib/ui/feedback';
+import { DateInput } from '@/components/shared/DateInput';
 import { PurchaseReportMetrics } from '@/components/modules/reports/purchases/PurchaseReportMetrics';
 import { PurchaseSpendChart } from '@/components/modules/reports/purchases/PurchaseSpendChart';
 import { PurchaseStatusDonut } from '@/components/modules/reports/purchases/PurchaseStatusDonut';
@@ -123,17 +124,15 @@ export function PurchaseReportsPage() {
               />
             </div>
             <div className="flex flex-wrap items-center gap-2">
-              <input
-                type="date"
+              <DateInput
                 value={dateStart}
-                onChange={(e) => setDateStart(e.target.value)}
+                onChange={setDateStart}
                 className={PR_FILTER_INPUT}
                 aria-label={t('reports.purchases_date_from')}
               />
-              <input
-                type="date"
+              <DateInput
                 value={dateEnd}
-                onChange={(e) => setDateEnd(e.target.value)}
+                onChange={setDateEnd}
                 className={PR_FILTER_INPUT}
                 aria-label={t('reports.purchases_date_to')}
               />

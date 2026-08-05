@@ -9,6 +9,7 @@ import {
   TRIAL_BALANCE_FISCAL_YEARS,
 } from './trial-balance-options';
 import type { TrialBalanceFilterState } from './trial-balance-types';
+import { DateInput } from '@/components/shared/DateInput';
 
 const SELECT_CLS =
   'w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-200 cursor-pointer';
@@ -34,11 +35,10 @@ export function TrialBalanceFilterCard({
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
         <div>
           <label className={LABEL_CLS} htmlFor="tb-as-on">As On Date</label>
-          <input
+          <DateInput
             id="tb-as-on"
-            type="date"
             value={draft.asOnDate}
-            onChange={(e) => set('asOnDate', e.target.value)}
+            onChange={(v) => set('asOnDate', v)}
             className={SELECT_CLS}
           />
         </div>

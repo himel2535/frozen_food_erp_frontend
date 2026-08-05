@@ -6,6 +6,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { ChevronDown, Info, Upload } from 'lucide-react';
 import { Footer } from '@/components/layout/Footer';
 import { useRegisterModuleActions } from '@/components/layout/ModuleActionsContext';
+import { useLocaleFormat } from '@/hooks/useLocaleFormat';
 import { SalarySheetFilters } from '@/components/modules/payroll/salary-sheet/SalarySheetFilters';
 import { SalarySheetKpiBar } from '@/components/modules/payroll/salary-sheet/SalarySheetKpiBar';
 import { SalarySheetTable } from '@/components/modules/payroll/salary-sheet/SalarySheetTable';
@@ -113,11 +114,13 @@ export function MonthlySalarySheetPage() {
     bump((n) => n + 1);
   }, [appState, saveAppState]);
 
+  const { formatMonthYear } = useLocaleFormat();
+
   const periodLabel = useMemo(() => {
     const [y, m] = filters.period.split('-');
     const d = new Date(Number(y), Number(m) - 1, 1);
-    return d.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
-  }, [filters.period]);
+    return formatMonthYear(d);
+  }, [filters.period, formatMonthYear]);
 
   useRegisterModuleActions(
     <>

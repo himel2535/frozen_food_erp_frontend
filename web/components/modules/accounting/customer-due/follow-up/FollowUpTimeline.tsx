@@ -5,6 +5,7 @@ import { toast } from '@/lib/ui/feedback';
 import { useMemo, useState } from 'react';
 import { CheckCircle2, MessageCircle, Phone } from 'lucide-react';
 import type { CollectionActivity, CollectionActivityType } from '@/lib/state/customer-collection-seed';
+import { formatAppDate } from '@/lib/i18n/locale-format';
 import { FU_BTN_OUTLINE, FU_CARD_CLS, ICON_CIRCLE_BY_TYPE, STATUS_TONE_BADGE } from './follow-up-styles';
 
 function isRichActivity(activity: CollectionActivity) {
@@ -39,7 +40,7 @@ function formatGroupLabel(iso: string) {
   const today = new Date();
   const yesterday = new Date();
   yesterday.setDate(today.getDate() - 1);
-  const dateLabel = d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }).toUpperCase();
+  const dateLabel = formatAppDate(d, { day: 'numeric', month: 'short', year: 'numeric' }).toUpperCase();
   if (d.toDateString() === today.toDateString()) return `TODAY — ${dateLabel}`;
   if (d.toDateString() === yesterday.toDateString()) return `YESTERDAY — ${dateLabel}`;
   return dateLabel;

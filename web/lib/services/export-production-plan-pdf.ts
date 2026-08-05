@@ -1,3 +1,4 @@
+import { formatAppDate } from '@/lib/i18n/locale-format';
 import {
   formatMoney,
   type ProductionPlanLine,
@@ -36,7 +37,7 @@ export async function downloadProductionPlanPdf(
 
   const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
   const { lines, summary } = plan;
-  const dateStr = new Date().toLocaleDateString('en-GB', {
+  const dateStr = formatAppDate(new Date(), {
     day: '2-digit',
     month: 'short',
     year: 'numeric',

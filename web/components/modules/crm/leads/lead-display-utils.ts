@@ -1,4 +1,5 @@
 import { LEAD_STAGE_LABELS } from '@/lib/services/crm-service';
+import { formatAppDate } from '@/lib/i18n/locale-format';
 
 const AVATAR_COLORS = [
   'bg-blue-100 text-blue-700',
@@ -53,7 +54,7 @@ export function formatLeadDateTime(iso: string | null | undefined) {
   const isToday = d.toDateString() === today.toDateString();
   const time = d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
   if (isToday) return `Today, ${time}`;
-  return `${d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}, ${time}`;
+  return `${formatAppDate(d, { day: 'numeric', month: 'short' })}, ${time}`;
 }
 
 export function formatRelativeActivity(iso: string | null | undefined) {
@@ -65,7 +66,7 @@ export function formatRelativeActivity(iso: string | null | undefined) {
   const time = d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
   if (diffDays === 0) return `Today, ${time}`;
   if (diffDays === 1) return `Yesterday, ${time}`;
-  return `${d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}, ${time}`;
+  return `${formatAppDate(d, { day: 'numeric', month: 'short' })}, ${time}`;
 }
 
 export const PIPELINE_STAGE_COLORS: Record<string, string> = {

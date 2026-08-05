@@ -1,4 +1,5 @@
 import type { AppState } from '@/lib/state/types';
+import { formatAppDate } from '@/lib/i18n/locale-format';
 import {
   createInState,
   formatCurrency,
@@ -274,7 +275,7 @@ export function formatPeriodLabel(dateFrom: string, dateTo: string) {
   const fmt = (d: string) => {
     if (!d) return '—';
     const date = new Date(`${d}T00:00:00`);
-    return date.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+    return formatAppDate(date, { day: '2-digit', month: 'short', year: 'numeric' });
   };
   return `${fmt(dateFrom)} - ${fmt(dateTo)}`;
 }

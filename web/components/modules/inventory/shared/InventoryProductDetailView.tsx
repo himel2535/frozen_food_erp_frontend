@@ -1,6 +1,7 @@
 'use client';
 
 import { Download, ListTree, Pencil } from 'lucide-react';
+import { useLocaleFormat } from '@/hooks/useLocaleFormat';
 import { DetailViewShell } from '@/components/shared/DetailViewShell';
 import { StatusBadge } from '@/components/shared/StatusBadge';
 import type { AppState } from '@/lib/state/types';
@@ -59,6 +60,7 @@ export function InventoryProductDetailView({
   onEdit: () => void;
   onManageBom?: () => void;
 }) {
+  const { formatDateTime } = useLocaleFormat();
   const name = String(row.name ?? '—');
   const id = String(row.id ?? '—');
   const warehouse = getWarehouseName(appState, String(row.warehouseId ?? 'WH-001'));
@@ -71,9 +73,7 @@ export function InventoryProductDetailView({
   const stockValue = variant === 'finished-goods'
     ? getFinishedGoodsStockValue(row)
     : getSemiFinishedTotalValue(row);
-  const lastUpdated = row.lastUpdated
-    ? new Date(String(row.lastUpdated)).toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' })
-    : '—';
+  const lastUpdated = row.lastUpdated ? formatDateTime(String(row.lastUpdated)) : '—';
 
   const linkedRecipe = resolveRecipeForInventoryRow(appState, {
     id: row.id as string | number,

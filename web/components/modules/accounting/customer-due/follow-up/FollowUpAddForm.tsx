@@ -25,6 +25,7 @@ import {
 } from './follow-up-contact-options';
 import type { FollowUpFormValues, StaffOption } from './follow-up-form-types';
 import { FU_BTN_OUTLINE, FU_BTN_PRIMARY, FU_CARD_CLS } from './follow-up-styles';
+import { DateInput } from '@/components/shared/DateInput';
 
 function defaultContactTime() {
   const d = new Date();
@@ -150,10 +151,9 @@ export function FollowUpAddForm({
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <label className="block space-y-1">
               <FormFieldLabel required>Contact Date</FormFieldLabel>
-              <input
-                type="date"
+              <DateInput
                 value={form.contactDate}
-                onChange={(e) => update({ contactDate: e.target.value })}
+                onChange={(contactDate) => update({ contactDate })}
                 required
                 className={FU_FORM_INPUT_CLS}
               />
@@ -206,10 +206,9 @@ export function FollowUpAddForm({
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <label className="block space-y-1">
                   <FormFieldLabel required>Next Follow-up Date</FormFieldLabel>
-                  <input
-                    type="date"
+                  <DateInput
                     value={form.nextDate}
-                    onChange={(e) => update({ nextDate: e.target.value })}
+                    onChange={(nextDate) => update({ nextDate })}
                     required={form.scheduleNext}
                     className={FU_FORM_INPUT_CLS}
                   />
@@ -278,10 +277,9 @@ export function FollowUpAddForm({
             </label>
             <label className="block space-y-1">
               <FormFieldLabel>Expected Payment Date</FormFieldLabel>
-              <input
-                type="date"
+              <DateInput
                 value={form.expectedPaymentDate}
-                onChange={(e) => update({ expectedPaymentDate: e.target.value })}
+                onChange={(expectedPaymentDate) => update({ expectedPaymentDate })}
                 className={FU_FORM_INPUT_CLS}
               />
             </label>

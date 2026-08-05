@@ -11,6 +11,7 @@ import {
   type CashboxEntry,
 } from '@/lib/services/cashbox-service';
 import { CB_FILTER_INPUT } from './cashbox-styles';
+import { DateInput } from '@/components/shared/DateInput';
 import { CASHBOX_CATEGORY_FILTER_OPTIONS, CASHBOX_TYPE_OPTIONS, getCategoryIcon } from './cashbox-options';
 import { CashboxTypeArrow } from './CashboxActionBar';
 
@@ -118,11 +119,11 @@ export function CashboxTransactionsTable({
         <div className="flex flex-wrap items-end gap-2 flex-1 min-w-0">
           <div className="min-w-[130px]">
             <label className="block text-[10px] font-bold uppercase tracking-wide text-slate-500 mb-1">From</label>
-            <input type="date" className={CB_FILTER_INPUT} value={dateFrom} onChange={(e) => onDateFromChange(e.target.value)} />
+            <DateInput className={CB_FILTER_INPUT} value={dateFrom} onChange={onDateFromChange} />
           </div>
           <div className="min-w-[130px]">
             <label className="block text-[10px] font-bold uppercase tracking-wide text-slate-500 mb-1">To</label>
-            <input type="date" className={CB_FILTER_INPUT} value={dateTo} onChange={(e) => onDateToChange(e.target.value)} />
+            <DateInput className={CB_FILTER_INPUT} value={dateTo} onChange={onDateToChange} />
           </div>
           <div className="min-w-[130px]">
             <label className="block text-[10px] font-bold uppercase tracking-wide text-slate-500 mb-1">Type</label>

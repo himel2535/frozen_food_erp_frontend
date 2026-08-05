@@ -1,7 +1,9 @@
 'use client';
 
+import { useMemo } from 'react';
 import Link from 'next/link';
 import { Calendar, ChevronLeft, ChevronRight } from 'lucide-react';
+import { useLocaleFormat } from '@/hooks/useLocaleFormat';
 import { employeeAvatarClass, employeeInitials } from '@/lib/services/hrm-service';
 import {
   RP_BREADCRUMB_CLS,
@@ -12,12 +14,6 @@ import {
   RP_STATUS_PAID_CLS,
   RP_STATUS_PENDING_CLS,
 } from '@/components/modules/payroll/salary-sheet/review/review-pay-styles';
-
-function formatPeriodLabel(period: string) {
-  const [y, m] = period.split('-');
-  const d = new Date(Number(y), Number(m) - 1, 1);
-  return d.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
-}
 
 export function EmployeeReviewHeader({
   employee,
@@ -36,6 +32,12 @@ export function EmployeeReviewHeader({
   period: string;
   locked: boolean;
 }) {
+  const { formatMonthYear } = useLocaleFormat();
+  const periodDate = useMemo(() => {
+    const [y, m] = period.split('-');
+    return new Date(Number(y), Number(m) - 1, 1);
+  }, [period]);
+
   const name = String(employee.name ?? 'Employee');
   const meta = [
     String(employee.employeeCode ?? employee.id),
@@ -60,7 +62,7 @@ export function EmployeeReviewHeader({
         </div>
         <span className={RP_PERIOD_PILL_CLS}>
           <Calendar className="w-3.5 h-3.5 text-blue-600" />
-          {formatPeriodLabel(period)}
+          {formatMonthYear(periodDate)}
         </span>
       </div>
 

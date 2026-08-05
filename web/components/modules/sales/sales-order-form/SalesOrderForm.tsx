@@ -18,6 +18,7 @@ import { FormHeader } from '@/components/layout/FormHeader';
 import { useChromeSuppressed } from '@/components/layout/ModuleActionsContext';
 import { MODULE_FORM_SHELL } from '@/lib/ui/module-layout';
 import { IconInput, IconSelect, IconTextarea } from '@/components/modules/crm/customer-form/IconField';
+import { DateInput } from '@/components/shared/DateInput';
 import { InvoiceCustomerSearch } from '@/components/modules/sales/invoice-form/InvoiceCustomerSearch';
 import { PoItemsTable } from '@/components/modules/purchases/purchase-order-form/PoItemsTable';
 import { PoOrderSummary } from '@/components/modules/purchases/purchase-order-form/PoOrderSummary';
@@ -214,10 +215,9 @@ export function SalesOrderForm({
                 </div>
                 <div id="so-field-date">
                   <label className={SO_LABEL_CLS}>Order Date <span className="text-rose-500 normal-case">*</span></label>
-                  <input
-                    type="date"
+                  <DateInput
                     value={form.date}
-                    onChange={(e) => updateForm({ date: e.target.value })}
+                    onChange={(date) => updateForm({ date })}
                     className={`${SO_INPUT_CLS}${errors.date ? ' border-rose-400' : ''}`}
                   />
                 </div>

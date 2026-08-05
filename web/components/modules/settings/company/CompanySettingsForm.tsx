@@ -212,7 +212,6 @@ function BusinessFields({
           <label htmlFor="company-date-format" className={FORM_LABEL_CLS}>{labels.dateFormat}</label>
           <select id="company-date-format" value={form.dateFormat} onChange={(e) => onChange('dateFormat', e.target.value)} className={FORM_SELECT_CLS}>
             <option value="DD/MM/YYYY">DD/MM/YYYY</option>
-            <option value="MM/DD/YYYY">MM/DD/YYYY</option>
             <option value="YYYY-MM-DD">YYYY-MM-DD</option>
           </select>
         </div>

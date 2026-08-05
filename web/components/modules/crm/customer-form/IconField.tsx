@@ -1,6 +1,7 @@
 'use client';
 
 import type { LucideIcon } from 'lucide-react';
+import { DateInput } from '@/components/shared/DateInput';
 import {
   CF_FIELD_ERROR_CLS,
   CF_ICON_CLS,
@@ -29,8 +30,15 @@ export function IconInput({
   className = '',
   error,
   fieldId,
+  type,
+  value,
+  onChange,
+  id,
+  'aria-label': ariaLabel,
   ...props
 }: BaseProps & React.InputHTMLAttributes<HTMLInputElement>) {
+  const inputCls = `${CF_INPUT_CLS}${error ? ` ${CF_INPUT_ERROR_CLS}` : ''}`;
+
   return (
     <div id={fieldId} className={className}>
       <label className={CF_LABEL_CLS}>
@@ -39,12 +47,30 @@ export function IconInput({
       </label>
       <div className={CF_INPUT_WRAP_CLS}>
         <Icon className={CF_ICON_CLS} />
-        <input
-          className={`${CF_INPUT_CLS}${error ? ` ${CF_INPUT_ERROR_CLS}` : ''}`}
-          required={required}
-          aria-invalid={error ? true : undefined}
-          {...props}
-        />
+        {type === 'date' ? (
+          <DateInput
+            id={id}
+            value={String(value ?? '')}
+            onChange={(v) => {
+              onChange?.({ target: { value: v } } as React.ChangeEvent<HTMLInputElement>);
+            }}
+            required={required}
+            className={inputCls}
+            aria-label={ariaLabel}
+          />
+        ) : (
+          <input
+            type={type}
+            id={id}
+            value={value}
+            onChange={onChange}
+            className={inputCls}
+            required={required}
+            aria-invalid={error ? true : undefined}
+            aria-label={ariaLabel}
+            {...props}
+          />
+        )}
       </div>
       {error ? <p className={CF_FIELD_ERROR_CLS}>{error}</p> : null}
     </div>

@@ -6,6 +6,7 @@ import { Footer } from '@/components/layout/Footer';
 import { useRegisterModuleActions } from '@/components/layout/ModuleActionsContext';
 import { useAppStore } from '@/lib/state/app-store';
 import { toast } from '@/lib/ui/feedback';
+import { DateInput } from '@/components/shared/DateInput';
 import { FinancialReportMetrics } from '@/components/modules/reports/financial/FinancialReportMetrics';
 import { FinancialSummaryTable } from '@/components/modules/reports/financial/FinancialSummaryTable';
 import { FinancialTrendChart } from '@/components/modules/reports/financial/FinancialTrendChart';
@@ -125,8 +126,8 @@ export function FinancialReportsPage() {
               />
             </div>
             <div className="flex flex-wrap items-center gap-2">
-              <input type="date" value={dateStart} onChange={(e) => setDateStart(e.target.value)} className={FR_FILTER_INPUT} aria-label={t('reports.financial_date_from')} />
-              <input type="date" value={dateEnd} onChange={(e) => setDateEnd(e.target.value)} className={FR_FILTER_INPUT} aria-label={t('reports.financial_date_to')} />
+              <DateInput value={dateStart} onChange={setDateStart} className={FR_FILTER_INPUT} aria-label={t('reports.financial_date_from')} />
+              <DateInput value={dateEnd} onChange={setDateEnd} className={FR_FILTER_INPUT} aria-label={t('reports.financial_date_to')} />
               <select value={periodFilter} onChange={(e) => setPeriodFilter(e.target.value)} className={FR_FILTER_INPUT}>
                 <option value="This Month">{t('reports.financial_period_this_month')}</option>
                 <option value="Last Month">{t('reports.financial_period_last_month')}</option>

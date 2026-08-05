@@ -1,4 +1,5 @@
 import { formatCurrency } from '@/lib/services/domain-service';
+import { formatAppDate } from '@/lib/i18n/locale-format';
 import type { KpiCardItem } from '@/components/shared/KpiCards';
 
 export type PurchaseReportRow = {
@@ -239,7 +240,7 @@ export function supplierInitials(name: string): string {
 export function formatReportDate(date: string): string {
   if (!date) return '—';
   const d = new Date(`${date}T00:00:00`);
-  return d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+  return formatAppDate(d, { day: '2-digit', month: 'short', year: 'numeric' });
 }
 
 export function formatFilterSummary(filters: PurchaseReportFilters): string {

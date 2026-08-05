@@ -4,6 +4,7 @@ import { toast } from '@/lib/ui/feedback';
 
 import { useMemo, useState } from 'react';
 import { AppFormModal, FORM_GRID_CLS, FORM_INPUT_CLS, FORM_LABEL_CLS, FORM_SELECT_CLS } from '@/components/shared/AppForm';
+import { DateInput } from '@/components/shared/DateInput';
 import { AdvancedDetailsToggle } from '@/components/shared/AdvancedDetailsToggle';
 import { ProductSelect, WarehouseSelect } from '@/components/modules/inventory/shared/selects';
 import { AppTable, type AppTableColumn } from '@/components/shared/AppTable';
@@ -141,7 +142,7 @@ export function StockInPage() {
         <div><label className={FORM_LABEL_CLS}>Warehouse *</label><WarehouseSelect state={appState} value={form.warehouseId} onChange={(v) => setForm({ ...form, warehouseId: v })} required /></div>
         <div><label className={FORM_LABEL_CLS}>Quantity *</label><input required type="number" min={1} className={FORM_INPUT_CLS} value={form.qty} onChange={(e) => setForm({ ...form, qty: e.target.value })} /></div>
         <div><label className={FORM_LABEL_CLS}>Unit Cost *</label><input required type="number" min={0} step="0.01" className={FORM_INPUT_CLS} value={form.unitCost} onChange={(e) => setForm({ ...form, unitCost: e.target.value })} /></div>
-        <div><label className={FORM_LABEL_CLS}>Date</label><input type="date" className={`${FORM_INPUT_CLS} cursor-pointer`} value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })} /></div>
+        <div><label className={FORM_LABEL_CLS}>Date</label><DateInput className={`${FORM_INPUT_CLS} cursor-pointer`} value={form.date} onChange={(v) => setForm({ ...form, date: v })} /></div>
         <div><label className={FORM_LABEL_CLS}>Source Type</label><select className={FORM_SELECT_CLS} value={form.sourceType} onChange={(e) => setForm({ ...form, sourceType: e.target.value })}><option>Purchase</option><option>Production</option><option>Return</option><option>Transfer</option></select></div>
         <div className="md:col-span-2 bg-emerald-50/80 border border-emerald-200/80 rounded-xl p-4"><span className="text-[11px] font-bold uppercase tracking-wide text-emerald-700">Total Value</span><p className="text-lg font-bold text-emerald-700 mt-1">{formatMoney(totalValue)}</p></div>
       </div>
@@ -151,7 +152,7 @@ export function StockInPage() {
           <div><label className={FORM_LABEL_CLS}>Reference Doc ID</label><input className={FORM_INPUT_CLS} value={form.refDocId} onChange={(e) => setForm({ ...form, refDocId: e.target.value })} /></div>
           <div><label className={FORM_LABEL_CLS}>Supplier</label><input className={FORM_INPUT_CLS} value={form.supplier} onChange={(e) => setForm({ ...form, supplier: e.target.value })} /></div>
           <div><label className={FORM_LABEL_CLS}>Batch Number</label><input className={FORM_INPUT_CLS} value={form.batchNumber} onChange={(e) => setForm({ ...form, batchNumber: e.target.value })} /></div>
-          <div><label className={FORM_LABEL_CLS}>Expiry Date</label><input type="date" className={`${FORM_INPUT_CLS} cursor-pointer`} value={form.expiryDate} onChange={(e) => setForm({ ...form, expiryDate: e.target.value })} /></div>
+          <div><label className={FORM_LABEL_CLS}>Expiry Date</label><DateInput className={`${FORM_INPUT_CLS} cursor-pointer`} value={form.expiryDate} onChange={(v) => setForm({ ...form, expiryDate: v })} /></div>
           <div><label className={FORM_LABEL_CLS}>Status</label><select className={FORM_SELECT_CLS} value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value })}><option value="Pending">Pending</option><option value="Approved">Approved</option></select></div>
           <div className="md:col-span-2"><label className={FORM_LABEL_CLS}>Notes</label><textarea className={FORM_INPUT_CLS} rows={2} value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} /></div>
         </div>

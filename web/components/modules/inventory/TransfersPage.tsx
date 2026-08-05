@@ -4,6 +4,7 @@ import { toast } from '@/lib/ui/feedback';
 
 import { useMemo, useState } from 'react';
 import { AppFormModal, FORM_GRID_CLS, FORM_INPUT_CLS, FORM_LABEL_CLS, FORM_SELECT_CLS } from '@/components/shared/AppForm';
+import { DateInput } from '@/components/shared/DateInput';
 import { AdvancedDetailsToggle } from '@/components/shared/AdvancedDetailsToggle';
 import { ProductSelect, WarehouseSelect } from '@/components/modules/inventory/shared/selects';
 import { AppTable, type AppTableColumn } from '@/components/shared/AppTable';
@@ -123,7 +124,7 @@ export function TransfersPage() {
         <div><label className={FORM_LABEL_CLS}>Quantity *</label><input required type="number" min={1} className={FORM_INPUT_CLS} value={form.qty} onChange={(e) => setForm({ ...form, qty: e.target.value })} /></div>
         <div><label className={FORM_LABEL_CLS}>From Warehouse *</label><WarehouseSelect state={appState} value={form.fromWarehouseId} onChange={(v) => setForm({ ...form, fromWarehouseId: v })} required /></div>
         <div><label className={FORM_LABEL_CLS}>To Warehouse *</label><WarehouseSelect state={appState} value={form.toWarehouseId} onChange={(v) => setForm({ ...form, toWarehouseId: v })} required /></div>
-        <div><label className={FORM_LABEL_CLS}>Date</label><input type="date" className={`${FORM_INPUT_CLS} cursor-pointer`} value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })} /></div>
+        <div><label className={FORM_LABEL_CLS}>Date</label><DateInput className={`${FORM_INPUT_CLS} cursor-pointer`} value={form.date} onChange={(v) => setForm({ ...form, date: v })} /></div>
       </div>
       <AdvancedDetailsToggle open={showAdvanced} onToggle={() => setShowAdvanced(!showAdvanced)} />
       {showAdvanced && (

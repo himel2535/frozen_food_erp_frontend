@@ -7,15 +7,16 @@ import { DedicatedModule } from '@/components/modules/shared/DedicatedModule';
 import { EmployeeRegisterForm } from '@/components/modules/hrm/employee-form/EmployeeRegisterForm';
 import { TableIconAction } from '@/components/shared/TableIconAction';
 import { useLegacyParityConfig } from '@/hooks/use-legacy-parity-config';
+import { useLocaleFormat } from '@/hooks/useLocaleFormat';
 import { employeeAvatarClass, employeeInitials } from '@/lib/services/hrm-service';
 import { formatMoney } from '@/lib/services/payroll-service';
 
-function formatEffectiveDate(value: unknown) {
+function formatEffectiveDate(value: unknown, formatDateFn: (value: Date | string) => string) {
   const raw = String(value ?? '').split('T')[0];
   if (!raw) return '—';
   const d = new Date(`${raw}T00:00:00`);
   if (Number.isNaN(d.getTime())) return raw;
-  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  return formatDateFn(d);
 }
 
 function assignedCount(row: Record<string, unknown>) {
@@ -97,6 +98,7 @@ export function AttendancePage() { return <DedicatedModule configId="hrm-attenda
 export function LeavePage() { return <DedicatedModule configId="hrm-leave" />; }
 export function PayrollStructuresPage() {
   const router = useRouter();
+  const { formatDate } = useLocaleFormat();
   const base = useLegacyParityConfig('payroll-structures');
   const config = useMemo(() => {
     if (!base) return null;
@@ -157,7 +159,7 @@ export function PayrollStructuresPage() {
         );
       },
       effectiveFrom: (row: Record<string, unknown>) => (
-        <span className="text-sm font-medium text-slate-600">{formatEffectiveDate(row.effectiveFrom)}</span>
+        <span className="text-sm font-medium text-slate-600">{formatEffectiveDate(row.effectiveFrom, formatDate)}</span>
       ),
       rules: (row: Record<string, unknown>) => (
         <span className="inline-flex flex-wrap gap-1">
@@ -174,7 +176,7 @@ export function PayrollStructuresPage() {
       ),
     },
   };
-  }, [base, router]);
+  }, [base, router, formatDate]);
 
   if (!config) return <DedicatedModule configId="payroll-structures" />;
 

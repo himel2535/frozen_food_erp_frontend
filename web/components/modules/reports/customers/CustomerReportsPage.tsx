@@ -6,6 +6,7 @@ import { Footer } from '@/components/layout/Footer';
 import { useRegisterModuleActions } from '@/components/layout/ModuleActionsContext';
 import { useAppStore } from '@/lib/state/app-store';
 import { toast } from '@/lib/ui/feedback';
+import { DateInput } from '@/components/shared/DateInput';
 import { CustomerReportMetrics } from '@/components/modules/reports/customers/CustomerReportMetrics';
 import { CustomerSummaryTable } from '@/components/modules/reports/customers/CustomerSummaryTable';
 import { CustomerBreakdownDonut } from '@/components/modules/reports/customers/CustomerBreakdownDonut';
@@ -135,8 +136,8 @@ export function CustomerReportsPage() {
               />
             </div>
             <div className="flex flex-wrap items-center gap-2">
-              <input type="date" value={dateStart} onChange={(e) => setDateStart(e.target.value)} className={CR_FILTER_INPUT} aria-label={t('reports.customers_date_from')} />
-              <input type="date" value={dateEnd} onChange={(e) => setDateEnd(e.target.value)} className={CR_FILTER_INPUT} aria-label={t('reports.customers_date_to')} />
+              <DateInput value={dateStart} onChange={setDateStart} className={CR_FILTER_INPUT} aria-label={t('reports.customers_date_from')} />
+              <DateInput value={dateEnd} onChange={setDateEnd} className={CR_FILTER_INPUT} aria-label={t('reports.customers_date_to')} />
               <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className={CR_FILTER_INPUT}>
                 <option value="All">{t('reports.customers_all_status')}</option>
                 <option value="Active">{t('reports.customers_status_active')}</option>

@@ -8,6 +8,7 @@ import { FileSpreadsheet, Filter, Plus, Package, History, FileText, Paperclip, M
 import { Footer } from '@/components/layout/Footer';
 import { useChromeSuppressed, useRegisterModuleActions } from '@/components/layout/ModuleActionsContext';
 import { FilterTabs } from '@/components/shared/FilterTabs';
+import { DateInput } from '@/components/shared/DateInput';
 import { KpiCards } from '@/components/shared/KpiCards';
 import { StatusBadge } from '@/components/shared/StatusBadge';
 import { TableIconAction } from '@/components/shared/TableIconAction';
@@ -495,8 +496,8 @@ export function PurchaseRmPage() {
           </button>
         </div>
         <div className="flex flex-wrap gap-2">
-          <input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} className="px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 text-xs font-medium" />
-          <input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} className="px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 text-xs font-medium" />
+          <DateInput value={dateFrom} onChange={setDateFrom} className="px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 text-xs font-medium" />
+          <DateInput value={dateTo} onChange={setDateTo} className="px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 text-xs font-medium" />
         </div>
         <FilterTabs tabs={STATUS_TABS} active={statusFilter} onChange={setStatusFilter} />
       </div>

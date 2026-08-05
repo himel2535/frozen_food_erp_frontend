@@ -5,6 +5,7 @@ import { useEffect, useMemo, useState, type FormEvent, type ReactNode } from 're
 import { Footer } from '@/components/layout/Footer';
 import { FormHeader } from '@/components/layout/FormHeader';
 import { AdvancedDetailsToggle } from '@/components/shared/AdvancedDetailsToggle';
+import { DateInput } from '@/components/shared/DateInput';
 import type { PortField } from '@/lib/modules/port-types';
 import { MODULE_FORM_SHELL } from '@/lib/ui/module-layout';
 import {
@@ -277,16 +278,25 @@ export function AppFormFieldInput({
     );
   }
 
+  if (field.type === 'date') {
+    return (
+      <DateInput
+        value={value}
+        onChange={onChange}
+        required={isRequired}
+        className={`${FORM_INPUT_CLS} cursor-pointer`}
+      />
+    );
+  }
+
   const inputType =
     field.type === 'number'
       ? 'number'
       : field.type === 'email'
         ? 'email'
-        : field.type === 'date'
-          ? 'date'
-          : field.type === 'phone'
-            ? 'tel'
-            : 'text';
+        : field.type === 'phone'
+          ? 'tel'
+          : 'text';
 
   return (
     <input
@@ -295,7 +305,7 @@ export function AppFormFieldInput({
       value={value}
       onChange={(e) => onChange(e.target.value)}
       placeholder={field.placeholder}
-      className={`${FORM_INPUT_CLS}${inputType === 'date' ? ' cursor-pointer' : ''}`}
+      className={FORM_INPUT_CLS}
     />
   );
 }

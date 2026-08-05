@@ -73,7 +73,7 @@ function createT(lang: Lang) {
 }
 
 function applyLanguageDom(lang: Lang) {
-  document.documentElement.lang = lang;
+  document.documentElement.lang = lang === 'bn' ? 'bn' : 'en-GB';
   document.body.classList.toggle('lang-bn', lang === 'bn');
   window.dispatchEvent(new CustomEvent('hookerp:language-changed', { detail: { lang } }));
 }

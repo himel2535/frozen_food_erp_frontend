@@ -6,6 +6,7 @@ import { Footer } from '@/components/layout/Footer';
 import { useRegisterModuleActions } from '@/components/layout/ModuleActionsContext';
 import { useAppStore } from '@/lib/state/app-store';
 import { toast } from '@/lib/ui/feedback';
+import { DateInput } from '@/components/shared/DateInput';
 import { InventoryReportMetrics } from '@/components/modules/reports/inventory/InventoryReportMetrics';
 import { InventoryDetailsTable } from '@/components/modules/reports/inventory/InventoryDetailsTable';
 import { InventoryCategoryDonut } from '@/components/modules/reports/inventory/InventoryCategoryDonut';
@@ -127,8 +128,8 @@ export function InventoryReportsPage() {
               />
             </div>
             <div className="flex flex-wrap items-center gap-2">
-              <input type="date" value={dateStart} onChange={(e) => setDateStart(e.target.value)} className={IR_FILTER_INPUT} aria-label={t('reports.inventory_date_from')} />
-              <input type="date" value={dateEnd} onChange={(e) => setDateEnd(e.target.value)} className={IR_FILTER_INPUT} aria-label={t('reports.inventory_date_to')} />
+              <DateInput value={dateStart} onChange={setDateStart} className={IR_FILTER_INPUT} aria-label={t('reports.inventory_date_from')} />
+              <DateInput value={dateEnd} onChange={setDateEnd} className={IR_FILTER_INPUT} aria-label={t('reports.inventory_date_to')} />
               <select value={categoryFilter} onChange={(e) => setCategoryFilter(e.target.value)} className={IR_FILTER_INPUT}>
                 <option value="All">{t('reports.inventory_all_category')}</option>
                 {categories.map((name) => (

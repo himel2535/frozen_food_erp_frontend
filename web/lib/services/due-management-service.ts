@@ -1,4 +1,5 @@
 import type { AppState } from '@/lib/state/types';
+import { formatAppDate } from '@/lib/i18n/locale-format';
 import {
   createInState,
   formatCurrency,
@@ -206,7 +207,7 @@ export function formatDueMoney(value: number) {
 export function formatDueDate(iso: string) {
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return iso;
-  return d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+  return formatAppDate(d, { day: '2-digit', month: 'short', year: 'numeric' });
 }
 
 export function getPartyInitials(name: string) {

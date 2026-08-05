@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { HeaderAlertsDropdown } from '@/components/layout/HeaderAlertsDropdown';
 import { HeaderMessagesDropdown } from '@/components/layout/HeaderMessagesDropdown';
+import { DateInput } from '@/components/shared/DateInput';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Search, User, Settings, LogOut } from 'lucide-react';
 import { Icon } from '@iconify/react';
@@ -112,12 +113,11 @@ export function Header({ title }: HeaderProps) {
             </div>
           </div>
         </div>
-        <input
-          type="date"
+        <DateInput
           value={navDate}
-          onChange={(e) => setNavDate(e.target.value)}
+          onChange={setNavDate}
           aria-label="Business date"
-          className="h-9 bg-white/50 hover:bg-white/90 border border-white/80 rounded-xl px-3 text-xs font-semibold text-slate-700 shadow-xs focus:outline-none focus:ring-2 focus:ring-blue-500/20 cursor-pointer shrink-0"
+          className="h-9 w-[9.5rem] bg-white/50 hover:bg-white/90 border border-white/80 rounded-xl px-3 text-xs font-semibold text-slate-700 shadow-xs focus:outline-none focus:ring-2 focus:ring-blue-500/20 cursor-pointer shrink-0"
         />
       </div>
 

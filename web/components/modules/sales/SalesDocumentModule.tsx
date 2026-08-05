@@ -12,6 +12,7 @@ import { FilterTabs } from '@/components/shared/FilterTabs';
 import { DetailViewShell } from '@/components/shared/DetailViewShell';
 import { LineItemsEditor, type LineItem } from '@/components/shared/LineItemsEditor';
 import { AdvancedDetailsToggle } from '@/components/shared/AdvancedDetailsToggle';
+import { DateInput } from '@/components/shared/DateInput';
 import { AppTable } from '@/components/shared/AppTable';
 import { StatusBadge } from '@/components/shared/StatusBadge';
 import { TableIconAction } from '@/components/shared/TableIconAction';
@@ -219,7 +220,7 @@ export function SalesDocumentModule({ config }: { config: SalesDocumentConfig })
           )}
           <div>
             <label className={FORM_LABEL_CLS}>{t('sales.col_date')}</label>
-            <input type="date" value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })} className={`${FORM_INPUT_CLS} cursor-pointer`} />
+            <DateInput value={form.date} onChange={(date) => setForm({ ...form, date })} className={`${FORM_INPUT_CLS} cursor-pointer`} />
           </div>
           <div>
             <label className={FORM_LABEL_CLS}>{t('sales.col_status')}</label>

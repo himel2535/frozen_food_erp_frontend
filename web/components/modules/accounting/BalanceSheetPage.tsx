@@ -7,6 +7,7 @@ import { ChevronDown, Download, Plus } from 'lucide-react';
 import { Footer } from '@/components/layout/Footer';
 import { useRegisterModuleActions } from '@/components/layout/ModuleActionsContext';
 import { AppFormFields, AppFormModal } from '@/components/shared/AppForm';
+import { DateInput } from '@/components/shared/DateInput';
 import { useAppStore } from '@/lib/state/app-store';
 import type { PortField } from '@/lib/modules/port-types';
 import {
@@ -171,10 +172,9 @@ export function BalanceSheetPage() {
 
   useRegisterModuleActions(
     <>
-      <input
-        type="date"
+      <DateInput
         value={asOnDate}
-        onChange={(e) => setAsOnDate(e.target.value)}
+        onChange={setAsOnDate}
         className="rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-xs font-medium text-slate-700 cursor-pointer"
       />
       <button

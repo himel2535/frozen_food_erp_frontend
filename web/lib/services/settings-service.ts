@@ -1,5 +1,6 @@
 import type { AppState, CompanyProfile, CompanySignature, CurrentUserProfile } from '@/lib/state/types';
 import { DEFAULT_ALERT_SETTINGS } from '@/lib/services/alert-settings-defaults';
+import { formatDate } from '@/lib/i18n/locale-format';
 
 export const DEFAULT_CURRENT_USER: CurrentUserProfile = {
   id: 'USR-001',
@@ -124,7 +125,7 @@ export function formatLastActive(value?: string) {
   if (diffHours < 24) return `${diffHours}h ago`;
   const diffDays = Math.floor(diffHours / 24);
   if (diffDays < 7) return `${diffDays}d ago`;
-  return parsed.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+  return formatDate(parsed, 'en', { day: '2-digit', month: 'short', year: 'numeric' });
 }
 
 export function isProfileOnline(lastActive?: string) {

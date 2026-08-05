@@ -209,7 +209,7 @@ function CustomersPageContent() {
 
   useRegisterModuleActions(
     view === 'main' ? (
-      <ModuleToolbarActions onAdd={openCreate} addLabel={`+ ${t('crm.add_customer')}`} />
+      <ModuleToolbarActions onAdd={openCreate} addLabel={t('crm.add_customer')} />
     ) : null,
     [view, openCreate, t],
   );

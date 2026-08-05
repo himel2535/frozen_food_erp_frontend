@@ -17,6 +17,7 @@ import {
   RP_STAT_TILE_CLS,
   RP_STAT_VALUE_CLS,
 } from '@/components/modules/payroll/salary-sheet/review/review-pay-styles';
+import { DateInput } from '@/components/shared/DateInput';
 
 function StatTile({
   label,
@@ -155,11 +156,10 @@ export function SalaryPaymentFormCard({
 
         <div>
           <label className="text-xs font-bold text-slate-500">Payment Date</label>
-          <input
-            type="date"
+          <DateInput
             className={`${RP_INPUT_CLS} w-full mt-1.5`}
             value={date}
-            onChange={(e) => setDate(e.target.value)}
+            onChange={setDate}
             disabled={locked}
           />
         </div>

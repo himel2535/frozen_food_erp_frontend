@@ -2,6 +2,7 @@
 
 import { Download } from 'lucide-react';
 import { formatPeriodLabel } from '@/lib/services/profit-loss-service';
+import { DateInput } from '@/components/shared/DateInput';
 import type { ProfitLossPeriodState } from './profit-loss-types';
 
 const INPUT_CLS =
@@ -22,17 +23,15 @@ export function ProfitLossPeriodBar({
         <div>
           <span className="text-[11px] font-bold text-slate-500 block mb-1">Period</span>
           <div className="flex flex-wrap items-center gap-2">
-            <input
-              type="date"
+            <DateInput
               value={period.dateFrom}
-              onChange={(e) => onPeriodChange({ ...period, dateFrom: e.target.value })}
+              onChange={(dateFrom) => onPeriodChange({ ...period, dateFrom })}
               className={INPUT_CLS}
             />
             <span className="text-xs text-slate-400">to</span>
-            <input
-              type="date"
+            <DateInput
               value={period.dateTo}
-              onChange={(e) => onPeriodChange({ ...period, dateTo: e.target.value })}
+              onChange={(dateTo) => onPeriodChange({ ...period, dateTo })}
               className={INPUT_CLS}
             />
           </div>

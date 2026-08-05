@@ -11,6 +11,7 @@ import { KpiCards, type KpiCardItem } from '@/components/shared/KpiCards';
 import { getKpiGridClassName } from '@/lib/ui/kpi-grid';
 import { FilterTabs } from '@/components/shared/FilterTabs';
 import { AppTable } from '@/components/shared/AppTable';
+import { DateDisplay } from '@/components/shared/DateDisplay';
 import { StatusBadge } from '@/components/shared/StatusBadge';
 import { TableIconAction } from '@/components/shared/TableIconAction';
 import { useLegacyParityConfig } from '@/hooks/use-legacy-parity-config';
@@ -84,6 +85,10 @@ function resolveModuleText(
 function DedicatedModuleView({ config, configId }: { config: DedicatedModuleConfig; configId?: string }) {
   const t = useAppStore((s) => s.t);
   const { formatCount, formatMoney } = useLocaleFormat();
+  const dateFieldKeys = useMemo(
+    () => new Set(config.fields.filter((f) => f.type === 'date').map((f) => f.key)),
+    [config.fields],
+  );
   const appState = useAppStore((s) => s.appState);
   const saveAppState = useAppStore((s) => s.saveAppState);
   const [view, setView] = useState<'main' | 'form'>('main');
@@ -250,10 +255,15 @@ function DedicatedModuleView({ config, configId }: { config: DedicatedModuleConf
         columns={config.columns.map((col) => ({
           key: col.key,
           label: resolveLabel(t, col.label),
-          render: (row) =>
-            col.render?.(row)
-            ?? config.columnRender?.[col.key]?.(row)
-            ?? (col.key === 'status' ? <StatusBadge status={String(row.status ?? '—')} /> : String(row[col.key] ?? '—')),
+          render: (row) => {
+            if (col.render) return col.render(row);
+            if (config.columnRender?.[col.key]) return config.columnRender[col.key]!(row);
+            if (col.key === 'status') return <StatusBadge status={String(row.status ?? '—')} />;
+            if (dateFieldKeys.has(col.key)) {
+              return <DateDisplay value={row[col.key] as string} variant="slash" />;
+            }
+            return String(row[col.key] ?? '—');
+          },
         }))}
         rows={rows}
         emptyMessage={t('common.no_records_yet')}

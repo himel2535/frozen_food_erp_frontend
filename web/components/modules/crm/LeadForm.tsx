@@ -25,6 +25,7 @@ import { MODULE_LIST_SHELL } from '@/lib/ui/module-layout';
 import { useAppStore } from '@/lib/state/app-store';
 import { FormSectionCard } from '@/components/modules/crm/customer-form/FormSectionCard';
 import { IconInput, IconSelect, IconTextarea } from '@/components/modules/crm/customer-form/IconField';
+import { DateInput } from '@/components/shared/DateInput';
 import {
   CF_BTN_GHOST,
   CF_BTN_PRIMARY,
@@ -416,12 +417,11 @@ export function LeadForm({
                     <div id="lf-field-followUpDate">
                       <div className={CF_INPUT_WRAP_CLS}>
                         <Calendar className={CF_ICON_CLS} />
-                        <input
-                          type="date"
+                        <DateInput
                           aria-label="Follow-up date"
                           className={`${CF_INPUT_CLS}${errors.followUpDate ? ` ${CF_INPUT_ERROR_CLS}` : ''}`}
                           value={form.followUpDate}
-                          onChange={(e) => updateForm({ followUpDate: e.target.value })}
+                          onChange={(followUpDate) => updateForm({ followUpDate })}
                         />
                       </div>
                       {errors.followUpDate ? <p className={CF_FIELD_ERROR_CLS}>{errors.followUpDate}</p> : null}

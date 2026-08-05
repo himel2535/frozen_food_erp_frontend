@@ -1,6 +1,7 @@
 'use client';
 
 import { createPortal } from 'react-dom';
+import { formatAppDate } from '@/lib/i18n/locale-format';
 import type { SalesPrintSectionId } from '@/components/modules/reports/sales/sales-report-styles';
 import { RP_PRINT_BODY, RP_PRINT_SECTION, RP_PRINT_TABLE, RP_PRINT_TD, RP_PRINT_TH, RP_ROOT } from '@/components/modules/reports/shared/report-print-styles';
 import { formatCurrency } from '@/lib/services/domain-service';
@@ -64,11 +65,7 @@ export function SalesPrintFrame(props: SalesPrintFrameProps) {
     customerOrdersLabel,
   } = props;
 
-  const generatedAt = new Date().toLocaleDateString('en-GB', {
-    day: '2-digit',
-    month: 'short',
-    year: 'numeric',
-  });
+  const generatedAt = formatAppDate(new Date(), { day: '2-digit', month: 'short', year: 'numeric' });
 
   return createPortal(
     <div className={RP_ROOT} data-print-target={printTarget}>

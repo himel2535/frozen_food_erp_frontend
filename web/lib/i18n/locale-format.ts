@@ -4,6 +4,17 @@ export function localeTag(lang: Lang): 'en-US' | 'bn-BD' {
   return lang === 'bn' ? 'bn-BD' : 'en-US';
 }
 
+/** Date display locale — dd/mm/yyyy order for English (en-GB), not en-US. */
+export function dateLocaleTag(lang: Lang): 'en-GB' | 'bn-BD' {
+  return lang === 'bn' ? 'bn-BD' : 'en-GB';
+}
+
+function parseDate(value: Date | string): Date | null {
+  const date = value instanceof Date ? value : new Date(String(value));
+  if (Number.isNaN(date.getTime())) return null;
+  return date;
+}
+
 export function formatNumber(
   value: number,
   lang: Lang,
@@ -51,17 +62,47 @@ export function formatDate(
   lang: Lang,
   options?: Intl.DateTimeFormatOptions,
 ): string {
-  const date = value instanceof Date ? value : new Date(String(value));
-  if (Number.isNaN(date.getTime())) return String(value);
+  const date = parseDate(value);
+  if (!date) return String(value);
   const defaults: Intl.DateTimeFormatOptions = {
     day: 'numeric',
     month: 'short',
     year: 'numeric',
   };
-  return date.toLocaleDateString(localeTag(lang), { ...defaults, ...options });
+  return date.toLocaleDateString(dateLocaleTag(lang), { ...defaults, ...options });
+}
+
+/** Numeric slash format: dd/mm/yyyy */
+export function formatDateSlash(value: Date | string, lang: Lang): string {
+  const date = parseDate(value);
+  if (!date) return String(value);
+  return date.toLocaleDateString(dateLocaleTag(lang), {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+  });
 }
 
 export function formatMonthShort(monthIndex: number, lang: Lang): string {
   const date = new Date(2025, monthIndex, 1);
-  return date.toLocaleDateString(localeTag(lang), { month: 'short' });
+  return date.toLocaleDateString(dateLocaleTag(lang), { month: 'short' });
+}
+
+export function formatMonthYear(value: Date | string, lang: Lang): string {
+  const date = parseDate(value);
+  if (!date) return String(value);
+  return date.toLocaleDateString(dateLocaleTag(lang), { month: 'long', year: 'numeric' });
+}
+
+export function formatDateTime(value: Date | string, lang: Lang): string {
+  const date = parseDate(value);
+  if (!date) return String(value);
+  return date.toLocaleString(dateLocaleTag(lang), { dateStyle: 'medium', timeStyle: 'short' });
+}
+
+export function formatAppDate(
+  value: Date | string,
+  options?: Intl.DateTimeFormatOptions,
+): string {
+  return formatDate(value, 'en', options);
 }

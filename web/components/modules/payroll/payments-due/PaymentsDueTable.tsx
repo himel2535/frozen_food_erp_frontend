@@ -13,11 +13,12 @@ import {
   PD_STATUS_LABEL,
 } from '@/components/modules/payroll/payments-due/payments-due-styles';
 import { buildReviewUrl, type PaymentsDueFilterState } from '@/components/modules/payroll/payments-due/payments-due-types';
+import { formatAppDate } from '@/lib/i18n/locale-format';
 
 function formatPaymentDate(dateStr: string) {
   const d = new Date(dateStr);
   if (Number.isNaN(d.getTime())) return dateStr;
-  return d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+  return formatAppDate(d, { day: '2-digit', month: 'short', year: 'numeric' });
 }
 
 export function PaymentsDueTable({

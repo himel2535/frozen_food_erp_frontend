@@ -33,6 +33,7 @@ import {
   validateSalarySetupForm,
   type SalarySetupFieldError,
 } from '@/components/modules/payroll/salary-setup-form/salary-setup-form-validation';
+import { DateInput } from '@/components/shared/DateInput';
 import { MODULE_LIST_SHELL } from '@/lib/ui/module-layout';
 import type { AppState } from '@/lib/state/types';
 import { getAssignedEmployees } from '@/lib/services/payroll-service';
@@ -157,11 +158,10 @@ export function SalarySetupForm({
                 </div>
                 <div>
                   <label className={SS_LABEL_CLS}>Effective From <span className="text-rose-500">*</span></label>
-                  <input
-                    type="date"
+                  <DateInput
                     className={`${SS_INPUT_CLS}${errors.effectiveFrom ? ' border-rose-400' : ''}`}
                     value={form.effectiveFrom}
-                    onChange={(e) => updateForm({ effectiveFrom: e.target.value })}
+                    onChange={(effectiveFrom) => updateForm({ effectiveFrom })}
                   />
                 </div>
                 <div>

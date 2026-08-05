@@ -5,7 +5,10 @@ import { Footer } from '@/components/layout/Footer';
 import { ListToolbar } from '@/components/shared/ListToolbar';
 import { KpiCards, type KpiCardItem } from '@/components/shared/KpiCards';
 import { AppTable } from '@/components/shared/AppTable';
+import { DateDisplay } from '@/components/shared/DateDisplay';
+import { DateInput } from '@/components/shared/DateInput';
 import { StatusBadge } from '@/components/shared/StatusBadge';
+import { isLikelyDateColumnKey } from '@/lib/i18n/date-utils';
 import { useAppStore } from '@/lib/state/app-store';
 import type { AppState } from '@/lib/state/types';
 
@@ -80,8 +83,18 @@ export function ReportModule({ config }: { config: ReportModuleConfig }) {
           <>
             {config.dateRangeKeys && (
               <>
-                <input type="date" value={dateStart} onChange={(e) => setDateStart(e.target.value)} className="bg-slate-50 border border-slate-200 text-xs font-semibold rounded-xl px-3 py-2 cursor-pointer" />
-                <input type="date" value={dateEnd} onChange={(e) => setDateEnd(e.target.value)} className="bg-slate-50 border border-slate-200 text-xs font-semibold rounded-xl px-3 py-2 cursor-pointer" />
+                <DateInput
+                  value={dateStart}
+                  onChange={setDateStart}
+                  aria-label="Start date"
+                  className="bg-slate-50 border border-slate-200 text-xs font-semibold rounded-xl px-3 py-2 cursor-pointer"
+                />
+                <DateInput
+                  value={dateEnd}
+                  onChange={setDateEnd}
+                  aria-label="End date"
+                  className="bg-slate-50 border border-slate-200 text-xs font-semibold rounded-xl px-3 py-2 cursor-pointer"
+                />
               </>
             )}
             {config.statusFilterKey && config.statusOptions && (
@@ -104,8 +117,14 @@ export function ReportModule({ config }: { config: ReportModuleConfig }) {
           key: col.key,
           label: col.label,
           align: col.align === 'right' ? 'right' : 'left',
-          render: (row) =>
-            col.render?.(row) ?? (col.key === 'status' ? <StatusBadge status={String(row.status ?? '—')} /> : String(row[col.key] ?? '—')),
+          render: (row) => {
+            if (col.render) return col.render(row);
+            if (col.key === 'status') return <StatusBadge status={String(row.status ?? '—')} />;
+            if (isLikelyDateColumnKey(col.key)) {
+              return <DateDisplay value={row[col.key] as string} variant="slash" />;
+            }
+            return String(row[col.key] ?? '—');
+          },
         }))}
         rows={rows}
         rowKey={(row, i) => String(row.id ?? row.ref ?? row.sku ?? i)}

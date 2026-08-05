@@ -1,5 +1,6 @@
 'use client';
 
+import { useLocaleFormat } from '@/hooks/useLocaleFormat';
 import { Calendar, Package, Users } from 'lucide-react';
 import {
   PRIORITY_BADGE_CLS,
@@ -8,14 +9,11 @@ import {
 import { computeProjectTotals, formatProjectMoney } from '@/lib/services/projects-service';
 
 export function ProjectSummaryCard({ form }: { form: ProjectFormValues }) {
+  const { formatDate } = useLocaleFormat();
   const totals = computeProjectTotals(form.items);
   const customerLabel = form.customerName.trim() || '—';
   const deliveryLabel = form.expectedDeliveryDate
-    ? new Date(`${form.expectedDeliveryDate}T00:00:00`).toLocaleDateString('en-US', {
-        month: 'short',
-        day: 'numeric',
-        year: 'numeric',
-      })
+    ? formatDate(new Date(`${form.expectedDeliveryDate}T00:00:00`))
     : '—';
 
   return (

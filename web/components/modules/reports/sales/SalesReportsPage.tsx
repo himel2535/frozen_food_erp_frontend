@@ -13,6 +13,8 @@ import { useAppStore } from '@/lib/state/app-store';
 
 import { toast } from '@/lib/ui/feedback';
 
+import { DateInput } from '@/components/shared/DateInput';
+
 import { SalesReportMetrics } from '@/components/modules/reports/sales/SalesReportMetrics';
 
 import { SalesRevenueChart } from '@/components/modules/reports/sales/SalesRevenueChart';
@@ -247,13 +249,11 @@ export function SalesReportsPage() {
 
             <div className="flex flex-wrap items-center gap-2">
 
-              <input
-
-                type="date"
+              <DateInput
 
                 value={dateStart}
 
-                onChange={(e) => setDateStart(e.target.value)}
+                onChange={setDateStart}
 
                 className={SR_FILTER_INPUT}
 
@@ -261,13 +261,11 @@ export function SalesReportsPage() {
 
               />
 
-              <input
-
-                type="date"
+              <DateInput
 
                 value={dateEnd}
 
-                onChange={(e) => setDateEnd(e.target.value)}
+                onChange={setDateEnd}
 
                 className={SR_FILTER_INPUT}
 

@@ -2,6 +2,7 @@
 
 import { Dancing_Script } from 'next/font/google';
 import { QRCodeSVG } from 'qrcode.react';
+import { formatAppDate } from '@/lib/i18n/locale-format';
 import {
   Calendar,
   ClipboardList,
@@ -48,7 +49,7 @@ function formatDisplayDate(dateStr: string) {
   if (!dateStr) return '—';
   const parsed = new Date(`${dateStr}T00:00:00`);
   if (Number.isNaN(parsed.getTime())) return dateStr;
-  return parsed.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+  return formatAppDate(parsed, { day: '2-digit', month: 'short', year: 'numeric' });
 }
 
 function PrintSectionIcon({ children }: { children: React.ReactNode }) {

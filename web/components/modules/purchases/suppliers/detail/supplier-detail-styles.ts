@@ -1,3 +1,5 @@
+import { formatAppDate } from '@/lib/i18n/locale-format';
+
 export const SD_PAGE_LINK = 'text-sm font-bold text-slate-600 hover:text-blue-700 cursor-pointer transition-colors';
 
 export const SD_CARD = 'premium-card premium-shadow rounded-2xl border border-slate-200 bg-white p-5';
@@ -52,7 +54,7 @@ export function formatDetailDate(iso: string) {
   if (!iso || iso === '—') return '—';
   const d = new Date(iso.includes('T') ? iso : `${iso}T00:00:00`);
   if (Number.isNaN(d.getTime())) return iso;
-  return d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+  return formatAppDate(d, { day: '2-digit', month: 'short', year: 'numeric' });
 }
 
 export function formatDetailDateTime(iso: string) {
