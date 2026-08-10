@@ -224,6 +224,11 @@ function collectLowStockRows(state: AppState, useReorder: boolean): StockRow[] {
   return rows;
 }
 
+export function countLowStockItems(state: AppState, settings?: AlertSettings): number {
+  const s = settings ?? getAlertSettings(state);
+  return collectLowStockRows(state, s.lowStockUseReorderLevel).length;
+}
+
 function buildLowStockAlerts(state: AppState, settings: AlertSettings): BusinessAlert[] {
   const rows = collectLowStockRows(state, settings.lowStockUseReorderLevel);
 

@@ -240,6 +240,7 @@ export const bn = {
     "dashboard.last_3_years": "গত ৩ বছর",
     "dashboard.view_all": "সব দেখুন",
     "dashboard.requires_attention": "মনোযোগ প্রয়োজন",
+    "dashboard.stock_levels_ok": "সব স্টক স্তর ঠিক আছে",
     "dashboard.raw_materials": "কাঁচামাল",
     "dashboard.awaiting_dispatch": "প্রেরণের অপেক্ষায়",
     "dashboard.ready_dispatch": "প্রেরণের জন্য প্রস্তুত",

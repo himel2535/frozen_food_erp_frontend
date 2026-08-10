@@ -239,6 +239,7 @@ export const en = {
     "dashboard.last_3_years": "Last 3 Years",
     "dashboard.view_all": "View all",
     "dashboard.requires_attention": "Requires attention",
+    "dashboard.stock_levels_ok": "All stock levels OK",
     "dashboard.raw_materials": "Raw materials",
     "dashboard.awaiting_dispatch": "Awaiting dispatch",
     "dashboard.ready_dispatch": "Ready for dispatch",

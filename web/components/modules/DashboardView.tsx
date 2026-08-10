@@ -9,6 +9,12 @@ import type { AppState } from '@/lib/state/types';
 import { useLocaleFormat } from '@/hooks/useLocaleFormat';
 import { DashboardBusinessAlerts } from '@/components/modules/dashboard/DashboardBusinessAlerts';
 import { DashboardBottomPanels } from '@/components/modules/dashboard/DashboardBottomPanels';
+import { countLowStockItems } from '@/lib/services/business-alert-service';
+import {
+  getFinishedGoodsMetrics,
+  getRawMaterialMetrics,
+  getSemiFinishedMetrics,
+} from '@/lib/services/inventory-service';
 
 const SalesTrendChart = dynamic(
   () => import('@/components/modules/dashboard/SalesTrendChart').then((m) => m.SalesTrendChart),
@@ -19,26 +25,14 @@ const RevenueAnalyticsChart = dynamic(
   { ssr: false },
 );
 
-function stockValue(list: Array<Record<string, unknown>>) {
-  return list.reduce((sum, product) => sum + Number(product.stock || 0) * Number(product.cost || 0), 0);
-}
-
 function getDashboardMetrics(appState: AppState) {
-  const inventory = Array.isArray(appState.inventory) ? appState.inventory : [];
   const production = Array.isArray(appState.productionOrders) ? appState.productionOrders : [];
   const purchases = Array.isArray(appState.purchases) ? appState.purchases : [];
   const sales = Array.isArray(appState.salesOrders) ? appState.salesOrders : [];
   const customers = Array.isArray(appState.crmCustomers) ? appState.crmCustomers : [];
   const suppliers = Array.isArray(appState.purchasesSuppliers) ? appState.purchasesSuppliers : [];
 
-  const rm = inventory.filter((p) => p.productType === 'Raw Materials');
-  const sf = inventory.filter((p) => p.productType === 'Semi-Finished Goods');
-  const fg = inventory.filter((p) => p.productType === 'Finished Goods');
-
-  const lowStock = inventory.filter((p) => {
-    const min = Number(p.minStock ?? p.reorderLevel ?? 0);
-    return min > 0 && Number(p.stock || 0) < min;
-  }).length;
+  const lowStock = countLowStockItems(appState);
 
   const pendingProd = production.filter((p) => ['Planned', 'In Progress'].includes(String(p.status)));
   const pendingPurchase = purchases.filter((p) => ['Draft', 'Sent'].includes(String(p.status)));
@@ -55,9 +49,9 @@ function getDashboardMetrics(appState: AppState) {
     pendingPurchase: pendingPurchase.length,
     pendingSales: pendingSales.length,
     lowStock,
-    rmStockValue: stockValue(rm),
-    sfStockValue: stockValue(sf),
-    fgStockValue: stockValue(fg),
+    rmStockValue: getRawMaterialMetrics(appState).totalValue,
+    sfStockValue: getSemiFinishedMetrics(appState).totalValue,
+    fgStockValue: getFinishedGoodsMetrics(appState).totalValue,
     customerDue: customers.reduce((s, c) => s + Number(c.due || 0), 0),
     customerDueCount: customersWithDue.length || customers.length,
     supplierDue: suppliers.reduce((s, item) => s + Number(item.due || item.balance || 0), 0),
@@ -112,7 +106,10 @@ export function DashboardView() {
       'rm-stock': { value: formatMoney(metrics.rmStockValue), sub: t('dashboard.raw_materials') },
       'sf-stock': { value: formatMoney(metrics.sfStockValue), sub: t('dashboard.metric_parts_wip') },
       'fg-stock': { value: formatMoney(metrics.fgStockValue), sub: t('dashboard.ready_dispatch') },
-      'low-stock': { value: t('dashboard.metric_items', { n: metrics.lowStock }) },
+      'low-stock': {
+        value: t('dashboard.metric_items', { n: metrics.lowStock }),
+        sub: metrics.lowStock > 0 ? t('dashboard.requires_attention') : t('dashboard.stock_levels_ok'),
+      },
       'pending-production': {
         value: t('dashboard.metric_orders', { n: metrics.pendingProduction }),
         sub: t('dashboard.metric_pcs_planned', { n: metrics.pendingProductionQty }),
@@ -151,8 +148,12 @@ export function DashboardView() {
               <div className="flex flex-col justify-center gap-0.5 min-w-0 flex-1 my-auto">
                 <span className="text-xs font-bold text-slate-500 tracking-wide leading-tight">{t(card.labelKey)}</span>
                 <span className="text-lg md:text-xl font-extrabold tracking-tight text-slate-900 leading-tight mt-0.5">{data?.value ?? '—'}</span>
-                {card.alert ? (
-                  <span className="text-[11px] text-rose-600 font-bold block">{t('dashboard.requires_attention')}</span>
+                {card.alert && data?.sub ? (
+                  <span
+                    className={`text-[11px] font-bold block ${metrics.lowStock > 0 ? 'text-rose-600' : 'text-emerald-600'}`}
+                  >
+                    {data.sub}
+                  </span>
                 ) : data?.sub ? (
                   <span className="text-[11px] text-slate-500 font-medium block truncate">{data.sub}</span>
                 ) : null}

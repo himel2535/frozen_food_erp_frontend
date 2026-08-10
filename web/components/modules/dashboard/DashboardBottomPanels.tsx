@@ -1,6 +1,5 @@
 'use client';
 
-import Image from 'next/image';
 import Link from 'next/link';
 import { useMemo } from 'react';
 import { Icon } from '@iconify/react';
@@ -8,63 +7,25 @@ import { AppTable, type AppTableColumn } from '@/components/shared/AppTable';
 import { useAppStore } from '@/lib/state/app-store';
 import type { AppState } from '@/lib/state/types';
 import { useLocaleFormat } from '@/hooks/useLocaleFormat';
-
-const TOP_PRODUCTS = [
-  {
-    name: 'Super Hero Action Figure',
-    image: 'https://images.unsplash.com/photo-1588449668365-d15e397f6787?auto=format&fit=crop&q=80&w=50',
-    category: 'Action Figures',
-    sold: 312,
-    revenue: 78000,
-  },
-  {
-    name: 'Action Figure Arms',
-    image: 'https://images.unsplash.com/photo-1517336714731-489689fd1ca8?auto=format&fit=crop&q=80&w=50',
-    category: 'Parts & WIP',
-    sold: 89,
-    revenue: 178000,
-  },
-  {
-    name: 'Red Dye Colorant',
-    image: 'https://images.unsplash.com/photo-1592750475338-74b7b21085ab?auto=format&fit=crop&q=80&w=50',
-    category: 'Colorants',
-    sold: 245,
-    revenue: 367500,
-  },
-];
-
-const ACTIVITY_ITEMS = [
-  {
-    type: 'avatar' as const,
-    avatar:
-      'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=100',
-    textKey: 'dashboard.activity_invoice_created',
-    vars: { user: 'John Doe', invoiceId: 'INV-2025-00145' },
-    timeKey: 'dashboard.activity_time_2m',
-  },
-  {
-    type: 'badge' as const,
-    badge: 'P',
-    badgeClass: 'bg-emerald-50 text-emerald-600 border border-emerald-100',
-    textKey: 'dashboard.activity_payment_received',
-    vars: { customer: 'Acme Corp', amount: '' },
-    amountValue: 2450,
-    timeKey: 'dashboard.activity_time_15m',
-  },
-  {
-    type: 'badge' as const,
-    badge: 'S',
-    badgeClass: 'bg-orange-50 text-orange-600 border border-orange-100',
-    textKey: 'dashboard.activity_stock_updated',
-    vars: { product: 'Super Hero Action Figure', user: 'Mike' },
-    timeKey: 'dashboard.activity_time_1h',
-  },
-];
+import { listSystemAuditLogRecords } from '@/lib/services/audit-log-service';
+import { formatRelativeTime, getTopProducts, type TopProductRow } from '@/lib/services/dashboard-service';
 
 function customerName(state: AppState, customerId: unknown) {
   const customers = Array.isArray(state.crmCustomers) ? state.crmCustomers : [];
   const match = customers.find((c) => String(c.id) === String(customerId));
   return match ? String(match.company || match.name) : 'Customer';
+}
+
+function moduleBadgeClass(module: string) {
+  const m = module.toLowerCase();
+  if (m.includes('sales')) return 'bg-emerald-50 text-emerald-600 border border-emerald-100';
+  if (m.includes('purchase')) return 'bg-blue-50 text-blue-600 border border-blue-100';
+  if (m.includes('inventory')) return 'bg-orange-50 text-orange-600 border border-orange-100';
+  return 'bg-slate-50 text-slate-600 border border-slate-100';
+}
+
+function moduleInitial(module: string) {
+  return (module.trim()[0] ?? 'A').toUpperCase();
 }
 
 export function DashboardBottomPanels() {
@@ -77,40 +38,23 @@ export function DashboardBottomPanels() {
     return rows.slice(0, 3);
   }, [appState.invoices]);
 
+  const topProducts = useMemo(() => getTopProducts(appState, 3), [appState]);
+
   const activityItems = useMemo(
-    () =>
-      ACTIVITY_ITEMS.map((item) => {
-        const vars: Record<string, string | number> = {};
-        Object.entries(item.vars).forEach(([key, value]) => {
-          if (value !== '') vars[key] = value;
-        });
-        if ('amountValue' in item && item.amountValue != null) {
-          vars.amount = formatMoney(item.amountValue, { decimals: 2 });
-        }
-        return {
-          ...item,
-          text: t(item.textKey, vars),
-          time: t(item.timeKey),
-        };
-      }),
-    [t, formatMoney],
+    () => listSystemAuditLogRecords(appState).slice(0, 3),
+    [appState],
   );
 
-  const topProductColumns = useMemo<AppTableColumn<(typeof TOP_PRODUCTS)[number]>[]>(
+  const topProductColumns = useMemo<AppTableColumn<TopProductRow>[]>(
     () => [
       {
         key: 'name',
         label: t('common.product'),
         render: (row) => (
           <div className="flex items-center gap-3">
-            <Image
-              src={row.image}
-              alt=""
-              width={28}
-              height={28}
-              className="h-7 w-7 rounded-md object-cover bg-slate-100 border border-slate-200"
-              loading="lazy"
-            />
+            <div className="h-7 w-7 rounded-md bg-slate-100 border border-slate-200 flex items-center justify-center shrink-0">
+              <Icon icon="fluent-color:box-24" width={18} height={18} />
+            </div>
             <span className="font-bold text-slate-950">{row.name}</span>
           </div>
         ),
@@ -155,12 +99,16 @@ export function DashboardBottomPanels() {
             {t('dashboard.view_all')}
           </Link>
         </div>
-        <AppTable
-          className="app-table--embedded"
-          columns={topProductColumns}
-          rows={TOP_PRODUCTS}
-          rowKey={(row) => row.name}
-        />
+        {topProducts.length ? (
+          <AppTable
+            className="app-table--embedded"
+            columns={topProductColumns}
+            rows={topProducts}
+            rowKey={(row) => row.name}
+          />
+        ) : (
+          <p className="text-xs font-medium text-slate-400 text-center py-6">{t('common.no_data')}</p>
+        )}
       </div>
 
       <div className="premium-card p-4 premium-shadow lg:col-span-1 flex flex-col">
@@ -220,30 +168,25 @@ export function DashboardBottomPanels() {
           </Link>
         </div>
         <div className="flex-1 flex flex-col gap-4 overflow-y-auto">
-          {activityItems.map((item, idx) => (
-            <div key={idx} className="flex items-center gap-3">
-              {item.type === 'avatar' ? (
-                <Image
-                  src={item.avatar!}
-                  alt=""
-                  width={24}
-                  height={24}
-                  className="h-6 w-6 rounded-full object-cover shrink-0"
-                  loading="lazy"
-                />
-              ) : (
+          {activityItems.length ? (
+            activityItems.map((log) => (
+              <div key={log.id} className="flex items-center gap-3">
                 <div
-                  className={`h-6 w-6 rounded-full flex items-center justify-center shrink-0 text-[10px] font-bold ${item.badgeClass}`}
+                  className={`h-6 w-6 rounded-full flex items-center justify-center shrink-0 text-[10px] font-bold ${moduleBadgeClass(log.module)}`}
                 >
-                  {item.badge}
+                  {moduleInitial(log.module)}
                 </div>
-              )}
-              <div className="flex flex-col text-xs text-slate-600 leading-tight">
-                <span>{item.text}</span>
-                <span className="text-[9px] text-slate-400 mt-0.5">{item.time}</span>
+                <div className="flex flex-col text-xs text-slate-600 leading-tight min-w-0">
+                  <span className="truncate">
+                    <span className="font-semibold text-slate-800">{log.actorName}</span> — {log.description}
+                  </span>
+                  <span className="text-[9px] text-slate-400 mt-0.5">{formatRelativeTime(log.timestamp)}</span>
+                </div>
               </div>
-            </div>
-          ))}
+            ))
+          ) : (
+            <p className="text-xs font-medium text-slate-400 text-center py-6">{t('common.no_data')}</p>
+          )}
         </div>
       </div>
     </section>

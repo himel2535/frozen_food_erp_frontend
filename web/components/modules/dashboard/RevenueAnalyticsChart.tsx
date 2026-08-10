@@ -4,29 +4,37 @@ import { useMemo } from 'react';
 import { Icon } from '@iconify/react';
 import { useAppStore } from '@/lib/state/app-store';
 import { useLocaleFormat } from '@/hooks/useLocaleFormat';
-
-const BAR_VALUES = [340000, 420000, 390000, 520000, 820650, 480000, 590000, 470000, 620000, 680000];
-const BAR_HEIGHTS = ['38%', '48%', '42%', '60%', '82%', '54%', '65%', '52%', '70%', '72%'];
-const MONTH_INDICES = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+import { getRevenueByMonth } from '@/lib/services/dashboard-service';
 
 export function RevenueAnalyticsChart() {
+  const appState = useAppStore((s) => s.appState);
   const t = useAppStore((s) => s.t);
   const { formatCompactMoney, formatMonthShort } = useLocaleFormat();
 
+  const monthly = useMemo(() => getRevenueByMonth(appState), [appState]);
+  const maxValue = useMemo(() => Math.max(...monthly.map((m) => m.value), 1), [monthly]);
+  const activeIdx = useMemo(() => {
+    let best = 0;
+    monthly.forEach((m, i) => {
+      if (m.value > monthly[best].value) best = i;
+    });
+    return best;
+  }, [monthly]);
+
   const bars = useMemo(
     () =>
-      BAR_VALUES.map((value, idx) => ({
-        value,
-        height: BAR_HEIGHTS[idx],
-        label: formatCompactMoney(value),
-        active: idx === 4,
+      monthly.map((m, idx) => ({
+        value: m.value,
+        height: m.value > 0 ? `${Math.max(8, Math.round((m.value / maxValue) * 82))}%` : '8%',
+        label: formatCompactMoney(m.value),
+        active: idx === activeIdx,
       })),
-    [formatCompactMoney],
+    [monthly, maxValue, activeIdx, formatCompactMoney],
   );
 
   const monthLabels = useMemo(
-    () => MONTH_INDICES.map((monthIndex) => formatMonthShort(monthIndex)),
-    [formatMonthShort],
+    () => monthly.map((m) => formatMonthShort(m.month)),
+    [monthly, formatMonthShort],
   );
 
   return (
@@ -57,8 +65,8 @@ export function RevenueAnalyticsChart() {
           </div>
         ))}
         <div className="absolute bottom-0 left-0 w-full flex justify-between text-[9px] font-bold text-slate-400/80 pt-2 border-t border-slate-100">
-          {monthLabels.map((m) => (
-            <span key={m}>{m}</span>
+          {monthLabels.map((m, idx) => (
+            <span key={`${m}-${idx}`}>{m}</span>
           ))}
         </div>
       </div>

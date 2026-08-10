@@ -4,20 +4,10 @@ import { useEffect, useMemo, useRef } from 'react';
 import { Icon } from '@iconify/react';
 import { useAppStore } from '@/lib/state/app-store';
 import { useLocaleFormat } from '@/hooks/useLocaleFormat';
-
-const TREND_VALUES = [24000, 39000, 32000, 64300, 50000, 78000, 68000];
-const HIGHLIGHT_IDX = 3;
-const TREND_AXIS_DATES = [
-  '2025-05-12',
-  '2025-05-19',
-  '2025-05-26',
-  '2025-06-02',
-  '2025-06-09',
-];
-const TREND_TOOLTIP_DATE = '2025-05-28';
-const TREND_TOOLTIP_VALUE = TREND_VALUES[HIGHLIGHT_IDX];
+import { getSalesTrendSeries } from '@/lib/services/dashboard-service';
 
 export function SalesTrendChart() {
+  const appState = useAppStore((s) => s.appState);
   const t = useAppStore((s) => s.t);
   const { formatDate, formatMoney } = useLocaleFormat();
   const boxRef = useRef<HTMLDivElement>(null);
@@ -26,19 +16,37 @@ export function SalesTrendChart() {
   const markerRef = useRef<HTMLDivElement>(null);
   const tooltipRef = useRef<HTMLDivElement>(null);
 
+  const series = useMemo(() => getSalesTrendSeries(appState), [appState]);
+  const trendValues = useMemo(() => series.map((p) => p.value), [series]);
+  const highlightIdx = useMemo(() => {
+    if (!trendValues.length) return 0;
+    let best = 0;
+    trendValues.forEach((v, i) => {
+      if (v > trendValues[best]) best = i;
+    });
+    return best;
+  }, [trendValues]);
+
   const axisLabels = useMemo(
     () =>
-      TREND_AXIS_DATES.map((iso) =>
-        formatDate(iso, { month: 'short', day: 'numeric', year: undefined }),
+      series.map((p) =>
+        formatDate(p.date, { month: 'short', day: 'numeric', year: undefined }),
       ),
-    [formatDate],
+    [series, formatDate],
   );
 
+  const highlightPoint = series[highlightIdx];
   const tooltipDate = useMemo(
-    () => formatDate(TREND_TOOLTIP_DATE, { day: 'numeric', month: 'long', year: 'numeric' }),
-    [formatDate],
+    () =>
+      highlightPoint
+        ? formatDate(highlightPoint.date, { day: 'numeric', month: 'long', year: 'numeric' })
+        : '—',
+    [highlightPoint, formatDate],
   );
-  const tooltipAmount = useMemo(() => formatMoney(TREND_TOOLTIP_VALUE), [formatMoney]);
+  const tooltipAmount = useMemo(
+    () => formatMoney(highlightPoint?.value ?? 0),
+    [formatMoney, highlightPoint],
+  );
 
   useEffect(() => {
     function draw() {
@@ -51,10 +59,10 @@ export function SalesTrendChart() {
 
       const w = box.clientWidth;
       const h = box.clientHeight - 20;
-      const max = 100000;
+      const max = Math.max(...trendValues, 1) * 1.1;
 
-      const points = TREND_VALUES.map((val, idx) => {
-        const x = (idx / (TREND_VALUES.length - 1)) * w;
+      const points = trendValues.map((val, idx) => {
+        const x = trendValues.length <= 1 ? w / 2 : (idx / (trendValues.length - 1)) * w;
         const y = h - (val / max) * (h - 20);
         return { x, y, val };
       });
@@ -63,7 +71,7 @@ export function SalesTrendChart() {
       path.setAttribute('d', lineD);
       area.setAttribute('d', `${lineD} L ${w} ${h} L 0 ${h} Z`);
 
-      const targetPt = points[HIGHLIGHT_IDX];
+      const targetPt = points[highlightIdx];
       if (targetPt && marker && tooltip) {
         marker.classList.remove('hidden');
         marker.style.left = `${targetPt.x - 7}px`;
@@ -76,7 +84,7 @@ export function SalesTrendChart() {
     draw();
     window.addEventListener('resize', draw);
     return () => window.removeEventListener('resize', draw);
-  }, []);
+  }, [trendValues, highlightIdx]);
 
   return (
     <div className="premium-card p-4 premium-shadow lg:col-span-2 flex flex-col relative">
@@ -111,7 +119,7 @@ export function SalesTrendChart() {
         </div>
         <div className="absolute bottom-0 left-0 w-full flex justify-between text-[10px] font-bold text-slate-400/80 pt-2 border-t border-slate-100">
           {axisLabels.map((label, idx) => (
-            <span key={TREND_AXIS_DATES[idx]}>{label}</span>
+            <span key={series[idx]?.date ?? idx}>{label}</span>
           ))}
         </div>
       </div>
