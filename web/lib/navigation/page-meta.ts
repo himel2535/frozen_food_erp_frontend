@@ -42,6 +42,7 @@ export const HEADERLESS_MODULE_PATHS = new Set([
   '/settings/profile',
   '/settings/company',
   '/settings/signatures',
+  '/sales/pos',
 ]);
 
 export function isHeaderlessModulePath(pathname: string): boolean {
@@ -88,7 +89,7 @@ const CUSTOM_PAGE_META: Record<string, MetaSource> = {
   '/crm/leads': { titleKey: 'crm.leads_title', subtitle: 'Track and convert sales opportunities.' },
   '/crm/customers': { titleKey: 'crm.customers_title', subtitle: 'Manage customer profiles, credit terms, and sales history.' },
   '/crm/deals': { titleKey: 'crm.deals_title', subtitle: 'Track deal stages, values, and follow-ups.' },
-  '/crm/complaints': { titleKey: 'crm.complaints_title', subtitle: 'Track customer complaints and resolutions.' },
+  '/crm/complaints': { titleKey: 'crm.complaints_title', subtitle: 'Track, manage and resolve customer complaints efficiently.' },
   '/purchases/suppliers': {
     titleKey: 'common.suppliers',
     subtitle: 'Manage supplier relationships, purchases and payments.',

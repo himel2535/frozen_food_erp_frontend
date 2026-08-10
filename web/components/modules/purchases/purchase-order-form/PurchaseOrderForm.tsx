@@ -1,6 +1,6 @@
 'use client';
 
-import { toast } from '@/lib/ui/feedback';
+import { toast, promptAction } from '@/lib/ui/feedback';
 
 import Link from 'next/link';
 import { useMemo, useRef, useState, type FormEvent } from 'react';
@@ -116,16 +116,22 @@ export function PurchaseOrderForm({
     onSave(toPayload(), action);
   };
 
-  const handleEditDiscount = () => {
+  const handleEditDiscount = async () => {
     const current = form.docDiscountOverride ?? totals.lineDiscount;
-    const raw = window.prompt('Document discount amount (৳):', String(current));
+    const raw = await promptAction('Document discount amount (৳):', String(current), {
+      inputType: 'number',
+      module: 'Purchase Order',
+    });
     if (raw === null) return;
     updateForm({ docDiscountOverride: Math.max(0, Number(raw) || 0) });
   };
 
-  const handleEditTax = () => {
+  const handleEditTax = async () => {
     const current = form.docTaxOverride ?? totals.taxAmount;
-    const raw = window.prompt('Document tax amount (৳):', String(current));
+    const raw = await promptAction('Document tax amount (৳):', String(current), {
+      inputType: 'number',
+      module: 'Purchase Order',
+    });
     if (raw === null) return;
     updateForm({ docTaxOverride: Math.max(0, Number(raw) || 0) });
   };

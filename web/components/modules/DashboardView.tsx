@@ -9,6 +9,7 @@ import type { AppState } from '@/lib/state/types';
 import { useLocaleFormat } from '@/hooks/useLocaleFormat';
 import { DashboardBusinessAlerts } from '@/components/modules/dashboard/DashboardBusinessAlerts';
 import { DashboardBottomPanels } from '@/components/modules/dashboard/DashboardBottomPanels';
+import { DashboardProjectProgress } from '@/components/modules/dashboard/DashboardProjectProgress';
 import { pageSkeletonLoader } from '@/components/shared/PageSkeleton';
 import { countLowStockItems } from '@/lib/services/business-alert-service';
 import {
@@ -16,6 +17,7 @@ import {
   getRawMaterialMetrics,
   getSemiFinishedMetrics,
 } from '@/lib/services/inventory-service';
+import { getLeadList } from '@/lib/services/crm-service';
 
 const SalesTrendChart = dynamic(
   () => import('@/components/modules/dashboard/SalesTrendChart').then((m) => m.SalesTrendChart),
@@ -43,6 +45,16 @@ function getDashboardMetrics(appState: AppState) {
   const pendingProdQty = pendingProd.reduce((s, p) => s + Number(p.plannedQuantity || 0), 0);
   const customersWithDue = customers.filter((c) => Number(c.due || 0) > 0);
   const suppliersWithDue = suppliers.filter((s) => Number(s.due || s.balance || 0) > 0);
+  const currentMonth = new Date().toISOString().slice(0, 7);
+  const monthSales = sales.filter((s) => String(s.date ?? s.createdAt ?? '').startsWith(currentMonth));
+  const monthRevenue = monthSales.reduce((s, o) => s + Number(o.total || 0), 0);
+  const openLeads = getLeadList(appState).filter((lead) => {
+    const status = String((lead as Record<string, unknown>).status ?? '').toLowerCase();
+    return status !== 'won' && status !== 'lost' && status !== 'closed';
+  });
+  const rmStockValue = getRawMaterialMetrics(appState).totalValue;
+  const sfStockValue = getSemiFinishedMetrics(appState).totalValue;
+  const fgStockValue = getFinishedGoodsMetrics(appState).totalValue;
 
   return {
     pendingProduction: pendingProd.length,
@@ -50,9 +62,10 @@ function getDashboardMetrics(appState: AppState) {
     pendingPurchase: pendingPurchase.length,
     pendingSales: pendingSales.length,
     lowStock,
-    rmStockValue: getRawMaterialMetrics(appState).totalValue,
-    sfStockValue: getSemiFinishedMetrics(appState).totalValue,
-    fgStockValue: getFinishedGoodsMetrics(appState).totalValue,
+    rmStockValue,
+    sfStockValue,
+    fgStockValue,
+    totalInventoryValue: rmStockValue + sfStockValue + fgStockValue,
     customerDue: customers.reduce((s, c) => s + Number(c.due || 0), 0),
     customerDueCount: customersWithDue.length || customers.length,
     supplierDue: suppliers.reduce((s, item) => s + Number(item.due || item.balance || 0), 0),
@@ -60,21 +73,28 @@ function getDashboardMetrics(appState: AppState) {
     productionSummary: { completed: completedProd.length, qty: prodQty },
     purchaseSummary: { count: purchases.length, total: purchases.reduce((s, o) => s + Number(o.total || 0), 0) },
     salesSummary: { count: sales.length, total: sales.reduce((s, o) => s + Number(o.total || 0), 0) },
+    monthRevenue,
+    monthSalesCount: monthSales.length,
+    openLeadsCount: openLeads.length,
+    openLeadsValue: openLeads.reduce((s: number, l) => s + Number((l as Record<string, unknown>).expectedValue || 0), 0),
   };
 }
 
 const KPI_CARDS: { key: string; labelKey: string; icon: string; alert?: boolean }[] = [
-  { key: 'production-summary', labelKey: 'dashboard.production_summary', icon: 'flat-color-icons:factory' },
-  { key: 'purchase-summary', labelKey: 'dashboard.purchase_summary', icon: 'fluent-color:notebook-24' },
+  { key: 'month-revenue', labelKey: 'dashboard.total_revenue', icon: 'flat-color-icons:currency-exchange' },
   { key: 'sales-summary', labelKey: 'dashboard.sales_summary', icon: 'fluent-color:data-trending-24' },
-  { key: 'rm-stock', labelKey: 'dashboard.rm_stock', icon: 'flat-color-icons:tree-structure' },
-  { key: 'sf-stock', labelKey: 'dashboard.sf_stock', icon: 'fluent-color:puzzle-piece-24' },
-  { key: 'fg-stock', labelKey: 'dashboard.fg_stock', icon: 'flat-color-icons:filing-cabinet' },
-  { key: 'low-stock', labelKey: 'dashboard.low_stock', icon: 'fluent-color:alert-badge-24', alert: true },
-  { key: 'pending-production', labelKey: 'dashboard.pending_production', icon: 'fluent-color:clock-24' },
-  { key: 'pending-purchase', labelKey: 'dashboard.pending_purchase', icon: 'fluent-color:document-add-24' },
   { key: 'pending-sales', labelKey: 'dashboard.pending_sales', icon: 'flat-color-icons:shipped' },
   { key: 'customer-due', labelKey: 'dashboard.customer_due', icon: 'fluent-color:person-24' },
+  { key: 'low-stock', labelKey: 'dashboard.low_stock', icon: 'fluent-color:alert-badge-24', alert: true },
+  { key: 'pending-production', labelKey: 'dashboard.pending_production', icon: 'fluent-color:clock-24' },
+  { key: 'production-summary', labelKey: 'dashboard.production_summary', icon: 'flat-color-icons:factory' },
+  { key: 'open-leads', labelKey: 'dashboard.open_leads', icon: 'fluent-color:people-interwoven-24' },
+  { key: 'total-inventory', labelKey: 'dashboard.total_inventory', icon: 'flat-color-icons:shop' },
+  { key: 'pending-purchase', labelKey: 'dashboard.pending_purchase', icon: 'fluent-color:document-add-24' },
+  { key: 'purchase-summary', labelKey: 'dashboard.purchase_summary', icon: 'fluent-color:notebook-24' },
+  { key: 'rm-stock', labelKey: 'dashboard.rm_stock', icon: 'flat-color-icons:tree-structure' },
+  { key: 'fg-stock', labelKey: 'dashboard.fg_stock', icon: 'flat-color-icons:filing-cabinet' },
+  { key: 'sf-stock', labelKey: 'dashboard.sf_stock', icon: 'fluent-color:puzzle-piece-24' },
   { key: 'supplier-due', labelKey: 'dashboard.supplier_due', icon: 'fluent-color:building-store-24' },
 ];
 
@@ -131,24 +151,36 @@ export function DashboardView() {
         value: formatMoney(metrics.supplierDue),
         sub: t('dashboard.metric_across_suppliers', { n: metrics.supplierDueCount }),
       },
+      'total-inventory': {
+        value: formatMoney(metrics.totalInventoryValue),
+        sub: t('dashboard.metric_all_stock'),
+      },
+      'open-leads': {
+        value: t('dashboard.metric_leads', { n: metrics.openLeadsCount }),
+        sub: t('dashboard.metric_pipeline_suffix', { amount: formatMoney(metrics.openLeadsValue) }),
+      },
+      'month-revenue': {
+        value: formatMoney(metrics.monthRevenue),
+        sub: t('dashboard.metric_month_orders', { n: metrics.monthSalesCount }),
+      },
     }),
     [t, formatMoney, metrics],
   );
 
   return (
     <div className="space-y-2 flex flex-col">
-      <section className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
+      <section className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2">
         {KPI_CARDS.map((card) => {
           const data = metricValues[card.key];
           return (
             <div
               key={card.key}
-              className="premium-card premium-shadow p-3.5 flex items-center justify-between gap-3 transition-[border-color,box-shadow] hover:border-slate-300 hover:shadow-md min-h-[86px]"
+              className="premium-card premium-shadow p-3.5 flex items-center justify-between gap-3 transition-[border-color,box-shadow] hover:border-slate-300 hover:shadow-md min-h-[80px]"
               data-metric={card.key}
             >
               <div className="flex flex-col justify-center gap-0.5 min-w-0 flex-1 my-auto">
                 <span className="text-xs font-bold text-slate-500 tracking-wide leading-tight">{t(card.labelKey)}</span>
-                <span className="text-lg md:text-xl font-extrabold tracking-tight text-slate-900 leading-tight mt-0.5 tabular-nums">{data?.value ?? '—'}</span>
+                <span className="text-base md:text-lg font-extrabold tracking-tight text-slate-900 leading-tight mt-0.5 tabular-nums">{data?.value ?? '—'}</span>
                 {card.alert && data?.sub ? (
                   <span
                     className={`text-[11px] font-bold block ${metrics.lowStock > 0 ? 'text-rose-600' : 'text-emerald-600'}`}
@@ -167,13 +199,15 @@ export function DashboardView() {
         })}
       </section>
 
-      <section className="grid grid-cols-1 lg:grid-cols-4 gap-2">
+      <section className="grid grid-cols-1 lg:grid-cols-4 gap-2 items-stretch">
         <SalesTrendChart />
         <RevenueAnalyticsChart />
         <DashboardBusinessAlerts />
       </section>
 
       <DashboardBottomPanels />
+
+      <DashboardProjectProgress />
 
       <Footer />
     </div>

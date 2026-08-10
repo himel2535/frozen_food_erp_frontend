@@ -674,16 +674,35 @@ export function resolveInvoiceCustomerLabel(state: AppState, row: Row): string {
   return '—';
 }
 
-export function posCheckout(state: AppState, payload: { customer: string; cart: Row[]; total: number }) {
+export function posCheckout(
+  state: AppState,
+  payload: {
+    customer: string;
+    customerId?: string;
+    cart: Row[];
+    subtotal?: number;
+    discount?: number;
+    tax?: number;
+    total: number;
+    note?: string;
+    taxRate?: number;
+  },
+) {
   const items = payload.cart.map((i) => ({
     productId: i.id,
     name: i.name,
+    sku: i.sku,
     qty: i.qty,
     price: i.price,
   }));
   const result = createSalesOrder(state, {
+    customerId: payload.customerId,
     customer: payload.customer,
     total: payload.total,
+    subtotal: payload.subtotal ?? payload.total,
+    discount: payload.discount ?? 0,
+    tax: payload.tax ?? 0,
+    note: payload.note ?? '',
     status: 'fulfilled',
     items,
     source: 'pos',
@@ -698,6 +717,23 @@ export function posCheckout(state: AppState, payload: { customer: string; cart: 
     }
   });
   state.inventory = inventory;
-  createInState(state, 'posReceipts', { receipt: result.id, amount: payload.total, customer: payload.customer, items: payload.cart.length }, 'POS');
+  createInState(
+    state,
+    'posReceipts',
+    {
+      receipt: result.id,
+      amount: payload.total,
+      subtotal: payload.subtotal ?? payload.total,
+      discount: payload.discount ?? 0,
+      tax: payload.tax ?? 0,
+      taxRate: payload.taxRate ?? 0,
+      customer: payload.customer,
+      items: payload.cart,
+      note: payload.note ?? '',
+      date: new Date().toLocaleString(),
+      at: new Date().toISOString(),
+    },
+    'POS',
+  );
   return result;
 }

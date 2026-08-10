@@ -1,51 +1,248 @@
 import type { AppState } from '@/lib/state/types';
 
+export type SalesTrendRange = 'day' | 'week' | 'month' | 'quarter' | 'year';
+
+export type ChartSeriesPoint = {
+  key: string;
+  date: string;
+  endDate?: string;
+  label: string;
+  value: number;
+};
+
+/** @deprecated alias */
+export type SalesTrendPoint = ChartSeriesPoint;
+
 function parseDate(value: unknown): Date | null {
   if (!value) return null;
-  const d = new Date(String(value).slice(0, 10) + 'T12:00:00');
+  const d = new Date(`${String(value).slice(0, 10)}T12:00:00`);
   return Number.isNaN(d.getTime()) ? null : d;
 }
 
-function weekStartKey(d: Date): string {
-  const day = d.getDay();
-  const diff = d.getDate() - day + (day === 0 ? -6 : 1);
-  const monday = new Date(d);
-  monday.setDate(diff);
-  return monday.toISOString().slice(0, 10);
+/** Local calendar date — avoids UTC shift on UTC+6 */
+function dateKey(d: Date) {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
 }
 
-export function getSalesTrendSeries(state: AppState): { date: string; value: number }[] {
-  const orders = Array.isArray(state.salesOrders) ? state.salesOrders : [];
-  const invoices = Array.isArray(state.invoices) ? state.invoices : [];
-  const buckets = new Map<string, number>();
+function monthKey(d: Date) {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+}
 
-  for (const order of orders) {
-    const d = parseDate(order.date);
-    if (!d) continue;
-    const key = weekStartKey(d);
-    buckets.set(key, (buckets.get(key) ?? 0) + Number(order.total ?? 0));
-  }
+function getMonday(d: Date) {
+  const copy = new Date(d);
+  copy.setHours(12, 0, 0, 0);
+  const day = copy.getDay();
+  const diff = day === 0 ? -6 : 1 - day;
+  copy.setDate(copy.getDate() + diff);
+  return copy;
+}
+
+function collectRevenueRows(state: AppState) {
+  const invoices = Array.isArray(state.invoices) ? state.invoices : [];
+  const posReceipts = Array.isArray(state.posReceipts) ? state.posReceipts : [];
+  const rows: { date: Date; amount: number }[] = [];
+
   for (const inv of invoices) {
     const d = parseDate(inv.date);
-    if (!d) continue;
-    const key = weekStartKey(d);
-    buckets.set(key, (buckets.get(key) ?? 0) + Number(inv.amount ?? 0));
+    if (d) rows.push({ date: d, amount: Number(inv.amount ?? 0) });
   }
+  for (const receipt of posReceipts) {
+    const d = parseDate(receipt.date ?? receipt.createdAt);
+    if (d) rows.push({ date: d, amount: Number(receipt.total ?? receipt.amount ?? 0) });
+  }
+  return rows;
+}
 
-  const sorted = Array.from(buckets.entries())
-    .sort(([a], [b]) => a.localeCompare(b))
-    .slice(-7);
+function buildChartSeries(rows: { date: Date; amount: number }[], range: SalesTrendRange, now: Date): ChartSeriesPoint[] {
+  switch (range) {
+    case 'day':
+      return buildDayRange(rows, now);
+    case 'week':
+      return buildWeekRange(rows, now);
+    case 'month':
+      return buildMonthRange(rows, now);
+    case 'quarter':
+      return buildQuarterRange(rows, now);
+    case 'year':
+      return buildYearRange(rows, now);
+    default:
+      return buildMonthRange(rows, now);
+  }
+}
 
-  if (!sorted.length) {
-    const today = new Date();
-    return Array.from({ length: 7 }, (_, i) => {
-      const d = new Date(today);
-      d.setDate(d.getDate() - (6 - i) * 7);
-      return { date: weekStartKey(d), value: 0 };
+export function niceChartAxisMax(value: number) {
+  if (value <= 0) return 1000;
+  const magnitude = 10 ** Math.floor(Math.log10(value));
+  return Math.ceil(value / magnitude) * magnitude;
+}
+
+function collectSalesRows(state: AppState) {
+  const orders = Array.isArray(state.salesOrders) ? state.salesOrders : [];
+  const posReceipts = Array.isArray(state.posReceipts) ? state.posReceipts : [];
+  const rows: { date: Date; amount: number }[] = [];
+
+  for (const order of orders) {
+    const d = parseDate(order.date ?? order.createdAt);
+    if (d) rows.push({ date: d, amount: Number(order.total ?? 0) });
+  }
+  for (const receipt of posReceipts) {
+    const d = parseDate(receipt.date ?? receipt.createdAt);
+    if (d) rows.push({ date: d, amount: Number(receipt.total ?? receipt.amount ?? 0) });
+  }
+  return rows;
+}
+
+function sumBetween(rows: { date: Date; amount: number }[], start: Date, end: Date) {
+  const startKey = dateKey(start);
+  const endKey = dateKey(end);
+  return rows
+    .filter((r) => {
+      const k = dateKey(r.date);
+      return k >= startKey && k <= endKey;
+    })
+    .reduce((s, r) => s + r.amount, 0);
+}
+
+function formatDayLabel(d: Date) {
+  return d.toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', month: 'short' });
+}
+
+function formatShortDay(d: Date) {
+  return d.toLocaleDateString(undefined, { day: 'numeric', month: 'short' });
+}
+
+function formatRangeLabel(start: Date, end: Date) {
+  const sameMonth = start.getMonth() === end.getMonth() && start.getFullYear() === end.getFullYear();
+  if (sameMonth && start.getDate() === end.getDate()) {
+    return formatShortDay(start);
+  }
+  if (sameMonth) {
+    const month = start.toLocaleDateString(undefined, { month: 'short' });
+    return `${start.getDate()}–${end.getDate()} ${month}`;
+  }
+  return `${formatShortDay(start)}–${formatShortDay(end)}`;
+}
+
+function formatMonthLabel(d: Date) {
+  return d.toLocaleDateString(undefined, { month: 'short', year: '2-digit' });
+}
+
+/** Day — last 7 calendar days, one bar per day */
+function buildDayRange(rows: { date: Date; amount: number }[], now: Date): ChartSeriesPoint[] {
+  const result: ChartSeriesPoint[] = [];
+  for (let i = 6; i >= 0; i -= 1) {
+    const d = new Date(now);
+    d.setDate(d.getDate() - i);
+    const key = dateKey(d);
+    const value = rows.filter((r) => dateKey(r.date) === key).reduce((s, r) => s + r.amount, 0);
+    result.push({ key, date: key, endDate: key, label: formatDayLabel(d), value });
+  }
+  return result;
+}
+
+/** Week — last 4 calendar weeks (Mon–Sun), one bar per week */
+function buildWeekRange(rows: { date: Date; amount: number }[], now: Date): ChartSeriesPoint[] {
+  const thisMonday = getMonday(now);
+  const result: ChartSeriesPoint[] = [];
+
+  for (let i = 3; i >= 0; i -= 1) {
+    const weekStart = new Date(thisMonday);
+    weekStart.setDate(weekStart.getDate() - i * 7);
+    const weekEnd = new Date(weekStart);
+    weekEnd.setDate(weekEnd.getDate() + 6);
+    const cappedEnd = weekEnd > now ? new Date(now) : weekEnd;
+    const key = dateKey(weekStart);
+    const value = sumBetween(rows, weekStart, cappedEnd);
+    result.push({
+      key,
+      date: key,
+      endDate: dateKey(cappedEnd),
+      label: formatRangeLabel(weekStart, cappedEnd),
+      value,
     });
   }
+  return result;
+}
 
-  return sorted.map(([date, value]) => ({ date, value }));
+/** Month — each day from 1st of current month through today */
+function buildMonthRange(rows: { date: Date; amount: number }[], now: Date): ChartSeriesPoint[] {
+  const year = now.getFullYear();
+  const month = now.getMonth();
+  const result: ChartSeriesPoint[] = [];
+
+  for (let day = 1; day <= now.getDate(); day += 1) {
+    const d = new Date(year, month, day, 12, 0, 0);
+    const key = dateKey(d);
+    const value = rows.filter((r) => dateKey(r.date) === key).reduce((s, r) => s + r.amount, 0);
+    result.push({
+      key,
+      date: key,
+      endDate: key,
+      label: formatShortDay(d),
+      value,
+    });
+  }
+  return result;
+}
+
+/** Last quarter — previous calendar quarter, one bar per month (3 months) */
+function buildQuarterRange(rows: { date: Date; amount: number }[], now: Date): ChartSeriesPoint[] {
+  const currentQuarter = Math.floor(now.getMonth() / 3);
+  let quarter = currentQuarter - 1;
+  let year = now.getFullYear();
+  if (quarter < 0) {
+    quarter = 3;
+    year -= 1;
+  }
+  const startMonth = quarter * 3;
+  const result: ChartSeriesPoint[] = [];
+
+  for (let m = 0; m < 3; m += 1) {
+    const d = new Date(year, startMonth + m, 1, 12, 0, 0);
+    const key = monthKey(d);
+    const value = rows.filter((r) => monthKey(r.date) === key).reduce((s, r) => s + r.amount, 0);
+    result.push({
+      key,
+      date: dateKey(d),
+      endDate: dateKey(new Date(year, startMonth + m + 1, 0)),
+      label: formatMonthLabel(d),
+      value,
+    });
+  }
+  return result;
+}
+
+/** Year — last 12 calendar months including current, one bar per month */
+function buildYearRange(rows: { date: Date; amount: number }[], now: Date): ChartSeriesPoint[] {
+  const result: ChartSeriesPoint[] = [];
+  for (let i = 11; i >= 0; i -= 1) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1, 12, 0, 0);
+    const key = monthKey(d);
+    const value = rows.filter((r) => monthKey(r.date) === key).reduce((s, r) => s + r.amount, 0);
+    result.push({
+      key,
+      date: dateKey(d),
+      endDate: dateKey(new Date(d.getFullYear(), d.getMonth() + 1, 0)),
+      label: formatMonthLabel(d),
+      value,
+    });
+  }
+  return result;
+}
+
+export function getSalesTrendSeries(state: AppState, range: SalesTrendRange = 'month'): ChartSeriesPoint[] {
+  const now = new Date();
+  now.setHours(12, 0, 0, 0);
+  return buildChartSeries(collectSalesRows(state), range, now);
+}
+
+export function getRevenueSeries(state: AppState, range: SalesTrendRange = 'month'): ChartSeriesPoint[] {
+  const now = new Date();
+  now.setHours(12, 0, 0, 0);
+  return buildChartSeries(collectRevenueRows(state), range, now);
 }
 
 export function getRevenueByMonth(state: AppState, months = 10): { month: number; year: number; value: number }[] {

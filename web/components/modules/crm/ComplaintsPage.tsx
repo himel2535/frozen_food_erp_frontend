@@ -1,135 +1,441 @@
 'use client';
 
-import { useMemo, useState } from 'react';
-import { Plus } from 'lucide-react';
-import { AppFormFields, AppFormModal } from '@/components/shared/AppForm';
+import { useCallback, useMemo, useState } from 'react';
+import Link from 'next/link';
+import {
+  AlertTriangle,
+  CheckCircle2,
+  Clock3,
+  Download,
+  FolderOpen,
+  LayoutGrid,
+  List,
+  Megaphone,
+  MoreHorizontal,
+  Plus,
+  SlidersHorizontal,
+} from 'lucide-react';
 import { Footer } from '@/components/layout/Footer';
 import { useChromeSuppressed, useRegisterModuleActions } from '@/components/layout/ModuleActionsContext';
+import { AppTable, type AppTableColumn } from '@/components/shared/AppTable';
+import { ModuleFilterBar } from '@/components/shared/ModuleFilterBar';
+import { ModuleKpiSection } from '@/components/shared/ModuleKpiSection';
 import { StatusBadge } from '@/components/shared/StatusBadge';
+import { PaginationBar } from '@/components/modules/inventory/shared/inventory-ui';
+import { ComplaintForm, EMPTY_COMPLAINT_FORM, type ComplaintFormValues } from '@/components/modules/crm/complaints/ComplaintForm';
+import { ComplaintKanbanView } from '@/components/modules/crm/complaints/ComplaintKanbanView';
+import { ComplaintOverviewDonut } from '@/components/modules/crm/complaints/ComplaintOverviewDonut';
+import { ComplaintTopCategories } from '@/components/modules/crm/complaints/ComplaintTopCategories';
+import {
+  categoryBadgeClass,
+  categoryLabel,
+  formatComplaintDateTime,
+  formatDueDate,
+  formatDueRelative,
+  priorityBadgeClass,
+} from '@/components/modules/crm/complaints/complaint-display-utils';
+import { useLocaleFormat } from '@/hooks/useLocaleFormat';
 import { useAppStore } from '@/lib/state/app-store';
-import type { PortField } from '@/lib/modules/port-types';
-import { createSupportTicket, ensureCrmState } from '@/lib/services/crm-service';
-import { listFromState, updateInState, deleteFromState } from '@/lib/services/domain-service';
+import { getCustomerList } from '@/lib/services/crm-service';
+import {
+  COMPLAINT_CATEGORIES,
+  COMPLAINT_PRIORITIES,
+  COMPLAINT_STATUSES,
+  createComplaint,
+  deleteComplaint,
+  getComplaintCategoryBreakdown,
+  getComplaintList,
+  getComplaintMetrics,
+  getComplaintStatusSummary,
+  type ComplaintRecord,
+  updateComplaintStatus,
+} from '@/lib/services/complaints-service';
+import { MODULE_FILTER_INPUT } from '@/lib/ui/module-chrome-styles';
+import { confirmAction, toast } from '@/lib/ui/feedback';
 import { translateStatus } from '@/lib/i18n/resolve-label';
+
+const PAGE_SIZE = 8;
 
 export function ComplaintsPage() {
   const t = useAppStore((s) => s.t);
   const appState = useAppStore((s) => s.appState);
   const saveAppState = useAppStore((s) => s.saveAppState);
-  const [folder, setFolder] = useState('all');
-  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const { formatCount } = useLocaleFormat();
+
   const [view, setView] = useState<'main' | 'form'>('main');
-  const [form, setForm] = useState({ customer: '', subject: '', priority: 'normal', status: 'open', description: '' });
+  const [layout, setLayout] = useState<'table' | 'kanban'>('table');
+  const [search, setSearch] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [priorityFilter, setPriorityFilter] = useState('all');
+  const [categoryFilter, setCategoryFilter] = useState('all');
+  const [page, setPage] = useState(1);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [menuOpenId, setMenuOpenId] = useState<string | null>(null);
 
-  const complaintFields = useMemo<PortField[]>(() => [
-    { key: 'customer', label: t('sales.col_customer'), required: true },
-    { key: 'subject', label: t('common.subject'), required: true },
-    { key: 'priority', label: t('crm.col_priority'), type: 'select', options: ['normal', 'high'] },
-    { key: 'description', label: t('crm.form_description'), type: 'textarea' },
-  ], [t]);
+  const allRows = useMemo(() => getComplaintList(appState), [appState]);
+  const metrics = useMemo(() => getComplaintMetrics(appState), [appState]);
+  const statusSummary = useMemo(() => getComplaintStatusSummary(appState), [appState]);
+  const categorySlices = useMemo(() => getComplaintCategoryBreakdown(appState), [appState]);
+  const customers = useMemo(
+    () => getCustomerList(appState).map((c) => ({
+      id: String(c.id),
+      name: String(c.company ?? c.name ?? c.id),
+      phone: String(c.phone ?? ''),
+    })),
+    [appState],
+  );
 
-  const folders = useMemo(() => [
-    { id: 'all', label: t('crm.folder_all_tickets') },
-    { id: 'open', label: t('crm.folder_open') },
-    { id: 'in-progress', label: t('crm.folder_in_progress') },
-    { id: 'resolved', label: t('crm.folder_resolved') },
-    { id: 'high', label: t('crm.folder_high_priority') },
-  ], [t]);
+  const pct = (n: number) => (metrics.total > 0 ? `${Math.round((n / metrics.total) * 1000) / 10}%` : '0%');
 
-  const tickets = useMemo(() => {
-    ensureCrmState(appState);
-    const fromCrm = Object.values(appState.crmData?.supportTicketsById ?? {});
-    const flat = listFromState(appState, 'crmComplaints');
-    const merged = [...fromCrm, ...flat];
-    const byId = new Map(merged.map((ticket) => [String((ticket as Record<string, unknown>).id), ticket as Record<string, unknown>]));
-    let rows = [...byId.values()];
-    if (folder === 'high') rows = rows.filter((ticket) => String(ticket.priority).toLowerCase() === 'high');
-    else if (folder !== 'all') rows = rows.filter((ticket) => String(ticket.status).toLowerCase() === folder);
-    return rows.sort((a, b) => String(b.openedAt ?? b.createdAt ?? '').localeCompare(String(a.openedAt ?? a.createdAt ?? '')));
-  }, [appState, folder]);
+  const filtered = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    return allRows.filter((row) => {
+      if (statusFilter !== 'all' && row.status !== statusFilter) return false;
+      if (priorityFilter !== 'all' && row.priority !== priorityFilter) return false;
+      if (categoryFilter !== 'all' && row.category !== categoryFilter) return false;
+      if (!q) return true;
+      const hay = [row.ticketNo, row.customerName, row.customerPhone, row.subject, row.sku ?? ''].join(' ').toLowerCase();
+      return hay.includes(q);
+    });
+  }, [allRows, search, statusFilter, priorityFilter, categoryFilter]);
 
-  const selected = tickets.find((ticket) => String(ticket.id) === selectedId) ?? tickets[0] ?? null;
+  const paged = useMemo(() => {
+    const start = (page - 1) * PAGE_SIZE;
+    return filtered.slice(start, start + PAGE_SIZE);
+  }, [filtered, page]);
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    createSupportTicket(appState, form);
+  const toggleSelectAll = useCallback(() => {
+    setSelectedIds((prev) => {
+      if (paged.every((r) => prev.has(r.id))) {
+        const next = new Set(prev);
+        paged.forEach((r) => next.delete(r.id));
+        return next;
+      }
+      const next = new Set(prev);
+      paged.forEach((r) => next.add(r.id));
+      return next;
+    });
+  }, [paged]);
+
+  const handleCreate = (values: ComplaintFormValues) => {
+    if (!values.subject.trim()) {
+      toast.error('Subject is required', { module: 'Complaints' });
+      return;
+    }
+    const customerId = values.customerId && values.customerId !== 'walk-in' ? values.customerId : undefined;
+    createComplaint(appState, {
+      customerId,
+      customerName: values.customerName || 'Walk-in Customer',
+      customerPhone: values.customerPhone,
+      subject: values.subject.trim(),
+      description: values.description.trim(),
+      category: values.category,
+      priority: values.priority,
+      sku: values.sku.trim() || undefined,
+      slaDueAt: values.slaDueAt ? new Date(values.slaDueAt).toISOString() : undefined,
+    });
     saveAppState();
     setView('main');
-    setForm({ customer: '', subject: '', priority: 'normal', status: 'open', description: '' });
+    toast.success('Complaint logged successfully', { module: 'Complaints' });
   };
 
   const setStatus = (id: string, status: string) => {
-    updateInState(appState, 'crmComplaints', id, { status });
-    ensureCrmState(appState);
-    const ticketMap = appState.crmData?.supportTicketsById as Record<string, Record<string, unknown>> | undefined;
-    if (ticketMap?.[id]) {
-      ticketMap[id] = { ...ticketMap[id], status };
-    }
+    updateComplaintStatus(appState, id, status);
     saveAppState();
+    setMenuOpenId(null);
+    toast.success(`Status updated to ${translateStatus(t, status)}`, { module: 'Complaints' });
   };
+
+  const handleDelete = async (id: string) => {
+    const ok = await confirmAction({
+      title: 'Delete complaint?',
+      message: 'This action cannot be undone.',
+      confirmLabel: 'Delete',
+      tone: 'danger',
+      module: 'Complaints',
+    });
+    if (!ok) return;
+    deleteComplaint(appState, id);
+    saveAppState();
+    setMenuOpenId(null);
+    toast.success('Complaint deleted', { module: 'Complaints' });
+  };
+
+  const columns = useMemo<AppTableColumn<ComplaintRecord>[]>(() => [
+    {
+      key: 'ticketNo',
+      label: 'Ticket ID',
+      render: (row) => (
+        <button type="button" className="text-blue-600 font-bold hover:underline cursor-pointer">
+          {row.ticketNo}
+        </button>
+      ),
+    },
+    {
+      key: 'customer',
+      label: 'Customer',
+      render: (row) => (
+        <div className="min-w-0">
+          <p className="font-bold text-slate-800 truncate">{row.customerName}</p>
+          <p className="text-[10px] text-slate-400 mt-0.5">{row.customerPhone || '—'}</p>
+        </div>
+      ),
+    },
+    {
+      key: 'subject',
+      label: 'Subject',
+      render: (row) => (
+        <div className="min-w-0 max-w-[220px]">
+          <p className="font-semibold text-slate-800 truncate">{row.subject}</p>
+          {row.sku ? <p className="text-[10px] text-slate-400 mt-0.5">SKU: {row.sku}</p> : null}
+        </div>
+      ),
+    },
+    {
+      key: 'category',
+      label: 'Category',
+      render: (row) => (
+        <span className={`inline-flex px-2.5 py-1 rounded-full text-[10px] font-semibold border ${categoryBadgeClass(row.category)}`}>
+          {categoryLabel(row.category)}
+        </span>
+      ),
+    },
+    {
+      key: 'priority',
+      label: 'Priority',
+      render: (row) => (
+        <span className={`inline-flex px-2.5 py-1 rounded-full text-[10px] font-semibold border capitalize ${priorityBadgeClass(row.priority)}`}>
+          {row.priority}
+        </span>
+      ),
+    },
+    {
+      key: 'status',
+      label: 'Status',
+      render: (row) => <StatusBadge status={row.status} />,
+    },
+    {
+      key: 'openedAt',
+      label: 'Date',
+      render: (row) => {
+        const dt = formatComplaintDateTime(row.openedAt);
+        if (typeof dt === 'string') return dt;
+        return (
+          <div>
+            <p className="font-semibold text-slate-700">{dt.date}</p>
+            <p className="text-[10px] text-slate-400 mt-0.5">{dt.time}</p>
+          </div>
+        );
+      },
+    },
+    {
+      key: 'slaDueAt',
+      label: 'Due Date',
+      render: (row) => {
+        const rel = formatDueRelative(row.slaDueAt, row.status);
+        return (
+          <div>
+            <p className="font-semibold text-slate-700">{formatDueDate(row.slaDueAt)}</p>
+            <p className={`text-[10px] mt-0.5 font-semibold ${rel.tone === 'danger' ? 'text-rose-600' : rel.tone === 'success' ? 'text-emerald-600' : rel.tone === 'warning' ? 'text-amber-600' : 'text-slate-400'}`}>
+              {rel.text}
+            </p>
+          </div>
+        );
+      },
+    },
+  ], [t]);
 
   useChromeSuppressed(view === 'form');
 
   useRegisterModuleActions(
     view === 'main' ? (
-      <button type="button" onClick={() => setView('form')} className="bg-blue-600 text-white text-xs font-bold px-4 py-2.5 rounded-xl cursor-pointer flex items-center gap-2">
+      <button
+        type="button"
+        onClick={() => setView('form')}
+        className="bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold px-4 py-2.5 rounded-xl cursor-pointer flex items-center gap-2"
+      >
         <Plus className="w-4 h-4" /> {t('crm.add_complaint')}
       </button>
     ) : null,
     [view, t],
   );
 
+  if (view === 'form') {
+    return (
+      <ComplaintForm
+        mode="create"
+        customers={customers}
+        initialValues={EMPTY_COMPLAINT_FORM}
+        onCancel={() => setView('main')}
+        onSubmit={handleCreate}
+      />
+    );
+  }
+
   return (
     <>
-      <div className="flex flex-col lg:flex-row gap-4 flex-1 min-h-[480px]">
-        <aside className="lg:w-48 shrink-0 bg-white rounded-xl border border-slate-200 p-3 space-y-1">
-          {folders.map((f) => (
-            <button key={f.id} type="button" onClick={() => setFolder(f.id)} className={`w-full text-left px-3 py-2 rounded-lg text-xs font-bold cursor-pointer ${folder === f.id ? 'bg-blue-50 text-blue-700' : 'text-slate-600 hover:bg-slate-50'}`}>{f.label}</button>
-          ))}
-        </aside>
-        <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-4 min-h-0">
-          <div className="bg-white rounded-xl border border-slate-200 overflow-y-auto">
-            {tickets.map((ticket) => (
-              <button key={String(ticket.id)} type="button" onClick={() => setSelectedId(String(ticket.id))} className={`w-full text-left px-4 py-3 border-b border-slate-100 hover:bg-slate-50 cursor-pointer ${selectedId === String(ticket.id) ? 'bg-blue-50' : ''}`}>
-                <div className="font-bold text-xs text-slate-900">{String(ticket.subject ?? ticket.id)}</div>
-                <div className="text-[10px] text-slate-500">{String(ticket.customer ?? '')}</div>
-                <StatusBadge status={String(ticket.status ?? 'open')} />
-              </button>
-            ))}
-          </div>
-          <div className="bg-white rounded-xl border border-slate-200 p-5 text-xs space-y-4">
-            {selected ? (
-              <>
-                <h3 className="text-sm font-bold">{String(selected.subject)}</h3>
-                <p className="text-slate-600">{String(selected.description ?? t('crm.no_description'))}</p>
-                <div className="flex gap-2 flex-wrap">
-                  <button type="button" className="px-3 py-1.5 bg-amber-50 text-amber-700 font-bold rounded-lg cursor-pointer" onClick={() => setStatus(String(selected.id), 'in-progress')}>{translateStatus(t, 'in-progress')}</button>
-                  <button type="button" className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg cursor-pointer" onClick={() => setStatus(String(selected.id), 'resolved')}>{t('crm.resolve')}</button>
-                  <button type="button" className="px-3 py-1.5 text-rose-600 font-bold cursor-pointer" onClick={() => { deleteFromState(appState, 'crmComplaints', String(selected.id)); saveAppState(); }}>{t('common.delete')}</button>
-                </div>
-              </>
-            ) : (
-              <p className="text-slate-400">{t('crm.select_complaint')}</p>
-            )}
-          </div>
-        </div>
-      </div>
-      <Footer />
-    <AppFormModal
-      open={view === 'form'}
-      onClose={() => setView('main')}
-      title={t('crm.log_complaint')}
-      subtitle={t('crm.complaints_subtitle')}
-      onSubmit={handleSubmit}
-      submitLabel={t('crm.save_complaint')}
-      size="md"
-    >
-      <AppFormFields
-        fields={complaintFields}
-        values={form}
-        onChange={(key, value) => setForm({ ...form, [key]: value })}
+      <ModuleKpiSection
+        gridClassName="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-5 gap-2"
+        items={[
+          {
+            key: 'total',
+            label: 'Total Complaints',
+            value: formatCount(metrics.total),
+            sub: `+${metrics.thisMonth} this month`,
+            icon: <Megaphone className="w-8 h-8 text-blue-600" />,
+          },
+          {
+            key: 'open',
+            label: 'Open',
+            value: formatCount(metrics.open),
+            sub: pct(metrics.open),
+            icon: <FolderOpen className="w-8 h-8 text-orange-500" />,
+          },
+          {
+            key: 'progress',
+            label: 'In Progress',
+            value: formatCount(metrics.inProgress),
+            sub: pct(metrics.inProgress),
+            icon: <Clock3 className="w-8 h-8 text-amber-500" />,
+          },
+          {
+            key: 'resolved',
+            label: 'Resolved',
+            value: formatCount(metrics.resolved),
+            sub: pct(metrics.resolved),
+            icon: <CheckCircle2 className="w-8 h-8 text-emerald-500" />,
+          },
+          {
+            key: 'overdue',
+            label: 'Overdue',
+            value: formatCount(metrics.overdue),
+            sub: pct(metrics.overdue),
+            alert: metrics.overdue > 0,
+            icon: <AlertTriangle className="w-8 h-8 text-rose-500" />,
+          },
+        ]}
       />
-    </AppFormModal>
+
+      <ModuleFilterBar
+        search={search}
+        onSearchChange={(v) => { setSearch(v); setPage(1); }}
+        searchPlaceholder="Search by ticket ID, customer name, subject or product..."
+        filters={
+          <>
+            <select value={statusFilter} onChange={(e) => { setStatusFilter(e.target.value); setPage(1); }} className={MODULE_FILTER_INPUT}>
+              <option value="all">All Status</option>
+              {COMPLAINT_STATUSES.map((s) => (
+                <option key={s} value={s}>{translateStatus(t, s)}</option>
+              ))}
+            </select>
+            <select value={priorityFilter} onChange={(e) => { setPriorityFilter(e.target.value); setPage(1); }} className={MODULE_FILTER_INPUT}>
+              <option value="all">All Priority</option>
+              {COMPLAINT_PRIORITIES.map((p) => (
+                <option key={p} value={p}>{p.charAt(0).toUpperCase() + p.slice(1)}</option>
+              ))}
+            </select>
+            <select value={categoryFilter} onChange={(e) => { setCategoryFilter(e.target.value); setPage(1); }} className={MODULE_FILTER_INPUT}>
+              <option value="all">All Categories</option>
+              {COMPLAINT_CATEGORIES.map((c) => (
+                <option key={c.value} value={c.value}>{c.label}</option>
+              ))}
+            </select>
+            <button type="button" className={`${MODULE_FILTER_INPUT} inline-flex items-center gap-1.5`}>
+              <SlidersHorizontal className="w-3.5 h-3.5" /> More Filters
+            </button>
+            <div className="inline-flex rounded-xl border border-blue-100/70 overflow-hidden shrink-0">
+              <button
+                type="button"
+                onClick={() => setLayout('table')}
+                className={`px-3 py-2 text-xs font-bold inline-flex items-center gap-1.5 cursor-pointer ${layout === 'table' ? 'bg-blue-600 text-white' : 'bg-white/45 text-slate-600 hover:bg-blue-50'}`}
+              >
+                <List className="w-3.5 h-3.5" /> Table View
+              </button>
+              <button
+                type="button"
+                onClick={() => setLayout('kanban')}
+                className={`px-3 py-2 text-xs font-bold inline-flex items-center gap-1.5 cursor-pointer ${layout === 'kanban' ? 'bg-blue-600 text-white' : 'bg-white/45 text-slate-600 hover:bg-blue-50'}`}
+              >
+                <LayoutGrid className="w-3.5 h-3.5" /> Kanban View
+              </button>
+            </div>
+            <button type="button" onClick={() => toast.info('Export coming soon', { module: 'Complaints' })} className="inline-flex items-center justify-center w-9 h-9 rounded-xl border border-blue-100/70 bg-white/45 text-blue-700 cursor-pointer shrink-0">
+              <Download className="w-4 h-4" />
+            </button>
+          </>
+        }
+      />
+
+      <div className="grid grid-cols-1 xl:grid-cols-[1fr_300px] gap-3 items-start flex-1 min-h-0">
+        <div className="flex flex-col gap-3 min-h-0">
+          {layout === 'table' ? (
+            <>
+              <div className="flex items-center gap-2 px-1">
+                <input
+                  type="checkbox"
+                  checked={paged.length > 0 && paged.every((r) => selectedIds.has(r.id))}
+                  onChange={toggleSelectAll}
+                  className="cursor-pointer"
+                />
+                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wide">Select page</span>
+              </div>
+              <AppTable
+                columns={columns}
+                rows={paged}
+                rowKey={(row) => row.id}
+                emptyMessage={t('crm.select_complaint')}
+                renderActions={(row) => (
+                  <div className="relative">
+                    <button
+                      type="button"
+                      className="app-table-icon-btn cursor-pointer"
+                      onClick={() => setMenuOpenId(menuOpenId === row.id ? null : row.id)}
+                    >
+                      <MoreHorizontal className="w-4 h-4" />
+                    </button>
+                    {menuOpenId === row.id ? (
+                      <div className="absolute right-0 top-full z-30 mt-1 w-44 rounded-xl border border-slate-200 bg-white shadow-lg p-1">
+                        <button type="button" onClick={() => setStatus(row.id, 'in-progress')} className="w-full text-left px-3 py-2 text-[11px] font-semibold text-slate-700 hover:bg-slate-50 rounded-lg cursor-pointer">
+                          Mark In Progress
+                        </button>
+                        <button type="button" onClick={() => setStatus(row.id, 'resolved')} className="w-full text-left px-3 py-2 text-[11px] font-semibold text-emerald-700 hover:bg-emerald-50 rounded-lg cursor-pointer">
+                          Mark Resolved
+                        </button>
+                        <button type="button" onClick={() => handleDelete(row.id)} className="w-full text-left px-3 py-2 text-[11px] font-semibold text-rose-600 hover:bg-rose-50 rounded-lg cursor-pointer">
+                          Delete
+                        </button>
+                      </div>
+                    ) : null}
+                  </div>
+                )}
+              />
+              <PaginationBar page={page} pageSize={PAGE_SIZE} total={filtered.length} onPageChange={setPage} />
+            </>
+          ) : (
+            <ComplaintKanbanView
+              rows={filtered}
+              onStatusChange={setStatus}
+              onOpen={(row) => toast.info(row.subject, { module: row.ticketNo, description: row.description || 'No description' })}
+            />
+          )}
+        </div>
+
+        <aside className="premium-card premium-shadow p-4 space-y-5 shrink-0 xl:sticky xl:top-4">
+          <div>
+            <h3 className="text-sm font-extrabold text-slate-900 mb-3">Complaint Overview</h3>
+            <ComplaintOverviewDonut summary={statusSummary} />
+          </div>
+          <div className="border-t border-slate-100 pt-4">
+            <h3 className="text-sm font-extrabold text-slate-900 mb-3">Top Complaint Categories</h3>
+            <ComplaintTopCategories slices={categorySlices} />
+          </div>
+          <Link href="/reports/customers" className="inline-flex text-xs font-bold text-blue-600 hover:text-blue-700 cursor-pointer">
+            View All Reports →
+          </Link>
+        </aside>
+      </div>
+
+      <Footer />
     </>
   );
 }

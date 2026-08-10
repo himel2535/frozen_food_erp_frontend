@@ -146,6 +146,11 @@ export const COLLECTION_DEMO_INVOICES = [
   { id: 'INV-COL-007', customerId: 107, date: '2026-07-18', dueDate: todayIso(), amount: 12000, paid: 0, due: 12000, status: 'pending' },
   { id: 'INV-COL-008', customerId: 108, date: '2026-07-20', dueDate: daysAgoIso(1), amount: 8500, paid: 0, due: 8500, status: 'pending' },
   { id: 'INV-COL-009', customerId: 109, date: '2026-07-22', dueDate: todayIso(), amount: 8500, paid: 0, due: 8500, status: 'pending' },
+  { id: 'INV-COL-010', customerId: 101, date: '2026-08-01', dueDate: '2026-08-15', amount: 45000, paid: 45000, due: 0, status: 'paid' },
+  { id: 'INV-COL-011', customerId: 102, date: '2026-08-03', dueDate: '2026-08-18', amount: 28000, paid: 10000, due: 18000, status: 'pending' },
+  { id: 'INV-COL-012', customerId: 103, date: '2026-08-05', dueDate: '2026-08-20', amount: 18500, paid: 0, due: 18500, status: 'pending' },
+  { id: 'INV-COL-013', customerId: 104, date: '2026-08-07', dueDate: '2026-08-22', amount: 32000, paid: 32000, due: 0, status: 'paid' },
+  { id: 'INV-COL-014', customerId: 105, date: '2026-08-09', dueDate: '2026-08-24', amount: 12500, paid: 0, due: 12500, status: 'pending' },
 ];
 
 export const COLLECTION_DEMO_PAYMENTS_TODAY = [

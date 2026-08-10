@@ -1,4 +1,9 @@
-import { useFeedbackStore, type ConfirmTone, type ToastVariant } from './feedback-store';
+import {
+  useFeedbackStore,
+  type ConfirmTone,
+  type PromptInputType,
+  type ToastVariant,
+} from './feedback-store';
 
 export type ToastOptions = {
   description?: string;
@@ -49,5 +54,33 @@ export function confirmAction(opts: ConfirmOptions): Promise<boolean> {
     cancelLabel: opts.cancelLabel ?? 'Cancel',
     tone: opts.tone ?? 'primary',
     module: opts.module,
+  });
+}
+
+export type PromptOptions = {
+  title?: string;
+  message?: string;
+  okLabel?: string;
+  cancelLabel?: string;
+  module?: string;
+  inputType?: PromptInputType;
+  placeholder?: string;
+};
+
+export function promptAction(
+  title: string,
+  defaultValue = '',
+  options?: PromptOptions,
+): Promise<string | null> {
+  if (typeof window === 'undefined') return Promise.resolve(null);
+  return useFeedbackStore.getState().openPrompt({
+    title,
+    message: options?.message ?? '',
+    defaultValue,
+    okLabel: options?.okLabel ?? 'OK',
+    cancelLabel: options?.cancelLabel ?? 'Cancel',
+    inputType: options?.inputType ?? 'text',
+    placeholder: options?.placeholder,
+    module: options?.module,
   });
 }

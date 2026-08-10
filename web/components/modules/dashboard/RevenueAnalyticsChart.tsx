@@ -1,74 +1,176 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { Icon } from '@iconify/react';
 import { useAppStore } from '@/lib/state/app-store';
 import { useLocaleFormat } from '@/hooks/useLocaleFormat';
-import { getRevenueByMonth } from '@/lib/services/dashboard-service';
+import {
+  getRevenueSeries,
+  niceChartAxisMax,
+  type SalesTrendRange,
+} from '@/lib/services/dashboard-service';
+
+const RANGE_OPTIONS: SalesTrendRange[] = ['day', 'week', 'month', 'quarter', 'year'];
+
+const RANGE_LABEL_KEYS: Record<SalesTrendRange, string> = {
+  day: 'dashboard.filter_day',
+  week: 'dashboard.filter_week',
+  month: 'dashboard.filter_month',
+  quarter: 'dashboard.last_quarter',
+  year: 'dashboard.filter_year',
+};
+
+const RANGE_HINT_KEYS: Record<SalesTrendRange, string> = {
+  day: 'dashboard.revenue_day_hint',
+  week: 'dashboard.revenue_week_hint',
+  month: 'dashboard.revenue_month_hint',
+  quarter: 'dashboard.revenue_quarter_hint',
+  year: 'dashboard.revenue_year_hint',
+};
 
 export function RevenueAnalyticsChart() {
   const appState = useAppStore((s) => s.appState);
   const t = useAppStore((s) => s.t);
-  const { formatCompactMoney, formatMonthShort } = useLocaleFormat();
+  const { formatMoney, formatCompactMoney } = useLocaleFormat();
+  const [range, setRange] = useState<SalesTrendRange>('month');
+  const [hoverIdx, setHoverIdx] = useState<number | null>(null);
 
-  const monthly = useMemo(() => getRevenueByMonth(appState), [appState]);
-  const maxValue = useMemo(() => Math.max(...monthly.map((m) => m.value), 1), [monthly]);
-  const activeIdx = useMemo(() => {
+  const series = useMemo(() => getRevenueSeries(appState, range), [appState, range]);
+  const total = useMemo(() => series.reduce((s, p) => s + p.value, 0), [series]);
+  const average = useMemo(() => (series.length ? total / series.length : 0), [series, total]);
+  const maxValue = useMemo(() => niceChartAxisMax(Math.max(...series.map((p) => p.value), 1)), [series]);
+
+  const peakIdx = useMemo(() => {
+    if (!series.length) return 0;
     let best = 0;
-    monthly.forEach((m, i) => {
-      if (m.value > monthly[best].value) best = i;
+    series.forEach((p, i) => {
+      if (p.value >= series[best].value) best = i;
     });
     return best;
-  }, [monthly]);
+  }, [series]);
 
-  const bars = useMemo(
-    () =>
-      monthly.map((m, idx) => ({
-        value: m.value,
-        height: m.value > 0 ? `${Math.max(8, Math.round((m.value / maxValue) * 82))}%` : '8%',
-        label: formatCompactMoney(m.value),
-        active: idx === activeIdx,
-      })),
-    [monthly, maxValue, activeIdx, formatCompactMoney],
-  );
+  const activeIdx = hoverIdx ?? peakIdx;
+  const activePoint = series[activeIdx];
 
-  const monthLabels = useMemo(
-    () => monthly.map((m) => formatMonthShort(m.month)),
-    [monthly, formatMonthShort],
-  );
+  const yTicks = useMemo(() => {
+    const step = maxValue / 4;
+    return [maxValue, step * 3, step * 2, step, 0];
+  }, [maxValue]);
 
   return (
-    <div className="premium-card p-4 premium-shadow lg:col-span-1 flex flex-col">
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-2">
-          <Icon icon="fluent-color:chart-multiple-24" width={26} height={26} className="shrink-0" />
-          <h3 className="text-sm font-bold text-slate-900 tracking-tight">{t('dashboard.revenue_analytics')}</h3>
+    <div className="premium-card p-4 premium-shadow lg:col-span-1 flex flex-col h-full">
+      <div className="flex items-start justify-between gap-3 mb-3">
+        <div className="min-w-0">
+          <div className="flex items-center gap-2">
+            <Icon icon="fluent-color:chart-multiple-24" width={26} height={26} className="shrink-0" />
+            <h3 className="text-sm font-bold text-slate-900 tracking-tight">{t('dashboard.revenue_analytics')}</h3>
+          </div>
+          <p className="text-[10px] text-slate-500 font-medium mt-0.5">{t(RANGE_HINT_KEYS[range])}</p>
         </div>
-        <select className="bg-slate-50 border border-slate-200 text-[10px] font-semibold text-slate-600 rounded-lg px-2.5 py-1 cursor-pointer">
-          <option>{t('dashboard.this_year')}</option>
-          <option>{t('dashboard.last_3_years')}</option>
+        <select
+          value={range}
+          onChange={(e) => {
+            setRange(e.target.value as SalesTrendRange);
+            setHoverIdx(null);
+          }}
+          className="bg-slate-50 border border-slate-200 text-[10px] font-semibold text-slate-600 rounded-lg px-2.5 py-1.5 cursor-pointer shrink-0"
+        >
+          {RANGE_OPTIONS.map((option) => (
+            <option key={option} value={option}>
+              {t(RANGE_LABEL_KEYS[option])}
+            </option>
+          ))}
         </select>
       </div>
-      <div className="h-56 flex items-end justify-between gap-1.5 relative pt-4 pb-6">
-        {bars.map((bar, idx) => (
-          <div key={idx} className="flex-1 flex flex-col items-center h-full justify-end group">
-            <div
-              className={`${bar.active ? 'bg-blue-600/20 group-hover:bg-blue-600' : 'bg-blue-600/10 group-hover:bg-blue-600'} w-full rounded-md transition-all cursor-pointer relative`}
-              style={{ height: bar.height }}
-            >
-              <span
-                className={`${bar.active ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'} absolute -top-8 left-1/2 -translate-x-1/2 bg-slate-900 text-white text-[9px] font-bold py-1 px-1.5 rounded whitespace-nowrap z-40 transition-opacity`}
-              >
-                {bar.label}
-              </span>
-            </div>
-          </div>
-        ))}
-        <div className="absolute bottom-0 left-0 w-full flex justify-between text-[9px] font-bold text-slate-400/80 pt-2 border-t border-slate-100">
-          {monthLabels.map((m, idx) => (
-            <span key={`${m}-${idx}`}>{m}</span>
+
+      <div className="grid grid-cols-3 gap-2 mb-4">
+        <div className="rounded-xl bg-violet-50/80 border border-violet-100 px-3 py-2 min-w-0">
+          <p className="text-[9px] font-bold text-violet-600 uppercase tracking-wide truncate">{t('dashboard.revenue_total')}</p>
+          <p className="text-sm font-extrabold text-slate-900 tabular-nums mt-0.5 truncate">{formatMoney(total)}</p>
+        </div>
+        <div className="rounded-xl bg-slate-50 border border-slate-100 px-3 py-2 min-w-0">
+          <p className="text-[9px] font-bold text-slate-500 uppercase tracking-wide truncate">{t('dashboard.revenue_avg')}</p>
+          <p className="text-sm font-extrabold text-slate-900 tabular-nums mt-0.5 truncate">{formatMoney(average)}</p>
+        </div>
+        <div className="rounded-xl bg-emerald-50/80 border border-emerald-100 px-3 py-2 min-w-0">
+          <p className="text-[9px] font-bold text-emerald-600 uppercase tracking-wide truncate">{t('dashboard.sales_trend_peak')}</p>
+          <p className="text-sm font-extrabold text-slate-900 tabular-nums mt-0.5 truncate">
+            {activePoint && activePoint.value > 0
+              ? `${activePoint.label} · ${formatCompactMoney(activePoint.value)}`
+              : '—'}
+          </p>
+        </div>
+      </div>
+
+      <div className="flex-1 flex flex-col justify-end min-h-0">
+      <div className="h-52 flex gap-2 shrink-0">
+        <div className="flex flex-col justify-between text-[9px] font-bold text-slate-400 pb-6 shrink-0 w-10 text-right">
+          {yTicks.map((tick) => (
+            <span key={tick} className="tabular-nums leading-none">
+              {formatCompactMoney(tick)}
+            </span>
           ))}
         </div>
+
+        <div className="flex-1 relative min-w-0">
+          <div className="absolute inset-0 bottom-6 flex flex-col justify-between pointer-events-none">
+            {yTicks.slice(0, -1).map((tick) => (
+              <div key={tick} className="border-t border-dashed border-slate-100 w-full" />
+            ))}
+          </div>
+
+          <div className="absolute inset-0 bottom-6 flex items-end justify-between gap-1.5">
+            {series.map((point, idx) => {
+              const heightPct = point.value > 0 ? Math.max(6, (point.value / maxValue) * 100) : 3;
+              const isActive = idx === activeIdx;
+              return (
+                <div
+                  key={point.key}
+                  className="flex-1 flex flex-col items-center justify-end h-full min-w-0 group"
+                  onMouseEnter={() => setHoverIdx(idx)}
+                  onMouseLeave={() => setHoverIdx(null)}
+                >
+                  <span
+                    className={`text-[9px] font-extrabold mb-1 tabular-nums transition-opacity ${
+                      isActive ? 'text-violet-600 opacity-100' : 'text-slate-500 opacity-0 group-hover:opacity-100'
+                    }`}
+                  >
+                    {point.value > 0 ? formatCompactMoney(point.value) : ''}
+                  </span>
+                  <div
+                    className={`w-full max-w-12 rounded-t-lg transition-all cursor-pointer ${
+                      isActive
+                        ? 'bg-gradient-to-t from-violet-700 to-violet-500 shadow-md shadow-violet-200/60'
+                        : 'bg-gradient-to-t from-violet-400/70 to-violet-300/50 group-hover:from-violet-600 group-hover:to-violet-400'
+                    }`}
+                    style={{ height: `${heightPct}%` }}
+                    title={`${point.label}: ${formatMoney(point.value)}`}
+                  />
+                </div>
+              );
+            })}
+          </div>
+
+          <div className="absolute bottom-0 left-0 w-full flex justify-between border-t border-slate-100 pt-2">
+            {series.map((point) => (
+              <span
+                key={`${point.key}-lbl`}
+                className={`flex-1 text-center font-bold text-slate-500 truncate px-0.5 ${series.length > 14 ? 'text-[8px]' : 'text-[10px]'}`}
+              >
+                {point.label}
+              </span>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {activePoint ? (
+        <p className="text-[10px] text-slate-400 font-medium mt-2 text-center truncate shrink-0">
+          {activePoint.label}
+          {' · '}
+          {t('dashboard.revenue_period_amount', { amount: formatMoney(activePoint.value) })}
+        </p>
+      ) : null}
       </div>
     </div>
   );

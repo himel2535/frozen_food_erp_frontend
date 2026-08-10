@@ -3,12 +3,11 @@
 import Link from 'next/link';
 import { useMemo } from 'react';
 import { Icon } from '@iconify/react';
-import { AppTable, type AppTableColumn } from '@/components/shared/AppTable';
 import { useAppStore } from '@/lib/state/app-store';
 import type { AppState } from '@/lib/state/types';
 import { useLocaleFormat } from '@/hooks/useLocaleFormat';
 import { listSystemAuditLogRecords } from '@/lib/services/audit-log-service';
-import { formatRelativeTime, getTopProducts, type TopProductRow } from '@/lib/services/dashboard-service';
+import { formatRelativeTime, getTopProducts } from '@/lib/services/dashboard-service';
 
 function customerName(state: AppState, customerId: unknown) {
   const customers = Array.isArray(state.crmCustomers) ? state.crmCustomers : [];
@@ -45,48 +44,9 @@ export function DashboardBottomPanels() {
     [appState],
   );
 
-  const topProductColumns = useMemo<AppTableColumn<TopProductRow>[]>(
-    () => [
-      {
-        key: 'name',
-        label: t('common.product'),
-        render: (row) => (
-          <div className="flex items-center gap-3">
-            <div className="h-7 w-7 rounded-md bg-slate-100 border border-slate-200 flex items-center justify-center shrink-0">
-              <Icon icon="fluent-color:box-24" width={18} height={18} />
-            </div>
-            <span className="font-bold text-slate-950">{row.name}</span>
-          </div>
-        ),
-      },
-      {
-        key: 'category',
-        label: t('common.category'),
-        render: (row) => (
-          <span className="bg-blue-50 text-blue-600 text-[10px] font-bold px-2 py-0.5 rounded-lg">
-            {row.category}
-          </span>
-        ),
-      },
-      {
-        key: 'sold',
-        label: t('common.sold'),
-        render: (row) => <span className="font-bold text-slate-800">{formatNumber(row.sold)}</span>,
-      },
-      {
-        key: 'revenue',
-        label: t('common.revenue'),
-        render: (row) => (
-          <span className="font-extrabold text-slate-950">{formatMoney(row.revenue)}</span>
-        ),
-      },
-    ],
-    [t, formatNumber, formatMoney],
-  );
-
   return (
-    <section className="grid grid-cols-1 lg:grid-cols-4 gap-2">
-      <div className="premium-card p-4 premium-shadow lg:col-span-2 flex flex-col">
+    <section className="grid grid-cols-1 lg:grid-cols-4 gap-2 items-stretch">
+      <div className="premium-card p-4 premium-shadow lg:col-span-2 flex flex-col h-full">
         <div className="flex items-center justify-between mb-4 border-b border-slate-100 pb-3">
           <div className="flex items-center gap-2">
             <Icon icon="fluent-color:ribbon-24" width={22} height={22} className="shrink-0" />
@@ -99,19 +59,36 @@ export function DashboardBottomPanels() {
             {t('dashboard.view_all')}
           </Link>
         </div>
-        {topProducts.length ? (
-          <AppTable
-            className="app-table--embedded"
-            columns={topProductColumns}
-            rows={topProducts}
-            rowKey={(row) => row.name}
-          />
-        ) : (
-          <p className="text-xs font-medium text-slate-400 text-center py-6">{t('common.no_data')}</p>
-        )}
+        <div className="flex-1 flex flex-col justify-between gap-4 min-h-[9.75rem]">
+          {topProducts.length ? (
+            topProducts.map((product, idx) => (
+              <div key={product.name} className="flex items-center justify-between text-xs min-h-[2.75rem]">
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <div className="h-6 w-6 rounded-md bg-slate-100 border border-slate-200 flex items-center justify-center shrink-0">
+                    <Icon icon="fluent-color:box-24" width={16} height={16} />
+                  </div>
+                  <div className="flex flex-col min-w-0">
+                    <span className="font-bold text-slate-800 truncate">{product.name}</span>
+                    <span className="text-[10px] text-slate-400 mt-0.5 truncate">
+                      {product.category || '—'} • {formatNumber(product.sold)} {t('common.sold').toLowerCase()}
+                    </span>
+                  </div>
+                </div>
+                <div className="flex flex-col items-end shrink-0 ml-2">
+                  <span className="font-extrabold text-slate-950">{formatMoney(product.revenue)}</span>
+                  <span className="text-[9px] font-bold px-2 py-0.5 rounded mt-0.5 bg-blue-50 text-blue-600">
+                    #{idx + 1}
+                  </span>
+                </div>
+              </div>
+            ))
+          ) : (
+            <p className="text-xs font-medium text-slate-400 text-center py-4">{t('common.no_data')}</p>
+          )}
+        </div>
       </div>
 
-      <div className="premium-card p-4 premium-shadow lg:col-span-1 flex flex-col">
+      <div className="premium-card p-4 premium-shadow lg:col-span-1 flex flex-col h-full">
         <div className="flex items-center justify-between mb-4 border-b border-slate-100 pb-3">
           <div className="flex items-center gap-2">
             <Icon icon="fluent-color:receipt-24" width={22} height={22} className="shrink-0" />
@@ -124,12 +101,12 @@ export function DashboardBottomPanels() {
             {t('dashboard.view_all')}
           </Link>
         </div>
-        <div className="flex-1 flex flex-col gap-3.5 overflow-y-auto">
+        <div className="flex-1 flex flex-col justify-between gap-4 min-h-[9.75rem]">
           {recentInvoices.map((inv) => {
             const status = String(inv.status ?? 'pending').toLowerCase();
             const paid = status === 'paid';
             return (
-              <div key={String(inv.id)} className="flex items-center justify-between text-xs">
+              <div key={String(inv.id)} className="flex items-center justify-between text-xs min-h-[2.75rem]">
                 <div className="flex flex-col">
                   <span className="font-bold text-slate-800 hover:text-blue-600 cursor-pointer">
                     {String(inv.id)}
@@ -154,7 +131,7 @@ export function DashboardBottomPanels() {
         </div>
       </div>
 
-      <div className="premium-card p-4 premium-shadow flex flex-col justify-between">
+      <div className="premium-card p-4 premium-shadow flex flex-col h-full">
         <div className="flex items-center justify-between mb-4 border-b border-slate-100 pb-3">
           <div className="flex items-center gap-2">
             <Icon icon="fluent-color:history-24" width={22} height={22} className="shrink-0" />
@@ -167,10 +144,10 @@ export function DashboardBottomPanels() {
             {t('dashboard.view_all')}
           </Link>
         </div>
-        <div className="flex-1 flex flex-col gap-4 overflow-y-auto">
+        <div className="flex-1 flex flex-col justify-between gap-4 min-h-[9.75rem]">
           {activityItems.length ? (
             activityItems.map((log) => (
-              <div key={log.id} className="flex items-center gap-3">
+              <div key={log.id} className="flex items-center gap-3 min-h-[2.75rem]">
                 <div
                   className={`h-6 w-6 rounded-full flex items-center justify-center shrink-0 text-[10px] font-bold ${moduleBadgeClass(log.module)}`}
                 >

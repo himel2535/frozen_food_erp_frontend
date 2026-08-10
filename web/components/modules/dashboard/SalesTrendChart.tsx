@@ -1,127 +1,169 @@
 'use client';
 
-import { useEffect, useMemo, useRef } from 'react';
+import { useMemo, useState } from 'react';
 import { Icon } from '@iconify/react';
 import { useAppStore } from '@/lib/state/app-store';
 import { useLocaleFormat } from '@/hooks/useLocaleFormat';
-import { getSalesTrendSeries } from '@/lib/services/dashboard-service';
+import { getSalesTrendSeries, niceChartAxisMax, type SalesTrendRange } from '@/lib/services/dashboard-service';
+
+const RANGE_OPTIONS: SalesTrendRange[] = ['day', 'week', 'month', 'quarter', 'year'];
+
+const RANGE_LABEL_KEYS: Record<SalesTrendRange, string> = {
+  day: 'dashboard.filter_day',
+  week: 'dashboard.filter_week',
+  month: 'dashboard.filter_month',
+  quarter: 'dashboard.last_quarter',
+  year: 'dashboard.filter_year',
+};
+
+const RANGE_HINT_KEYS: Record<SalesTrendRange, string> = {
+  day: 'dashboard.sales_trend_day_hint',
+  week: 'dashboard.sales_trend_week_hint',
+  month: 'dashboard.sales_trend_month_hint',
+  quarter: 'dashboard.sales_trend_quarter_hint',
+  year: 'dashboard.sales_trend_year_hint',
+};
 
 export function SalesTrendChart() {
   const appState = useAppStore((s) => s.appState);
   const t = useAppStore((s) => s.t);
-  const { formatDate, formatMoney } = useLocaleFormat();
-  const boxRef = useRef<HTMLDivElement>(null);
-  const pathRef = useRef<SVGPathElement>(null);
-  const areaRef = useRef<SVGPathElement>(null);
-  const markerRef = useRef<HTMLDivElement>(null);
-  const tooltipRef = useRef<HTMLDivElement>(null);
+  const { formatMoney, formatCompactMoney } = useLocaleFormat();
+  const [range, setRange] = useState<SalesTrendRange>('month');
+  const [hoverIdx, setHoverIdx] = useState<number | null>(null);
 
-  const series = useMemo(() => getSalesTrendSeries(appState), [appState]);
-  const trendValues = useMemo(() => series.map((p) => p.value), [series]);
-  const highlightIdx = useMemo(() => {
-    if (!trendValues.length) return 0;
+  const series = useMemo(() => getSalesTrendSeries(appState, range), [appState, range]);
+  const total = useMemo(() => series.reduce((s, p) => s + p.value, 0), [series]);
+  const average = useMemo(() => (series.length ? total / series.length : 0), [series, total]);
+  const maxValue = useMemo(() => niceChartAxisMax(Math.max(...series.map((p) => p.value), 1)), [series]);
+
+  const peakIdx = useMemo(() => {
     let best = 0;
-    trendValues.forEach((v, i) => {
-      if (v > trendValues[best]) best = i;
+    series.forEach((p, i) => {
+      if (p.value > series[best].value) best = i;
     });
     return best;
-  }, [trendValues]);
+  }, [series]);
 
-  const axisLabels = useMemo(
-    () =>
-      series.map((p) =>
-        formatDate(p.date, { month: 'short', day: 'numeric', year: undefined }),
-      ),
-    [series, formatDate],
-  );
+  const activeIdx = hoverIdx ?? peakIdx;
+  const activePoint = series[activeIdx];
 
-  const highlightPoint = series[highlightIdx];
-  const tooltipDate = useMemo(
-    () =>
-      highlightPoint
-        ? formatDate(highlightPoint.date, { day: 'numeric', month: 'long', year: 'numeric' })
-        : '—',
-    [highlightPoint, formatDate],
-  );
-  const tooltipAmount = useMemo(
-    () => formatMoney(highlightPoint?.value ?? 0),
-    [formatMoney, highlightPoint],
-  );
-
-  useEffect(() => {
-    function draw() {
-      const box = boxRef.current;
-      const path = pathRef.current;
-      const area = areaRef.current;
-      const marker = markerRef.current;
-      const tooltip = tooltipRef.current;
-      if (!box || !path || !area) return;
-
-      const w = box.clientWidth;
-      const h = box.clientHeight - 20;
-      const max = Math.max(...trendValues, 1) * 1.1;
-
-      const points = trendValues.map((val, idx) => {
-        const x = trendValues.length <= 1 ? w / 2 : (idx / (trendValues.length - 1)) * w;
-        const y = h - (val / max) * (h - 20);
-        return { x, y, val };
-      });
-
-      const lineD = points.map((p, idx) => `${idx === 0 ? 'M' : 'L'} ${p.x} ${p.y}`).join(' ');
-      path.setAttribute('d', lineD);
-      area.setAttribute('d', `${lineD} L ${w} ${h} L 0 ${h} Z`);
-
-      const targetPt = points[highlightIdx];
-      if (targetPt && marker && tooltip) {
-        marker.classList.remove('hidden');
-        marker.style.left = `${targetPt.x - 7}px`;
-        marker.style.top = `${targetPt.y - 7}px`;
-        tooltip.style.left = `${targetPt.x}px`;
-        tooltip.style.top = `${targetPt.y}px`;
-      }
-    }
-
-    draw();
-    window.addEventListener('resize', draw);
-    return () => window.removeEventListener('resize', draw);
-  }, [trendValues, highlightIdx]);
+  const yTicks = useMemo(() => {
+    const step = maxValue / 4;
+    return [maxValue, step * 3, step * 2, step, 0];
+  }, [maxValue]);
 
   return (
-    <div className="premium-card p-4 premium-shadow lg:col-span-2 flex flex-col relative">
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-2">
-          <Icon icon="fluent-color:data-trending-24" width={26} height={26} className="shrink-0" />
-          <h3 className="text-sm font-bold text-slate-900 tracking-tight">{t('dashboard.sales_trend')}</h3>
+    <div className="premium-card p-4 premium-shadow lg:col-span-2 flex flex-col h-full">
+      <div className="flex items-start justify-between gap-3 mb-3">
+        <div className="min-w-0">
+          <div className="flex items-center gap-2">
+            <Icon icon="fluent-color:data-trending-24" width={26} height={26} className="shrink-0" />
+            <h3 className="text-sm font-bold text-slate-900 tracking-tight">{t('dashboard.sales_trend')}</h3>
+          </div>
+          <p className="text-[10px] text-slate-500 font-medium mt-0.5">{t(RANGE_HINT_KEYS[range])}</p>
         </div>
-        <select className="bg-slate-50 border border-slate-200 text-[10px] font-semibold text-slate-600 rounded-lg px-2.5 py-1 cursor-pointer">
-          <option>{t('dashboard.this_month')}</option>
-          <option>{t('dashboard.last_quarter')}</option>
+        <select
+          value={range}
+          onChange={(e) => {
+            setRange(e.target.value as SalesTrendRange);
+            setHoverIdx(null);
+          }}
+          className="bg-slate-50 border border-slate-200 text-[10px] font-semibold text-slate-600 rounded-lg px-2.5 py-1.5 cursor-pointer shrink-0"
+        >
+          {RANGE_OPTIONS.map((option) => (
+            <option key={option} value={option}>
+              {t(RANGE_LABEL_KEYS[option])}
+            </option>
+          ))}
         </select>
       </div>
-      <div ref={boxRef} className="h-56 w-full relative pt-6" id="trend-chart-box">
-        <svg className="w-full h-full" preserveAspectRatio="none">
-          <defs>
-            <linearGradient id="line-area-grad" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="#2563eb" stopOpacity="0.15" />
-              <stop offset="100%" stopColor="#2563eb" stopOpacity="0" />
-            </linearGradient>
-          </defs>
-          <path ref={areaRef} d="" fill="url(#line-area-grad)" />
-          <path ref={pathRef} d="" fill="none" stroke="#2563eb" strokeWidth="2.5" strokeLinecap="round" />
-        </svg>
-        <div
-          ref={markerRef}
-          className="absolute w-3.5 h-3.5 rounded-full border-2 border-white bg-blue-600 shadow-md hidden"
-        />
-        <div ref={tooltipRef} className="chart-tooltip" style={{ transform: 'translate(-50%, -120%)' }}>
-          <div className="text-[9px] text-slate-400 font-medium leading-none">{tooltipDate}</div>
-          <div className="text-[11px] text-white font-extrabold mt-1">{tooltipAmount}</div>
+
+      <div className="grid grid-cols-3 gap-2 mb-4">
+        <div className="rounded-xl bg-blue-50/80 border border-blue-100 px-3 py-2">
+          <p className="text-[9px] font-bold text-blue-600 uppercase tracking-wide">{t('dashboard.sales_trend_total')}</p>
+          <p className="text-sm font-extrabold text-slate-900 tabular-nums mt-0.5">{formatMoney(total)}</p>
         </div>
-        <div className="absolute bottom-0 left-0 w-full flex justify-between text-[10px] font-bold text-slate-400/80 pt-2 border-t border-slate-100">
-          {axisLabels.map((label, idx) => (
-            <span key={series[idx]?.date ?? idx}>{label}</span>
+        <div className="rounded-xl bg-slate-50 border border-slate-100 px-3 py-2">
+          <p className="text-[9px] font-bold text-slate-500 uppercase tracking-wide">{t('dashboard.sales_trend_avg')}</p>
+          <p className="text-sm font-extrabold text-slate-900 tabular-nums mt-0.5">{formatMoney(average)}</p>
+        </div>
+        <div className="rounded-xl bg-emerald-50/80 border border-emerald-100 px-3 py-2">
+          <p className="text-[9px] font-bold text-emerald-600 uppercase tracking-wide">{t('dashboard.sales_trend_peak')}</p>
+          <p className="text-sm font-extrabold text-slate-900 tabular-nums mt-0.5 truncate">
+            {activePoint ? `${activePoint.label} · ${formatCompactMoney(activePoint.value)}` : '—'}
+          </p>
+        </div>
+      </div>
+
+      <div className="flex-1 flex flex-col justify-end min-h-0">
+      <div className="h-52 flex gap-2 shrink-0">
+        <div className="flex flex-col justify-between text-[9px] font-bold text-slate-400 pb-6 shrink-0 w-10 text-right">
+          {yTicks.map((tick) => (
+            <span key={tick} className="tabular-nums leading-none">
+              {formatCompactMoney(tick)}
+            </span>
           ))}
         </div>
+
+        <div className="flex-1 relative">
+          <div className="absolute inset-0 bottom-6 flex flex-col justify-between pointer-events-none">
+            {yTicks.slice(0, -1).map((tick) => (
+              <div key={tick} className="border-t border-dashed border-slate-100 w-full" />
+            ))}
+          </div>
+
+          <div className="absolute inset-0 bottom-6 flex items-end justify-between gap-1.5">
+            {series.map((point, idx) => {
+              const heightPct = point.value > 0 ? Math.max(6, (point.value / maxValue) * 100) : 3;
+              const isActive = idx === activeIdx;
+              return (
+                <div
+                  key={point.key}
+                  className="flex-1 flex flex-col items-center justify-end h-full min-w-0 group"
+                  onMouseEnter={() => setHoverIdx(idx)}
+                  onMouseLeave={() => setHoverIdx(null)}
+                >
+                  <span
+                    className={`text-[9px] font-extrabold mb-1 tabular-nums transition-opacity ${
+                      isActive ? 'text-blue-600 opacity-100' : 'text-slate-500 opacity-0 group-hover:opacity-100'
+                    }`}
+                  >
+                    {formatCompactMoney(point.value)}
+                  </span>
+                  <div
+                    className={`w-full max-w-12 rounded-t-lg transition-all cursor-pointer ${
+                      isActive
+                        ? 'bg-gradient-to-t from-blue-700 to-blue-500 shadow-md shadow-blue-200/60'
+                        : 'bg-gradient-to-t from-blue-400/70 to-blue-300/50 group-hover:from-blue-600 group-hover:to-blue-400'
+                    }`}
+                    style={{ height: `${heightPct}%` }}
+                    title={`${point.label}: ${formatMoney(point.value)}`}
+                  />
+                </div>
+              );
+            })}
+          </div>
+
+          <div className="absolute bottom-0 left-0 w-full flex justify-between border-t border-slate-100 pt-2">
+            {series.map((point) => (
+              <span
+                key={`${point.key}-lbl`}
+                className={`flex-1 text-center font-bold text-slate-500 truncate px-0.5 ${series.length > 14 ? 'text-[8px]' : 'text-[10px]'}`}
+              >
+                {point.label}
+              </span>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {activePoint ? (
+        <p className="text-[10px] text-slate-400 font-medium mt-2 text-center shrink-0">
+          {activePoint.label}
+          {' · '}
+          {t('dashboard.sales_trend_period_amount', { amount: formatMoney(activePoint.value) })}
+        </p>
+      ) : null}
       </div>
     </div>
   );

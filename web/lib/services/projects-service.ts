@@ -286,3 +286,43 @@ export function projectSetupLabel(setupStep: unknown) {
   };
   return labels[step] ?? `Step ${step}`;
 }
+
+export type DashboardProjectRow = {
+  id: string;
+  name: string;
+  lead: string;
+  progress: number;
+  health: string;
+  deadline: string;
+  setupLabel: string;
+  status: string;
+};
+
+export function getDashboardProjectRows(state: AppState, limit = 6): DashboardProjectRow[] {
+  return listProjects(state)
+    .map((row, index) => {
+      const status = projectStatus(row);
+      const progress = Math.min(100, Math.max(0, Number(row.progress ?? 0)));
+      const name = String(row.name ?? row.projectId ?? 'Project');
+      return {
+        id: String(row.id ?? row.projectId ?? `project-${index}-${name}`),
+        name,
+        lead: String(row.lead ?? row.salesPersonName ?? '—'),
+        progress,
+        health: String(row.health ?? 'On Track'),
+        deadline: formatProjectDeadline(row.deadline ?? row.expectedDeliveryDate),
+        setupLabel: projectSetupLabel(row.setupStep),
+        status,
+      };
+    })
+    .filter((row) => row.status === 'active' || row.progress > 0)
+    .sort((a, b) => b.progress - a.progress)
+    .slice(0, limit);
+}
+
+export function projectProgressBarClass(health: string, progress: number) {
+  const h = health.toLowerCase();
+  if (h.includes('risk') || progress < 35) return 'from-amber-400 to-orange-500';
+  if (progress >= 100) return 'from-emerald-400 to-emerald-600';
+  return 'from-blue-500 to-blue-600';
+}

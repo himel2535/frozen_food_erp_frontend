@@ -15,6 +15,7 @@ import {
   User,
 } from 'lucide-react';
 import { FormHeader } from '@/components/layout/FormHeader';
+import { promptAction } from '@/lib/ui/feedback';
 import { MODULE_LIST_SHELL } from '@/lib/ui/module-layout';
 import { IconInput, IconSelect, IconTextarea } from '@/components/modules/crm/customer-form/IconField';
 import { InvoiceCustomerSearch } from '@/components/modules/sales/invoice-form/InvoiceCustomerSearch';
@@ -134,17 +135,23 @@ export function InvoiceForm({
 
   const statusMeta = INVOICE_STATUS_OPTIONS.find((s) => s.value === form.status) ?? INVOICE_STATUS_OPTIONS[0];
 
-  const handleEditDiscount = () => {
+  const handleEditDiscount = async () => {
     const current = form.docDiscountOverride ?? totals.lineDiscount;
-    const raw = window.prompt('Document discount amount (৳):', String(current));
+    const raw = await promptAction('Document discount amount (৳):', String(current), {
+      inputType: 'number',
+      module: 'Invoice',
+    });
     if (raw === null) return;
     const value = Math.max(0, Number(raw) || 0);
     updateForm({ docDiscountOverride: value });
   };
 
-  const handleEditTax = () => {
+  const handleEditTax = async () => {
     const current = form.docTaxOverride ?? totals.taxAmount;
-    const raw = window.prompt('Document tax amount (৳):', String(current));
+    const raw = await promptAction('Document tax amount (৳):', String(current), {
+      inputType: 'number',
+      module: 'Invoice',
+    });
     if (raw === null) return;
     const value = Math.max(0, Number(raw) || 0);
     updateForm({ docTaxOverride: value });

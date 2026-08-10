@@ -2,13 +2,15 @@
 
 import { AppToastHost } from '@/components/shared/AppToastHost';
 import { AppConfirmDialog } from '@/components/shared/AppConfirmDialog';
+import { AppPromptDialog } from '@/components/shared/AppPromptDialog';
 
-/** Global toast + confirm hosts — mounted in root layout so /login can show feedback. */
+/** Global toast + confirm + prompt hosts — mounted in root layout so /login can show feedback. */
 export function AppFeedbackProviders() {
   return (
     <>
       <AppToastHost />
       <AppConfirmDialog />
+      <AppPromptDialog />
     </>
   );
 }

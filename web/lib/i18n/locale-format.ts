@@ -49,12 +49,12 @@ export function formatCompactMoney(value: number, lang: Lang): string {
     return formatMoney(n, lang);
   }
   if (n >= 1_000_000) {
-    return `$${(n / 1_000_000).toLocaleString('en-US', { maximumFractionDigits: 1 })}M`;
+    return `৳${formatNumber(n / 1_000_000, lang, { maximumFractionDigits: 1 })}M`;
   }
   if (n >= 1_000) {
-    return `$${(n / 1_000).toLocaleString('en-US', { maximumFractionDigits: 0 })}K`;
+    return `৳${formatNumber(n / 1_000, lang, { maximumFractionDigits: 0 })}K`;
   }
-  return `$${n.toLocaleString('en-US')}`;
+  return formatMoney(n, lang);
 }
 
 export function formatDate(

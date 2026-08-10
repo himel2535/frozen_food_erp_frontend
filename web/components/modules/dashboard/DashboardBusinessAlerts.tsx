@@ -37,7 +37,7 @@ export function DashboardBusinessAlerts() {
   }, [appState]);
 
   return (
-    <div className="premium-card p-4 premium-shadow flex flex-col justify-between min-h-[280px]">
+    <div className="premium-card p-4 premium-shadow flex flex-col justify-between min-h-[280px] h-full">
       <div className="flex items-center justify-between mb-4 border-b border-slate-100 pb-2">
         <div className="flex items-center gap-2 my-auto">
           <Icon icon="fluent-color:alert-24" width={22} height={22} className="shrink-0 my-auto" />
