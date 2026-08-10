@@ -56,6 +56,20 @@ export function authUsersRef() {
   return ref(database, 'toysfactory/auth/users');
 }
 
+export function authRolesRef() {
+  return ref(database, 'toysfactory/auth/roles');
+}
+
+export function authRoleRef(id: string) {
+  return ref(database, `toysfactory/auth/roles/${id}`);
+}
+
+export async function listAuthRoleRecords(): Promise<Record<string, Record<string, unknown>>> {
+  const snapshot = await get(authRolesRef());
+  if (!snapshot.exists()) return {};
+  return snapshot.val() as Record<string, Record<string, unknown>>;
+}
+
 export async function getAuthUserRecord(uid: string): Promise<Record<string, unknown> | null> {
   const snapshot = await get(authUserRef(uid));
   return snapshot.exists() ? (snapshot.val() as Record<string, unknown>) : null;
