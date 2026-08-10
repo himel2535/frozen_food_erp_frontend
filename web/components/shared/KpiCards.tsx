@@ -19,9 +19,11 @@ export interface KpiCardItem {
 export function KpiCards({
   items,
   gridClassName,
+  loading = false,
 }: {
   items: KpiCardItem[];
   gridClassName?: string;
+  loading?: boolean;
 }) {
   const { formatCount } = useLocaleFormat();
   const grid = gridClassName ?? getKpiGridClassName(items.length);
@@ -34,7 +36,7 @@ export function KpiCards({
   };
 
   return (
-    <section className={grid}>
+    <section className={grid} aria-busy={loading || undefined}>
       {items.map((item, index) => {
         const iconId = iconIds[index];
         return (
@@ -44,8 +46,12 @@ export function KpiCards({
           >
             <div className="flex flex-col justify-center gap-0.5 min-w-0 flex-1">
               <span className="text-xs font-bold text-slate-500 tracking-wide leading-tight">{item.label}</span>
-              <span className="text-lg font-extrabold tracking-tight text-slate-900 leading-tight mt-0.5">
-                {displayValue(item.value)}
+              <span className="text-lg font-extrabold tracking-tight text-slate-900 leading-tight mt-0.5 min-h-[1.75rem] flex items-center">
+                {loading ? (
+                  <span className="app-skeleton inline-block h-6 w-12 rounded" aria-hidden="true" />
+                ) : (
+                  displayValue(item.value)
+                )}
               </span>
               {item.alert ? (
                 <span className="text-[11px] text-rose-600 font-bold block">Requires attention</span>

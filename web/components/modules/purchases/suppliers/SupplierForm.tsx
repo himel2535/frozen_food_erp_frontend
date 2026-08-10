@@ -3,6 +3,16 @@
 import { useState } from 'react';
 import { FormHeader } from '@/components/layout/FormHeader';
 import { Footer } from '@/components/layout/Footer';
+import { FormSectionCard } from '@/components/modules/crm/customer-form/FormSectionCard';
+import {
+  CF_BTN_GHOST,
+  CF_BTN_PRIMARY,
+  CF_FOOTER_CLS,
+  CF_INPUT_CLS,
+  CF_LABEL_CLS,
+  CF_SELECT_CLS,
+  CF_TEXTAREA_CLS,
+} from '@/components/modules/crm/customer-form/customer-form-styles';
 import { MODULE_LIST_SHELL } from '@/lib/ui/module-layout';
 
 export type SupplierFormValues = {
@@ -37,8 +47,9 @@ const CATEGORY_OPTIONS = ['Raw Materials', 'Chemicals', 'Packaging', 'Components
 const TERMS_OPTIONS = ['Net 30', 'Net 15', 'Cash', 'Net 45'];
 const STATUS_OPTIONS = ['active', 'inactive', 'credit-hold'];
 
-const INPUT_CLS = 'w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400';
-const LABEL_CLS = 'text-xs font-bold text-slate-700';
+const CF_INPUT_PLAIN = CF_INPUT_CLS.replace('pl-10', 'pl-4');
+const CF_SELECT_PLAIN = CF_SELECT_CLS.replace('pl-10', 'pl-4');
+const CF_TEXTAREA_PLAIN = CF_TEXTAREA_CLS.replace('pl-10', 'pl-4');
 
 export function SupplierForm({
   mode,
@@ -58,93 +69,189 @@ export function SupplierForm({
 
   return (
     <div className={MODULE_LIST_SHELL}>
-      <FormHeader
-        title={mode === 'create' ? 'Add Supplier' : 'Edit Supplier'}
-        subtitle={mode === 'create' ? 'Create a new vendor profile for purchases and payments.' : 'Update supplier details and payment terms.'}
-        onBack={onCancel}
-        backLabel="Back to Suppliers"
-      />
-
       <form
-        className="bg-white rounded-2xl border border-slate-200 p-6 premium-shadow space-y-5 max-w-3xl"
+        className="w-full max-w-3xl mx-auto flex flex-col pb-4"
         onSubmit={(e) => {
           e.preventDefault();
           onSave(values);
         }}
       >
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <label className="block space-y-1 sm:col-span-2">
-            <span className={LABEL_CLS}>Supplier Name *</span>
-            <input type="text" required value={values.name} onChange={(e) => update({ name: e.target.value })} className={INPUT_CLS} />
-          </label>
-          <label className="block space-y-1">
-            <span className={LABEL_CLS}>Contact Person *</span>
-            <input type="text" required value={values.contact} onChange={(e) => update({ contact: e.target.value })} className={INPUT_CLS} />
-          </label>
-          <label className="block space-y-1">
-            <span className={LABEL_CLS}>Phone *</span>
-            <input type="text" required value={values.phone} onChange={(e) => update({ phone: e.target.value })} className={INPUT_CLS} />
-          </label>
-          <label className="block space-y-1">
-            <span className={LABEL_CLS}>Category</span>
-            <select value={values.category} onChange={(e) => update({ category: e.target.value })} className={`${INPUT_CLS} cursor-pointer`}>
-              {CATEGORY_OPTIONS.map((opt) => <option key={opt} value={opt}>{opt}</option>)}
-            </select>
-          </label>
-          <label className="block space-y-1">
-            <span className={LABEL_CLS}>Payment Terms</span>
-            <select value={values.paymentTerms} onChange={(e) => update({ paymentTerms: e.target.value })} className={`${INPUT_CLS} cursor-pointer`}>
-              {TERMS_OPTIONS.map((opt) => <option key={opt} value={opt}>{opt}</option>)}
-            </select>
-          </label>
-          <label className="block space-y-1">
-            <span className={LABEL_CLS}>Status</span>
-            <select value={values.status} onChange={(e) => update({ status: e.target.value })} className={`${INPUT_CLS} cursor-pointer`}>
-              {STATUS_OPTIONS.map((opt) => <option key={opt} value={opt}>{opt}</option>)}
-            </select>
-          </label>
+        <div className="pt-3 md:pt-4 mb-3">
+          <FormHeader
+            compact
+            title={mode === 'create' ? 'Add Supplier' : 'Edit Supplier'}
+            subtitle={
+              mode === 'create'
+                ? 'Create a new vendor profile for purchases and payments.'
+                : 'Update supplier details and payment terms.'
+            }
+            onBack={onCancel}
+            backLabel="Back to Suppliers"
+          />
         </div>
 
-        <button
-          type="button"
-          onClick={() => setShowAdvanced((v) => !v)}
-          className="text-xs font-bold text-blue-600 hover:text-blue-700 cursor-pointer"
-        >
-          {showAdvanced ? 'Hide Advanced Details' : 'Show Advanced Details'}
-        </button>
+        <div className="space-y-5">
+          <FormSectionCard
+            number={1}
+            title="Supplier Details"
+            subtitle="Basic vendor information and payment terms."
+          >
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-5">
+              <label className="block sm:col-span-2">
+                <span className={CF_LABEL_CLS}>Supplier Name *</span>
+                <input
+                  type="text"
+                  required
+                  value={values.name}
+                  onChange={(e) => update({ name: e.target.value })}
+                  className={CF_INPUT_PLAIN}
+                />
+              </label>
+              <label className="block">
+                <span className={CF_LABEL_CLS}>Contact Person *</span>
+                <input
+                  type="text"
+                  required
+                  value={values.contact}
+                  onChange={(e) => update({ contact: e.target.value })}
+                  className={CF_INPUT_PLAIN}
+                />
+              </label>
+              <label className="block">
+                <span className={CF_LABEL_CLS}>Phone *</span>
+                <input
+                  type="text"
+                  required
+                  value={values.phone}
+                  onChange={(e) => update({ phone: e.target.value })}
+                  className={CF_INPUT_PLAIN}
+                />
+              </label>
+              <label className="block">
+                <span className={CF_LABEL_CLS}>Category</span>
+                <select
+                  value={values.category}
+                  onChange={(e) => update({ category: e.target.value })}
+                  className={CF_SELECT_PLAIN}
+                >
+                  {CATEGORY_OPTIONS.map((opt) => (
+                    <option key={opt} value={opt}>
+                      {opt}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label className="block">
+                <span className={CF_LABEL_CLS}>Payment Terms</span>
+                <select
+                  value={values.paymentTerms}
+                  onChange={(e) => update({ paymentTerms: e.target.value })}
+                  className={CF_SELECT_PLAIN}
+                >
+                  {TERMS_OPTIONS.map((opt) => (
+                    <option key={opt} value={opt}>
+                      {opt}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label className="block">
+                <span className={CF_LABEL_CLS}>Status</span>
+                <select
+                  value={values.status}
+                  onChange={(e) => update({ status: e.target.value })}
+                  className={CF_SELECT_PLAIN}
+                >
+                  {STATUS_OPTIONS.map((opt) => (
+                    <option key={opt} value={opt}>
+                      {opt}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            </div>
+          </FormSectionCard>
 
-        {showAdvanced && (
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2 border-t border-slate-100">
-            <label className="block space-y-1">
-              <span className={LABEL_CLS}>Email</span>
-              <input type="email" value={values.email} onChange={(e) => update({ email: e.target.value })} className={INPUT_CLS} />
-            </label>
-            <label className="block space-y-1">
-              <span className={LABEL_CLS}>Lead Time</span>
-              <input type="text" value={values.lead} onChange={(e) => update({ lead: e.target.value })} placeholder="e.g. 5–7 days" className={INPUT_CLS} />
-            </label>
-            <label className="block space-y-1">
-              <span className={LABEL_CLS}>Rating (1–5)</span>
-              <input type="number" min="1" max="5" value={values.rating} onChange={(e) => update({ rating: e.target.value })} className={INPUT_CLS} />
-            </label>
-            <label className="block space-y-1 sm:col-span-2">
-              <span className={LABEL_CLS}>Address</span>
-              <textarea value={values.address} onChange={(e) => update({ address: e.target.value })} rows={2} className={INPUT_CLS} />
-            </label>
-            <label className="block space-y-1 sm:col-span-2">
-              <span className={LABEL_CLS}>Notes</span>
-              <textarea value={values.notes} onChange={(e) => update({ notes: e.target.value })} rows={3} className={INPUT_CLS} />
-            </label>
+          <button
+            type="button"
+            onClick={() => setShowAdvanced((v) => !v)}
+            className="text-xs font-bold text-blue-600 hover:text-blue-700 cursor-pointer"
+          >
+            {showAdvanced ? 'Hide Advanced Details' : 'Show Advanced Details'}
+          </button>
+
+          {showAdvanced ? (
+            <FormSectionCard
+              number={2}
+              title="Advanced Details"
+              subtitle="Optional contact, delivery, and internal notes."
+            >
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-5">
+                <label className="block">
+                  <span className={CF_LABEL_CLS}>Email</span>
+                  <input
+                    type="email"
+                    value={values.email}
+                    onChange={(e) => update({ email: e.target.value })}
+                    className={CF_INPUT_PLAIN}
+                  />
+                </label>
+                <label className="block">
+                  <span className={CF_LABEL_CLS}>Lead Time</span>
+                  <input
+                    type="text"
+                    value={values.lead}
+                    onChange={(e) => update({ lead: e.target.value })}
+                    placeholder="e.g. 5–7 days"
+                    className={CF_INPUT_PLAIN}
+                  />
+                </label>
+                <label className="block">
+                  <span className={CF_LABEL_CLS}>Rating (1–5)</span>
+                  <input
+                    type="number"
+                    min="1"
+                    max="5"
+                    value={values.rating}
+                    onChange={(e) => update({ rating: e.target.value })}
+                    className={CF_INPUT_PLAIN}
+                  />
+                </label>
+                <label className="block sm:col-span-2">
+                  <span className={CF_LABEL_CLS}>Address</span>
+                  <textarea
+                    value={values.address}
+                    onChange={(e) => update({ address: e.target.value })}
+                    rows={2}
+                    className={CF_TEXTAREA_PLAIN}
+                  />
+                </label>
+                <label className="block sm:col-span-2">
+                  <span className={CF_LABEL_CLS}>Notes</span>
+                  <textarea
+                    value={values.notes}
+                    onChange={(e) => update({ notes: e.target.value })}
+                    rows={3}
+                    className={CF_TEXTAREA_PLAIN}
+                  />
+                </label>
+              </div>
+            </FormSectionCard>
+          ) : null}
+        </div>
+
+        <div className={`${CF_FOOTER_CLS} !mt-3`}>
+          <p className="text-xs font-semibold text-slate-500">
+            {mode === 'create' ? 'New supplier profile' : 'Editing supplier profile'}
+          </p>
+          <div className="flex items-center gap-3">
+            <button type="button" onClick={onCancel} className={CF_BTN_GHOST}>
+              Cancel
+            </button>
+            <button type="submit" className={CF_BTN_PRIMARY}>
+              {mode === 'create' ? 'Save Supplier' : 'Update Supplier'}
+            </button>
           </div>
-        )}
-
-        <div className="flex flex-wrap items-center justify-end gap-2 pt-2">
-          <button type="button" onClick={onCancel} className="px-4 py-2.5 rounded-xl border border-slate-200 text-xs font-bold text-slate-600 hover:bg-slate-50 cursor-pointer">
-            Cancel
-          </button>
-          <button type="submit" className="px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold cursor-pointer">
-            {mode === 'create' ? 'Save Supplier' : 'Update Supplier'}
-          </button>
         </div>
       </form>
 

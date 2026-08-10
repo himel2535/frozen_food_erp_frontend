@@ -282,7 +282,7 @@ export function DeliveriesPage() {
       <button
         type="button"
         onClick={openCreate}
-        className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold px-4 py-2.5 rounded-xl transition-colors flex items-center gap-2 cursor-pointer self-start"
+        className="bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold px-4 py-2.5 rounded-xl transition-colors flex items-center gap-2 cursor-pointer self-start"
       >
         <Plus className="w-4 h-4" /> {t('sales.new_challan')}
       </button>
@@ -323,7 +323,7 @@ export function DeliveriesPage() {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder={t('sales.search_challan')}
-            className="w-full max-w-md px-4 py-2 rounded-xl border border-slate-200 bg-slate-50 text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500/10 focus:border-emerald-500 font-medium"
+            className="w-full max-w-md px-4 py-2 rounded-xl border border-slate-200 bg-slate-50 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 font-medium"
           />
         </div>
 

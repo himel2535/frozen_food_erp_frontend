@@ -222,7 +222,7 @@ export function RecipeProductionPlanView({
           type="button"
           onClick={handleExportPdf}
           disabled={exporting}
-          className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl border border-emerald-200 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 text-xs font-bold cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl border border-blue-200 bg-blue-50 hover:bg-blue-100 text-blue-800 text-xs font-bold cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
         >
           <Download className="w-3.5 h-3.5" />
           {exporting ? 'Exporting…' : 'Export PDF'}

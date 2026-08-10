@@ -121,7 +121,7 @@ export function DueDetailPanel({
 
       <button
         type="button"
-        className="w-full inline-flex items-center justify-center gap-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-bold py-2.5 cursor-pointer"
+        className="w-full inline-flex items-center justify-center gap-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold py-2.5 cursor-pointer"
         onClick={onSendReminder}
       >
         <MessageCircle className="w-4 h-4" />

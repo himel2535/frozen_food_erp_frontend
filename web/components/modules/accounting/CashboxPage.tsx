@@ -51,6 +51,8 @@ export function CashboxPage() {
   );
 
   const totals = useMemo(() => getFilteredTotals(filteredRows), [filteredRows]);
+  const inCount = useMemo(() => filteredRows.filter((e) => e.cashIn > 0).length, [filteredRows]);
+  const outCount = useMemo(() => filteredRows.filter((e) => e.cashOut > 0).length, [filteredRows]);
 
   const openCreateForm = (type: CashboxTab) => {
     setFormType(type);
@@ -107,7 +109,15 @@ export function CashboxPage() {
   return (
     <>
       <div className="space-y-3 min-w-0">
-          <CashboxMetrics metrics={metrics} />
+          <CashboxMetrics
+            currentBalance={metrics.currentBalance}
+            asOf={metrics.asOf}
+            totalIn={totals.totalIn}
+            totalOut={totals.totalOut}
+            netTotal={totals.netTotal}
+            inCount={inCount}
+            outCount={outCount}
+          />
           <CashboxActionBar
             onCashIn={() => openCreateForm('cash_in')}
             onCashOut={() => openCreateForm('cash_out')}

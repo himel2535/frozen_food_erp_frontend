@@ -1,5 +1,5 @@
 export const CB_BTN_CASH_IN =
-  'inline-flex items-center justify-center gap-1.5 rounded-lg px-3.5 py-2 text-sm font-bold text-white bg-emerald-600 hover:bg-emerald-700 transition-colors cursor-pointer';
+  'inline-flex items-center justify-center gap-1.5 rounded-lg px-3.5 py-2 text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 transition-colors cursor-pointer';
 
 export const CB_BTN_CASH_OUT =
   'inline-flex items-center justify-center gap-1.5 rounded-lg px-3.5 py-2 text-sm font-bold text-white bg-rose-600 hover:bg-rose-700 transition-colors cursor-pointer';

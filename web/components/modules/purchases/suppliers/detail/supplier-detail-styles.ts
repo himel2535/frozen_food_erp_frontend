@@ -32,7 +32,7 @@ export const SD_BTN_PRIMARY = 'inline-flex items-center gap-1.5 rounded-xl bg-bl
 
 export const SD_BTN_OUTLINE = 'inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-bold px-4 py-2.5 cursor-pointer transition-colors';
 
-export const SD_BTN_GREEN = 'inline-flex items-center gap-1.5 rounded-xl border border-emerald-200 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 text-xs font-bold px-4 py-2.5 cursor-pointer transition-colors';
+export const SD_BTN_GREEN = 'inline-flex items-center gap-1.5 rounded-xl border border-blue-200 bg-blue-50 hover:bg-blue-100 text-blue-700 text-xs font-bold px-4 py-2.5 cursor-pointer transition-colors';
 
 export const BILL_STATUS_BADGE: Record<string, string> = {
   rose: 'bg-rose-50 text-rose-700 border-rose-200',

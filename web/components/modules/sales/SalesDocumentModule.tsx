@@ -170,7 +170,7 @@ export function SalesDocumentModule({ config }: { config: SalesDocumentConfig })
               {config.onConvert && (
                 <button
                   type="button"
-                  className="px-3 py-2 bg-emerald-600 text-white text-xs font-bold rounded-xl cursor-pointer"
+                  className="px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl cursor-pointer"
                   onClick={() => {
                     const r = config.onConvert!(appState, String(detailRow.id));
                     if (r.ok) { saveAppState(); toast.info('Notice', { module: 'Sales', description: `Created ${r.id}` }); }

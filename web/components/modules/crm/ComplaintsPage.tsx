@@ -84,7 +84,7 @@ export function ComplaintsPage() {
       <div className="flex flex-col lg:flex-row gap-4 flex-1 min-h-[480px]">
         <aside className="lg:w-48 shrink-0 bg-white rounded-xl border border-slate-200 p-3 space-y-1">
           {folders.map((f) => (
-            <button key={f.id} type="button" onClick={() => setFolder(f.id)} className={`w-full text-left px-3 py-2 rounded-lg text-xs font-bold cursor-pointer ${folder === f.id ? 'bg-emerald-50 text-emerald-700' : 'text-slate-600 hover:bg-slate-50'}`}>{f.label}</button>
+            <button key={f.id} type="button" onClick={() => setFolder(f.id)} className={`w-full text-left px-3 py-2 rounded-lg text-xs font-bold cursor-pointer ${folder === f.id ? 'bg-blue-50 text-blue-700' : 'text-slate-600 hover:bg-slate-50'}`}>{f.label}</button>
           ))}
         </aside>
         <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-4 min-h-0">
@@ -104,7 +104,7 @@ export function ComplaintsPage() {
                 <p className="text-slate-600">{String(selected.description ?? t('crm.no_description'))}</p>
                 <div className="flex gap-2 flex-wrap">
                   <button type="button" className="px-3 py-1.5 bg-amber-50 text-amber-700 font-bold rounded-lg cursor-pointer" onClick={() => setStatus(String(selected.id), 'in-progress')}>{translateStatus(t, 'in-progress')}</button>
-                  <button type="button" className="px-3 py-1.5 bg-emerald-50 text-emerald-700 font-bold rounded-lg cursor-pointer" onClick={() => setStatus(String(selected.id), 'resolved')}>{t('crm.resolve')}</button>
+                  <button type="button" className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg cursor-pointer" onClick={() => setStatus(String(selected.id), 'resolved')}>{t('crm.resolve')}</button>
                   <button type="button" className="px-3 py-1.5 text-rose-600 font-bold cursor-pointer" onClick={() => { deleteFromState(appState, 'crmComplaints', String(selected.id)); saveAppState(); }}>{t('common.delete')}</button>
                 </div>
               </>

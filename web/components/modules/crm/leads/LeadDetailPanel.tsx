@@ -242,7 +242,7 @@ export function LeadDetailPanel({
         <button type="button" onClick={onEdit} className="flex-1 min-w-[100px] text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white rounded-xl py-2.5 cursor-pointer">
           {t('crm.edit_lead')}
         </button>
-        <button type="button" onClick={onConvert} className="flex-1 min-w-[100px] text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl py-2.5 cursor-pointer">
+        <button type="button" onClick={onConvert} className="flex-1 min-w-[100px] text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white rounded-xl py-2.5 cursor-pointer">
           {t('crm.convert_to_customer')}
         </button>
         <button type="button" onClick={onMarkLost} className="text-xs font-bold bg-rose-50 hover:bg-rose-100 text-rose-700 rounded-xl py-2.5 px-3 cursor-pointer">

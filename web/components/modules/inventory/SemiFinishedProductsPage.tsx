@@ -625,7 +625,7 @@ export function SemiFinishedProductsPage() {
           <button
             type="button"
             onClick={() => setView('summary')}
-            className="shrink-0 text-xs font-bold text-emerald-700 border border-emerald-200 bg-white hover:bg-emerald-50 px-3 py-2 rounded-xl cursor-pointer"
+            className="shrink-0 text-xs font-bold text-blue-700 border border-blue-200 bg-white hover:bg-blue-50 px-3 py-2 rounded-xl cursor-pointer"
           >
             View Stock Summary
           </button>

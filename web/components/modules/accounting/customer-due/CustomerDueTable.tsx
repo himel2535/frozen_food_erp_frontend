@@ -47,7 +47,7 @@ function RowActionIcons({ row }: { row: CustomerReceivable }) {
       <button
         type="button"
         title="Call"
-        className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-emerald-600 hover:bg-slate-100 cursor-pointer"
+        className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-blue-600 hover:bg-slate-100 cursor-pointer"
         onClick={(e) => {
           e.stopPropagation();
           if (!openPhoneCall(row.phone)) {
@@ -60,7 +60,7 @@ function RowActionIcons({ row }: { row: CustomerReceivable }) {
       <button
         type="button"
         title="WhatsApp"
-        className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-emerald-600 hover:bg-slate-100 cursor-pointer"
+        className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-blue-600 hover:bg-slate-100 cursor-pointer"
         onClick={(e) => {
           e.stopPropagation();
           if (!openWhatsApp(row.phone)) {

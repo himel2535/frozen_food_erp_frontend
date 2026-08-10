@@ -161,7 +161,7 @@ export function CustomerDueDetailPanel({
           <div className="flex flex-wrap gap-2">
             <button
               type="button"
-              className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-bold px-3 py-1.5 cursor-pointer"
+              className="inline-flex items-center gap-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-[11px] font-bold px-3 py-1.5 cursor-pointer"
               onClick={() => openPhoneCall(customer.phone)}
             >
               <Phone className="w-3.5 h-3.5" />
@@ -169,7 +169,7 @@ export function CustomerDueDetailPanel({
             </button>
             <button
               type="button"
-              className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-bold px-3 py-1.5 cursor-pointer"
+              className="inline-flex items-center gap-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-[11px] font-bold px-3 py-1.5 cursor-pointer"
               onClick={() => openWhatsApp(customer.phone)}
             >
               <MessageCircle className="w-3.5 h-3.5" />
@@ -204,7 +204,7 @@ export function CustomerDueDetailPanel({
           <div className="flex flex-wrap gap-2">
             <button
               type="button"
-              className="inline-flex items-center rounded-lg border-2 border-emerald-600 text-emerald-700 hover:bg-emerald-50 text-[11px] font-bold px-3 py-1.5 cursor-pointer"
+              className="inline-flex items-center rounded-lg border-2 border-blue-600 text-blue-700 hover:bg-blue-50 text-[11px] font-bold px-3 py-1.5 cursor-pointer"
               onClick={() => onReceive(customer)}
             >
               Mark Received
@@ -283,8 +283,8 @@ export function CustomerDueDetailPanel({
                   <p className="text-xs text-slate-600 mt-2">{customer.nextAction.reason}</p>
                 )}
                 <div className="flex gap-2 mt-3">
-                  <button type="button" className="text-[10px] font-bold text-emerald-700 border border-emerald-200 rounded-lg px-2.5 py-1.5 cursor-pointer hover:bg-emerald-50" onClick={() => openPhoneCall(customer.phone)}>Call</button>
-                  <button type="button" className="text-[10px] font-bold text-emerald-700 border border-emerald-200 rounded-lg px-2.5 py-1.5 cursor-pointer hover:bg-emerald-50" onClick={() => openWhatsApp(customer.phone)}>WhatsApp</button>
+                  <button type="button" className="text-[10px] font-bold text-blue-700 border border-blue-200 rounded-lg px-2.5 py-1.5 cursor-pointer hover:bg-blue-50" onClick={() => openPhoneCall(customer.phone)}>Call</button>
+                  <button type="button" className="text-[10px] font-bold text-blue-700 border border-blue-200 rounded-lg px-2.5 py-1.5 cursor-pointer hover:bg-blue-50" onClick={() => openWhatsApp(customer.phone)}>WhatsApp</button>
                 </div>
               </div>
             ) : (

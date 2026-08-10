@@ -16,11 +16,11 @@ export const FU_BTN_PRIMARY = 'inline-flex items-center gap-1.5 rounded-lg bg-bl
 
 export const FU_BTN_OUTLINE = 'inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-bold px-4 py-2 cursor-pointer';
 
-export const FU_BTN_GREEN = 'inline-flex items-center gap-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold px-3 py-2 cursor-pointer';
-
-export const FU_BTN_GREEN_OUTLINE = 'inline-flex items-center gap-1.5 rounded-lg border-2 border-emerald-600 text-emerald-700 hover:bg-emerald-50 text-xs font-bold px-3 py-1.5 cursor-pointer';
-
 export const FU_BTN_BLUE_OUTLINE = 'inline-flex items-center gap-1.5 rounded-lg border-2 border-blue-600 text-blue-700 hover:bg-blue-50 text-xs font-bold px-3 py-1.5 cursor-pointer';
+
+export const FU_BTN_GREEN = FU_BTN_PRIMARY;
+
+export const FU_BTN_GREEN_OUTLINE = FU_BTN_BLUE_OUTLINE;
 
 export const STATUS_TONE_BADGE: Record<string, string> = {
   rose: 'bg-rose-100 text-rose-700 border-rose-200',

@@ -2,13 +2,13 @@ export const DC_LABEL_CLS =
   'block mb-1.5 text-[11px] font-bold uppercase tracking-wide text-slate-500';
 
 export const DC_SECTION_BADGE_CLS =
-  'flex items-center justify-center w-7 h-7 rounded-full bg-emerald-600 text-white text-xs font-extrabold shrink-0';
+  'flex items-center justify-center w-7 h-7 rounded-full bg-blue-600 text-white text-xs font-extrabold shrink-0';
 
 export const DC_BTN_PRIMARY =
-  'inline-flex items-center gap-2 bg-gradient-to-b from-emerald-600 to-emerald-700 hover:from-emerald-700 hover:to-emerald-800 text-white text-xs font-bold px-5 py-2.5 rounded-xl shadow-sm shadow-emerald-600/20 cursor-pointer transition-all';
+  'inline-flex items-center gap-2 bg-gradient-to-b from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white text-xs font-bold px-5 py-2.5 rounded-xl shadow-sm shadow-blue-600/20 cursor-pointer transition-all';
 
 export const DC_BTN_OUTLINE =
-  'inline-flex items-center gap-2 border border-emerald-300 bg-emerald-50/80 hover:bg-emerald-100 text-emerald-800 text-xs font-bold px-5 py-2.5 rounded-xl cursor-pointer transition-all';
+  'inline-flex items-center gap-2 border border-blue-300 bg-blue-50/80 hover:bg-blue-100 text-blue-800 text-xs font-bold px-5 py-2.5 rounded-xl cursor-pointer transition-all';
 
 export const DC_BTN_GHOST =
   'inline-flex items-center gap-2 border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold px-5 py-2.5 rounded-xl cursor-pointer transition-all';
@@ -23,7 +23,7 @@ export const DC_FIELD_GRID_CLS =
   'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-3 gap-y-3';
 
 export const DC_CHALLAN_BADGE_CLS =
-  'inline-flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50/90 px-4 py-2.5 text-xs font-bold text-emerald-800 shrink-0';
+  'inline-flex items-center gap-2 rounded-xl border border-blue-200 bg-blue-50/90 px-4 py-2.5 text-xs font-bold text-blue-800 shrink-0';
 
 export const DC_STATUS_CARD_CLS =
   'rounded-xl border border-slate-200/90 bg-white/70 p-4 space-y-3 h-full';

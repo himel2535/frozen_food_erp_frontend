@@ -160,7 +160,7 @@ export function PosPage() {
               type="button"
               onClick={checkout}
               disabled={cart.length === 0}
-              className="w-full bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed text-white text-xs font-bold py-3 rounded-xl cursor-pointer"
+              className="w-full bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed text-white text-xs font-bold py-3 rounded-xl cursor-pointer"
             >
               {t('sales.pos_complete_sale')}
             </button>

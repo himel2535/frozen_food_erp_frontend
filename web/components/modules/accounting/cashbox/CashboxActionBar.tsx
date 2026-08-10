@@ -14,7 +14,7 @@ export function CashboxActionBar({
   onTransfer: () => void;
 }) {
   return (
-    <div className="flex flex-wrap items-center gap-2">
+    <div className="flex flex-wrap items-center justify-end gap-2">
       <button type="button" className={CB_BTN_CASH_IN} onClick={onCashIn}>
         <Plus className="w-4 h-4" />
         Cash In

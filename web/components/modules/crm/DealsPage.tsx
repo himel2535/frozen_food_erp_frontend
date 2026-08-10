@@ -271,7 +271,7 @@ export function DealsPage() {
               <li key={i} className="border-l-2 border-blue-200 pl-3">{String(e.summary ?? e.type ?? e.note)}</li>
             ))}</ul>
             <div className="flex gap-2">
-              <button type="button" className="px-3 py-2 bg-emerald-600 text-white font-bold rounded-xl cursor-pointer" onClick={() => { markDealWon(appState, String(detailDeal.id), {}); saveAppState(); setDetailId(null); }}>{t('crm.mark_won')}</button>
+              <button type="button" className="px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl cursor-pointer" onClick={() => { markDealWon(appState, String(detailDeal.id), {}); saveAppState(); setDetailId(null); }}>{t('crm.mark_won')}</button>
               <button type="button" className="px-3 py-2 bg-rose-600 text-white font-bold rounded-xl cursor-pointer" onClick={() => { markDealLost(appState, String(detailDeal.id), {}); saveAppState(); setDetailId(null); }}>{t('crm.mark_lost_deal')}</button>
               <button type="button" className="px-3 py-2 border border-slate-200 font-bold rounded-xl cursor-pointer" onClick={() => openEdit(String(detailDeal.id))}>{t('common.edit')}</button>
             </div>

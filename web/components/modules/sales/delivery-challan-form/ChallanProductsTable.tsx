@@ -60,7 +60,7 @@ export function ChallanProductsTable({
         <button
           type="button"
           onClick={addItem}
-          className="inline-flex items-center gap-1.5 text-emerald-700 hover:text-emerald-800 text-xs font-bold cursor-pointer"
+          className="inline-flex items-center gap-1.5 text-blue-700 hover:text-blue-800 text-xs font-bold cursor-pointer"
         >
           <Plus className="w-4 h-4" />
           Add Item

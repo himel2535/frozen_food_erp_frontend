@@ -8,7 +8,7 @@ function FormToggle({ enabled, onChange }: { enabled: boolean; onChange: (v: boo
       aria-checked={enabled}
       onClick={() => onChange(!enabled)}
       className={enabled
-        ? 'relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent bg-emerald-500 transition-colors'
+        ? 'relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent bg-blue-600 transition-colors'
         : 'relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent bg-slate-200 transition-colors'}
     >
       <span

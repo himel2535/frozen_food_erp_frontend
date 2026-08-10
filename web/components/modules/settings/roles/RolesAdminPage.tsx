@@ -328,7 +328,7 @@ export function RolesAdminPage() {
   return (
     <>
       <div className="mt-4">
-        <KpiCards items={kpis} />
+        <KpiCards items={kpis} loading={loading && rows.length === 0} />
       </div>
       <div className="mt-4 premium-card overflow-hidden">
         <AppTable

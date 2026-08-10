@@ -47,7 +47,7 @@ function workflowApprovalsConfig(base: DedicatedModuleConfig): DedicatedModuleCo
               }
               save();
             }}
-            className="p-1.5 rounded-lg hover:bg-emerald-50 text-emerald-600 cursor-pointer text-[10px] font-bold"
+            className="p-1.5 rounded-lg hover:bg-blue-50 text-blue-600 cursor-pointer text-[10px] font-bold"
           >
             Approve
           </button>

@@ -2,36 +2,52 @@
 
 import { Icon } from '@iconify/react';
 import { KpiCards, type KpiCardItem } from '@/components/shared/KpiCards';
-import { formatCashboxMoney, type CashboxMetrics as Metrics } from '@/lib/services/cashbox-service';
+import { formatCashboxMoney } from '@/lib/services/cashbox-service';
 
-export function CashboxMetrics({ metrics }: { metrics: Metrics }) {
+export function CashboxMetrics({
+  currentBalance,
+  asOf,
+  totalIn,
+  totalOut,
+  netTotal,
+  inCount,
+  outCount,
+}: {
+  currentBalance: number;
+  asOf: string;
+  totalIn: number;
+  totalOut: number;
+  netTotal: number;
+  inCount: number;
+  outCount: number;
+}) {
   const items: KpiCardItem[] = [
     {
       key: 'balance',
       label: 'Current Balance',
-      value: formatCashboxMoney(metrics.currentBalance),
-      sub: `As of ${metrics.asOf}`,
+      value: formatCashboxMoney(currentBalance),
+      sub: `As of ${asOf}`,
       icon: <Icon icon="flat-color-icons:money-transfer" width={38} height={38} className="shrink-0" />,
     },
     {
-      key: 'today-in',
-      label: "Today's Cash In",
-      value: formatCashboxMoney(metrics.todayInTotal),
-      sub: `${metrics.todayInCount} transaction${metrics.todayInCount === 1 ? '' : 's'}`,
+      key: 'total-in',
+      label: 'Total Cash In',
+      value: formatCashboxMoney(totalIn),
+      sub: `${inCount} transaction${inCount === 1 ? '' : 's'}`,
       icon: <Icon icon="mdi:arrow-down-bold-circle" width={38} height={38} className="shrink-0 text-emerald-500" />,
     },
     {
-      key: 'today-out',
-      label: "Today's Cash Out",
-      value: formatCashboxMoney(metrics.todayOutTotal),
-      sub: `${metrics.todayOutCount} transaction${metrics.todayOutCount === 1 ? '' : 's'}`,
+      key: 'total-out',
+      label: 'Total Cash Out',
+      value: formatCashboxMoney(totalOut),
+      sub: `${outCount} transaction${outCount === 1 ? '' : 's'}`,
       icon: <Icon icon="mdi:arrow-up-bold-circle" width={38} height={38} className="shrink-0 text-rose-500" />,
     },
     {
-      key: 'net-today',
-      label: 'Net Today',
-      value: formatCashboxMoney(metrics.netToday),
-      sub: metrics.netToday >= 0 ? 'Positive flow' : 'Negative flow',
+      key: 'net-total',
+      label: 'Net Total',
+      value: formatCashboxMoney(netTotal),
+      sub: netTotal >= 0 ? 'Positive flow' : 'Negative flow',
       icon: <Icon icon="fluent-color:data-trending-24" width={38} height={38} className="shrink-0 text-violet-500" />,
     },
   ];
