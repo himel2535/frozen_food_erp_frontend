@@ -2,8 +2,8 @@
 
 import type { ReactNode } from 'react';
 import { usePathname } from 'next/navigation';
-import { Icon } from '@iconify/react';
 import { getPageIcon } from '@/lib/ui/page-icons';
+import { IconifyIcon } from '@/components/shared/IconifyIcon';
 import { PageHeaderLayout } from '@/components/shared/PageHeaderLayout';
 
 export interface PageHeaderProps {
@@ -36,7 +36,7 @@ export function PageHeader({
       subtitle={subtitle}
       icon={
         resolvedIcon ? (
-          <Icon icon={resolvedIcon} width={32} height={32} />
+          <IconifyIcon icon={resolvedIcon} width={32} height={32} />
         ) : undefined
       }
     />
@@ -51,7 +51,7 @@ export function PageHeader({
       className={`flex flex-col xl:flex-row xl:items-start xl:justify-between gap-4 min-h-[3.75rem] ${className}`.trim()}
     >
       {titleBlock}
-      <div className="flex flex-wrap items-center gap-2 self-start shrink-0 min-w-0 xl:min-w-[120px] min-h-[2.625rem]">
+      <div className="flex flex-wrap items-center justify-end gap-2 self-start shrink-0 min-w-[280px] min-h-[2.625rem]">
         {actions ?? null}
       </div>
     </div>

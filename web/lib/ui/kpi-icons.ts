@@ -470,3 +470,37 @@ export function getKpiPreloadIcons(): string[] {
   for (const icon of KPI_ICON_POOL) icons.add(icon);
   return [...icons];
 }
+
+/** Standard Flaticon-style icons for inventory product KPI rows. */
+export const INVENTORY_STANDARD_KPI_ICONS = {
+  count: 'flat-color-icons:todo-list',
+  stock: 'flat-color-icons:filing-cabinet',
+  low: 'flat-color-icons:low-priority',
+  oos: 'flat-color-icons:empty-trash',
+  value: 'flat-color-icons:currency-exchange',
+  skus: 'flat-color-icons:serial-tasks',
+} as const;
+
+/** Inventory module KPI icons to preload — keeps navigation smooth without loading the full pool. */
+export const INVENTORY_KPI_PRELOAD_ICONS = [
+  ...Object.values(INVENTORY_STANDARD_KPI_ICONS),
+  'flat-color-icons:factory',
+  'flat-color-icons:shipped',
+  'flat-color-icons:clock',
+  'flat-color-icons:approval',
+  'flat-color-icons:download',
+  'flat-color-icons:upload',
+  'flat-color-icons:edit-image',
+  'flat-color-icons:inspection',
+  'flat-color-icons:home',
+  'flat-color-icons:combo-chart',
+  'flat-color-icons:folder',
+  'flat-color-icons:rules',
+  'flat-color-icons:package',
+  'flat-color-icons:high-priority',
+  'flat-color-icons:statistics',
+] as const;
+
+export function getInventoryKpiPreloadIcons(): string[] {
+  return [...new Set(INVENTORY_KPI_PRELOAD_ICONS)];
+}

@@ -1,9 +1,9 @@
 'use client';
 
 import { ChevronLeft } from 'lucide-react';
-import { Icon } from '@iconify/react';
 import { usePathname } from 'next/navigation';
 import { getPageIcon } from '@/lib/ui/page-icons';
+import { IconifyIcon } from '@/components/shared/IconifyIcon';
 import { PageHeaderLayout } from '@/components/shared/PageHeaderLayout';
 import { FORM_BACK_BTN_CLS } from '@/lib/ui/form-styles';
 
@@ -50,7 +50,7 @@ export function FormHeader({
             subtitle={subtitle}
             icon={
               resolvedIcon ? (
-                <Icon icon={resolvedIcon} width={32} height={32} />
+                <IconifyIcon icon={resolvedIcon} width={32} height={32} />
               ) : undefined
             }
           />

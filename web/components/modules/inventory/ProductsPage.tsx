@@ -13,6 +13,7 @@ import { AppTable, type AppTableColumn } from '@/components/shared/AppTable';
 import { StatusBadge } from '@/components/shared/StatusBadge';
 import { TableIconAction } from '@/components/shared/TableIconAction';
 import { useAppStore } from '@/lib/state/app-store';
+import { INVENTORY_STANDARD_KPI_ICONS as KPI_ICON } from '@/lib/ui/kpi-icons';
 import { ProductForm } from '@/components/modules/inventory/product-form/ProductForm';
 import type { ProductFormPayload, ProductFormValues } from '@/components/modules/inventory/product-form/product-form-types';
 import {
@@ -223,11 +224,11 @@ export function ProductsPage() {
       <ModuleKpiSection
         gridClassName="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-2"
         items={[
-          { key: 'skus', label: 'Total SKUs Listed', value: String(metrics.totalSkus) },
-          { key: 'stock', label: 'Total Stock Qty', value: `${metrics.totalStock.toLocaleString()} units` },
-          { key: 'low', label: 'Low Stock Alerts', value: String(metrics.lowStock), alert: metrics.lowStock > 0 },
-          { key: 'oos', label: 'Out of Stock', value: String(metrics.outOfStock), alert: metrics.outOfStock > 0 },
-          { key: 'value', label: 'Inventory Value', value: formatMoney(metrics.inventoryValue) },
+          { key: 'skus', label: 'Total SKUs Listed', value: String(metrics.totalSkus), iconify: KPI_ICON.skus },
+          { key: 'stock', label: 'Total Stock Qty', value: `${metrics.totalStock.toLocaleString()} units`, iconify: KPI_ICON.stock },
+          { key: 'low', label: 'Low Stock Alerts', value: String(metrics.lowStock), alert: metrics.lowStock > 0, iconify: KPI_ICON.low },
+          { key: 'oos', label: 'Out of Stock', value: String(metrics.outOfStock), alert: metrics.outOfStock > 0, iconify: KPI_ICON.oos },
+          { key: 'value', label: 'Inventory Value', value: formatMoney(metrics.inventoryValue), iconify: KPI_ICON.value },
         ]}
       />
 

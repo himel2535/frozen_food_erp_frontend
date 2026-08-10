@@ -19,6 +19,8 @@ import { getVisibleSections, isMainAdmin } from '@/lib/services/access-control-s
 import { SidebarIcon } from './SidebarIcon';
 import { SidebarCollapsedTooltip } from './SidebarCollapsedTooltip';
 import { PageSkeleton } from '@/components/shared/PageSkeleton';
+import { loadIcons } from '@iconify/react';
+import { getPageIcon } from '@/lib/ui/page-icons';
 
 function sidebarLabel(t: (k: string) => string, key: string, fallback: string) {
   const id = `sidebar.${key}`;
@@ -154,6 +156,10 @@ export function Sidebar() {
       <Link
         key={key}
         href={item.href}
+        prefetch
+        onMouseEnter={() => {
+          if (item.href.startsWith('/inventory/')) loadIcons([getPageIcon(item.href)]);
+        }}
         className={`group/item relative rounded-2xl px-3 py-2.5 text-sm tracking-[0.01em] transition-all flex items-center gap-2.5 ${itemClasses} before:absolute before:-left-3.5 before:top-1/2 before:-translate-y-1/2 before:w-2.5 before:h-[2px] ${a.connector} before:rounded-full`}
       >
         <span className="flex items-center justify-center shrink-0">

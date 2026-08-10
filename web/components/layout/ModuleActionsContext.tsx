@@ -22,8 +22,10 @@ export function useRegisterModuleActions(actions: ReactNode, deps: DependencyLis
   const actionsRef = useRef(actions);
   actionsRef.current = actions;
 
+  const getterRef = useRef<(() => ReactNode)>(() => actionsRef.current);
+
   useLayoutEffect(() => {
-    registerModuleActionsGetter(() => actionsRef.current);
+    registerModuleActionsGetter(getterRef.current);
     return () => registerModuleActionsGetter(null);
   }, []);
 

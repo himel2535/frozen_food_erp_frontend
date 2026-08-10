@@ -23,6 +23,7 @@ const htmlRedirects = [
   ['sales-pos.html', '/sales/pos'],
   ['sales-wholesale.html', '/sales/wholesale'],
   ['inventory-products.html', '/inventory/products'],
+  ['inventory.html', '/inventory/products'],
   ['inventory-raw-materials.html', '/inventory/raw-materials'],
   ['inventory-semi-finished-products.html', '/inventory/semi-finished-products'],
   ['inventory-finished-goods.html', '/inventory/finished-goods'],
@@ -133,6 +134,7 @@ const nextConfig: NextConfig = {
       ...htmlRedirects.flatMap(([html, destination]) => [
         { source: `/${html}`, destination, permanent: false },
       ]),
+      { source: '/inventory', destination: '/inventory/products', permanent: false },
       { source: '/manufacturing/orders', destination: '/manufacturing/machine-maintenance', permanent: false },
       { source: '/manufacturing/bom', destination: '/manufacturing/machine-maintenance', permanent: false },
       { source: '/recipes/finished-goods', destination: '/purchases/recipes/finished-goods', permanent: true },

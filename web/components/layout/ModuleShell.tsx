@@ -1,11 +1,10 @@
 'use client';
 
-import { useLayoutEffect, useSyncExternalStore } from 'react';
+import { useLayoutEffect, useRef, useSyncExternalStore } from 'react';
 import { usePathname } from 'next/navigation';
 import { ModulePageHeader } from '@/components/layout/ModulePageHeader';
 import {
   getChromeSuppressedSnapshot,
-  registerModuleActionsGetter,
   setModuleChromeSuppressed,
   subscribeModuleChrome,
 } from '@/lib/state/module-actions-store';
@@ -19,12 +18,18 @@ import {
 
 export function ModuleShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const topModuleRef = useRef('');
 
   useSyncExternalStore(subscribeModuleChrome, getChromeSuppressedSnapshot, getChromeSuppressedSnapshot);
 
   useLayoutEffect(() => {
     setModuleChromeSuppressed(false);
-    registerModuleActionsGetter(null);
+    const topModule = pathname.split('/').filter(Boolean)[0] ?? 'dashboard';
+    const scrollable = document.getElementById(MODULE_SCROLL_ID);
+    if (scrollable && topModuleRef.current !== topModule) {
+      scrollable.scrollTop = 0;
+      topModuleRef.current = topModule;
+    }
   }, [pathname]);
 
   const chromeSuppressed = getChromeSuppressedSnapshot();

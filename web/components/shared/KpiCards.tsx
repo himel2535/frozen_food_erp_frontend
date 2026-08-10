@@ -1,7 +1,8 @@
 'use client';
 
-import { useEffect, useMemo } from 'react';
-import { Icon, loadIcons } from '@iconify/react';
+import { useLayoutEffect, useMemo } from 'react';
+import { loadIcons } from '@iconify/react';
+import { IconifyIcon } from '@/components/shared/IconifyIcon';
 import { resolveKpiIconsForRow } from '@/lib/ui/kpi-icons';
 import { getKpiGridClassName } from '@/lib/ui/kpi-grid';
 import { useLocaleFormat } from '@/hooks/useLocaleFormat';
@@ -29,7 +30,7 @@ export function KpiCards({
   const grid = gridClassName ?? getKpiGridClassName(items.length);
   const iconIds = useMemo(() => resolveKpiIconsForRow(items), [items]);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     const toLoad = iconIds.filter(Boolean);
     if (toLoad.length > 0) loadIcons(toLoad);
   }, [iconIds]);
@@ -42,41 +43,41 @@ export function KpiCards({
 
   return (
     <section className={grid} aria-busy={loading || undefined}>
-      {items.map((item, index) => {
-        const iconId = iconIds[index];
-        return (
-          <div
-            key={item.key}
-            className="premium-card premium-shadow p-3.5 flex items-center justify-between gap-3 transition-[border-color,box-shadow] hover:border-slate-300 hover:shadow-md min-h-[72px]"
-          >
-            <div className="flex flex-col justify-center gap-0.5 min-w-0 flex-1">
-              <span className="text-xs font-bold text-slate-500 tracking-wide leading-tight">{item.label}</span>
-              <span className="text-lg font-extrabold tracking-tight text-slate-900 leading-tight mt-0.5 min-h-[1.75rem] flex items-center tabular-nums">
-                {loading ? (
-                  <span className="app-skeleton inline-block h-6 w-12 rounded" aria-hidden="true" />
-                ) : (
-                  displayValue(item.value)
-                )}
-              </span>
-              {item.alert ? (
-                <span className="text-[11px] text-rose-600 font-bold block">Requires attention</span>
-              ) : item.sub ? (
-                <span className="text-[11px] text-slate-500 font-medium block truncate">{item.sub}</span>
-              ) : null}
-            </div>
-            <div className="kpi-card-icon-wrap shrink-0" aria-hidden={loading || undefined}>
-              {item.icon ?? (
-                <Icon
-                  icon={iconId || 'flat-color-icons:statistics'}
-                  width={38}
-                  height={38}
-                  className="kpi-card-icon shrink-0"
-                />
+      {items.map((item, index) => (
+        <div
+          key={item.key}
+          className="premium-card premium-shadow p-3.5 flex items-center justify-between gap-3 transition-[border-color,box-shadow] hover:border-slate-300 hover:shadow-md min-h-[72px]"
+        >
+          <div className="flex flex-col justify-center gap-0.5 min-w-0 flex-1">
+            <span className="text-xs font-bold text-slate-500 tracking-wide leading-tight">{item.label}</span>
+            <span className="text-lg font-extrabold tracking-tight text-slate-900 leading-tight mt-0.5 min-h-[1.75rem] flex items-center tabular-nums">
+              {loading ? (
+                <span className="app-skeleton inline-block h-6 w-12 rounded" aria-hidden="true" />
+              ) : (
+                displayValue(item.value)
               )}
-            </div>
+            </span>
+            {item.alert ? (
+              <span className="text-[11px] text-rose-600 font-bold block min-h-[1rem]">Requires attention</span>
+            ) : item.sub ? (
+              <span className="text-[11px] text-slate-500 font-medium block truncate min-h-[1rem]">{item.sub}</span>
+            ) : (
+              <span className="text-[11px] min-h-[1rem] block" aria-hidden />
+            )}
           </div>
-        );
-      })}
+          <div className="kpi-card-icon-wrap shrink-0" aria-hidden={loading || undefined}>
+            {item.icon ?? (
+              <IconifyIcon
+                icon={iconIds[index] || 'flat-color-icons:statistics'}
+                width={38}
+                height={38}
+                className="kpi-card-icon shrink-0"
+                skeletonClassName="iconify-icon-skeleton--kpi"
+              />
+            )}
+          </div>
+        </div>
+      ))}
     </section>
   );
 }

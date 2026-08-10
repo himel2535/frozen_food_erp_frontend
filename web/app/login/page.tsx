@@ -3,11 +3,11 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { LoginGuard } from '@/components/auth/AuthGuard';
-import { LoginScreen, type AuthMode } from '@/components/auth/LoginScreen';
+import { LoginScreen } from '@/components/auth/LoginScreen';
 import { BengaliFontLoader } from '@/components/shared/BengaliFontLoader';
 import { ToysLoader } from '@/components/shared/ToysLoader';
 import { useAppStore } from '@/lib/state/app-store';
-import { mapAuthError, signIn, signUp } from '@/lib/services/auth-service';
+import { mapAuthError, signIn } from '@/lib/services/auth-service';
 import { logSystemAudit } from '@/lib/services/audit-log-service';
 import { getFirstAllowedHref } from '@/lib/services/access-control-service';
 import { toast } from '@/lib/ui/feedback';
@@ -24,30 +24,14 @@ export default function LoginPage() {
   const toggleLanguage = useAppStore((s) => s.toggleLanguage);
   const applyAuthSession = useAppStore((s) => s.applyAuthSession);
   const saveAppState = useAppStore((s) => s.saveAppState);
-  const [mode, setMode] = useState<AuthMode>('signin');
-  const [name, setName] = useState('');
   const [email, setEmail] = useState('admin@toysfactory.com');
   const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [bootstrapping, setBootstrapping] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const showAutoSetup =
-    isDev && mode === 'signin' && Boolean(errorMessage && errorMessage.includes(PROFILE_MISSING_HINT));
-
-  const switchMode = (next: AuthMode) => {
-    setMode(next);
-    setErrorMessage(null);
-    setConfirmPassword('');
-    if (next === 'signin' && !email) {
-      setEmail('admin@toysfactory.com');
-    }
-    if (next === 'signup') {
-      setEmail('');
-      setName('');
-    }
-  };
+    isDev && Boolean(errorMessage && errorMessage.includes(PROFILE_MISSING_HINT));
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -66,38 +50,6 @@ export default function LoginPage() {
       });
       saveAppState();
       toast.success(t('login.success_signin'), { description: session.authUser.name });
-      router.push(getFirstAllowedHref(session.authUser));
-    } catch (err) {
-      const message = mapAuthError(err);
-      setErrorMessage(message);
-      toast.error(message);
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
-  const handleSignUp = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (submitting) return;
-    if (password !== confirmPassword) {
-      setErrorMessage(t('login.password_mismatch'));
-      toast.error(t('login.password_mismatch'));
-      return;
-    }
-    setSubmitting(true);
-    setErrorMessage(null);
-    try {
-      const session = await signUp(name, email, password);
-      applyAuthSession(session.authUser);
-      logSystemAudit(useAppStore.getState().appState, {
-        action: 'LOGIN',
-        module: 'Auth',
-        description: `New account registered (${session.authUser.email})`,
-        actorId: session.authUser.uid,
-        actorName: session.authUser.name,
-      });
-      saveAppState();
-      toast.success(t('login.success_signup'), { description: session.authUser.name });
       router.push(getFirstAllowedHref(session.authUser));
     } catch (err) {
       const message = mapAuthError(err);
@@ -154,24 +106,17 @@ export default function LoginPage() {
         <ToysLoader label="Loading..." sublabel={t('login.title')} />
       ) : (
         <LoginScreen
-          mode={mode}
-          name={name}
           email={email}
           password={password}
-          confirmPassword={confirmPassword}
           submitting={submitting}
           bootstrapping={bootstrapping}
           errorMessage={errorMessage}
           showAutoSetup={showAutoSetup}
           lang={lang}
           t={t}
-          onSwitchMode={switchMode}
-          onNameChange={setName}
           onEmailChange={setEmail}
           onPasswordChange={setPassword}
-          onConfirmPasswordChange={setConfirmPassword}
           onLogin={(e) => void handleLogin(e)}
-          onSignUp={(e) => void handleSignUp(e)}
           onAutoSetup={() => void handleAutoSetup()}
           onToggleLanguage={toggleLanguage}
         />

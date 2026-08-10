@@ -4,7 +4,6 @@ import { Sidebar } from '@/components/layout/Sidebar';
 import { Header } from '@/components/layout/Header';
 import { AuthGuard } from '@/components/auth/AuthGuard';
 import { BengaliFontLoader } from '@/components/shared/BengaliFontLoader';
-import { NavScrollReset } from '@/components/layout/NavScrollReset';
 import { ToysLoader } from '@/components/shared/ToysLoader';
 import { ModuleActionsProvider } from '@/components/layout/ModuleActionsContext';
 import { ModuleShell } from '@/components/layout/ModuleShell';
@@ -44,7 +43,6 @@ export function TenantShell({ children }: { children: React.ReactNode }) {
   return (
     <>
       <BengaliFontLoader />
-      <NavScrollReset />
       {showBootLoader ? <ToysLoader label="Loading Workspace..." /> : null}
       <div id="screen-workspace" className="min-h-screen flex">
         <Sidebar />

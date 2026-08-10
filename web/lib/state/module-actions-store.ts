@@ -16,6 +16,7 @@ export function subscribeModuleChrome(listener: Listener) {
 }
 
 export function registerModuleActionsGetter(getter: (() => ReactNode) | null) {
+  if (actionsGetter === getter) return;
   actionsGetter = getter;
   emit();
 }

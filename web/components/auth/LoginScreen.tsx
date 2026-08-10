@@ -9,27 +9,18 @@ import {
   FORM_LABEL_CLS,
 } from '@/lib/ui/form-styles';
 
-export type AuthMode = 'signin' | 'signup';
-
 export interface LoginScreenProps {
-  mode: AuthMode;
-  name: string;
   email: string;
   password: string;
-  confirmPassword: string;
   submitting: boolean;
   bootstrapping: boolean;
   errorMessage: string | null;
   showAutoSetup: boolean;
   lang: 'en' | 'bn';
   t: (key: string) => string;
-  onSwitchMode: (mode: AuthMode) => void;
-  onNameChange: (value: string) => void;
   onEmailChange: (value: string) => void;
   onPasswordChange: (value: string) => void;
-  onConfirmPasswordChange: (value: string) => void;
   onLogin: (e: React.FormEvent) => void;
-  onSignUp: (e: React.FormEvent) => void;
   onAutoSetup: () => void;
   onToggleLanguage: () => void;
 }
@@ -41,54 +32,21 @@ const MODULE_CHIPS = [
   { key: 'login.module_hrm', image: '/images/sidebar/hr.png' },
 ] as const;
 
-function SegmentedTab({
-  active,
-  label,
-  onClick,
-}: {
-  active: boolean;
-  label: string;
-  onClick: () => void;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={`flex-1 px-3 py-2.5 rounded-xl text-xs font-extrabold transition-all cursor-pointer ${
-        active
-          ? 'bg-white/95 border border-white shadow-md ring-1 ring-slate-950/5 text-blue-700'
-          : 'bg-white/45 hover:bg-white/75 border border-white/80 text-slate-600 hover:text-slate-900'
-      }`}
-    >
-      {label}
-    </button>
-  );
-}
-
 export function LoginScreen({
-  mode,
-  name,
   email,
   password,
-  confirmPassword,
   submitting,
   bootstrapping,
   errorMessage,
   showAutoSetup,
   lang,
   t,
-  onSwitchMode,
-  onNameChange,
   onEmailChange,
   onPasswordChange,
-  onConfirmPasswordChange,
   onLogin,
-  onSignUp,
   onAutoSetup,
   onToggleLanguage,
 }: LoginScreenProps) {
-  const isSignUp = mode === 'signup';
-
   return (
     <div
       id="screen-login"
@@ -144,42 +102,14 @@ export function LoginScreen({
         <div className="premium-card premium-shadow w-full p-6 sm:p-8 space-y-5">
           <div className="space-y-1">
             <h1 className="text-lg sm:text-xl font-black text-slate-900 tracking-tight">
-              {isSignUp ? t('login.register_title') : t('login.welcome')}
+              {t('login.welcome')}
             </h1>
             <p className="text-[11px] sm:text-xs font-medium text-slate-500 leading-relaxed">
-              {isSignUp ? t('login.register_subtitle') : t('login.credentials')}
+              {t('login.credentials')}
             </p>
           </div>
 
-          <div className="flex gap-2 p-1 rounded-2xl bg-white/30 border border-white/60">
-            <SegmentedTab
-              active={!isSignUp}
-              label={t('login.tab_signin')}
-              onClick={() => onSwitchMode('signin')}
-            />
-            <SegmentedTab
-              active={isSignUp}
-              label={t('login.tab_signup')}
-              onClick={() => onSwitchMode('signup')}
-            />
-          </div>
-
-          <form className="space-y-4" onSubmit={isSignUp ? onSignUp : onLogin}>
-            {isSignUp ? (
-              <div>
-                <label className={FORM_LABEL_CLS}>{t('login.full_name')}</label>
-                <input
-                  type="text"
-                  required
-                  value={name}
-                  onChange={(e) => onNameChange(e.target.value)}
-                  autoComplete="name"
-                  placeholder={t('login.full_name_placeholder')}
-                  className={FORM_INPUT_CLS}
-                />
-              </div>
-            ) : null}
-
+          <form className="space-y-4" onSubmit={onLogin}>
             <div>
               <label className={FORM_LABEL_CLS}>{t('login.email')}</label>
               <input
@@ -187,7 +117,7 @@ export function LoginScreen({
                 required
                 value={email}
                 onChange={(e) => onEmailChange(e.target.value)}
-                autoComplete={isSignUp ? 'email' : 'username'}
+                autoComplete="username"
                 placeholder="you@company.com"
                 className={FORM_INPUT_CLS}
               />
@@ -201,40 +131,21 @@ export function LoginScreen({
                 minLength={6}
                 value={password}
                 onChange={(e) => onPasswordChange(e.target.value)}
-                autoComplete={isSignUp ? 'new-password' : 'current-password'}
+                autoComplete="current-password"
                 className={FORM_INPUT_CLS}
               />
             </div>
 
-            {isSignUp ? (
-              <div>
-                <label className={FORM_LABEL_CLS}>{t('login.confirm_password')}</label>
-                <input
-                  type="password"
-                  required
-                  minLength={6}
-                  value={confirmPassword}
-                  onChange={(e) => onConfirmPasswordChange(e.target.value)}
-                  autoComplete="new-password"
-                  className={FORM_INPUT_CLS}
-                />
-              </div>
-            ) : null}
-
-            {!isSignUp ? (
-              <div className="flex items-center gap-2 pt-1">
-                <input
-                  type="checkbox"
-                  id="remember-me"
-                  className="h-4 w-4 text-blue-600 border-slate-300 rounded focus:ring-blue-500/20 cursor-pointer"
-                />
-                <label htmlFor="remember-me" className="text-xs font-medium text-slate-600 select-none cursor-pointer">
-                  {t('login.remember')}
-                </label>
-              </div>
-            ) : (
-              <p className="text-[11px] text-slate-500 pt-1">{t('login.register_hint')}</p>
-            )}
+            <div className="flex items-center gap-2 pt-1">
+              <input
+                type="checkbox"
+                id="remember-me"
+                className="h-4 w-4 text-blue-600 border-slate-300 rounded focus:ring-blue-500/20 cursor-pointer"
+              />
+              <label htmlFor="remember-me" className="text-xs font-medium text-slate-600 select-none cursor-pointer">
+                {t('login.remember')}
+              </label>
+            </div>
 
             {errorMessage ? (
               <div role="alert" className={`${FORM_ALERT_ERROR_CLS} space-y-2`}>
@@ -257,9 +168,7 @@ export function LoginScreen({
               disabled={submitting || bootstrapping}
               className={`w-full disabled:opacity-60 mt-2 ${FORM_BTN_PRIMARY}`}
             >
-              {submitting
-                ? (isSignUp ? t('login.signing_up') : t('login.signing_in'))
-                : (isSignUp ? t('login.register_btn') : t('login.btn'))}
+              {submitting ? t('login.signing_in') : t('login.btn')}
             </button>
           </form>
         </div>

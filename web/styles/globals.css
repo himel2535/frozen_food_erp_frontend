@@ -335,9 +335,20 @@ body.lang-bn .uppercase {
   text-align: right;
 }
 
+#module-scroll .app-table {
+  min-height: 24rem;
+}
+
+#module-scroll .module-filter-bar {
+  min-height: 4.75rem;
+}
+
 .app-table-th-actions,
 .app-table-td-actions {
   text-align: center;
+  width: 12.5rem;
+  min-width: 12.5rem;
+  max-width: 12.5rem;
 }
 
 .app-table-tr:last-child .app-table-td {
@@ -619,6 +630,31 @@ body.lang-bn .uppercase {
   object-fit: contain;
 }
 
+.iconify-icon-slot {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.iconify-icon-skeleton {
+  position: absolute;
+  inset: 0;
+  border-radius: 0.5rem;
+  pointer-events: none;
+}
+
+.iconify-icon-skeleton--kpi {
+  border-radius: 0.625rem;
+}
+
+.iconify-icon-mark {
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+
+.iconify-icon-mark--ready {
+  opacity: 1;
+}
+
 .kpi-card-icon-wrap {
   width: 2.375rem;
   height: 2.375rem;
@@ -640,10 +676,6 @@ body.lang-bn .uppercase {
 
 .module-page-header-slot {
   min-height: 3.75rem;
-}
-
-#module-scroll .module-page-header-slot {
-  min-height: auto;
 }
 
 #module-scroll .module-page-header-slot + .module-kpi-section,
