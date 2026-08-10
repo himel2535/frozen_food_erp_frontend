@@ -3,7 +3,9 @@
 import { useMemo, useState } from 'react';
 import { Footer } from '@/components/layout/Footer';
 import { ListToolbar } from '@/components/shared/ListToolbar';
-import { KpiCards, type KpiCardItem } from '@/components/shared/KpiCards';
+import { ModuleKpiSection } from '@/components/shared/ModuleKpiSection';
+import type { KpiCardItem } from '@/components/shared/KpiCards';
+import { MODULE_FILTER_INPUT } from '@/lib/ui/module-chrome-styles';
 import { AppTable } from '@/components/shared/AppTable';
 import { DateDisplay } from '@/components/shared/DateDisplay';
 import { DateInput } from '@/components/shared/DateInput';
@@ -75,6 +77,7 @@ export function ReportModule({ config }: { config: ReportModuleConfig }) {
 
   return (
     <>
+      {kpis.length > 0 && <ModuleKpiSection items={kpis} />}
       <ListToolbar
         search={search}
         onSearchChange={setSearch}
@@ -87,23 +90,23 @@ export function ReportModule({ config }: { config: ReportModuleConfig }) {
                   value={dateStart}
                   onChange={setDateStart}
                   aria-label="Start date"
-                  className="bg-slate-50 border border-slate-200 text-xs font-semibold rounded-xl px-3 py-2 cursor-pointer"
+                  className={MODULE_FILTER_INPUT}
                 />
                 <DateInput
                   value={dateEnd}
                   onChange={setDateEnd}
                   aria-label="End date"
-                  className="bg-slate-50 border border-slate-200 text-xs font-semibold rounded-xl px-3 py-2 cursor-pointer"
+                  className={MODULE_FILTER_INPUT}
                 />
               </>
             )}
             {config.statusFilterKey && config.statusOptions && (
-              <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className="bg-slate-50 border border-slate-200 text-xs font-semibold rounded-xl px-3 py-2 cursor-pointer">
+              <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className={MODULE_FILTER_INPUT}>
                 {config.statusOptions.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
               </select>
             )}
             {config.filters?.map((f) => f.type === 'select' && (
-              <select key={f.key} value={filterValues[f.key] ?? 'All'} onChange={(e) => setFilterValues({ ...filterValues, [f.key]: e.target.value })} className="bg-slate-50 border border-slate-200 text-xs font-semibold rounded-xl px-3 py-2 cursor-pointer">
+              <select key={f.key} value={filterValues[f.key] ?? 'All'} onChange={(e) => setFilterValues({ ...filterValues, [f.key]: e.target.value })} className={MODULE_FILTER_INPUT}>
                 <option value="All">All {f.label}</option>
                 {(f.options ?? []).map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
               </select>
@@ -111,7 +114,6 @@ export function ReportModule({ config }: { config: ReportModuleConfig }) {
           </>
         }
       />
-      {kpis.length > 0 && <KpiCards items={kpis} />}
       <AppTable
         columns={config.columns.map((col) => ({
           key: col.key,

@@ -7,8 +7,10 @@ import { Footer } from '@/components/layout/Footer';
 import { AppFormFields, AppFormModal } from '@/components/shared/AppForm';
 import { ListToolbar, ModuleToolbarActions } from '@/components/shared/ListToolbar';
 import { useRegisterModuleActions } from '@/components/layout/ModuleActionsContext';
-import { KpiCards, type KpiCardItem } from '@/components/shared/KpiCards';
+import { ModuleKpiSection } from '@/components/shared/ModuleKpiSection';
+import type { KpiCardItem } from '@/components/shared/KpiCards';
 import { getKpiGridClassName } from '@/lib/ui/kpi-grid';
+import { MODULE_FILTER_INPUT } from '@/lib/ui/module-chrome-styles';
 import { FilterTabs } from '@/components/shared/FilterTabs';
 import { AppTable } from '@/components/shared/AppTable';
 import { DateDisplay } from '@/components/shared/DateDisplay';
@@ -232,6 +234,12 @@ function DedicatedModuleView({ config, configId }: { config: DedicatedModuleConf
 
   return (
     <>
+      {kpis.length > 0 && (
+        <ModuleKpiSection
+          items={kpis}
+          gridClassName={config.kpiGridClassName ?? getKpiGridClassName(kpis.length)}
+        />
+      )}
       <ListToolbar
         search={search}
         onSearchChange={setSearch}
@@ -240,7 +248,7 @@ function DedicatedModuleView({ config, configId }: { config: DedicatedModuleConf
           <>
             <FilterTabs tabs={tabs} active={statusFilter} onChange={setStatusFilter} />
             {config.filters?.map((f) => (
-              <select key={f.key} value={filterValues[f.key] ?? 'all'} onChange={(e) => setFilterValues({ ...filterValues, [f.key]: e.target.value })} className="bg-slate-50 border border-slate-200 text-xs font-semibold rounded-xl px-3 py-2 cursor-pointer">
+              <select key={f.key} value={filterValues[f.key] ?? 'all'} onChange={(e) => setFilterValues({ ...filterValues, [f.key]: e.target.value })} className={MODULE_FILTER_INPUT}>
                 <option value="all">{t('common.all_filter', { label: resolveLabel(t, f.label) })}</option>
                 {f.options.map((o) => <option key={o.value} value={o.value}>{resolveLabel(t, o.label)}</option>)}
               </select>
@@ -248,12 +256,6 @@ function DedicatedModuleView({ config, configId }: { config: DedicatedModuleConf
           </>
         }
       />
-      {kpis.length > 0 && (
-        <KpiCards
-          items={kpis}
-          gridClassName={config.kpiGridClassName ?? getKpiGridClassName(kpis.length)}
-        />
-      )}
       <AppTable
         columns={config.columns.map((col) => ({
           key: col.key,

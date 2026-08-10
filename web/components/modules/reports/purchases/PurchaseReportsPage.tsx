@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { Download, Filter, Printer, Search } from 'lucide-react';
+import { Download, Filter, Printer } from 'lucide-react';
 import { Footer } from '@/components/layout/Footer';
 import { useRegisterModuleActions } from '@/components/layout/ModuleActionsContext';
 import { useAppStore } from '@/lib/state/app-store';
@@ -25,9 +25,10 @@ import {
 } from '@/components/modules/reports/purchases/purchase-report-utils';
 import { exportPurchaseReportCsv } from '@/lib/services/report-export';
 import { ReportPrintFrame } from '@/components/modules/reports/shared/ReportPrintFrame';
-import { ReportSectionHeader } from '@/components/modules/reports/shared/ReportSectionHeader';
+import { ModuleFilterBar } from '@/components/shared/ModuleFilterBar';
 import { useReportPrint } from '@/components/modules/reports/shared/useReportPrint';
 import type { ReportPrintSectionId } from '@/components/modules/reports/shared/report-print-styles';
+import { MODULE_FILTER_ACTION_BTN, MODULE_PRINT_BTN } from '@/lib/ui/module-chrome-styles';
 
 const STATUS_OPTIONS = ['All', 'Received', 'Sent', 'Draft', 'Cancelled'] as const;
 
@@ -108,7 +109,7 @@ export function PurchaseReportsPage() {
 
   useRegisterModuleActions(
     <>
-      <button type="button" onClick={() => printSection('full')} className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition-colors cursor-pointer">
+      <button type="button" onClick={() => printSection('full')} className={MODULE_PRINT_BTN}>
         <Printer className="w-4 h-4" />
         {t('reports.print_full')}
       </button>
@@ -122,19 +123,14 @@ export function PurchaseReportsPage() {
 
   return (
     <>
-        <div className="bg-white p-4 rounded-xl border border-slate-200/80 premium-shadow">
-          <div className="flex flex-col xl:flex-row xl:items-center xl:justify-between gap-3">
-            <div className="relative min-w-[240px] flex-1 max-w-md">
-              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-              <input
-                type="text"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder={t('reports.purchases_search_placeholder')}
-                className="w-full pl-10 pr-4 py-2 rounded-xl border border-slate-200 bg-slate-50 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 font-medium"
-              />
-            </div>
-            <div className="flex flex-wrap items-center gap-2">
+        <PurchaseReportMetrics items={kpis} />
+
+        <ModuleFilterBar
+          search={search}
+          onSearchChange={setSearch}
+          searchPlaceholder={t('reports.purchases_search_placeholder')}
+          filters={
+            <>
               <DateInput
                 value={dateStart}
                 onChange={setDateStart}
@@ -170,26 +166,13 @@ export function PurchaseReportsPage() {
                   </option>
                 ))}
               </select>
-              <button
-                type="button"
-                onClick={handleResetFilters}
-                className="bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold px-3 py-2 rounded-xl transition-all flex items-center gap-2 cursor-pointer"
-              >
+              <button type="button" onClick={handleResetFilters} className={MODULE_FILTER_ACTION_BTN}>
                 <Filter className="w-4 h-4" />
                 {t('reports.purchases_filter')}
               </button>
-            </div>
-          </div>
-        </div>
-
-        <section data-report-print-section="metrics">
-          <ReportSectionHeader
-            title={t('reports.purchases_print_metrics')}
-            onPrint={() => printSection('metrics')}
-            printLabel={t('reports.print_section')}
-          />
-          <PurchaseReportMetrics items={kpis} />
-        </section>
+            </>
+          }
+        />
 
         <div className={PR_CHARTS_ROW}>
           <PurchaseSpendChart data={chartData} onPrint={() => printSection('chart')} />

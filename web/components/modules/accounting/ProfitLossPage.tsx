@@ -135,6 +135,8 @@ export function ProfitLossPage() {
 
   return (
     <>
+        <ProfitLossMetrics metrics={metrics} />
+
         <ProfitLossPeriodBar
           period={period}
           onPeriodChange={setPeriod}
@@ -142,7 +144,6 @@ export function ProfitLossPage() {
         />
 
         <div className="space-y-3 min-w-0">
-          <ProfitLossMetrics metrics={metrics} />
           <ProfitLossTable rows={displayRows} onEdit={openEdit} />
           <ProfitLossFooterBar generatedAt={generatedAt} />
         </div>

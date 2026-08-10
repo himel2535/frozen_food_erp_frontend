@@ -7,7 +7,7 @@ export const IR_ANALYTICS_ROW = 'grid grid-cols-1 lg:grid-cols-3 gap-2';
 export const IR_CARD = 'premium-card premium-shadow p-4';
 
 export const IR_FILTER_INPUT =
-  'bg-slate-50 border border-slate-200 text-xs font-semibold rounded-xl px-3 py-2 cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500';
+  'bg-white/45 border border-blue-100/70 text-xs font-semibold rounded-xl px-3 py-2 cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500/15 focus:border-blue-400/60 text-slate-700';
 
 export const IR_CATEGORY_SLICE = {
   'Raw Materials': { from: '#3b82f6', to: '#2563eb' },

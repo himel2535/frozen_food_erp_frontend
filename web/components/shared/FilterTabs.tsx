@@ -9,11 +9,12 @@ interface FilterTabsProps {
   tabs: FilterTab[];
   active: string;
   onChange: (id: string) => void;
+  wrap?: boolean;
 }
 
-export function FilterTabs({ tabs, active, onChange }: FilterTabsProps) {
+export function FilterTabs({ tabs, active, onChange, wrap = false }: FilterTabsProps) {
   return (
-    <div className="flex flex-wrap gap-2">
+    <div className={`flex items-center gap-2 shrink-0 ${wrap ? 'flex-wrap' : 'flex-nowrap'}`}>
       {tabs.map((tab) => (
         <button
           key={tab.id}

@@ -9,6 +9,7 @@ import type { AppState } from '@/lib/state/types';
 import { useLocaleFormat } from '@/hooks/useLocaleFormat';
 import { DashboardBusinessAlerts } from '@/components/modules/dashboard/DashboardBusinessAlerts';
 import { DashboardBottomPanels } from '@/components/modules/dashboard/DashboardBottomPanels';
+import { pageSkeletonLoader } from '@/components/shared/PageSkeleton';
 import { countLowStockItems } from '@/lib/services/business-alert-service';
 import {
   getFinishedGoodsMetrics,
@@ -18,11 +19,11 @@ import {
 
 const SalesTrendChart = dynamic(
   () => import('@/components/modules/dashboard/SalesTrendChart').then((m) => m.SalesTrendChart),
-  { ssr: false },
+  { ssr: false, loading: pageSkeletonLoader('chart', { chartClassName: 'lg:col-span-2' }) },
 );
 const RevenueAnalyticsChart = dynamic(
   () => import('@/components/modules/dashboard/RevenueAnalyticsChart').then((m) => m.RevenueAnalyticsChart),
-  { ssr: false },
+  { ssr: false, loading: pageSkeletonLoader('chart') },
 );
 
 function getDashboardMetrics(appState: AppState) {
@@ -142,12 +143,12 @@ export function DashboardView() {
           return (
             <div
               key={card.key}
-              className="premium-card premium-shadow p-3.5 flex items-center justify-between gap-3 transition-all hover:border-slate-300 hover:shadow-md min-h-[86px]"
+              className="premium-card premium-shadow p-3.5 flex items-center justify-between gap-3 transition-[border-color,box-shadow] hover:border-slate-300 hover:shadow-md min-h-[86px]"
               data-metric={card.key}
             >
               <div className="flex flex-col justify-center gap-0.5 min-w-0 flex-1 my-auto">
                 <span className="text-xs font-bold text-slate-500 tracking-wide leading-tight">{t(card.labelKey)}</span>
-                <span className="text-lg md:text-xl font-extrabold tracking-tight text-slate-900 leading-tight mt-0.5">{data?.value ?? '—'}</span>
+                <span className="text-lg md:text-xl font-extrabold tracking-tight text-slate-900 leading-tight mt-0.5 tabular-nums">{data?.value ?? '—'}</span>
                 {card.alert && data?.sub ? (
                   <span
                     className={`text-[11px] font-bold block ${metrics.lowStock > 0 ? 'text-rose-600' : 'text-emerald-600'}`}
@@ -158,8 +159,8 @@ export function DashboardView() {
                   <span className="text-[11px] text-slate-500 font-medium block truncate">{data.sub}</span>
                 ) : null}
               </div>
-              <div className="flex items-center justify-center shrink-0 my-auto self-center">
-                <Icon icon={card.icon} width={38} height={38} className="shrink-0" />
+              <div className="kpi-card-icon-wrap shrink-0 my-auto self-center">
+                <Icon icon={card.icon} width={38} height={38} className="kpi-card-icon shrink-0" />
               </div>
             </div>
           );

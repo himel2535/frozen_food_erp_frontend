@@ -132,14 +132,14 @@ export function TrialBalancePage() {
 
   return (
     <>
+        <TrialBalanceMetricsCards metrics={metrics} />
+
         <TrialBalanceFilterCard
           draft={draftFilters}
           onDraftChange={setDraftFilters}
           onApply={applyFilters}
           onReset={resetFilters}
         />
-
-        <TrialBalanceMetricsCards metrics={metrics} />
 
         <TrialBalanceTable rows={filteredRows} metrics={metrics} />
 

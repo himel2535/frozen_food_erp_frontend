@@ -1,6 +1,6 @@
 'use client';
 
-import { KpiCards } from '@/components/shared/KpiCards';
+import { ModuleKpiSection } from '@/components/shared/ModuleKpiSection';
 import { formatMoney } from '@/lib/services/salary-sheet-service';
 
 export function SalarySheetKpiBar({
@@ -17,7 +17,7 @@ export function SalarySheetKpiBar({
   };
 }) {
   return (
-    <KpiCards
+    <ModuleKpiSection
       gridClassName="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-7 gap-2"
       items={[
         { key: 'employees', label: 'Total Employees', value: String(metrics.totalEmployees), iconify: 'flat-color-icons:manager' },

@@ -12,7 +12,6 @@ import { PaymentsDueSidebar } from '@/components/modules/payroll/payments-due/Pa
 import { PaymentsDueTable } from '@/components/modules/payroll/payments-due/PaymentsDueTable';
 import {
   PD_BTN_OUTLINE,
-  PD_CARD_CLS,
   PD_EXPORT_BTN_CLS,
   PD_INFO_BOX_CLS,
   PD_VIEW_ALL_BTN_CLS,
@@ -121,15 +120,13 @@ export function PaymentsDuePage() {
       <PaymentsDueKpiBar metrics={metrics} />
 
       {showFilters ? (
-        <section className={PD_CARD_CLS}>
-          <PaymentsDueFilters
-            filters={filters}
-            departments={departments}
-            designations={designations}
-            onChange={(patch) => setFilters((prev) => ({ ...prev, ...patch }))}
-            onReset={() => setFilters(DEFAULT_PAYMENTS_DUE_FILTERS)}
-          />
-        </section>
+        <PaymentsDueFilters
+          filters={filters}
+          departments={departments}
+          designations={designations}
+          onChange={(patch) => setFilters((prev) => ({ ...prev, ...patch }))}
+          onReset={() => setFilters(DEFAULT_PAYMENTS_DUE_FILTERS)}
+        />
       ) : null}
 
       <div className="grid grid-cols-1 xl:grid-cols-[1fr_320px] gap-2 xl:items-stretch">

@@ -13,7 +13,6 @@ import { SalarySheetTable } from '@/components/modules/payroll/salary-sheet/Sala
 import {
   SS_BTN_OUTLINE,
   SS_BTN_PRIMARY,
-  SS_CARD_CLS,
   SS_INFO_BOX_CLS,
 } from '@/components/modules/payroll/salary-sheet/salary-sheet-styles';
 import {
@@ -139,17 +138,16 @@ export function MonthlySalarySheetPage() {
 
   return (
     <div className="space-y-4">
-      <section className={SS_CARD_CLS}>
-        <SalarySheetFilters
-          filters={filters}
-          departments={departments}
-          designations={designations}
-          onChange={(patch) => setFilters((prev) => ({ ...prev, ...patch }))}
-          onReset={() => setFilters(DEFAULT_FILTERS)}
-        />
-      </section>
-
       <SalarySheetKpiBar metrics={metrics} />
+
+      <SalarySheetFilters
+        filters={filters}
+        departments={departments}
+        designations={designations}
+        onChange={(patch) => setFilters((prev) => ({ ...prev, ...patch }))}
+        onReset={() => setFilters(DEFAULT_FILTERS)}
+      />
+
       <SalarySheetTable rows={rows} filters={filters} onUpdate={handleUpdate} />
 
       <div className={`${SS_INFO_BOX_CLS} flex gap-3 items-start`}>

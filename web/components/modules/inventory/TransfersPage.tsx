@@ -10,7 +10,7 @@ import { ProductSelect, WarehouseSelect } from '@/components/modules/inventory/s
 import { AppTable, type AppTableColumn } from '@/components/shared/AppTable';
 import { StatusBadge } from '@/components/shared/StatusBadge';
 import { TableIconAction } from '@/components/shared/TableIconAction';
-import { InventoryListLayout, FilterBar, FilterSelect, SearchInput } from '@/components/modules/inventory/shared/inventory-ui';
+import { InventoryListLayout, FilterBar, FilterSelect } from '@/components/modules/inventory/shared/inventory-ui';
 import { useAppStore } from '@/lib/state/app-store';
 import {
   listTransferRecords,
@@ -93,8 +93,11 @@ export function TransfersPage() {
         { key: 'qty', label: 'Total Qty Moved', value: String(metrics.totalQty) },
       ]}
       filters={
-        <FilterBar>
-          <SearchInput value={search} onChange={setSearch} placeholder="Search transfers..." />
+        <FilterBar
+          search={search}
+          onSearchChange={setSearch}
+          searchPlaceholder="Search transfers..."
+        >
           <FilterSelect label="Status" value={statusFilter} onChange={setStatusFilter}><option value="all">All</option><option value="Pending">Pending</option><option value="Completed">Completed</option></FilterSelect>
         </FilterBar>
       }

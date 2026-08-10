@@ -619,6 +619,42 @@ body.lang-bn .uppercase {
   object-fit: contain;
 }
 
+.kpi-card-icon-wrap {
+  width: 2.375rem;
+  height: 2.375rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.kpi-card-icon {
+  width: 2.375rem;
+  height: 2.375rem;
+  object-fit: contain;
+}
+
+.scrollbar-gutter-stable {
+  scrollbar-gutter: stable;
+}
+
+.module-page-header-slot {
+  min-height: 3.75rem;
+}
+
+#module-scroll .module-page-header-slot {
+  min-height: auto;
+}
+
+#module-scroll .module-page-header-slot + .module-kpi-section,
+#module-scroll > .module-page-header-slot + .module-kpi-section {
+  margin-top: 0.125rem;
+}
+
+#module-scroll {
+  scrollbar-gutter: stable;
+}
+
 .dashboard-icon-wrap-sm {
   width: 2.875rem;
   height: 2.875rem;

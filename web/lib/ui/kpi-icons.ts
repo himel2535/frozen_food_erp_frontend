@@ -456,9 +456,17 @@ export function resolveKpiIconsForRow(items: KpiIconInput[]): string[] {
     }
 
     const preferred = resolveKpiIcon(item.key, item.label);
-    const icon = pickUniqueIcon(preferred, usedInRow, true);
+    const icon = pickUniqueIcon(preferred, usedInRow, false);
     usedInRow.add(icon);
     globalUsedKpiIcons.add(icon);
     return icon;
   });
+}
+
+/** Unique KPI icons to preload on boot — avoids icon pop-in on page navigation. */
+export function getKpiPreloadIcons(): string[] {
+  const icons = new Set<string>([DEFAULT_ICON]);
+  for (const icon of Object.values(KEY_ICON_MAP)) icons.add(icon);
+  for (const icon of KPI_ICON_POOL) icons.add(icon);
+  return [...icons];
 }

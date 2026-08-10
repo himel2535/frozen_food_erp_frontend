@@ -1,7 +1,8 @@
 'use client';
 
 import { Icon } from '@iconify/react';
-import { KpiCards, type KpiCardItem } from '@/components/shared/KpiCards';
+import { ModuleKpiSection } from '@/components/shared/ModuleKpiSection';
+import type { KpiCardItem } from '@/components/shared/KpiCards';
 import { formatCashboxMoney } from '@/lib/services/cashbox-service';
 
 export function CashboxMetrics({
@@ -52,5 +53,5 @@ export function CashboxMetrics({
     },
   ];
 
-  return <KpiCards items={items} />;
+  return <ModuleKpiSection items={items} />;
 }

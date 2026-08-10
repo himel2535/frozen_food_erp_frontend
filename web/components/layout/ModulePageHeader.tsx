@@ -1,10 +1,12 @@
 'use client';
 
-import { useSyncExternalStore } from 'react';
+import { useLayoutEffect, useSyncExternalStore } from 'react';
 import { usePathname } from 'next/navigation';
+import { loadIcons } from '@iconify/react';
 import { PageHeader } from '@/components/shared/PageHeader';
 import { useAppStore } from '@/lib/state/app-store';
-import { getPageMeta } from '@/lib/navigation/page-meta';
+import { getPageMeta, isHeaderlessModulePath } from '@/lib/navigation/page-meta';
+import { getPageIcon } from '@/lib/ui/page-icons';
 import {
   getChromeSuppressedSnapshot,
   getModuleActionsSnapshot,
@@ -27,9 +29,12 @@ export function ModulePageHeader() {
   const path = normalizePath(pathname);
   const isDashboard = path === '/dashboard';
   const chromeSuppressed = getChromeSuppressedSnapshot();
-  const showChrome = !chromeSuppressed && !isDashboard;
 
-  if (!showChrome) return null;
+  useLayoutEffect(() => {
+    loadIcons([getPageIcon(pathname)]);
+  }, [pathname]);
+
+  if (chromeSuppressed || isDashboard || isHeaderlessModulePath(pathname)) return null;
 
   const meta = getPageMeta(pathname, t);
   const actions = getModuleActionsSnapshot();
@@ -41,6 +46,7 @@ export function ModulePageHeader() {
       icon={meta.icon}
       actions={actions}
       size="compact"
+      className="module-page-header-slot"
     />
   );
 }

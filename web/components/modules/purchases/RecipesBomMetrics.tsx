@@ -1,7 +1,8 @@
 'use client';
 
 import { Icon } from '@iconify/react';
-import { KpiCards, type KpiCardItem } from '@/components/shared/KpiCards';
+import { ModuleKpiSection } from '@/components/shared/ModuleKpiSection';
+import type { KpiCardItem } from '@/components/shared/KpiCards';
 import { formatMoney, type getRecipeBomKpiMetrics } from '@/lib/services/recipes-service';
 
 type RecipeVariant = 'finished-goods' | 'semi-finished';
@@ -56,5 +57,5 @@ export function RecipesBomMetrics({
     },
   ];
 
-  return <KpiCards items={items} gridClassName={KPI_GRID} />;
+  return <ModuleKpiSection items={items} gridClassName={KPI_GRID} />;
 }

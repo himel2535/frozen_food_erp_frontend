@@ -188,7 +188,7 @@ export function ProfileSettingsPage() {
   }
 
   return (
-    <div className={MODULE_LIST_SHELL}>
+    <>
       <ProfileSettingsOverview
         profile={profile}
         metrics={metrics}
@@ -198,6 +198,6 @@ export function ProfileSettingsPage() {
         onEdit={openEdit}
       />
       <Footer />
-    </div>
+    </>
   );
 }

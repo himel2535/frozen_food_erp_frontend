@@ -23,6 +23,39 @@ const PROFILE_DENIED_SIGNUP_DEV_HINT =
 const PROFILE_MISSING_DEV_HINT =
   ' Run: npm run seed:admin (requires web/serviceAccount.json)';
 
+const AUTH_PROFILE_CACHE_KEY = 'hookerp_auth_profile_cache';
+
+function readCachedAuthProfile(uid: string): AuthUserRecord | null {
+  if (typeof window === 'undefined') return null;
+  try {
+    const raw = sessionStorage.getItem(AUTH_PROFILE_CACHE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as { uid?: string; authUser?: AuthUserRecord };
+    if (parsed.uid !== uid || !parsed.authUser) return null;
+    return parsed.authUser;
+  } catch {
+    return null;
+  }
+}
+
+function writeCachedAuthProfile(uid: string, authUser: AuthUserRecord) {
+  if (typeof window === 'undefined') return;
+  try {
+    sessionStorage.setItem(AUTH_PROFILE_CACHE_KEY, JSON.stringify({ uid, authUser }));
+  } catch {
+    // ignore quota errors
+  }
+}
+
+function clearCachedAuthProfile() {
+  if (typeof window === 'undefined') return;
+  try {
+    sessionStorage.removeItem(AUTH_PROFILE_CACHE_KEY);
+  } catch {
+    // ignore
+  }
+}
+
 function profileMissingError(): Error {
   const msg =
     process.env.NODE_ENV === 'development'
@@ -73,6 +106,7 @@ export async function signIn(email: string, password: string): Promise<AuthSessi
     await firebaseSignOut(auth);
     throw new Error('This account has been disabled.');
   }
+  writeCachedAuthProfile(credential.user.uid, authUser);
   return { firebaseUser: credential.user, authUser };
 }
 
@@ -157,19 +191,33 @@ export function onAuthSession(
 ): () => void {
   return onAuthStateChanged(auth, (user) => {
     if (!user) {
+      clearCachedAuthProfile();
       callback(null);
       return;
     }
 
+    const cached = readCachedAuthProfile(user.uid);
+    if (cached && cached.status !== 'disabled') {
+      callback({ firebaseUser: user, authUser: cached });
+    }
+
     void (async () => {
       try {
-        callback(await resolveSessionForUser(user));
+        const session = await resolveSessionForUser(user);
+        if (session) {
+          writeCachedAuthProfile(user.uid, session.authUser);
+        }
+        callback(session);
       } catch (err) {
         console.warn('[onAuthSession] Failed to load auth profile', err);
 
         if (isTransientNetworkError(err)) {
           try {
-            callback(await resolveSessionForUser(user));
+            const session = await resolveSessionForUser(user);
+            if (session) {
+              writeCachedAuthProfile(user.uid, session.authUser);
+            }
+            callback(session);
             return;
           } catch (retryErr) {
             console.warn('[onAuthSession] Retry failed', retryErr);
@@ -178,17 +226,22 @@ export function onAuthSession(
         }
 
         if (isPermissionDenied(err) || errorCode(err) === 'rtdb/permission_denied') {
+          clearCachedAuthProfile();
           void firebaseSignOut(auth).finally(() => callback(null));
           return;
         }
 
         const msg = err instanceof Error ? err.message : '';
         if (msg === PROFILE_MISSING_MSG || msg === PROFILE_DENIED_MSG) {
+          clearCachedAuthProfile();
           void firebaseSignOut(auth).finally(() => callback(null));
           return;
         }
 
-        // Unknown / non-permission failure: do not wipe session silently without a log (above).
+        if (cached && cached.status !== 'disabled') {
+          return;
+        }
+
         callback(null);
       }
     })();

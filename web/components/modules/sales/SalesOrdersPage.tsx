@@ -7,8 +7,9 @@ import { useRouter } from 'next/navigation';
 import { Plus } from 'lucide-react';
 import { Footer } from '@/components/layout/Footer';
 import { useRegisterModuleActions } from '@/components/layout/ModuleActionsContext';
+import { ModuleFilterBar } from '@/components/shared/ModuleFilterBar';
 import { FilterTabs } from '@/components/shared/FilterTabs';
-import { KpiCards } from '@/components/shared/KpiCards';
+import { ModuleKpiSection } from '@/components/shared/ModuleKpiSection';
 import { AppTable, type AppTableColumn } from '@/components/shared/AppTable';
 import { StatusBadge } from '@/components/shared/StatusBadge';
 import { TableIconAction } from '@/components/shared/TableIconAction';
@@ -148,20 +149,14 @@ export function SalesOrdersPage() {
 
   return (
     <>
-      <div className="mt-4">
-        <KpiCards items={kpis} />
-      </div>
+      <ModuleKpiSection items={kpis} />
 
-      <div className="mt-4 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
-        <FilterTabs tabs={statusTabs} active={statusFilter} onChange={setStatusFilter} />
-        <input
-          type="search"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          placeholder={t('sales.search_orders_placeholder')}
-          className="w-full lg:w-72 px-3 py-2 rounded-xl border border-slate-200 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400"
-        />
-      </div>
+      <ModuleFilterBar
+        search={search}
+        onSearchChange={setSearch}
+        searchPlaceholder={t('sales.search_orders_placeholder')}
+        filters={<FilterTabs tabs={statusTabs} active={statusFilter} onChange={setStatusFilter} />}
+      />
 
       <div className="mt-4 premium-card overflow-hidden">
         <AppTable

@@ -7,7 +7,8 @@ import { Footer } from '@/components/layout/Footer';
 import { AppFormFields, AppFormModal } from '@/components/shared/AppForm';
 import { ListToolbar, ModuleToolbarActions } from '@/components/shared/ListToolbar';
 import { useRegisterModuleActions } from '@/components/layout/ModuleActionsContext';
-import { KpiCards, type KpiCardItem } from '@/components/shared/KpiCards';
+import { ModuleKpiSection } from '@/components/shared/ModuleKpiSection';
+import type { KpiCardItem } from '@/components/shared/KpiCards';
 import { FilterTabs } from '@/components/shared/FilterTabs';
 import { AppTable } from '@/components/shared/AppTable';
 import { TableIconAction } from '@/components/shared/TableIconAction';
@@ -109,13 +110,13 @@ export function InventoryMasterModule({ config }: { config: InventoryMasterConfi
 
   return (
     <>
+      {kpis.length > 0 && <ModuleKpiSection items={kpis} />}
       <ListToolbar
         search={search}
         onSearchChange={setSearch}
         searchPlaceholder={`Search ${config.title.toLowerCase()}...`}
         filters={<FilterTabs tabs={tabs} active={statusFilter} onChange={setStatusFilter} />}
       />
-      {kpis.length > 0 && <KpiCards items={kpis} />}
       <AppTable
         columns={config.columns.map((col) => ({
           key: col.key,

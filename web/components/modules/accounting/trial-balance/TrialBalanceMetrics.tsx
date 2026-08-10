@@ -1,7 +1,8 @@
 'use client';
 
 import { Icon } from '@iconify/react';
-import { KpiCards, type KpiCardItem } from '@/components/shared/KpiCards';
+import { ModuleKpiSection } from '@/components/shared/ModuleKpiSection';
+import type { KpiCardItem } from '@/components/shared/KpiCards';
 import { formatTrialMoney, type TrialBalanceMetrics } from '@/lib/services/trial-balance-service';
 
 export function TrialBalanceMetricsCards({ metrics }: { metrics: TrialBalanceMetrics }) {
@@ -37,5 +38,5 @@ export function TrialBalanceMetricsCards({ metrics }: { metrics: TrialBalanceMet
     },
   ];
 
-  return <KpiCards items={items} gridClassName="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-2" />;
+  return <ModuleKpiSection items={items} gridClassName="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-2" />;
 }

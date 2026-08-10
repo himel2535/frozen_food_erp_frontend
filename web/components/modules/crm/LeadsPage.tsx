@@ -3,7 +3,7 @@
 import { toast } from '@/lib/ui/feedback';
 
 import { useMemo, useState, useCallback } from 'react';
-import { MessageCircle, Phone, Plus, Search, Upload } from 'lucide-react';
+import { MessageCircle, Phone, Plus, Upload } from 'lucide-react';
 import { Footer } from '@/components/layout/Footer';
 import { useChromeSuppressed, useRegisterModuleActions } from '@/components/layout/ModuleActionsContext';
 import { useAppStore } from '@/lib/state/app-store';
@@ -24,7 +24,9 @@ import {
 import { AppTable, type AppTableColumn } from '@/components/shared/AppTable';
 import { TableIconAction } from '@/components/shared/TableIconAction';
 import { StatusBadge } from '@/components/shared/StatusBadge';
-import { KpiCards } from '@/components/shared/KpiCards';
+import { ModuleKpiSection } from '@/components/shared/ModuleKpiSection';
+import { ModuleFilterBar } from '@/components/shared/ModuleFilterBar';
+import { MODULE_FILTER_INPUT } from '@/lib/ui/module-chrome-styles';
 import { FilterTabs } from '@/components/shared/FilterTabs';
 import {
   LeadForm,
@@ -391,7 +393,7 @@ export function LeadsPage() {
 
   return (
     <>
-      <KpiCards
+      <ModuleKpiSection
         gridClassName="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2"
         items={[
           { key: 'leads', label: t('crm.kpi_new_leads'), value: formatCount(Number(metrics.newThisWeek)), sub: t('crm.kpi_this_week') },
@@ -408,55 +410,47 @@ export function LeadsPage() {
         onStageClick={(stage) => { setFunnelStage(stage); setPage(1); }}
       />
 
-      <FilterTabs
-        tabs={[
-          { id: 'mine', label: t('crm.filter_my_leads') },
-          { id: 'today', label: t('crm.filter_follow_up_today', { n: metrics.followUpToday }) },
-          { id: 'overdue', label: t('crm.filter_overdue', { n: metrics.overdueFollowUps }) },
-          { id: 'new', label: t('crm.filter_new_uncontacted', { n: metrics.newUncontacted }) },
-          { id: 'all', label: t('crm.filter_all_leads', { n: metrics.totalLeads }) },
-        ]}
-        active={listTab}
-        onChange={(id) => { setListTab(id); setPage(1); }}
-      />
-
-      <div className="bg-white p-3 rounded-xl border border-slate-200">
-        <div className="flex flex-col lg:flex-row lg:items-center gap-3">
-          <div className="relative min-w-[200px] flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-            <input
-              type="text"
-              value={search}
-              onChange={(e) => { setSearch(e.target.value); setPage(1); }}
-              placeholder={t('crm.search_leads')}
-              className="w-full pl-9 pr-3 py-2 rounded-xl border border-slate-200 bg-slate-50 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 font-medium"
+      <ModuleFilterBar
+        search={search}
+        onSearchChange={(v) => { setSearch(v); setPage(1); }}
+        searchPlaceholder={t('crm.search_leads')}
+        filters={
+          <>
+            <FilterTabs
+              tabs={[
+                { id: 'mine', label: t('crm.filter_my_leads') },
+                { id: 'today', label: t('crm.filter_follow_up_today', { n: metrics.followUpToday }) },
+                { id: 'overdue', label: t('crm.filter_overdue', { n: metrics.overdueFollowUps }) },
+                { id: 'new', label: t('crm.filter_new_uncontacted', { n: metrics.newUncontacted }) },
+                { id: 'all', label: t('crm.filter_all_leads', { n: metrics.totalLeads }) },
+              ]}
+              active={listTab}
+              onChange={(id) => { setListTab(id); setPage(1); }}
             />
-          </div>
-          <div className="flex flex-wrap gap-2">
-            <select value={stageFilter} onChange={(e) => { setStageFilter(e.target.value); setPage(1); }} className="bg-slate-50 border border-slate-200 text-xs font-semibold text-slate-700 rounded-xl px-3 py-2 cursor-pointer">
+            <select value={stageFilter} onChange={(e) => { setStageFilter(e.target.value); setPage(1); }} className={MODULE_FILTER_INPUT}>
               <option value="all">{t('crm.filter_stage')}</option>
               {Object.entries(LEAD_STAGE_LABELS).map(([value]) => (
                 <option key={value} value={value}>{translateStatus(t, value)}</option>
               ))}
             </select>
-            <select value={ownerFilter} onChange={(e) => { setOwnerFilter(e.target.value); setPage(1); }} className="bg-slate-50 border border-slate-200 text-xs font-semibold text-slate-700 rounded-xl px-3 py-2 cursor-pointer">
+            <select value={ownerFilter} onChange={(e) => { setOwnerFilter(e.target.value); setPage(1); }} className={MODULE_FILTER_INPUT}>
               <option value="all">{t('crm.filter_sales_rep')}</option>
               {owners.map((o: { id: string; name: string }) => <option key={o.id} value={o.id}>{o.name}</option>)}
             </select>
-            <select value={sourceFilter} onChange={(e) => { setSourceFilter(e.target.value); setPage(1); }} className="bg-slate-50 border border-slate-200 text-xs font-semibold text-slate-700 rounded-xl px-3 py-2 cursor-pointer">
+            <select value={sourceFilter} onChange={(e) => { setSourceFilter(e.target.value); setPage(1); }} className={MODULE_FILTER_INPUT}>
               <option value="all">{t('crm.filter_source')}</option>
               {sourceFilterOptions.map((s) => <option key={s} value={s}>{s}</option>)}
             </select>
-            <select value={nextActionFilter} onChange={(e) => { setNextActionFilter(e.target.value); setPage(1); }} className="bg-slate-50 border border-slate-200 text-xs font-semibold text-slate-700 rounded-xl px-3 py-2 cursor-pointer">
+            <select value={nextActionFilter} onChange={(e) => { setNextActionFilter(e.target.value); setPage(1); }} className={MODULE_FILTER_INPUT}>
               <option value="all">{t('crm.filter_next_action')}</option>
               {NEXT_ACTION_FILTERS.map((a) => <option key={a} value={a}>{t(NEXT_ACTION_I18N[a] ?? a)}</option>)}
             </select>
-            <button type="button" onClick={resetFilters} className="text-xs font-bold text-slate-500 hover:text-slate-700 cursor-pointer px-2 py-2">
+            <button type="button" onClick={resetFilters} className="text-xs font-bold text-slate-500 hover:text-slate-700 cursor-pointer px-2 py-2 shrink-0">
               {t('crm.reset')}
             </button>
-          </div>
-        </div>
-      </div>
+          </>
+        }
+      />
 
       <div className="grid grid-cols-1 xl:grid-cols-[1fr_380px] gap-3 items-stretch flex-1 min-h-0">
         <div className="flex flex-col gap-3 min-h-0">

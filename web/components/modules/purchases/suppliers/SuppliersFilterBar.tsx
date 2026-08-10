@@ -1,7 +1,9 @@
 'use client';
 
-import { Search, SlidersHorizontal } from 'lucide-react';
+import { ModuleFilterBar } from '@/components/shared/ModuleFilterBar';
+import { SlidersHorizontal } from 'lucide-react';
 import { SUPPLIER_PILL_ACTIVE, SUPPLIER_PILL_INACTIVE } from './suppliers-styles';
+import { MODULE_FILTER_INPUT } from '@/lib/ui/module-chrome-styles';
 
 const TABS = [
   { id: 'all', label: 'All' },
@@ -47,56 +49,49 @@ export function SuppliersFilterBar({
   onCategoryChange: (v: string) => void;
 }) {
   return (
-    <div className="flex flex-wrap items-center gap-2 lg:gap-3 p-4 border-b border-slate-100">
-      <div className="relative w-full sm:w-[240px] lg:w-[260px] shrink-0">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
-        <input
-          type="search"
-          value={search}
-          onChange={(e) => onSearchChange(e.target.value)}
-          placeholder="Search supplier, phone, code..."
-          className="w-full rounded-xl border border-slate-200 bg-slate-50 pl-9 pr-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400"
-        />
-      </div>
-
-      <div className="flex flex-wrap gap-2">
-        {TABS.map((item) => (
-          <button
-            key={item.id}
-            type="button"
-            onClick={() => onTabChange(item.id)}
-            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors cursor-pointer ${
-              tab === item.id ? SUPPLIER_PILL_ACTIVE : SUPPLIER_PILL_INACTIVE
-            }`}
-          >
-            {item.label}
-          </button>
-        ))}
-      </div>
-
-      <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto sm:ml-auto">
-        <div className="relative">
-          <SlidersHorizontal className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 pointer-events-none" />
+    <ModuleFilterBar
+      search={search}
+      onSearchChange={onSearchChange}
+      searchPlaceholder="Search supplier, phone, code..."
+      filters={
+        <>
+          {TABS.map((item) => (
+            <button
+              key={item.id}
+              type="button"
+              onClick={() => onTabChange(item.id)}
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors cursor-pointer shrink-0 ${
+                tab === item.id ? SUPPLIER_PILL_ACTIVE : SUPPLIER_PILL_INACTIVE
+              }`}
+            >
+              {item.label}
+            </button>
+          ))}
+          <div className="relative shrink-0">
+            <SlidersHorizontal className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 pointer-events-none" />
+            <select
+              value={category}
+              onChange={(e) => onCategoryChange(e.target.value)}
+              aria-label="Category"
+              className={`${MODULE_FILTER_INPUT} appearance-none pl-8 pr-8 min-w-[140px]`}
+            >
+              {CATEGORY_OPTIONS.map((opt) => (
+                <option key={opt.id} value={opt.id}>{opt.label}</option>
+              ))}
+            </select>
+          </div>
           <select
-            value={category}
-            onChange={(e) => onCategoryChange(e.target.value)}
-            className="appearance-none bg-slate-50 border border-slate-200 text-xs font-semibold text-slate-700 rounded-xl pl-8 pr-8 py-2 cursor-pointer"
+            value={sort}
+            onChange={(e) => onSortChange(e.target.value)}
+            aria-label="Sort"
+            className={`${MODULE_FILTER_INPUT} min-w-[130px]`}
           >
-            {CATEGORY_OPTIONS.map((opt) => (
-              <option key={opt.id} value={opt.id}>{opt.label}</option>
+            {SORT_OPTIONS.map((opt) => (
+              <option key={opt.id} value={opt.id}>Sort: {opt.label}</option>
             ))}
           </select>
-        </div>
-        <select
-          value={sort}
-          onChange={(e) => onSortChange(e.target.value)}
-          className="bg-slate-50 border border-slate-200 text-xs font-semibold text-slate-700 rounded-xl px-3 py-2 cursor-pointer"
-        >
-          {SORT_OPTIONS.map((opt) => (
-            <option key={opt.id} value={opt.id}>Sort: {opt.label}</option>
-          ))}
-        </select>
-      </div>
-    </div>
+        </>
+      }
+    />
   );
 }

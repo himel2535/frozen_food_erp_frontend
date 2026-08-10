@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { Download, Filter, Printer, Search } from 'lucide-react';
+import { Download, Filter, Printer } from 'lucide-react';
 import { Footer } from '@/components/layout/Footer';
 import { useRegisterModuleActions } from '@/components/layout/ModuleActionsContext';
 import { useAppStore } from '@/lib/state/app-store';
@@ -14,8 +14,9 @@ import { InventoryWarehouseDonut } from '@/components/modules/reports/inventory/
 import { InventoryStockMovement } from '@/components/modules/reports/inventory/InventoryStockMovement';
 import { InventoryLowStockAlerts } from '@/components/modules/reports/inventory/InventoryLowStockAlerts';
 import { InventoryPrintFrame } from '@/components/modules/reports/inventory/InventoryPrintFrame';
-import { ReportSectionHeader } from '@/components/modules/reports/shared/ReportSectionHeader';
 import { useReportPrint } from '@/components/modules/reports/shared/useReportPrint';
+import { ModuleFilterBar } from '@/components/shared/ModuleFilterBar';
+import { MODULE_FILTER_ACTION_BTN, MODULE_PRINT_BTN } from '@/lib/ui/module-chrome-styles';
 import { IR_ANALYTICS_ROW, IR_FILTER_INPUT, type InventoryPrintSectionId } from '@/components/modules/reports/inventory/inventory-report-styles';
 import {
   buildCategoryBreakdown,
@@ -112,7 +113,7 @@ export function InventoryReportsPage() {
 
   useRegisterModuleActions(
     <>
-      <button type="button" onClick={() => printSection('full')} className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition-colors cursor-pointer">
+      <button type="button" onClick={() => printSection('full')} className={MODULE_PRINT_BTN}>
         <Printer className="w-4 h-4" />
         {t('reports.inventory_print_report')}
       </button>
@@ -126,19 +127,14 @@ export function InventoryReportsPage() {
 
   return (
     <>
-        <div className="bg-white p-4 rounded-xl border border-slate-200/80 premium-shadow">
-          <div className="flex flex-col xl:flex-row xl:items-center xl:justify-between gap-3">
-            <div className="relative min-w-[240px] flex-1 max-w-md">
-              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-              <input
-                type="text"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder={t('reports.inventory_search_placeholder')}
-                className="w-full pl-10 pr-4 py-2 rounded-xl border border-slate-200 bg-slate-50 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 font-medium"
-              />
-            </div>
-            <div className="flex flex-wrap items-center gap-2">
+        <InventoryReportMetrics items={kpis} />
+
+        <ModuleFilterBar
+          search={search}
+          onSearchChange={setSearch}
+          searchPlaceholder={t('reports.inventory_search_placeholder')}
+          filters={
+            <>
               <DateInput value={dateStart} onChange={setDateStart} className={IR_FILTER_INPUT} aria-label={t('reports.inventory_date_from')} />
               <DateInput value={dateEnd} onChange={setDateEnd} className={IR_FILTER_INPUT} aria-label={t('reports.inventory_date_to')} />
               <select value={categoryFilter} onChange={(e) => setCategoryFilter(e.target.value)} className={IR_FILTER_INPUT}>
@@ -153,22 +149,13 @@ export function InventoryReportsPage() {
                   <option key={name} value={name}>{name}</option>
                 ))}
               </select>
-              <button type="button" onClick={handleResetFilters} className="bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold px-3 py-2 rounded-xl transition-all flex items-center gap-2 cursor-pointer">
+              <button type="button" onClick={handleResetFilters} className={MODULE_FILTER_ACTION_BTN}>
                 <Filter className="w-4 h-4" />
                 {t('reports.inventory_filter')}
               </button>
-            </div>
-          </div>
-        </div>
-
-        <section>
-          <ReportSectionHeader
-            title={t('reports.inventory_print_metrics')}
-            onPrint={() => printSection('metrics')}
-            printLabel={t('reports.print_section')}
-          />
-          <InventoryReportMetrics items={kpis} />
-        </section>
+            </>
+          }
+        />
 
         <div className={IR_ANALYTICS_ROW}>
           <InventoryCategoryDonut slices={categorySlices} totalAmount={totalValue} onPrint={() => printSection('category')} />

@@ -4,12 +4,14 @@ import { toast, confirmAction } from '@/lib/ui/feedback';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { FileSpreadsheet, Filter, Plus, Package, History, FileText, Paperclip, MessageSquare, X } from 'lucide-react';
+import { FileSpreadsheet, Filter, Plus, Package, History, FileText, Paperclip, MessageSquare, X, Search } from 'lucide-react';
 import { Footer } from '@/components/layout/Footer';
 import { useChromeSuppressed, useRegisterModuleActions } from '@/components/layout/ModuleActionsContext';
 import { FilterTabs } from '@/components/shared/FilterTabs';
 import { DateInput } from '@/components/shared/DateInput';
-import { KpiCards } from '@/components/shared/KpiCards';
+import { ModuleKpiSection } from '@/components/shared/ModuleKpiSection';
+import { ModuleFilterBar } from '@/components/shared/ModuleFilterBar';
+import { MODULE_FILTER_ACTION_BTN, MODULE_FILTER_INPUT, MODULE_FILTER_SEARCH } from '@/lib/ui/module-chrome-styles';
 import { StatusBadge } from '@/components/shared/StatusBadge';
 import { TableIconAction } from '@/components/shared/TableIconAction';
 import { AppTable, type AppTableColumn } from '@/components/shared/AppTable';
@@ -472,35 +474,46 @@ export function PurchaseRmPage() {
 
   return (
     <>
-      <KpiCards items={kpis} />
+      <ModuleKpiSection items={kpis} />
 
-      <div className="bg-white p-4 rounded-xl border border-slate-200/80 premium-shadow space-y-3">
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-6 gap-2">
-          <input type="text" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="RM order ID, supplier, product..." className="xl:col-span-2 w-full px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-blue-500/10" />
-          <select value={supplierFilter} onChange={(e) => setSupplierFilter(e.target.value)} className="px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 text-xs font-medium cursor-pointer">
-            <option value="">All Suppliers</option>
-            {suppliers.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
-          </select>
-          <select value={warehouseFilter} onChange={(e) => setWarehouseFilter(e.target.value)} className="px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 text-xs font-medium cursor-pointer">
-            <option value="">All Warehouses</option>
-            {warehouses.map((w) => <option key={w.id} value={w.id}>{w.name}</option>)}
-          </select>
-          <select value={paymentFilter} onChange={(e) => setPaymentFilter(e.target.value)} className="px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 text-xs font-medium cursor-pointer">
-            <option value="">Payment Status</option>
-            <option value="unpaid">Unpaid</option>
-            <option value="partial">Partial</option>
-            <option value="paid">Paid</option>
-          </select>
-          <button type="button" onClick={() => { resetListFilters(); setLowStockOnly(false); }} className="inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl border border-slate-200 bg-white text-xs font-semibold text-slate-600 hover:bg-slate-50 cursor-pointer">
-            <Filter className="w-3.5 h-3.5" /> Reset
-          </button>
+      <ModuleFilterBar>
+        <div className="flex flex-col gap-3 min-w-0">
+          <div className="flex flex-wrap items-center gap-2 min-w-0">
+            <div className="relative flex-1 min-w-[200px] max-w-md">
+              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+              <input
+                type="text"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="RM order ID, supplier, product..."
+                className={MODULE_FILTER_SEARCH}
+              />
+            </div>
+            <select value={supplierFilter} onChange={(e) => setSupplierFilter(e.target.value)} className={MODULE_FILTER_INPUT}>
+              <option value="">All Suppliers</option>
+              {suppliers.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
+            </select>
+            <select value={warehouseFilter} onChange={(e) => setWarehouseFilter(e.target.value)} className={MODULE_FILTER_INPUT}>
+              <option value="">All Warehouses</option>
+              {warehouses.map((w) => <option key={w.id} value={w.id}>{w.name}</option>)}
+            </select>
+            <select value={paymentFilter} onChange={(e) => setPaymentFilter(e.target.value)} className={MODULE_FILTER_INPUT}>
+              <option value="">Payment Status</option>
+              <option value="unpaid">Unpaid</option>
+              <option value="partial">Partial</option>
+              <option value="paid">Paid</option>
+            </select>
+            <DateInput value={dateFrom} onChange={setDateFrom} className={MODULE_FILTER_INPUT} />
+            <DateInput value={dateTo} onChange={setDateTo} className={MODULE_FILTER_INPUT} />
+            <button type="button" onClick={() => { resetListFilters(); setLowStockOnly(false); }} className={MODULE_FILTER_ACTION_BTN}>
+              <Filter className="w-3.5 h-3.5" /> Reset
+            </button>
+          </div>
+          <div className="flex flex-wrap items-center gap-2 min-w-0">
+            <FilterTabs tabs={STATUS_TABS} active={statusFilter} onChange={setStatusFilter} wrap />
+          </div>
         </div>
-        <div className="flex flex-wrap gap-2">
-          <DateInput value={dateFrom} onChange={setDateFrom} className="px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 text-xs font-medium" />
-          <DateInput value={dateTo} onChange={setDateTo} className="px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 text-xs font-medium" />
-        </div>
-        <FilterTabs tabs={STATUS_TABS} active={statusFilter} onChange={setStatusFilter} />
-      </div>
+      </ModuleFilterBar>
 
       {fromApproval && focusPoId && !focusNotFound && (
         <div className="flex items-center justify-between gap-3 rounded-xl border border-blue-200/80 bg-blue-50/90 px-4 py-2.5">

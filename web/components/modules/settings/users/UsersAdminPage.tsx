@@ -8,7 +8,7 @@ import { useChromeSuppressed, useRegisterModuleActions } from '@/components/layo
 import { AppTable, type AppTableColumn } from '@/components/shared/AppTable';
 import { StatusBadge } from '@/components/shared/StatusBadge';
 import { TableIconAction } from '@/components/shared/TableIconAction';
-import { KpiCards } from '@/components/shared/KpiCards';
+import { ModuleKpiSection } from '@/components/shared/ModuleKpiSection';
 import { CF_BTN_PRIMARY } from '@/components/modules/crm/customer-form/customer-form-styles';
 import { useAppStore } from '@/lib/state/app-store';
 import { isMainAdmin, summarizeSections } from '@/lib/services/access-control-service';
@@ -307,10 +307,8 @@ export function UsersAdminPage() {
 
   return (
     <>
-      <div className="mt-4">
-        <KpiCards items={kpis} loading={loading && rows.length === 0} />
-      </div>
-      <div className="mt-4 premium-card overflow-hidden">
+      <ModuleKpiSection items={kpis} loading={loading && rows.length === 0} />
+      <div className="premium-card overflow-hidden">
         <AppTable
           columns={columns}
           rows={rows}

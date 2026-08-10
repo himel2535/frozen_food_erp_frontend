@@ -211,7 +211,7 @@ export function SignatureSettingsPage() {
   }
 
   return (
-    <div className={MODULE_LIST_SHELL}>
+    <>
       <SignatureSettingsOverview
         signatures={signatures}
         metrics={metrics}
@@ -224,6 +224,6 @@ export function SignatureSettingsPage() {
         canGoInvoice={signatures.length > 0}
       />
       <Footer />
-    </div>
+    </>
   );
 }

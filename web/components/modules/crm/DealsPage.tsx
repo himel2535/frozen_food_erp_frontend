@@ -26,7 +26,7 @@ import {
   markDealWon,
   markDealLost,
 } from '@/lib/services/crm-service';
-import { KpiCards } from '@/components/shared/KpiCards';
+import { ModuleKpiSection } from '@/components/shared/ModuleKpiSection';
 import type { PortField } from '@/lib/modules/port-types';
 import { ProfileDrawer } from '@/components/shared/ProfileDrawer';
 
@@ -234,7 +234,7 @@ export function DealsPage() {
 
   return (
     <>
-      <KpiCards items={[
+      <ModuleKpiSection items={[
         { key: 'open', label: t('sales.kpi_open'), value: formatCount(Number(metrics.totalDeals ?? 0)), sub: formatMoney(Number(metrics.pipelineValue ?? 0)) },
         { key: 'won', label: translateStatus(t, 'won'), value: formatCount(Number(metrics.wonDeals ?? 0)) },
         { key: 'forecast', label: t('sales.kpi_total_value'), value: formatMoney(Number(metrics.forecastValue ?? 0)) },

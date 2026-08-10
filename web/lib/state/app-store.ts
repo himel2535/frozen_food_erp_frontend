@@ -170,41 +170,55 @@ export const useAppStore = create<AppStore>((set, get) => ({
       set({ remoteListenerStarted: true, ready: true });
       void getFirebase()
         .then(({ subscribeToRemoteAppState, saveRemoteAppState }) => {
-          subscribeToRemoteAppState((remoteState) => {
+          let isFirstRemote = true;
+          let debounceTimer: ReturnType<typeof setTimeout> | null = null;
+
+          const applyRemoteState = (remoteState: Record<string, unknown> | null) => {
             if (!remoteState) {
               const { appState } = get();
               const { isLoggedIn: _li, sidebarCollapsed: _sc, ...toSend } = appState;
               saveRemoteAppState(toSend as Record<string, unknown>).catch(() => {});
-            } else {
-              const current = get();
-              const hydrated = hydrateAppState(remoteState as Partial<AppState>);
-              const serialized = JSON.stringify(hydrated);
-              if (serialized !== current.lastSyncedState) {
-                const loggedIn = current.appState.isLoggedIn;
-                const sidebar = current.appState.sidebarCollapsed;
-                const authUser = current.authUser;
-                hydrated.isLoggedIn = loggedIn;
-                hydrated.sidebarCollapsed = sidebar;
-                if (authUser) {
-                  hydrated.currentUser = {
-                    ...hydrated.currentUser,
-                    ...authUserToCurrentProfile(authUser),
-                  };
-                }
-                const lang = (hydrated.lang ?? 'en') as Lang;
-                set({
-                  ignoreRemoteEcho: true,
-                  appState: hydrated,
-                  lastSyncedState: serialized,
-                  t: createT(lang),
-                });
-                localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(hydrated));
-                set({ ignoreRemoteEcho: false });
-                if (typeof window !== 'undefined') {
-                  window.dispatchEvent(new CustomEvent('hookerp:state-synced'));
-                }
-              }
+              return;
             }
+
+            const current = get();
+            const hydrated = hydrateAppState(remoteState as Partial<AppState>);
+            const serialized = JSON.stringify(hydrated);
+            if (serialized === current.lastSyncedState) return;
+
+            const loggedIn = current.appState.isLoggedIn;
+            const sidebar = current.appState.sidebarCollapsed;
+            const authUser = current.authUser;
+            hydrated.isLoggedIn = loggedIn;
+            hydrated.sidebarCollapsed = sidebar;
+            if (authUser) {
+              hydrated.currentUser = {
+                ...hydrated.currentUser,
+                ...authUserToCurrentProfile(authUser),
+              };
+            }
+            const lang = (hydrated.lang ?? 'en') as Lang;
+            set({
+              ignoreRemoteEcho: true,
+              appState: hydrated,
+              lastSyncedState: serialized,
+              t: createT(lang),
+            });
+            localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(hydrated));
+            set({ ignoreRemoteEcho: false });
+            if (typeof window !== 'undefined') {
+              window.dispatchEvent(new CustomEvent('hookerp:state-synced'));
+            }
+          };
+
+          subscribeToRemoteAppState((remoteState) => {
+            if (isFirstRemote) {
+              isFirstRemote = false;
+              applyRemoteState(remoteState);
+              return;
+            }
+            if (debounceTimer) clearTimeout(debounceTimer);
+            debounceTimer = setTimeout(() => applyRemoteState(remoteState), 250);
           });
           resolve();
         })

@@ -37,6 +37,17 @@ function normalizePath(pathname: string): string {
   return path || '/dashboard';
 }
 
+/** Settings overview pages with in-page headers — hide the shared module title bar. */
+export const HEADERLESS_MODULE_PATHS = new Set([
+  '/settings/profile',
+  '/settings/company',
+  '/settings/signatures',
+]);
+
+export function isHeaderlessModulePath(pathname: string): boolean {
+  return HEADERLESS_MODULE_PATHS.has(normalizePath(pathname));
+}
+
 function resolveMetaSource(source: MetaSource, t: TranslateFn): { title: string; subtitle: string } {
   const title = source.titleKey ? t(source.titleKey) : (source.title ?? '');
   const subtitle = source.subtitleKey ? t(source.subtitleKey) : (source.subtitle ?? '');

@@ -4,7 +4,10 @@ import type { FormEvent, ReactNode } from 'react';
 import { Footer } from '@/components/layout/Footer';
 import { useRegisterModuleActions } from '@/components/layout/ModuleActionsContext';
 import { AppFormModal } from '@/components/shared/AppForm';
-import { KpiCards, type KpiCardItem } from '@/components/shared/KpiCards';
+import { ModuleKpiSection } from '@/components/shared/ModuleKpiSection';
+import type { KpiCardItem } from '@/components/shared/KpiCards';
+import { ModuleFilterBar } from '@/components/shared/ModuleFilterBar';
+import { MODULE_FILTER_ACTION_BTN, MODULE_FILTER_INPUT } from '@/lib/ui/module-chrome-styles';
 import {
   FORM_BTN_PRIMARY,
   FORM_BTN_SECONDARY,
@@ -46,9 +49,7 @@ export function InventoryListLayout({
   return (
     <>
       {kpis.length > 0 && (
-        kpiGridClassName
-          ? <KpiCards gridClassName={kpiGridClassName} items={kpis} />
-          : <KpiCards items={kpis} />
+        <ModuleKpiSection items={kpis} gridClassName={kpiGridClassName} />
       )}
       {filters}
       {children}
@@ -118,23 +119,68 @@ export function PaginationBar({
   );
 }
 
-export function FilterBar({ children }: { children: React.ReactNode }) {
-  return <div className="flex flex-wrap gap-3 items-end bg-white p-4 rounded-xl border border-slate-200/80">{children}</div>;
-}
-
-export function FilterSelect({ label, value, onChange, children }: { label: string; value: string; onChange: (v: string) => void; children: React.ReactNode }) {
+export function FilterBar({
+  search,
+  onSearchChange,
+  searchPlaceholder,
+  children,
+}: {
+  search: string;
+  onSearchChange: (v: string) => void;
+  searchPlaceholder: string;
+  children: React.ReactNode;
+}) {
   return (
-    <div className="text-xs font-semibold text-slate-700">
-      <label className="block mb-1 text-slate-500">{label}</label>
-      <select value={value} onChange={(e) => onChange(e.target.value)} className={`${SELECT_CLS} min-w-[140px]`}>{children}</select>
-    </div>
+    <ModuleFilterBar
+      search={search}
+      onSearchChange={onSearchChange}
+      searchPlaceholder={searchPlaceholder}
+      filters={children}
+    />
   );
 }
 
+export function FilterSelect({
+  label,
+  value,
+  onChange,
+  children,
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <select
+      aria-label={label}
+      title={label}
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      className={`${MODULE_FILTER_INPUT} min-w-[120px] shrink-0`}
+    >
+      {children}
+    </select>
+  );
+}
+
+/** @deprecated Use FilterBar search props instead. */
 export function SearchInput({ value, onChange, placeholder }: { value: string; onChange: (v: string) => void; placeholder: string }) {
   return (
-    <div className="flex-1 min-w-[200px] text-xs">
-      <input type="search" placeholder={placeholder} value={value} onChange={(e) => onChange(e.target.value)} className={`${INPUT_CLS} w-full`} />
-    </div>
+    <input
+      type="search"
+      placeholder={placeholder}
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      className={`${MODULE_FILTER_INPUT} min-w-[160px] shrink-0`}
+    />
+  );
+}
+
+export function FilterResetButton({ onClick, label = 'Reset' }: { onClick: () => void; label?: string }) {
+  return (
+    <button type="button" onClick={onClick} className={`${MODULE_FILTER_ACTION_BTN} shrink-0`}>
+      {label}
+    </button>
   );
 }

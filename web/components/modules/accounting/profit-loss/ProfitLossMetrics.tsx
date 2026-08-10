@@ -1,7 +1,8 @@
 'use client';
 
 import { Icon } from '@iconify/react';
-import { KpiCards, type KpiCardItem } from '@/components/shared/KpiCards';
+import { ModuleKpiSection } from '@/components/shared/ModuleKpiSection';
+import type { KpiCardItem } from '@/components/shared/KpiCards';
 import { formatPlMoney, formatPlPercent, type ProfitLossMetrics } from '@/lib/services/profit-loss-service';
 
 export function ProfitLossMetrics({ metrics }: { metrics: ProfitLossMetrics }) {
@@ -34,5 +35,5 @@ export function ProfitLossMetrics({ metrics }: { metrics: ProfitLossMetrics }) {
     },
   ];
 
-  return <KpiCards items={items} gridClassName="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-2" />;
+  return <ModuleKpiSection items={items} gridClassName="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-2" />;
 }

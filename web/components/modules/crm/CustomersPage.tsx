@@ -8,7 +8,9 @@ import { Download, Upload, Printer } from 'lucide-react';
 import { Footer } from '@/components/layout/Footer';
 import { useChromeSuppressed, useRegisterModuleActions } from '@/components/layout/ModuleActionsContext';
 import { ModuleToolbarActions } from '@/components/shared/ListToolbar';
-import { KpiCards } from '@/components/shared/KpiCards';
+import { ModuleKpiSection } from '@/components/shared/ModuleKpiSection';
+import { ModuleFilterBar } from '@/components/shared/ModuleFilterBar';
+import { MODULE_FILTER_INPUT, MODULE_PRINT_BTN, MODULE_SECONDARY_BTN } from '@/lib/ui/module-chrome-styles';
 import { FilterTabs } from '@/components/shared/FilterTabs';
 import { BulkActionBar } from '@/components/shared/BulkActionBar';
 import { AppTable, type AppTableColumn } from '@/components/shared/AppTable';
@@ -364,33 +366,35 @@ function CustomersPageContent() {
 
   return (
     <>
-      <KpiCards items={kpis} />
+      <ModuleKpiSection items={kpis} />
 
-      <div className="bg-white p-4 rounded-xl border border-slate-200/80 premium-shadow space-y-4">
-        <FilterTabs tabs={statusTabs} active={statusTab} onChange={setStatusTab} />
-        <div className="flex flex-col lg:flex-row lg:items-center gap-3 justify-between">
-          <input
-            type="text"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder={t('crm.search_customers')}
-            className="flex-1 max-w-md px-4 py-2 rounded-xl border border-slate-200 bg-slate-50 text-xs"
-          />
-          <div className="flex flex-wrap gap-2">
-            <button type="button" onClick={handleExport} className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl border border-slate-200 text-xs font-bold text-slate-600 hover:bg-slate-50 cursor-pointer"><Download className="w-4 h-4" /> Export CSV</button>
-            <button type="button" className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl border border-slate-200 text-xs font-bold text-slate-600 hover:bg-slate-50 cursor-pointer"><Upload className="w-4 h-4" /> Import CSV</button>
-            <button type="button" className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl border border-slate-200 text-xs font-bold text-slate-600 hover:bg-slate-50 cursor-pointer"><Printer className="w-4 h-4" /> Print</button>
-            <select value={sortKey} onChange={(e) => setSortKey(e.target.value)} className="px-3 py-2 rounded-xl border border-slate-200 text-xs font-bold cursor-pointer">
+      <ModuleFilterBar
+        search={search}
+        onSearchChange={setSearch}
+        searchPlaceholder={t('crm.search_customers')}
+        filters={
+          <>
+            <FilterTabs tabs={statusTabs} active={statusTab} onChange={setStatusTab} />
+            <select value={sortKey} onChange={(e) => setSortKey(e.target.value)} className={MODULE_FILTER_INPUT}>
               <option value="name-asc">Sort: Name A-Z</option>
               <option value="name-desc">Sort: Name Z-A</option>
               <option value="sales-desc">Sort: Sales high-low</option>
             </select>
-          </div>
-        </div>
-        <BulkActionBar count={selected.size} onClear={() => setSelected(new Set())} actions={
-          <button type="button" className="text-blue-700 font-bold cursor-pointer" onClick={handleExport}>Export selected</button>
-        } />
-      </div>
+          </>
+        }
+        actions={
+          <>
+            <button type="button" onClick={handleExport} className={MODULE_SECONDARY_BTN}><Download className="w-4 h-4" /> Export CSV</button>
+            <button type="button" className={MODULE_SECONDARY_BTN}><Upload className="w-4 h-4" /> Import CSV</button>
+            <button type="button" className={MODULE_PRINT_BTN}><Printer className="w-4 h-4" /> Print</button>
+          </>
+        }
+        footer={
+          <BulkActionBar count={selected.size} onClear={() => setSelected(new Set())} actions={
+            <button type="button" className="text-blue-700 font-bold cursor-pointer" onClick={handleExport}>Export selected</button>
+          } />
+        }
+      />
 
       <AppTable
         className="min-w-[900px]"

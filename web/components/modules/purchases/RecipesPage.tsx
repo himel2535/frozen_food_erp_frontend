@@ -527,6 +527,8 @@ export function RecipesPage({ variant = 'finished-goods' }: { variant?: RecipeVa
 
   return (
     <>
+      <RecipesBomMetrics variant={variant} metrics={bomKpiMetrics} />
+
       <ListToolbar
         search={search}
         onSearchChange={setSearch}
@@ -558,8 +560,6 @@ export function RecipesPage({ variant = 'finished-goods' }: { variant?: RecipeVa
           </div>
         }
       />
-
-      <RecipesBomMetrics variant={variant} metrics={bomKpiMetrics} />
 
       {filteredRecipes.length === 0 ? (
         <div className="premium-card premium-shadow p-6 text-center">

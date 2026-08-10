@@ -9,6 +9,7 @@ import {
   isMainAdmin,
 } from '@/lib/services/access-control-service';
 import { toast } from '@/lib/ui/feedback';
+import { PageSkeleton } from '@/components/shared/PageSkeleton';
 
 export function AuthGuard({ children }: { children: React.ReactNode }) {
   const router = useRouter();
@@ -60,8 +61,12 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
     deniedRef.current = null;
   }, [hydrated, authReady, isLoggedIn, authUser, pathname, router]);
 
-  if (!hydrated || !ready || !authReady) {
+  if (!hydrated || !ready) {
     return null;
+  }
+
+  if (!authReady) {
+    return <PageSkeleton variant="dashboard" label="Loading workspace" />;
   }
 
   if (!isLoggedIn) {

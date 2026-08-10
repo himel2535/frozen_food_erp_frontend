@@ -1,12 +1,11 @@
 'use client';
 
-import { Download } from 'lucide-react';
+import { CalendarRange, Download } from 'lucide-react';
+import { ModuleFilterBar } from '@/components/shared/ModuleFilterBar';
 import { formatPeriodLabel } from '@/lib/services/profit-loss-service';
 import { DateInput } from '@/components/shared/DateInput';
+import { MODULE_FILTER_INPUT, MODULE_SECONDARY_BTN } from '@/lib/ui/module-chrome-styles';
 import type { ProfitLossPeriodState } from './profit-loss-types';
-
-const INPUT_CLS =
-  'rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-200';
 
 export function ProfitLossPeriodBar({
   period,
@@ -17,37 +16,38 @@ export function ProfitLossPeriodBar({
   onPeriodChange: (next: ProfitLossPeriodState) => void;
   onExport: () => void;
 }) {
+  const periodLabel = formatPeriodLabel(period.dateFrom, period.dateTo);
+
   return (
-    <div className="premium-card premium-shadow p-3 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
-      <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
-        <div>
-          <span className="text-[11px] font-bold text-slate-500 block mb-1">Period</span>
-          <div className="flex flex-wrap items-center gap-2">
-            <DateInput
-              value={period.dateFrom}
-              onChange={(dateFrom) => onPeriodChange({ ...period, dateFrom })}
-              className={INPUT_CLS}
-            />
-            <span className="text-xs text-slate-400">to</span>
-            <DateInput
-              value={period.dateTo}
-              onChange={(dateTo) => onPeriodChange({ ...period, dateTo })}
-              className={INPUT_CLS}
-            />
+    <ModuleFilterBar
+      filters={
+        <>
+          <DateInput
+            id="pl-date-from"
+            value={period.dateFrom}
+            onChange={(dateFrom) => onPeriodChange({ ...period, dateFrom })}
+            className={MODULE_FILTER_INPUT}
+            aria-label="From Date"
+          />
+          <DateInput
+            id="pl-date-to"
+            value={period.dateTo}
+            onChange={(dateTo) => onPeriodChange({ ...period, dateTo })}
+            className={MODULE_FILTER_INPUT}
+            aria-label="To Date"
+          />
+          <div className="inline-flex items-center gap-2 text-xs font-semibold text-slate-600 bg-white/45 border border-blue-100/70 rounded-xl px-3 py-2 min-h-[2.625rem] shrink-0">
+            <CalendarRange className="w-4 h-4 text-slate-400 shrink-0" />
+            <span>{periodLabel || 'Select period'}</span>
           </div>
-        </div>
-        <div className="text-xs font-semibold text-slate-600 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2">
-          {formatPeriodLabel(period.dateFrom, period.dateTo)}
-        </div>
-      </div>
-      <button
-        type="button"
-        onClick={onExport}
-        className="inline-flex items-center gap-2 self-start lg:self-auto rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 cursor-pointer"
-      >
-        <Download className="w-4 h-4" />
-        Export
-      </button>
-    </div>
+        </>
+      }
+      actions={
+        <button type="button" onClick={onExport} className={MODULE_SECONDARY_BTN}>
+          <Download className="w-4 h-4" />
+          Export
+        </button>
+      }
+    />
   );
 }

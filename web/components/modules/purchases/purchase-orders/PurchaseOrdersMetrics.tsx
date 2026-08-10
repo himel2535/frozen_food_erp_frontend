@@ -1,7 +1,8 @@
 'use client';
 
 import { Icon } from '@iconify/react';
-import { KpiCards, type KpiCardItem } from '@/components/shared/KpiCards';
+import { ModuleKpiSection } from '@/components/shared/ModuleKpiSection';
+import type { KpiCardItem } from '@/components/shared/KpiCards';
 import { formatMoney, type getPurchaseOrderMetrics } from '@/lib/services/purchases-service';
 
 type Metrics = ReturnType<typeof getPurchaseOrderMetrics>;
@@ -53,7 +54,7 @@ export function PurchaseOrdersMetrics({ metrics }: { metrics: Metrics }) {
   ];
 
   return (
-    <KpiCards
+    <ModuleKpiSection
       items={items}
       gridClassName="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6 gap-2"
     />

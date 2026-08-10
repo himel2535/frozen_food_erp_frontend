@@ -10,7 +10,7 @@ import { ProductSelect, WarehouseSelect } from '@/components/modules/inventory/s
 import { AppTable, type AppTableColumn } from '@/components/shared/AppTable';
 import { StatusBadge } from '@/components/shared/StatusBadge';
 import { TableIconAction } from '@/components/shared/TableIconAction';
-import { InventoryListLayout, FilterBar, FilterSelect, SearchInput } from '@/components/modules/inventory/shared/inventory-ui';
+import { InventoryListLayout, FilterBar, FilterSelect } from '@/components/modules/inventory/shared/inventory-ui';
 import { useAppStore } from '@/lib/state/app-store';
 import {
   listAdjustmentRecords,
@@ -123,8 +123,11 @@ export function AdjustmentsPage() {
         { key: 'pending', label: 'Pending Audits', value: String(metrics.pendingCount), alert: metrics.pendingCount > 0 },
       ]}
       filters={
-        <FilterBar>
-          <SearchInput value={search} onChange={setSearch} placeholder="Search reason, ID..." />
+        <FilterBar
+          search={search}
+          onSearchChange={setSearch}
+          searchPlaceholder="Search reason, ID..."
+        >
           <FilterSelect label="Status" value={statusFilter} onChange={setStatusFilter}><option value="all">All</option><option value="Pending">Pending</option><option value="Completed">Completed</option></FilterSelect>
           <FilterSelect label="Type" value={typeFilter} onChange={setTypeFilter}><option value="all">All</option><option value="Increase">Increase</option><option value="Decrease">Decrease</option></FilterSelect>
         </FilterBar>

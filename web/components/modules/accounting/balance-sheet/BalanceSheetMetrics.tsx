@@ -1,7 +1,8 @@
 'use client';
 
 import { Icon } from '@iconify/react';
-import { KpiCards, type KpiCardItem } from '@/components/shared/KpiCards';
+import { ModuleKpiSection } from '@/components/shared/ModuleKpiSection';
+import type { KpiCardItem } from '@/components/shared/KpiCards';
 import { formatBsMoney, formatBsPercent, type BalanceSheetMetrics } from '@/lib/services/balance-sheet-service';
 
 export function BalanceSheetMetrics({ metrics }: { metrics: BalanceSheetMetrics }) {
@@ -41,5 +42,5 @@ export function BalanceSheetMetrics({ metrics }: { metrics: BalanceSheetMetrics 
     },
   ];
 
-  return <KpiCards items={items} gridClassName="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-2" />;
+  return <ModuleKpiSection items={items} gridClassName="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-2" />;
 }

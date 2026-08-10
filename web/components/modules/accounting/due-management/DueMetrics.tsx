@@ -1,7 +1,8 @@
 'use client';
 
 import { Icon } from '@iconify/react';
-import { KpiCards, type KpiCardItem } from '@/components/shared/KpiCards';
+import { ModuleKpiSection } from '@/components/shared/ModuleKpiSection';
+import type { KpiCardItem } from '@/components/shared/KpiCards';
 import { formatDueMoney, type DueMetrics } from '@/lib/services/due-management-service';
 
 export function DueMetrics({ metrics }: { metrics: DueMetrics }) {
@@ -37,5 +38,5 @@ export function DueMetrics({ metrics }: { metrics: DueMetrics }) {
     },
   ];
 
-  return <KpiCards items={items} />;
+  return <ModuleKpiSection items={items} />;
 }

@@ -8,7 +8,8 @@ import { Plus } from 'lucide-react';
 import { Footer } from '@/components/layout/Footer';
 import { useChromeSuppressed, useRegisterModuleActions } from '@/components/layout/ModuleActionsContext';
 import { FilterTabs } from '@/components/shared/FilterTabs';
-import { KpiCards } from '@/components/shared/KpiCards';
+import { ModuleKpiSection } from '@/components/shared/ModuleKpiSection';
+import { ModuleFilterBar } from '@/components/shared/ModuleFilterBar';
 import { AppTable, type AppTableColumn } from '@/components/shared/AppTable';
 import { StatusBadge } from '@/components/shared/StatusBadge';
 import { TableIconAction } from '@/components/shared/TableIconAction';
@@ -314,18 +315,14 @@ export function DeliveriesPage() {
 
   return (
     <>
-        <KpiCards items={kpis} />
+        <ModuleKpiSection items={kpis} />
 
-        <div className="bg-white p-4 rounded-xl border border-slate-200/80 premium-shadow space-y-4">
-          <FilterTabs tabs={statusTabsFor(t)} active={statusFilter} onChange={setStatusFilter} />
-          <input
-            type="text"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder={t('sales.search_challan')}
-            className="w-full max-w-md px-4 py-2 rounded-xl border border-slate-200 bg-slate-50 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 font-medium"
-          />
-        </div>
+        <ModuleFilterBar
+          search={search}
+          onSearchChange={setSearch}
+          searchPlaceholder={t('sales.search_challan')}
+          filters={<FilterTabs tabs={statusTabsFor(t)} active={statusFilter} onChange={setStatusFilter} />}
+        />
 
         <AppTable
           columns={columns}

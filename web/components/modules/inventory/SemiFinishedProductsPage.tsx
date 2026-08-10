@@ -9,10 +9,10 @@ import { useChromeSuppressed, useRegisterModuleActions } from '@/components/layo
 import { AppFormFields, AppFormModal, FORM_GRID_CLS, FORM_LABEL_CLS } from '@/components/shared/AppForm';
 import { AppTable, type AppTableColumn } from '@/components/shared/AppTable';
 import { FilterTabs } from '@/components/shared/FilterTabs';
-import { KpiCards } from '@/components/shared/KpiCards';
+import { ModuleKpiSection } from '@/components/shared/ModuleKpiSection';
 import { StatusBadge } from '@/components/shared/StatusBadge';
 import { TableIconAction } from '@/components/shared/TableIconAction';
-import { FilterBar, FilterSelect, SearchInput } from '@/components/modules/inventory/shared/inventory-ui';
+import { FilterBar, FilterResetButton, FilterSelect } from '@/components/modules/inventory/shared/inventory-ui';
 import { InventoryProductDetailView } from '@/components/modules/inventory/shared/InventoryProductDetailView';
 import { InventoryProductBomView } from '@/components/modules/inventory/shared/InventoryProductBomView';
 import { InventoryStockSummaryView } from '@/components/modules/inventory/shared/InventoryStockSummaryView';
@@ -501,7 +501,7 @@ export function SemiFinishedProductsPage() {
 
   return (
     <>
-        <KpiCards
+        <ModuleKpiSection
           gridClassName="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2"
           items={[
             { key: 'count', label: 'Total Products', value: String(metrics.count), sub: 'All semi-finished products' },
@@ -512,12 +512,11 @@ export function SemiFinishedProductsPage() {
           ]}
         />
 
-        <FilterBar>
-          <SearchInput
-            value={search}
-            onChange={(v) => { setSearch(v); setPage(1); }}
-            placeholder="Search semi-finished product by name or code..."
-          />
+        <FilterBar
+          search={search}
+          onSearchChange={(v) => { setSearch(v); setPage(1); }}
+          searchPlaceholder="Search semi-finished product by name or code..."
+        >
           <FilterSelect label="Category" value={categoryFilter} onChange={(v) => { setCategoryFilter(v); setPage(1); }}>
             <option value="all">All Categories</option>
             {categories.map((cat) => <option key={cat} value={cat}>{cat}</option>)}
@@ -536,9 +535,7 @@ export function SemiFinishedProductsPage() {
             <option value="all">All Locations</option>
             {warehouses.map((wh) => <option key={String(wh.id)} value={String(wh.id)}>{String(wh.name)}</option>)}
           </FilterSelect>
-          <button type="button" onClick={resetFilters} className="text-xs font-bold text-slate-500 hover:text-slate-700 cursor-pointer px-2 py-2">
-            Reset
-          </button>
+          <FilterResetButton onClick={resetFilters} />
         </FilterBar>
 
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">

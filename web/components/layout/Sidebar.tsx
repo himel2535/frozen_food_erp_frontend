@@ -18,6 +18,7 @@ import { useAppStore } from '@/lib/state/app-store';
 import { getVisibleSections, isMainAdmin } from '@/lib/services/access-control-service';
 import { SidebarIcon } from './SidebarIcon';
 import { SidebarCollapsedTooltip } from './SidebarCollapsedTooltip';
+import { PageSkeleton } from '@/components/shared/PageSkeleton';
 
 function sidebarLabel(t: (k: string) => string, key: string, fallback: string) {
   const id = `sidebar.${key}`;
@@ -87,6 +88,7 @@ export function Sidebar() {
   const toggleSidebar = useAppStore((s) => s.toggleSidebar);
   const t = useAppStore((s) => s.t);
   const authUser = useAppStore((s) => s.authUser);
+  const authReady = useAppStore((s) => s.authReady);
 
   const visibleSections = useMemo(() => {
     const sections = getVisibleSections(authUser);
@@ -205,7 +207,10 @@ export function Sidebar() {
         </div>
 
         <nav className="flex-1 overflow-y-auto px-3.5 py-3.5 space-y-2.5">
-          {visibleSections.map((section) => {
+          {!authReady ? (
+            <PageSkeleton variant="sidebar" collapsed={collapsed} />
+          ) : (
+          visibleSections.map((section) => {
             const hasSubmenu = section.items.length > 0;
             const isActiveModule = activeModule === section.id;
             const c = getSectionColor(section);
@@ -315,7 +320,8 @@ export function Sidebar() {
                 )}
               </div>
             );
-          })}
+          })
+          )}
         </nav>
       </aside>
     </>

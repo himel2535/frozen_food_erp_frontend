@@ -48,10 +48,10 @@ export function PageHeader({
 
   return (
     <div
-      className={`flex flex-col xl:flex-row xl:items-start xl:justify-between gap-4 ${className}`.trim()}
+      className={`flex flex-col xl:flex-row xl:items-start xl:justify-between gap-4 min-h-[3.75rem] ${className}`.trim()}
     >
       {titleBlock}
-      <div className="flex flex-wrap items-center gap-2 self-start shrink-0 min-w-0 xl:min-w-[120px]">
+      <div className="flex flex-wrap items-center gap-2 self-start shrink-0 min-w-0 xl:min-w-[120px] min-h-[2.625rem]">
         {actions ?? null}
       </div>
     </div>

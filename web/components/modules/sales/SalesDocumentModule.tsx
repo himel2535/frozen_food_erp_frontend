@@ -7,7 +7,8 @@ import { Footer } from '@/components/layout/Footer';
 import { useChromeSuppressed, useRegisterModuleActions } from '@/components/layout/ModuleActionsContext';
 import { AppFormPage, FORM_GRID_CLS, FORM_INPUT_CLS, FORM_LABEL_CLS, FORM_SELECT_CLS, FORM_TEXTAREA_CLS } from '@/components/shared/AppForm';
 import { ListToolbar, ModuleToolbarActions } from '@/components/shared/ListToolbar';
-import { KpiCards, type KpiCardItem } from '@/components/shared/KpiCards';
+import { ModuleKpiSection } from '@/components/shared/ModuleKpiSection';
+import type { KpiCardItem } from '@/components/shared/KpiCards';
 import { FilterTabs } from '@/components/shared/FilterTabs';
 import { DetailViewShell } from '@/components/shared/DetailViewShell';
 import { LineItemsEditor, type LineItem } from '@/components/shared/LineItemsEditor';
@@ -248,13 +249,13 @@ export function SalesDocumentModule({ config }: { config: SalesDocumentConfig })
 
   return (
     <>
+      {kpis.length > 0 && <ModuleKpiSection items={kpis} />}
       <ListToolbar
         search={search}
         onSearchChange={setSearch}
         searchPlaceholder={t('crm.search_module', { title: config.title.toLowerCase() })}
         filters={<FilterTabs tabs={tabs} active={statusFilter} onChange={setStatusFilter} />}
       />
-      {kpis.length > 0 && <KpiCards items={kpis} />}
       <AppTable
         columns={config.columns.map((col) => ({
           key: col.key,

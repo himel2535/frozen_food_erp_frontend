@@ -1,7 +1,8 @@
 'use client';
 
-import { KpiCards, type KpiCardItem } from '@/components/shared/KpiCards';
+import { ModuleKpiSection } from '@/components/shared/ModuleKpiSection';
+import type { KpiCardItem } from '@/components/shared/KpiCards';
 
 export function CustomerReportMetrics({ items }: { items: KpiCardItem[] }) {
-  return <KpiCards items={items} />;
+  return <ModuleKpiSection items={items} />;
 }

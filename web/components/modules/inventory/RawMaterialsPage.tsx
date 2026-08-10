@@ -9,10 +9,10 @@ import { useChromeSuppressed, useRegisterModuleActions } from '@/components/layo
 import { AppFormFields, AppFormModal, FORM_GRID_CLS, FORM_LABEL_CLS } from '@/components/shared/AppForm';
 import { AppTable, type AppTableColumn } from '@/components/shared/AppTable';
 import { FilterTabs } from '@/components/shared/FilterTabs';
-import { KpiCards } from '@/components/shared/KpiCards';
+import { ModuleKpiSection } from '@/components/shared/ModuleKpiSection';
 import { StatusBadge } from '@/components/shared/StatusBadge';
 import { TableIconAction } from '@/components/shared/TableIconAction';
-import { FilterBar, FilterSelect, SearchInput } from '@/components/modules/inventory/shared/inventory-ui';
+import { FilterBar, FilterResetButton, FilterSelect } from '@/components/modules/inventory/shared/inventory-ui';
 import { SupplierSelect, WarehouseSelect } from '@/components/modules/inventory/shared/selects';
 import { useAppStore } from '@/lib/state/app-store';
 import type { PortField } from '@/lib/modules/port-types';
@@ -306,7 +306,7 @@ export function RawMaterialsPage() {
 
   return (
     <>
-        <KpiCards
+        <ModuleKpiSection
           gridClassName="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2"
           items={[
             { key: 'count', label: 'Total Materials', value: String(metrics.count), sub: 'All raw materials' },
@@ -317,12 +317,11 @@ export function RawMaterialsPage() {
           ]}
         />
 
-        <FilterBar>
-          <SearchInput
-            value={search}
-            onChange={(v) => { setSearch(v); setPage(1); }}
-            placeholder="Search materials by name, code, category..."
-          />
+        <FilterBar
+          search={search}
+          onSearchChange={(v) => { setSearch(v); setPage(1); }}
+          searchPlaceholder="Search materials by name, code, category..."
+        >
           <FilterSelect label="Category" value={categoryFilter} onChange={(v) => { setCategoryFilter(v); setPage(1); }}>
             <option value="all">All Categories</option>
             {categories.map((cat) => <option key={cat} value={cat}>{cat}</option>)}
@@ -342,9 +341,7 @@ export function RawMaterialsPage() {
             <option value="low-stock">Low Stock</option>
             <option value="out-of-stock">Out of Stock</option>
           </FilterSelect>
-          <button type="button" onClick={resetFilters} className="text-xs font-bold text-slate-500 hover:text-slate-700 cursor-pointer px-2 py-2">
-            Reset
-          </button>
+          <FilterResetButton onClick={resetFilters} />
         </FilterBar>
 
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">

@@ -4,7 +4,7 @@
 
 import { useMemo, useState } from 'react';
 
-import { Download, Filter, Printer, Search } from 'lucide-react';
+import { Download, Filter, Printer } from 'lucide-react';
 
 import { Footer } from '@/components/layout/Footer';
 import { useRegisterModuleActions } from '@/components/layout/ModuleActionsContext';
@@ -27,9 +27,10 @@ import { SalesTransactionsTable } from '@/components/modules/reports/sales/Sales
 
 import { SalesPrintFrame } from '@/components/modules/reports/sales/SalesPrintFrame';
 
-import { ReportSectionHeader } from '@/components/modules/reports/shared/ReportSectionHeader';
-
 import { useReportPrint } from '@/components/modules/reports/shared/useReportPrint';
+
+import { ModuleFilterBar } from '@/components/shared/ModuleFilterBar';
+import { MODULE_FILTER_ACTION_BTN, MODULE_PRINT_BTN } from '@/lib/ui/module-chrome-styles';
 
 import {
 
@@ -202,7 +203,7 @@ export function SalesReportsPage() {
       <button
         type="button"
         onClick={() => printSection('full')}
-        className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition-colors cursor-pointer"
+        className={MODULE_PRINT_BTN}
       >
         <Printer className="w-4 h-4" />
         {t('reports.print_full')}
@@ -223,141 +224,58 @@ export function SalesReportsPage() {
 
     <>
 
-        <div className="bg-white p-4 rounded-xl border border-slate-200/80 premium-shadow">
+        <SalesReportMetrics items={kpis} />
 
-          <div className="flex flex-col xl:flex-row xl:items-center xl:justify-between gap-3">
 
-            <div className="relative min-w-[240px] flex-1 max-w-md">
 
-              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-
-              <input
-
-                type="text"
-
-                value={search}
-
-                onChange={(e) => setSearch(e.target.value)}
-
-                placeholder={t('reports.sales_search_placeholder')}
-
-                className="w-full pl-10 pr-4 py-2 rounded-xl border border-slate-200 bg-slate-50 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 font-medium"
-
-              />
-
-            </div>
-
-            <div className="flex flex-wrap items-center gap-2">
-
+        <ModuleFilterBar
+          search={search}
+          onSearchChange={setSearch}
+          searchPlaceholder={t('reports.sales_search_placeholder')}
+          filters={
+            <>
               <DateInput
-
                 value={dateStart}
-
                 onChange={setDateStart}
-
                 className={SR_FILTER_INPUT}
-
                 aria-label={t('reports.sales_date_from')}
-
               />
-
               <DateInput
-
                 value={dateEnd}
-
                 onChange={setDateEnd}
-
                 className={SR_FILTER_INPUT}
-
                 aria-label={t('reports.sales_date_to')}
-
               />
-
               <select
-
                 value={customerFilter}
-
                 onChange={(e) => setCustomerFilter(e.target.value)}
-
                 className={SR_FILTER_INPUT}
-
               >
-
                 <option value="All">{t('reports.sales_all_customers')}</option>
-
                 {customers.map((name) => (
-
                   <option key={name} value={name}>
-
                     {name}
-
                   </option>
-
                 ))}
-
               </select>
-
               <select
-
                 value={statusFilter}
-
                 onChange={(e) => setStatusFilter(e.target.value)}
-
                 className={SR_FILTER_INPUT}
-
               >
-
                 {STATUS_OPTIONS.map((status) => (
-
                   <option key={status} value={status}>
-
                     {status === 'All' ? t('reports.sales_all_status') : status}
-
                   </option>
-
                 ))}
-
               </select>
-
-              <button
-
-                type="button"
-
-                onClick={handleResetFilters}
-
-                className="bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold px-3 py-2 rounded-xl transition-all flex items-center gap-2 cursor-pointer"
-
-              >
-
+              <button type="button" onClick={handleResetFilters} className={MODULE_FILTER_ACTION_BTN}>
                 <Filter className="w-4 h-4" />
-
                 {t('reports.sales_filter')}
-
               </button>
-
-            </div>
-
-          </div>
-
-        </div>
-
-
-
-        <section>
-
-          <ReportSectionHeader
-
-            title={t('reports.sales_print_metrics')}
-
-            onPrint={() => printSection('metrics')}
-
-            printLabel={t('reports.print_section')}
-
-          />
-
-          <SalesReportMetrics items={kpis} />
-
-        </section>
+            </>
+          }
+        />
 
 
 

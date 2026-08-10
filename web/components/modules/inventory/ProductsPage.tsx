@@ -6,7 +6,9 @@ import { useMemo, useState, useCallback } from 'react';
 import { Footer } from '@/components/layout/Footer';
 import { useChromeSuppressed, useRegisterModuleActions } from '@/components/layout/ModuleActionsContext';
 import { ModuleToolbarActions } from '@/components/shared/ListToolbar';
-import { KpiCards } from '@/components/shared/KpiCards';
+import { ModuleFilterBar } from '@/components/shared/ModuleFilterBar';
+import { MODULE_FILTER_INPUT } from '@/lib/ui/module-chrome-styles';
+import { ModuleKpiSection } from '@/components/shared/ModuleKpiSection';
 import { AppTable, type AppTableColumn } from '@/components/shared/AppTable';
 import { StatusBadge } from '@/components/shared/StatusBadge';
 import { TableIconAction } from '@/components/shared/TableIconAction';
@@ -218,7 +220,7 @@ export function ProductsPage() {
 
   return (
     <>
-      <KpiCards
+      <ModuleKpiSection
         gridClassName="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-2"
         items={[
           { key: 'skus', label: 'Total SKUs Listed', value: String(metrics.totalSkus) },
@@ -229,25 +231,23 @@ export function ProductsPage() {
         ]}
       />
 
-      <div className="flex flex-wrap gap-3 items-end">
-        <div className="text-xs font-semibold text-slate-700">
-          <label className="block mb-1 text-slate-500">Category</label>
-          <select value={categoryFilter} onChange={(e) => { setCategoryFilter(e.target.value); setPage(1); }} className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 cursor-pointer min-w-[140px]">
-            <option value="all">All Categories</option>
-            {categories.map((c) => <option key={String(c.id)} value={String(c.name)}>{String(c.name)}</option>)}
-          </select>
-        </div>
-        <div className="text-xs font-semibold text-slate-700">
-          <label className="block mb-1 text-slate-500">Product Type</label>
-          <select value={typeFilter} onChange={(e) => { setTypeFilter(e.target.value); setPage(1); }} className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 cursor-pointer min-w-[140px]">
-            <option value="all">All Types</option>
-            {PRODUCT_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
-          </select>
-        </div>
-        <div className="flex-1 min-w-[200px]">
-          <input type="search" placeholder="Search product name or SKU..." value={search} onChange={(e) => { setSearch(e.target.value); setPage(1); }} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2 text-xs" />
-        </div>
-      </div>
+      <ModuleFilterBar
+        search={search}
+        onSearchChange={(v) => { setSearch(v); setPage(1); }}
+        searchPlaceholder="Search product name or SKU..."
+        filters={
+          <>
+            <select value={categoryFilter} onChange={(e) => { setCategoryFilter(e.target.value); setPage(1); }} className={MODULE_FILTER_INPUT}>
+              <option value="all">All Categories</option>
+              {categories.map((c) => <option key={String(c.id)} value={String(c.name)}>{String(c.name)}</option>)}
+            </select>
+            <select value={typeFilter} onChange={(e) => { setTypeFilter(e.target.value); setPage(1); }} className={MODULE_FILTER_INPUT}>
+              <option value="all">All Types</option>
+              {PRODUCT_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
+            </select>
+          </>
+        }
+      />
 
       <AppTable
         columns={columns}

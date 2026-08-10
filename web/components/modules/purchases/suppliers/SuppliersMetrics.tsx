@@ -1,7 +1,8 @@
 'use client';
 
 import { Icon } from '@iconify/react';
-import { KpiCards, type KpiCardItem } from '@/components/shared/KpiCards';
+import { ModuleKpiSection } from '@/components/shared/ModuleKpiSection';
+import type { KpiCardItem } from '@/components/shared/KpiCards';
 import { formatDueMoney, type SupplierListMetrics } from '@/lib/services/suppliers-service';
 
 export function SuppliersMetrics({ metrics }: { metrics: SupplierListMetrics }) {
@@ -37,5 +38,5 @@ export function SuppliersMetrics({ metrics }: { metrics: SupplierListMetrics }) 
     },
   ];
 
-  return <KpiCards items={items} gridClassName="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-2" />;
+  return <ModuleKpiSection items={items} gridClassName="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-2" />;
 }

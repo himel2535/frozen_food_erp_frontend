@@ -168,7 +168,7 @@ export function CompanySettingsPage() {
   }
 
   return (
-    <div className={MODULE_LIST_SHELL}>
+    <>
       <CompanySettingsOverview
         profile={profile}
         documents={documents}
@@ -177,6 +177,6 @@ export function CompanySettingsPage() {
         onEditSection={openEdit}
       />
       <Footer />
-    </div>
+    </>
   );
 }
