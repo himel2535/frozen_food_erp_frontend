@@ -94,13 +94,42 @@ interface AppStore {
   startSync: () => Promise<void>;
   startAuthListener: () => void;
   applyAuthSession: (authUser: AuthUserRecord | null) => void;
-  saveAppState: () => void;
+  saveAppState: (options?: { immediate?: boolean }) => void;
   replaceAppState: (next: Partial<AppState>) => void;
   setLoggedIn: (value: boolean) => void;
   logout: () => Promise<void>;
   toggleSidebar: () => void;
   toggleLanguage: () => void;
   t: (key: string, vars?: Record<string, string | number>) => string;
+}
+
+const SAVE_DEBOUNCE_MS = 500;
+let saveDebounceTimer: ReturnType<typeof setTimeout> | null = null;
+
+function flushPersistedAppState(
+  get: () => AppStore,
+  set: (partial: Partial<AppStore>) => void,
+) {
+  const { appState, ignoreRemoteEcho, lastSyncedState, remoteListenerStarted } = get();
+  const serialized = JSON.stringify(appState);
+  try {
+    localStorage.setItem(LOCAL_STORAGE_KEY, serialized);
+  } catch (error) {
+    console.warn('localStorage save failed', error);
+  }
+
+  if (!remoteListenerStarted || ignoreRemoteEcho || serialized === lastSyncedState) {
+    set({ lastSyncedState: serialized });
+    return;
+  }
+
+  set({ lastSyncedState: serialized });
+  const { isLoggedIn: _li, sidebarCollapsed: _sc, ...toSend } = appState;
+  void getFirebase().then(({ saveRemoteAppState }) => {
+    saveRemoteAppState(toSend as Record<string, unknown>).catch((error) => {
+      console.warn('Firebase sync failed', error);
+    });
+  });
 }
 
 export const useAppStore = create<AppStore>((set, get) => ({
@@ -149,7 +178,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
       }
       return { authUser, authReady: true, appState: next };
     });
-    get().saveAppState();
+    get().saveAppState({ immediate: true });
   },
 
   startAuthListener: () => {
@@ -228,24 +257,22 @@ export const useAppStore = create<AppStore>((set, get) => ({
         });
     }),
 
-  saveAppState: () => {
-    set((s) => ({ appState: { ...s.appState } }));
-    const { appState, ignoreRemoteEcho, lastSyncedState, remoteListenerStarted } = get();
-    const serialized = JSON.stringify(appState);
-    localStorage.setItem(LOCAL_STORAGE_KEY, serialized);
+  saveAppState: (options) => {
+    const flush = () => {
+      if (saveDebounceTimer) {
+        clearTimeout(saveDebounceTimer);
+        saveDebounceTimer = null;
+      }
+      flushPersistedAppState(get, set);
+    };
 
-    if (!remoteListenerStarted || ignoreRemoteEcho || serialized === lastSyncedState) {
-      set({ lastSyncedState: serialized });
+    if (options?.immediate) {
+      flush();
       return;
     }
 
-    set({ lastSyncedState: serialized });
-    const { isLoggedIn: _li, sidebarCollapsed: _sc, ...toSend } = appState;
-    void getFirebase().then(({ saveRemoteAppState }) => {
-      saveRemoteAppState(toSend as Record<string, unknown>).catch((error) => {
-        console.warn('Firebase sync failed', error);
-      });
-    });
+    if (saveDebounceTimer) clearTimeout(saveDebounceTimer);
+    saveDebounceTimer = setTimeout(flush, SAVE_DEBOUNCE_MS);
   },
 
   replaceAppState: (next) => {
@@ -262,12 +289,12 @@ export const useAppStore = create<AppStore>((set, get) => ({
     }
     const lang = (hydrated.lang ?? 'en') as Lang;
     set({ appState: hydrated, t: createT(lang) });
-    get().saveAppState();
+    get().saveAppState({ immediate: true });
   },
 
   setLoggedIn: (value) => {
     set((s) => ({ appState: { ...s.appState, isLoggedIn: value } }));
-    get().saveAppState();
+    get().saveAppState({ immediate: true });
   },
 
   logout: async () => {
@@ -343,4 +370,8 @@ export function bootstrapAppStore() {
 
 if (typeof window !== 'undefined') {
   useAppStore.getState().initFromStorage();
+  window.addEventListener('pagehide', () => {
+    const store = useAppStore.getState();
+    store.saveAppState({ immediate: true });
+  });
 }

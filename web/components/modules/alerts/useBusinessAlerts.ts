@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useDeferredValue, useMemo } from 'react';
 import { useAppStore } from '@/lib/state/app-store';
 import {
   buildBusinessAlerts,
@@ -15,11 +15,12 @@ import {
 
 export function useBusinessAlerts() {
   const appState = useAppStore((s) => s.appState);
+  const deferredState = useDeferredValue(appState);
 
   return useMemo(() => {
-    const settings = getAlertSettings(appState);
-    const role = String(appState.currentUser?.role ?? 'admin');
-    const all = buildBusinessAlerts(appState, settings);
+    const settings = getAlertSettings(deferredState);
+    const role = String(deferredState.currentUser?.role ?? 'admin');
+    const all = buildBusinessAlerts(deferredState, settings);
     const alerts = filterAlertsByRole(all, role, settings);
     const summaries = summarizeAlerts(alerts);
     const visibleCategories = getVisibleCategories(role, settings);
@@ -43,7 +44,7 @@ export function useBusinessAlerts() {
       settings,
       role,
     };
-  }, [appState]);
+  }, [deferredState]);
 }
 
 export type { AlertCategory, AlertSummary, BusinessAlert };

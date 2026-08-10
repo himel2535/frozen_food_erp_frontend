@@ -9,6 +9,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Search, User, Settings, LogOut } from 'lucide-react';
 import { Icon } from '@iconify/react';
 import { useAppStore } from '@/lib/state/app-store';
+import type { AppState } from '@/lib/state/types';
 import { getProfileView } from '@/lib/services/settings-service';
 import { employeeInitials } from '@/lib/services/hrm-service';
 import { useClickOutside } from '@/hooks/useClickOutside';
@@ -21,7 +22,8 @@ type HeaderPanel = 'messages' | 'alerts' | 'profile' | null;
 
 export function Header({ title }: HeaderProps) {
   const router = useRouter();
-  const appState = useAppStore((s) => s.appState);
+  const currentUser = useAppStore((s) => s.appState.currentUser);
+  const employees = useAppStore((s) => s.appState.employees);
   const toggleLanguage = useAppStore((s) => s.toggleLanguage);
   const logout = useAppStore((s) => s.logout);
   const lang = useAppStore((s) => s.appState.lang);
@@ -30,7 +32,10 @@ export function Header({ title }: HeaderProps) {
   const profileMenuRef = useRef<HTMLDivElement>(null);
   const displayTitle = title && title !== 'Enterprise Workspace' ? title : 'Toys Factory Operations Hub';
 
-  const profile = useMemo(() => getProfileView(appState), [appState]);
+  const profile = useMemo(
+    () => getProfileView({ currentUser, employees } as AppState),
+    [currentUser, employees],
+  );
   const userName = profile.name || 'User';
   const userEmail = profile.email || '';
   const userInitials = employeeInitials(userName);

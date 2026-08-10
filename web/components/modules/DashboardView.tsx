@@ -1,15 +1,13 @@
 'use client';
 
 import dynamic from 'next/dynamic';
-import { useEffect, useMemo } from 'react';
+import { useDeferredValue, useEffect, useMemo } from 'react';
+import { loadIcons } from '@iconify/react';
 import { Icon } from '@iconify/react';
 import { Footer } from '@/components/layout/Footer';
 import { useAppStore } from '@/lib/state/app-store';
 import type { AppState } from '@/lib/state/types';
 import { useLocaleFormat } from '@/hooks/useLocaleFormat';
-import { DashboardBusinessAlerts } from '@/components/modules/dashboard/DashboardBusinessAlerts';
-import { DashboardBottomPanels } from '@/components/modules/dashboard/DashboardBottomPanels';
-import { DashboardProjectProgress } from '@/components/modules/dashboard/DashboardProjectProgress';
 import { pageSkeletonLoader } from '@/components/shared/PageSkeleton';
 import { countLowStockItems } from '@/lib/services/business-alert-service';
 import {
@@ -26,6 +24,18 @@ const SalesTrendChart = dynamic(
 const RevenueAnalyticsChart = dynamic(
   () => import('@/components/modules/dashboard/RevenueAnalyticsChart').then((m) => m.RevenueAnalyticsChart),
   { ssr: false, loading: pageSkeletonLoader('chart') },
+);
+const DashboardBusinessAlerts = dynamic(
+  () => import('@/components/modules/dashboard/DashboardBusinessAlerts').then((m) => m.DashboardBusinessAlerts),
+  { ssr: false, loading: pageSkeletonLoader('generic', { count: 3, className: 'min-h-[280px]' }) },
+);
+const DashboardBottomPanels = dynamic(
+  () => import('@/components/modules/dashboard/DashboardBottomPanels').then((m) => m.DashboardBottomPanels),
+  { ssr: false, loading: pageSkeletonLoader('generic', { count: 3, className: 'lg:col-span-4 min-h-[220px]' }) },
+);
+const DashboardProjectProgress = dynamic(
+  () => import('@/components/modules/dashboard/DashboardProjectProgress').then((m) => m.DashboardProjectProgress),
+  { ssr: false, loading: pageSkeletonLoader('generic', { count: 2, className: 'min-h-[160px]' }) },
 );
 
 function getDashboardMetrics(appState: AppState) {
@@ -100,15 +110,17 @@ const KPI_CARDS: { key: string; labelKey: string; icon: string; alert?: boolean 
 
 export function DashboardView() {
   const appState = useAppStore((s) => s.appState);
+  const deferredState = useDeferredValue(appState);
   const t = useAppStore((s) => s.t);
   const { formatMoney } = useLocaleFormat();
 
   useEffect(() => {
     document.body.classList.add('dashboard-page');
+    loadIcons(KPI_CARDS.map((card) => card.icon));
     return () => document.body.classList.remove('dashboard-page');
   }, []);
 
-  const metrics = useMemo(() => getDashboardMetrics(appState), [appState]);
+  const metrics = useMemo(() => getDashboardMetrics(deferredState), [deferredState]);
 
   const metricValues = useMemo<Record<string, { value: string; sub?: string }>>(
     () => ({

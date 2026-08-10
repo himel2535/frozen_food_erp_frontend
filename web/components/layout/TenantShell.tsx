@@ -11,8 +11,6 @@ import { ModuleShell } from '@/components/layout/ModuleShell';
 import { useAppStore } from '@/lib/state/app-store';
 import { useEffect } from 'react';
 import { loadIcons } from '@iconify/react';
-import { getAllPageIcons } from '@/lib/ui/page-icons';
-import { getKpiPreloadIcons } from '@/lib/ui/kpi-icons';
 
 export function TenantShell({ children }: { children: React.ReactNode }) {
   const hydrated = useAppStore((s) => s.hydrated);
@@ -20,14 +18,26 @@ export function TenantShell({ children }: { children: React.ReactNode }) {
   const showBootLoader = !hydrated || !ready;
 
   useEffect(() => {
-    loadIcons(getKpiPreloadIcons());
-    const preloadPageIcons = () => loadIcons(getAllPageIcons());
+    const preloadCurrentPageIcon = () => {
+      void import('@/lib/ui/page-icons').then(({ getPageIcon }) => {
+        loadIcons([getPageIcon(window.location.pathname)]);
+      });
+    };
+
+    preloadCurrentPageIcon();
+
+    const preloadRemainingPageIcons = () => {
+      void import('@/lib/ui/page-icons').then(({ getAllPageIcons }) => {
+        loadIcons(getAllPageIcons());
+      });
+    };
+
     const idle = (window as Window & { requestIdleCallback?: (cb: () => void, opts?: { timeout: number }) => number })
       .requestIdleCallback;
     if (idle) {
-      idle(preloadPageIcons, { timeout: 2500 });
+      idle(preloadRemainingPageIcons, { timeout: 5000 });
     } else {
-      setTimeout(preloadPageIcons, 150);
+      setTimeout(preloadRemainingPageIcons, 2000);
     }
   }, []);
 
