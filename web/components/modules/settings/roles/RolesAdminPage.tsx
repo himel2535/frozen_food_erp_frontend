@@ -66,7 +66,14 @@ export function RolesAdminPage() {
     }
     setLoading(true);
     try {
-      const [roles, counts] = await Promise.all([fetchAdminRoles(), fetchRoleUserCounts()]);
+      const roles = await fetchAdminRoles();
+      let counts: Record<string, number> = {};
+      try {
+        counts = await fetchRoleUserCounts();
+      } catch {
+        // User counts need parent read on toysfactory/auth/users (main-admin rule).
+        counts = {};
+      }
       setRows(
         roles.map((role) => ({
           ...role,

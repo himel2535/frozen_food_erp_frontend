@@ -5,6 +5,7 @@
     "toysfactory": {
       "auth": {
         "users": {
+          ".read": "auth != null && root.child('toysfactory/auth/users').child(auth.uid).child('isMainAdmin').val() == true",
           "$uid": {
             ".read": "auth != null && (auth.uid == $uid || root.child('toysfactory/auth/users').child(auth.uid).child('isMainAdmin').val() == true)",
             ".write": "auth != null && (root.child('toysfactory/auth/users').child(auth.uid).child('isMainAdmin').val() == true || (auth.uid == $uid && !data.exists()))",
