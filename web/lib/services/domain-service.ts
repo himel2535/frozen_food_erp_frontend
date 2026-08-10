@@ -1,6 +1,11 @@
 import type { AppState } from '@/lib/state/types';
+import { logStateMutation } from '@/lib/services/audit-log-service';
 
 type Row = Record<string, unknown>;
+
+function rowSummary(payload: Row, id: string) {
+  return String(payload.name ?? payload.title ?? payload.label ?? payload.item ?? id);
+}
 
 function nextId(prefix: string, existing: Row[]): string {
   const nums = existing
@@ -27,6 +32,7 @@ export function createInState(
   const id = String(payload.id ?? nextId(idPrefix, rows));
   const record = { ...payload, id, createdAt: payload.createdAt ?? new Date().toISOString() };
   (state as Record<string, unknown>)[stateKey as string] = [...rows, record];
+  logStateMutation(state, String(stateKey), 'CREATE', id, rowSummary(record, id));
   return { ok: true, id };
 }
 
@@ -43,6 +49,7 @@ export function updateInState(
   const next = [...rows];
   next[idx] = updated;
   (state as Record<string, unknown>)[stateKey as string] = next;
+  logStateMutation(state, String(stateKey), 'UPDATE', id, rowSummary(updated, id));
   return { ok: true };
 }
 
@@ -52,9 +59,11 @@ export function deleteFromState(
   id: string
 ): { ok: boolean; error?: string } {
   const rows = listFromState(state, stateKey);
+  const removed = rows.find((r) => String(r.id) === id);
   const next = rows.filter((r) => String(r.id) !== id);
   if (next.length === rows.length) return { ok: false, error: 'Record not found' };
   (state as Record<string, unknown>)[stateKey as string] = next;
+  logStateMutation(state, String(stateKey), 'DELETE', id, removed ? rowSummary(removed, id) : id);
   return { ok: true };
 }
 
@@ -70,5 +79,5 @@ export function listFromCrmCollection(
 }
 
 export function formatCurrency(value: number) {
-  return `৳${Number(value || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  return `৳ ${Number(value || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }

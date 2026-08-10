@@ -30,6 +30,7 @@ import {
   uniqueCategories,
   uniqueWarehouses,
 } from '@/components/modules/reports/inventory/inventory-report-utils';
+import { exportInventoryReportCsv } from '@/lib/services/report-export';
 
 export function InventoryReportsPage() {
   const appState = useAppStore((s) => s.appState);
@@ -78,7 +79,17 @@ export function InventoryReportsPage() {
   const reportingPeriod = useMemo(() => formatReportingPeriod(filters), [filters]);
 
   const handleExport = () => {
-    toast.info(t('reports.inventory_export_soon'), { module: 'Reports' });
+    const count = exportInventoryReportCsv({
+      title: t('reports.inventory_title'),
+      filterSummary,
+      kpis,
+      rows: filteredRows,
+    });
+    if (count === 0) {
+      toast.warning(t('reports.export_empty'), { module: 'Reports' });
+      return;
+    }
+    toast.success(t('reports.export_success', { rows: count }), { module: 'Reports' });
   };
 
   const handleResetFilters = () => {

@@ -4,6 +4,7 @@ import { toast } from '@/lib/ui/feedback';
 
 import { useMemo } from 'react';
 import { useRouter } from 'next/navigation';
+import { useChromeSuppressed } from '@/components/layout/ModuleActionsContext';
 import { PurchaseOrderForm, type PoSaveAction } from '@/components/modules/purchases/purchase-order-form/PurchaseOrderForm';
 import type { PoFormPayload } from '@/components/modules/purchases/purchase-order-form/po-form-types';
 import {
@@ -25,6 +26,8 @@ export function PurchaseOrderFormPage({ mode, orderId }: { mode: 'create' | 'edi
   const router = useRouter();
   const appState = useAppStore((s) => s.appState);
   const saveAppState = useAppStore((s) => s.saveAppState);
+
+  useChromeSuppressed(true);
 
   const suppliers = useMemo(
     () => listSuppliers(appState).map((s) => ({ id: String(s.id), name: String(s.name) })),

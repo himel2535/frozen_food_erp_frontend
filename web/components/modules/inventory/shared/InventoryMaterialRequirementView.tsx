@@ -2,7 +2,8 @@
 
 import Link from 'next/link';
 import { useMemo, useState } from 'react';
-import { ArrowLeft, Download, Layers, Package, Pencil } from 'lucide-react';
+import { Download, Layers, Package, Pencil } from 'lucide-react';
+import { FormHeader } from '@/components/layout/FormHeader';
 import { AppTable, type AppTableColumn } from '@/components/shared/AppTable';
 import { RecipeSelect } from '@/components/modules/inventory/shared/selects';
 import { FORM_LABEL_CLS } from '@/components/shared/AppForm';
@@ -75,7 +76,7 @@ function StockStatusChip({ status }: { status: StockStatus }) {
   );
 }
 
-function PageHeader({
+function MaterialPageHeader({
   onBack,
   backLabel,
   onDownload,
@@ -85,25 +86,14 @@ function PageHeader({
   onDownload?: () => void;
 }) {
   return (
-    <div className="flex flex-wrap items-center justify-between gap-2">
-      <div className="space-y-1">
-        <button
-          type="button"
-          onClick={onBack}
-          className="inline-flex items-center gap-1 text-xs font-bold text-blue-600 hover:text-blue-700 cursor-pointer"
-        >
-          <ArrowLeft className="w-3.5 h-3.5" />
-          {backLabel}
-        </button>
-        <div>
-          <h1 className="text-lg font-extrabold text-blue-600 tracking-tight">
-            Material Requirements (BOM vs Inventory)
-          </h1>
-          <p className="text-xs font-semibold text-slate-500 mt-0.5">
-            See total raw materials in factory — loose inventory plus materials used in semi-finished and finished products.
-          </p>
-        </div>
-      </div>
+    <div className="pt-3 md:pt-4 mb-2 flex flex-col lg:flex-row lg:items-start lg:justify-between gap-2">
+      <FormHeader
+        compact
+        title="Material Requirements (BOM vs Inventory)"
+        subtitle="See total raw materials in factory — loose inventory plus materials used in semi-finished and finished products."
+        onBack={onBack}
+        backLabel={backLabel}
+      />
       {onDownload ? (
         <button
           type="button"
@@ -323,9 +313,9 @@ export function InventoryMaterialRequirementView({
 
   if (!recipe) {
     return (
-      <div className={`${MODULE_LIST_SHELL} bg-slate-50`}>
+      <div className={MODULE_LIST_SHELL}>
         <div className="w-full space-y-2">
-          <PageHeader onBack={onBack} backLabel={backLabel} />
+          <MaterialPageHeader onBack={onBack} backLabel={backLabel} />
           <div className={`${CARD_CLS} flex flex-col items-center justify-center text-center py-10 px-4 max-w-md mx-auto`}>
             <span className="flex h-14 w-14 items-center justify-center rounded-full bg-slate-100 text-slate-400 mb-3">
               <Layers className="w-7 h-7" />
@@ -378,9 +368,9 @@ export function InventoryMaterialRequirementView({
   if (!report) return null;
 
   return (
-    <div className={`${MODULE_LIST_SHELL} bg-slate-50`}>
+    <div className={MODULE_LIST_SHELL}>
       <div className="w-full space-y-2">
-        <PageHeader
+        <MaterialPageHeader
           onBack={onBack}
           backLabel={backLabel}
           onDownload={() => downloadMaterialRequirementCsv(report, name)}

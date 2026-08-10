@@ -23,6 +23,7 @@ import {
   listPurchaseReportRows,
   uniqueSuppliers,
 } from '@/components/modules/reports/purchases/purchase-report-utils';
+import { exportPurchaseReportCsv } from '@/lib/services/report-export';
 import { ReportPrintFrame } from '@/components/modules/reports/shared/ReportPrintFrame';
 import { ReportSectionHeader } from '@/components/modules/reports/shared/ReportSectionHeader';
 import { useReportPrint } from '@/components/modules/reports/shared/useReportPrint';
@@ -75,7 +76,17 @@ export function PurchaseReportsPage() {
   const filterSummary = useMemo(() => formatFilterSummary(filters), [filters]);
 
   const handleExport = () => {
-    toast.info(t('reports.purchases_export_soon'), { module: 'Reports' });
+    const count = exportPurchaseReportCsv({
+      title: t('reports.purchases_title'),
+      filterSummary,
+      kpis,
+      rows: filteredRows,
+    });
+    if (count === 0) {
+      toast.warning(t('reports.export_empty'), { module: 'Reports' });
+      return;
+    }
+    toast.success(t('reports.export_success', { rows: count }), { module: 'Reports' });
   };
 
   const handleResetFilters = () => {

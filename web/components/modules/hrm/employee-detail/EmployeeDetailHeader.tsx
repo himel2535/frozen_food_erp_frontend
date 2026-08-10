@@ -1,14 +1,12 @@
 'use client';
 
-import { ArrowLeft, Briefcase, Building2, Calendar, Mail, Phone, User } from 'lucide-react';
-import { useRouter } from 'next/navigation';
+import { Briefcase, Building2, Calendar, Mail, Phone, User } from 'lucide-react';
 import { StatusBadge } from '@/components/shared/StatusBadge';
 import {
   ED_ACCENT_BAR,
   ED_BODY,
   ED_CAPTION,
   ED_CARD,
-  ED_PAGE_LINK,
 } from '@/components/modules/hrm/employee-detail/employee-detail-styles';
 import {
   employeeAvatarClass,
@@ -19,37 +17,16 @@ import {
 type EmployeeDetailHeaderProps = {
   employee: Record<string, unknown>;
   departmentInfo: Record<string, unknown> | null;
-  onEdit: () => void;
 };
 
-export function EmployeeDetailHeader({ employee, departmentInfo, onEdit }: EmployeeDetailHeaderProps) {
-  const router = useRouter();
+export function EmployeeDetailHeader({ employee, departmentInfo }: EmployeeDetailHeaderProps) {
   const name = String(employee.name ?? 'Employee');
   const department = String(employee.department ?? '—');
   const designation = String(employee.designation ?? '—');
   const manager = String(employee.manager ?? '—');
 
   return (
-    <div className="space-y-4">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-        <button
-          type="button"
-          onClick={() => router.push('/hrm/employees')}
-          className={`inline-flex items-center gap-2 ${ED_PAGE_LINK}`}
-        >
-          <ArrowLeft className="w-4 h-4" />
-          Back to Employees
-        </button>
-        <button
-          type="button"
-          onClick={onEdit}
-          className="bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold px-4 py-2.5 rounded-xl cursor-pointer transition-colors"
-        >
-          Edit Employee
-        </button>
-      </div>
-
-      <div className={`relative overflow-hidden ${ED_CARD}`}>
+    <div className={`relative overflow-hidden ${ED_CARD}`}>
         <div className={ED_ACCENT_BAR} />
         <div className="flex flex-col lg:flex-row lg:items-start gap-5 pt-1">
           <div className="flex items-start gap-4 flex-1 min-w-0">
@@ -120,7 +97,6 @@ export function EmployeeDetailHeader({ employee, departmentInfo, onEdit }: Emplo
                 </p>
               </div>
             </div>
-          </div>
         </div>
       </div>
     </div>

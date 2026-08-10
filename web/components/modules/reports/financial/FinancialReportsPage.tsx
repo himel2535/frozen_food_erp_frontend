@@ -34,6 +34,7 @@ import {
   getTrendData,
   listFinancialReportRows,
 } from '@/components/modules/reports/financial/financial-report-utils';
+import { exportFinancialReportCsv } from '@/lib/services/report-export';
 
 export function FinancialReportsPage() {
   const appState = useAppStore((s) => s.appState);
@@ -77,7 +78,17 @@ export function FinancialReportsPage() {
   const reportingPeriod = useMemo(() => formatReportingPeriod(filters), [filters]);
 
   const handleExport = () => {
-    toast.info(t('reports.financial_export_soon'), { module: 'Reports' });
+    const count = exportFinancialReportCsv({
+      title: t('reports.financial_title'),
+      filterSummary,
+      kpis,
+      rows: filteredRows,
+    });
+    if (count === 0) {
+      toast.warning(t('reports.export_empty'), { module: 'Reports' });
+      return;
+    }
+    toast.success(t('reports.export_success', { rows: count }), { module: 'Reports' });
   };
 
   const handleResetFilters = () => {

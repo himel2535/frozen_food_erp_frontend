@@ -3,7 +3,7 @@
 import { toast } from '@/lib/ui/feedback';
 
 import { useMemo, useState, useCallback } from 'react';
-import { MessageCircle, MoreVertical, Phone, Plus, Search, Upload } from 'lucide-react';
+import { MessageCircle, Phone, Plus, Search, Upload } from 'lucide-react';
 import { Footer } from '@/components/layout/Footer';
 import { useChromeSuppressed, useRegisterModuleActions } from '@/components/layout/ModuleActionsContext';
 import { useAppStore } from '@/lib/state/app-store';
@@ -22,6 +22,7 @@ import {
   updateLead,
 } from '@/lib/services/crm-service';
 import { AppTable, type AppTableColumn } from '@/components/shared/AppTable';
+import { TableIconAction } from '@/components/shared/TableIconAction';
 import { StatusBadge } from '@/components/shared/StatusBadge';
 import { KpiCards } from '@/components/shared/KpiCards';
 import { FilterTabs } from '@/components/shared/FilterTabs';
@@ -483,9 +484,10 @@ export function LeadsPage() {
                 <button type="button" title="Call" onClick={(e) => { e.stopPropagation(); toast.info('Feature coming soon', { module: 'Leads', description: "Call ${String(row.phone)} — coming soon." }); }} className="app-table-icon-btn cursor-pointer">
                   <Phone className="w-4 h-4" />
                 </button>
-                <button type="button" title="More" onClick={(e) => { e.stopPropagation(); openEdit(row); }} className="app-table-icon-btn cursor-pointer">
-                  <MoreVertical className="w-4 h-4" />
-                </button>
+                <TableIconAction
+                  variant="edit"
+                  onClick={(e) => { e.stopPropagation(); openEdit(row); }}
+                />
               </>
             )}
           />

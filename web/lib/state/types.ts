@@ -116,6 +116,18 @@ export interface CompanySignature {
   updatedAt: string;
 }
 
+export interface SystemAuditLogRecord {
+  id: string;
+  timestamp: string;
+  actorId: string;
+  actorName: string;
+  action: string;
+  module: string;
+  entityType?: string;
+  entityId?: string;
+  description: string;
+}
+
 export interface AppState {
   isLoggedIn: boolean;
   sidebarCollapsed: boolean;
@@ -165,5 +177,6 @@ export interface AppState {
   semiFinishedRecipes?: Array<Record<string, unknown>>;
   crmUi?: Record<string, unknown>;
   crmData?: Record<string, unknown>;
+  systemAuditLogsById?: Record<string, SystemAuditLogRecord>;
   [key: string]: unknown;
 }

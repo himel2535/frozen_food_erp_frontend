@@ -4,6 +4,7 @@ import { toast } from '@/lib/ui/feedback';
 
 import { useMemo } from 'react';
 import { useRouter } from 'next/navigation';
+import { useChromeSuppressed } from '@/components/layout/ModuleActionsContext';
 import { SalarySetupForm } from '@/components/modules/payroll/salary-setup-form/SalarySetupForm';
 import type { SalarySetupFormPayload } from '@/components/modules/payroll/salary-setup-form/salary-setup-form-types';
 import {
@@ -23,6 +24,8 @@ export function SalarySetupFormPage({ mode, structureId }: { mode: 'create' | 'e
   const router = useRouter();
   const appState = useAppStore((s) => s.appState);
   const saveAppState = useAppStore((s) => s.saveAppState);
+
+  useChromeSuppressed(true);
 
   const existing = useMemo(() => {
     if (!structureId) return null;

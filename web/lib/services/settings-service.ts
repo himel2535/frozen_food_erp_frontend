@@ -1,5 +1,6 @@
 import type { AppState, CompanyProfile, CompanySignature, CurrentUserProfile } from '@/lib/state/types';
 import { DEFAULT_ALERT_SETTINGS } from '@/lib/services/alert-settings-defaults';
+import { logSystemAudit } from '@/lib/services/audit-log-service';
 import { formatDate } from '@/lib/i18n/locale-format';
 
 export const DEFAULT_CURRENT_USER: CurrentUserProfile = {
@@ -263,12 +264,26 @@ export function updateProfile(state: AppState, payload: Partial<CurrentUserProfi
     lastActive: new Date().toISOString().slice(0, 16).replace('T', ' '),
     profileUpdateCount: updateCount,
   });
+  logSystemAudit(state, {
+    action: 'UPDATE',
+    module: 'Settings',
+    entityType: 'profile',
+    entityId: user.id,
+    description: `Updated profile for ${user.name}`,
+  });
   return { ok: true as const };
 }
 
 export function updateCompanyProfile(state: AppState, payload: Partial<CompanyProfile>) {
   const profile = ensureCompanyProfile(state);
   Object.assign(profile, payload);
+  logSystemAudit(state, {
+    action: 'UPDATE',
+    module: 'Settings',
+    entityType: 'company',
+    entityId: profile.name,
+    description: `Updated company settings for ${profile.name}`,
+  });
   return { ok: true as const };
 }
 
@@ -342,6 +357,13 @@ export function createCompanySignature(state: AppState, input: SignatureInput) {
   };
 
   rows.push(record);
+  logSystemAudit(state, {
+    action: 'CREATE',
+    module: 'Settings',
+    entityType: 'signature',
+    entityId: record.id,
+    description: `Added signature for ${record.signerName}`,
+  });
   return { ok: true as const, id: record.id };
 }
 
@@ -372,6 +394,14 @@ export function updateCompanySignature(state: AppState, id: string, input: Signa
     updatedAt: stampNow(),
   };
 
+  logSystemAudit(state, {
+    action: 'UPDATE',
+    module: 'Settings',
+    entityType: 'signature',
+    entityId: id,
+    description: `Updated signature for ${rows[idx].signerName}`,
+  });
+
   return { ok: true as const };
 }
 
@@ -380,12 +410,21 @@ export function deleteCompanySignature(state: AppState, id: string) {
   const idx = rows.findIndex((row) => row.id === id);
   if (idx < 0) return { ok: false as const, error: 'Signature not found.' };
 
+  const removed = rows[idx];
   const wasDefault = rows[idx].isDefault;
   rows.splice(idx, 1);
 
   if (wasDefault && rows.length > 0) {
     rows[0].isDefault = true;
   }
+
+  logSystemAudit(state, {
+    action: 'DELETE',
+    module: 'Settings',
+    entityType: 'signature',
+    entityId: id,
+    description: `Deleted signature for ${removed.signerName}`,
+  });
 
   return { ok: true as const };
 }
@@ -398,6 +437,14 @@ export function setDefaultCompanySignature(state: AppState, id: string) {
   rows.forEach((row) => {
     row.isDefault = row.id === id;
     if (row.id === id) row.updatedAt = stampNow();
+  });
+
+  logSystemAudit(state, {
+    action: 'UPDATE',
+    module: 'Settings',
+    entityType: 'signature',
+    entityId: id,
+    description: `Set default signature to ${match.signerName}`,
   });
 
   return { ok: true as const };

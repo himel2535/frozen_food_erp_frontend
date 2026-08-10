@@ -207,15 +207,14 @@ export function AppFormPage({
   onSubmit,
   submitLabel = 'Save',
   cancelLabel = 'Cancel',
-  maxWidth = '4xl',
   children,
   footer,
   hideFooter = false,
 }: AppFormPageProps) {
   return (
     <div className={MODULE_FORM_SHELL}>
-      <div className={`${MAX_WIDTH_CLS[maxWidth]} mx-auto w-full space-y-6`}>
-        <FormHeader title={title} subtitle={subtitle} titleId={titleId} onBack={onBack} />
+      <div className="w-full flex flex-col min-h-full pb-4 space-y-4">
+        <FormHeader title={title} subtitle={subtitle} titleId={titleId} onBack={onBack} compact />
         <AppFormShell
           title={title}
           subtitle={subtitle}

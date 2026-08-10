@@ -4,6 +4,7 @@ import { toast, confirmAction } from '@/lib/ui/feedback';
 import { useMemo, useState, type FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
 import { Footer } from '@/components/layout/Footer';
+import { useChromeSuppressed } from '@/components/layout/ModuleActionsContext';
 import { FormHeader } from '@/components/layout/FormHeader';
 import { SignatureSettingsForm } from '@/components/modules/settings/signatures/SignatureSettingsForm';
 import { SignatureSettingsOverview } from '@/components/modules/settings/signatures/SignatureSettingsOverview';
@@ -13,8 +14,9 @@ import {
   signatureToForm,
   type SignatureFormState,
 } from '@/components/modules/settings/signatures/signature-form-utils';
-import { MODULE_FORM_SHELL, MODULE_LIST_SHELL } from '@/lib/ui/module-layout';
-import { FORM_BTN_PRIMARY, FORM_BTN_SECONDARY, FORM_FOOTER_CLS } from '@/lib/ui/form-styles';
+import { MODULE_LIST_SHELL } from '@/lib/ui/module-layout';
+import { FORM_BTN_PRIMARY, FORM_BTN_SECONDARY } from '@/lib/ui/form-styles';
+import { ST_FORM_FOOTER } from '@/components/modules/settings/settings-styles';
 import {
   createCompanySignature,
   deleteCompanySignature,
@@ -38,6 +40,8 @@ export function SignatureSettingsPage() {
 
   const signatures = useMemo(() => getCompanySignatures(appState), [appState, bump]);
   const metrics = useMemo(() => getSignatureMetrics(appState), [appState, bump]);
+
+  useChromeSuppressed(view === 'form');
 
   const labels = useMemo(
     () => ({
@@ -180,16 +184,19 @@ export function SignatureSettingsPage() {
 
   if (view === 'form') {
     return (
-      <div className={MODULE_FORM_SHELL}>
-        <form onSubmit={handleSubmit} className="max-w-5xl mx-auto w-full space-y-4 flex flex-col flex-1">
-          <FormHeader
-            title={editingId ? labels.editTitle : labels.createTitle}
-            subtitle={labels.formSubtitle}
-            onBack={closeForm}
-            backLabel={labels.back}
-          />
+      <div className={MODULE_LIST_SHELL}>
+        <form onSubmit={handleSubmit} className="w-full flex flex-col min-h-full pb-4">
+          <div className="pt-3 md:pt-4 mb-3">
+            <FormHeader
+              compact
+              title={editingId ? labels.editTitle : labels.createTitle}
+              subtitle={labels.formSubtitle}
+              onBack={closeForm}
+              backLabel={labels.back}
+            />
+          </div>
           <SignatureSettingsForm form={form} onChange={onChange} labels={labels} />
-          <div className={`${FORM_FOOTER_CLS} premium-card premium-shadow p-4 rounded-2xl`}>
+          <div className={ST_FORM_FOOTER}>
             <button type="button" onClick={closeForm} className={FORM_BTN_SECONDARY}>
               {labels.cancel}
             </button>

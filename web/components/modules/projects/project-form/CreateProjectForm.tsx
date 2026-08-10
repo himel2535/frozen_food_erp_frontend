@@ -86,13 +86,14 @@ export function CreateProjectForm({
             title="Create New Project / Order"
             subtitle="Enter order details, products, and requirements to start a new production project."
             onBack={onCancel}
+            backLabel="Back to Projects"
           />
         </div>
 
         <ProjectFormStepper activeStep={1} />
 
-        <div className="grid grid-cols-1 lg:grid-cols-[1fr_300px] gap-2 flex-1">
-          <div className="flex flex-col gap-2 min-w-0">
+        <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_340px] gap-3 flex-1">
+          <div className="flex flex-col gap-3 min-w-0">
             <ProjectSectionCard
               letter="A"
               title="Order Information"
@@ -138,7 +139,7 @@ export function CreateProjectForm({
             </ProjectSectionCard>
           </div>
 
-          <aside className="flex flex-col gap-2 lg:sticky lg:top-4 lg:self-start">
+          <aside className="flex flex-col gap-3 xl:sticky xl:top-4 xl:self-start">
             <ProjectSummaryCard form={form} />
             <ProjectSetupProgress activeStep={1} />
             <ProjectHelpTip />

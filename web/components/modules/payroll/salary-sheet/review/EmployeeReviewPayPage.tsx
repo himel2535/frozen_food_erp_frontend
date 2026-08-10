@@ -6,6 +6,8 @@ import { useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Footer } from '@/components/layout/Footer';
+import { ChildPageShell } from '@/components/layout/ChildPageShell';
+import { useChromeSuppressed } from '@/components/layout/ModuleActionsContext';
 import { EmployeeReviewHeader } from '@/components/modules/payroll/salary-sheet/review/EmployeeReviewHeader';
 import {
   EmployeeReviewFacts,
@@ -16,9 +18,8 @@ import {
   SalaryPaymentFormCard,
   SalaryPaymentSummaryCard,
 } from '@/components/modules/payroll/salary-sheet/review/SalaryPaymentCards';
-import { RP_BTN_GHOST, RP_BTN_OUTLINE } from '@/components/modules/payroll/salary-sheet/review/review-pay-styles';
+import { RP_BTN_OUTLINE } from '@/components/modules/payroll/salary-sheet/review/review-pay-styles';
 import { buildReviewUrl, defaultPeriod, type SheetFilterState } from '@/components/modules/payroll/salary-sheet/salary-sheet-types';
-import { MODULE_LIST_SHELL } from '@/lib/ui/module-layout';
 import { useAppStore } from '@/lib/state/app-store';
 import { listEmployees } from '@/lib/services/hrm-service';
 import { getSalaryStructureById } from '@/lib/services/payroll-service';
@@ -36,6 +37,8 @@ export function EmployeeReviewPayPage({ employeeId }: { employeeId: string }) {
   const appState = useAppStore((s) => s.appState);
   const saveAppState = useAppStore((s) => s.saveAppState);
   const [, bump] = useState(0);
+
+  useChromeSuppressed(true);
 
   const filters: SheetFilterState = useMemo(() => ({
     period: searchParams.get('period') ?? defaultPeriod(),
@@ -87,10 +90,17 @@ export function EmployeeReviewPayPage({ employeeId }: { employeeId: string }) {
 
   if (!employee || !entry || !structure || !computed) {
     return (
-      <div className="p-8 text-center text-sm text-slate-500">
-        Employee salary sheet not found.{' '}
-        <Link href={listUrl} className="text-blue-600 font-bold cursor-pointer">Back to sheet</Link>
-      </div>
+      <>
+        <ChildPageShell
+          title="Employee salary sheet not found"
+          subtitle="This employee may not be on the salary sheet for the selected period."
+          onBack={() => router.push(listUrl)}
+          backLabel="Back to Salary Sheet"
+        >
+          <div className="premium-card premium-shadow p-8 text-center" />
+        </ChildPageShell>
+        <Footer />
+      </>
     );
   }
 
@@ -109,46 +119,50 @@ export function EmployeeReviewPayPage({ employeeId }: { employeeId: string }) {
   };
 
   return (
-    <div className={`${MODULE_LIST_SHELL} space-y-4`}>
-      <EmployeeReviewHeader
-        employee={employee}
-        prevId={prevId}
-        nextId={nextId}
-        reviewUrl={reviewUrl}
-        listUrl={listUrl}
-        period={filters.period}
-        locked={locked}
-      />
-
-      <EmployeeReviewFacts employee={employee} structure={structure} />
-
-      <div className="grid grid-cols-1 xl:grid-cols-3 gap-3 items-start">
-        <SalaryBreakdownCard computed={computed} otHours={Number(entry.otHours ?? 0)} />
-        <SalaryPaymentFormCard
-          netPayable={computed.netPayable}
-          dueAmount={computed.dueAmount}
+    <>
+      <ChildPageShell
+        title="Payroll Processing"
+        subtitle={`Review salary breakdown and approve payment for ${String(employee.name ?? 'employee')}.`}
+        onBack={() => router.push(listUrl)}
+        backLabel="Back to Salary Sheet"
+      >
+        <EmployeeReviewHeader
+          employee={employee}
+          prevId={prevId}
+          nextId={nextId}
+          reviewUrl={reviewUrl}
+          period={filters.period}
           locked={locked}
-          onApprove={handleApprove}
         />
-        <SalaryPaymentSummaryCard
-          netPayable={computed.netPayable}
-          payAmount={Number(entry.paidAmount ?? 0)}
-          dueAmount={computed.dueAmount}
-          locked={locked}
-          payments={payments}
-        />
-      </div>
 
-      <EmployeeReviewSummary entry={entry} computed={computed} />
+        <EmployeeReviewFacts employee={employee} structure={structure} />
 
-      <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
-        <Link href={listUrl} className={RP_BTN_GHOST}>Back to Salary Sheet</Link>
+        <div className="grid grid-cols-1 xl:grid-cols-3 gap-3 items-start">
+          <SalaryBreakdownCard computed={computed} otHours={Number(entry.otHours ?? 0)} />
+          <SalaryPaymentFormCard
+            netPayable={computed.netPayable}
+            dueAmount={computed.dueAmount}
+            locked={locked}
+            onApprove={handleApprove}
+          />
+          <SalaryPaymentSummaryCard
+            netPayable={computed.netPayable}
+            payAmount={Number(entry.paidAmount ?? 0)}
+            dueAmount={computed.dueAmount}
+            locked={locked}
+            payments={payments}
+          />
+        </div>
+
+        <EmployeeReviewSummary entry={entry} computed={computed} />
+
         {nextId ? (
-          <Link href={reviewUrl(nextId)} className={RP_BTN_OUTLINE}>Next Employee</Link>
+          <div className="flex justify-end pt-1">
+            <Link href={reviewUrl(nextId)} className={RP_BTN_OUTLINE}>Next Employee</Link>
+          </div>
         ) : null}
-      </div>
-
+      </ChildPageShell>
       <Footer />
-    </div>
+    </>
   );
 }

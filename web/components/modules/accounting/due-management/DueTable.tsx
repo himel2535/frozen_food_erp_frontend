@@ -1,9 +1,6 @@
 'use client';
 
-import { toast } from '@/lib/ui/feedback';
-
 import { useMemo } from 'react';
-import { MoreVertical } from 'lucide-react';
 import { AppTable, type AppTableColumn } from '@/components/shared/AppTable';
 import {
   formatDueDate,
@@ -108,14 +105,6 @@ export function DueTable({
           <div className="flex items-center justify-center gap-1">
             <button type="button" className={DUE_BTN_RECEIVE} onClick={(e) => { e.stopPropagation(); onReceive(row); }}>
               Receive
-            </button>
-            <button
-              type="button"
-              className="inline-flex h-7 w-7 items-center justify-center rounded-lg text-slate-500 hover:bg-slate-100 cursor-pointer"
-              title="More actions"
-              onClick={(e) => { e.stopPropagation(); toast.info('Feature coming soon', { module: 'Due Management', description: "More actions coming soon." }); }}
-            >
-              <MoreVertical className="w-4 h-4" />
             </button>
           </div>
         )}

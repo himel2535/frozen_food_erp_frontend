@@ -4,7 +4,6 @@ import { useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { Users } from 'lucide-react';
 import { DedicatedModule } from '@/components/modules/shared/DedicatedModule';
-import { EmployeeRegisterForm } from '@/components/modules/hrm/employee-form/EmployeeRegisterForm';
 import { TableIconAction } from '@/components/shared/TableIconAction';
 import { useLegacyParityConfig } from '@/hooks/use-legacy-parity-config';
 import { useLocaleFormat } from '@/hooks/useLocaleFormat';
@@ -44,19 +43,11 @@ export function EmployeesPage() {
     return {
     ...base,
     kpiGridClassName: 'grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2',
-    formModalSize: 'lg' as const,
-    formModalTitle: (editingId: string | null) => (editingId ? 'Edit Employee' : 'Create Employee'),
-    formModalSubtitle: (editingId: string | null) => (
-      editingId ? 'Update employee profile and assignment details.' : 'Add a new employee and assign salary setup.'
-    ),
-    formSubmitLabel: (editingId: string | null) => (editingId ? 'Save Employee' : 'Create Employee'),
-    customFormBody: ({ form, setField, appState }: {
-      form: Record<string, string>;
-      setField: (key: string, value: string) => void;
-      appState: import('@/lib/state/types').AppState;
-    }) => (
-      <EmployeeRegisterForm form={form} setField={setField} appState={appState} />
-    ),
+    hideInlineForm: true,
+    onAdd: () => router.push('/hrm/employees/new'),
+    onEditRow: (row: Record<string, unknown>) => {
+      router.push(`/hrm/employees/${row.id}/edit`);
+    },
     columnRender: {
       name: (row: Record<string, unknown>) => {
         const name = String(row.name ?? '—');

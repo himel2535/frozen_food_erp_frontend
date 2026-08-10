@@ -1149,6 +1149,7 @@ export const DEFAULT_STATE: AppState = {
     ...DEFAULT_ALERT_SETTINGS,
     roleVisibility: { ...DEFAULT_ALERT_SETTINGS.roleVisibility },
   },
+  systemAuditLogsById: {},
 };
 
 export const LOCAL_STORAGE_KEY = 'hookerp_auth_state';

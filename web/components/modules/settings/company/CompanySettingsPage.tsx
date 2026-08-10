@@ -3,6 +3,7 @@
 import { toast } from '@/lib/ui/feedback';
 import { useMemo, useState, type FormEvent } from 'react';
 import { Footer } from '@/components/layout/Footer';
+import { useChromeSuppressed } from '@/components/layout/ModuleActionsContext';
 import { FormHeader } from '@/components/layout/FormHeader';
 import { CompanySettingsForm, type CompanyFormState } from '@/components/modules/settings/company/CompanySettingsForm';
 import { CompanySettingsOverview } from '@/components/modules/settings/company/CompanySettingsOverview';
@@ -40,6 +41,8 @@ export function CompanySettingsPage() {
 
   const profile = useMemo(() => getCompanyProfile(appState), [appState, bump]);
   const documents = useMemo(() => getCompanyDocuments(appState), [appState, bump]);
+
+  useChromeSuppressed(view === 'form');
 
   const labels = useMemo(
     () => ({

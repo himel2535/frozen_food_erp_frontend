@@ -3,10 +3,10 @@
 import { toast } from '@/lib/ui/feedback';
 
 import { useMemo, useState, useEffect } from 'react';
-import Link from 'next/link';
-import { useSearchParams } from 'next/navigation';
-import { ArrowLeft } from 'lucide-react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { Footer } from '@/components/layout/Footer';
+import { ChildPageShell } from '@/components/layout/ChildPageShell';
+import { useChromeSuppressed } from '@/components/layout/ModuleActionsContext';
 import { AppFormFields, AppFormModal } from '@/components/shared/AppForm';
 import { MODULE_LIST_SHELL } from '@/lib/ui/module-layout';
 import { useAppStore } from '@/lib/state/app-store';
@@ -36,10 +36,13 @@ function combineDateTime(date: string, time: string) {
 }
 
 export function CustomerDueFollowUpPage({ customerId }: { customerId: string }) {
+  const router = useRouter();
   const searchParams = useSearchParams();
   const appState = useAppStore((s) => s.appState);
   const saveAppState = useAppStore((s) => s.saveAppState);
   const [, bump] = useState(0);
+
+  useChromeSuppressed(true);
 
   const [activeTab, setActiveTab] = useState<FollowUpPageTab>('timeline');
   const [pageView, setPageView] = useState<FollowUpPageView>('timeline');
@@ -81,22 +84,17 @@ export function CustomerDueFollowUpPage({ customerId }: { customerId: string }) 
 
   if (!customer) {
     return (
-      <div className={MODULE_LIST_SHELL}>
-        <div className="premium-card premium-shadow p-8 text-center space-y-4 max-w-lg mx-auto mt-4">
-          <h2 className="text-lg font-extrabold text-slate-900">Customer not found</h2>
-          <p className="text-xs text-slate-500">The customer ID &quot;{customerId}&quot; does not exist or was removed.</p>
-          <div className="flex flex-col items-center gap-2">
-            <Link
-              href="/accounting/receivables"
-              className="inline-flex items-center gap-2 text-xs font-bold text-blue-600 hover:text-blue-700 cursor-pointer"
-            >
-              <ArrowLeft className="w-4 h-4" />
-              Back to Customer Due
-            </Link>
-          </div>
-        </div>
+      <>
+        <ChildPageShell
+          title="Customer not found"
+          subtitle={`The customer ID "${customerId}" does not exist or was removed.`}
+          onBack={() => router.push('/accounting/receivables')}
+          backLabel="Back to Customer Due"
+        >
+          <div className="premium-card premium-shadow p-8 text-center" />
+        </ChildPageShell>
         <Footer />
-      </div>
+      </>
     );
   }
 
@@ -163,14 +161,22 @@ export function CustomerDueFollowUpPage({ customerId }: { customerId: string }) 
   };
 
   return (
-    <div className={`${MODULE_LIST_SHELL} space-y-4`}>
+    <div className={MODULE_LIST_SHELL}>
       <FollowUpPageHeader
         isAddForm={pageView === 'add-form'}
         onAddFollowUp={() => setPageView('add-form')}
+        onBack={() => {
+          if (pageView === 'add-form') {
+            setPageView('timeline');
+            return;
+          }
+          router.push('/accounting/receivables');
+        }}
+        backLabel={pageView === 'add-form' ? 'Back to Follow-up' : 'Back to Customer Due'}
       />
 
       {pageView === 'add-form' ? (
-        <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_340px] gap-4 items-start">
+        <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_340px] gap-4 items-start pb-4">
           <FollowUpAddForm
             customer={customer}
             onBack={() => setPageView('timeline')}
@@ -188,7 +194,7 @@ export function CustomerDueFollowUpPage({ customerId }: { customerId: string }) 
           />
         </div>
       ) : (
-        <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_340px] gap-4 items-start">
+        <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_340px] gap-4 items-start pb-4">
           <div className="space-y-4 min-w-0">
             <FollowUpCustomerCard customer={customer} />
             <div className="rounded-xl border border-slate-200 bg-white p-4 space-y-4">

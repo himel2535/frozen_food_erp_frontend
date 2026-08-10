@@ -42,24 +42,16 @@ import {
 } from '@/components/modules/reports/sales/sales-report-styles';
 
 import {
-
   buildChartSeries,
-
   buildSalesKpis,
-
   buildStatusSummary,
-
   buildTopCustomers,
-
   filterSalesRows,
-
   formatFilterSummary,
-
   listSalesReportRows,
-
   uniqueCustomers,
-
 } from '@/components/modules/reports/sales/sales-report-utils';
+import { exportSalesReportCsv } from '@/lib/services/report-export';
 
 
 
@@ -156,9 +148,17 @@ export function SalesReportsPage() {
 
 
   const handleExport = () => {
-
-    toast.info(t('reports.sales_export_soon'), { module: 'Reports' });
-
+    const count = exportSalesReportCsv({
+      title: t('reports.sales_title'),
+      filterSummary,
+      kpis,
+      rows: filteredRows,
+    });
+    if (count === 0) {
+      toast.warning(t('reports.export_empty'), { module: 'Reports' });
+      return;
+    }
+    toast.success(t('reports.export_success', { rows: count }), { module: 'Reports' });
   };
 
 

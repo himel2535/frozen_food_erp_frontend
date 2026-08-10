@@ -24,6 +24,9 @@ export const FORM_ALERT_ERROR_CLS =
 
 export const FORM_FOOTER_CLS = 'flex justify-end gap-3 pt-4 border-t border-slate-100/80';
 
+export const FORM_BACK_BTN_CLS =
+  'group inline-flex items-center justify-center w-9 h-9 shrink-0 rounded-full premium-card premium-shadow bg-gradient-to-br from-white to-slate-50 border border-slate-200/70 shadow-sm hover:border-blue-300/70 hover:from-blue-50 hover:to-white transition-all cursor-pointer';
+
 export const FORM_MODAL_BACKDROP_CLS =
   'fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6';
 

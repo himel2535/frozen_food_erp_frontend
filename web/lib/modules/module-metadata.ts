@@ -137,11 +137,7 @@ export const MODULE_REGISTRY: Record<string, ModuleConfig> = {
       { key: 'module', label: 'Module' },
       { key: 'desc', label: 'Description' },
     ],
-    staticRows: [
-      { ts: '2026-06-28 10:45:12', user: 'Admin User', type: 'CREATE', module: 'Sales', desc: 'Approved Invoice INV-2026-001' },
-      { ts: '2026-06-28 09:32:00', user: 'HR Manager', type: 'UPDATE', module: 'HRM', desc: 'Updated employee records' },
-      { ts: '2026-06-28 09:15:33', user: 'Admin User', type: 'LOGIN', module: 'Auth', desc: 'Successful login' },
-    ],
+    searchKeys: ['user', 'type', 'module', 'desc'],
   },
   'settings-profile': { id: 'settings-profile', title: 'Profile', subtitle: 'Your user profile settings.', columns: [{ key: 'field', label: 'Field' }, { key: 'value', label: 'Value' }], staticRows: [{ field: 'Name', value: 'John Doe' }, { field: 'Email', value: 'admin@toysfactory.com' }] },
   'projects': { id: 'projects', title: 'Projects', subtitle: 'Project tracking and milestones.', stateKey: 'projects', columns: [{ key: 'name', label: 'Project' }, { key: 'lead', label: 'Lead' }, { key: 'progress', label: 'Progress' }, { key: 'health', label: 'Health' }] },

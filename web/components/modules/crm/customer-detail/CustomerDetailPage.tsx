@@ -1,12 +1,14 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { useParams } from 'next/navigation';
-import { ArrowLeft } from 'lucide-react';
-import Link from 'next/link';
+import { useParams, useRouter } from 'next/navigation';
 import { Footer } from '@/components/layout/Footer';
+import { ChildPageShell } from '@/components/layout/ChildPageShell';
 import { useChromeSuppressed } from '@/components/layout/ModuleActionsContext';
-import { CustomerDetailHeader } from '@/components/modules/crm/customer-detail/CustomerDetailHeader';
+import {
+  CustomerDetailHeader,
+  CustomerDetailHeaderActions,
+} from '@/components/modules/crm/customer-detail/CustomerDetailHeader';
 import { CustomerDetailMetrics } from '@/components/modules/crm/customer-detail/CustomerDetailMetrics';
 import { CustomerDetailTabs } from '@/components/modules/crm/customer-detail/CustomerDetailTabs';
 import type { CustomerDetailTabId } from '@/components/modules/crm/customer-detail/customer-detail-utils';
@@ -35,6 +37,7 @@ import {
 
 export function CustomerDetailPage() {
   const params = useParams();
+  const router = useRouter();
   const customerId = String(params?.id ?? '');
   const appState = useAppStore((s) => s.appState);
   const { formatMoney } = useLocaleFormat();
@@ -77,17 +80,14 @@ export function CustomerDetailPage() {
   if (!profile || !metrics) {
     return (
       <>
-        <div className="premium-card premium-shadow p-8 text-center space-y-4 max-w-lg mx-auto mt-12">
-          <h2 className="text-lg font-extrabold text-slate-900">Customer not found</h2>
-          <p className="text-xs text-slate-500">The customer ID &quot;{customerId}&quot; does not exist or was removed.</p>
-          <Link
-            href="/crm/customers"
-            className="inline-flex items-center gap-2 text-xs font-bold text-blue-600 hover:text-blue-700 cursor-pointer"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            Back to Customers
-          </Link>
-        </div>
+        <ChildPageShell
+          title="Customer not found"
+          subtitle={`The customer ID "${customerId}" does not exist or was removed.`}
+          onBack={() => router.push('/crm/customers')}
+          backLabel="Back to Customers"
+        >
+          <div className="premium-card premium-shadow p-8 text-center" />
+        </ChildPageShell>
         <Footer />
       </>
     );
@@ -100,83 +100,90 @@ export function CustomerDetailPage() {
   const attachments = (profile.attachments ?? []) as Array<Record<string, unknown>>;
   const communications = (profile.communications ?? []) as Array<Record<string, unknown>>;
   const activities = (profile.activities ?? []) as Array<Record<string, unknown>>;
-  const auditLogs = (profile.auditLogs ?? []) as Array<Record<string, unknown>>;
+  const auditLogs = (profile.auditLogs ?? []) as unknown as Array<Record<string, unknown>>;
   const invoices = (profile.invoices ?? []) as Array<Record<string, unknown>>;
   const salesOrders = (profile.salesOrders ?? []) as Array<Record<string, unknown>>;
   const payments = (profile.payments ?? []) as Array<Record<string, unknown>>;
   const quotations = (profile.quotations ?? []) as Array<Record<string, unknown>>;
 
+  const name = String(customer.name ?? 'Customer');
+  const company = String(customer.company ?? '');
+
   return (
     <>
-      <div className="space-y-4 flex flex-col">
-      <CustomerDetailHeader
-        customerId={customerId}
-        customer={customer}
-        contacts={contacts}
-        addresses={addresses}
-        metrics={{
-          customerSince: metrics.customerSince,
-          lastActivityDate: metrics.lastActivityDate,
-        }}
-      />
-
-      <CustomerDetailMetrics metrics={metrics} />
-
-      <CustomerDetailTabs active={activeTab} onChange={setActiveTab} />
-
-      {activeTab === 'overview' && (
-        <OverviewTab
-          customerId={customerId}
+      <ChildPageShell
+        title={name}
+        subtitle={company || String(customer.companyType ?? 'Customer profile')}
+        onBack={() => router.push('/crm/customers')}
+        backLabel="Back to Customers"
+        actions={<CustomerDetailHeaderActions customerId={customerId} />}
+      >
+        <CustomerDetailHeader
           customer={customer}
           contacts={contacts}
           addresses={addresses}
-          tags={tags}
-          attachments={attachments}
-          communications={communications}
-          metrics={metrics}
-          transactions={transactions}
-          onViewAllNotes={() => setActiveTab('notes')}
+          metrics={{
+            customerSince: metrics.customerSince,
+            lastActivityDate: metrics.lastActivityDate,
+          }}
         />
-      )}
 
-      {activeTab === 'transactions' && <TransactionsTab transactions={transactions} />}
+        <CustomerDetailMetrics metrics={metrics} />
 
-      {activeTab === 'invoices' && (
-        <EntityListTab rows={invoices} columns={invoiceColumns} emptyMessage="No invoices for this customer." />
-      )}
+        <CustomerDetailTabs active={activeTab} onChange={setActiveTab} />
 
-      {activeTab === 'orders' && (
-        <EntityListTab rows={salesOrders} columns={orderColumns} emptyMessage="No orders for this customer." />
-      )}
+        {activeTab === 'overview' && (
+          <OverviewTab
+            customerId={customerId}
+            customer={customer}
+            contacts={contacts}
+            addresses={addresses}
+            tags={tags}
+            attachments={attachments}
+            communications={communications}
+            metrics={metrics}
+            transactions={transactions}
+            onViewAllNotes={() => setActiveTab('notes')}
+          />
+        )}
 
-      {activeTab === 'payments' && (
-        <EntityListTab rows={payments} columns={paymentColumns} emptyMessage="No payments recorded." />
-      )}
+        {activeTab === 'transactions' && <TransactionsTab transactions={transactions} />}
 
-      {activeTab === 'quotes' && (
-        <EntityListTab rows={quotations} columns={quoteColumns} emptyMessage="No quotations for this customer." />
-      )}
+        {activeTab === 'invoices' && (
+          <EntityListTab rows={invoices} columns={invoiceColumns} emptyMessage="No invoices for this customer." />
+        )}
 
-      {activeTab === 'deliveries' && (
-        <EntityListTab rows={deliveries} columns={deliveryColumns} emptyMessage="No delivery challans found." />
-      )}
+        {activeTab === 'orders' && (
+          <EntityListTab rows={salesOrders} columns={orderColumns} emptyMessage="No orders for this customer." />
+        )}
 
-      {activeTab === 'returns' && (
-        <EntityListTab rows={returns} columns={returnColumns} emptyMessage="No returns for this customer." />
-      )}
+        {activeTab === 'payments' && (
+          <EntityListTab rows={payments} columns={paymentColumns} emptyMessage="No payments recorded." />
+        )}
 
-      {activeTab === 'activity' && <ActivityTab activities={activities} auditLogs={auditLogs} />}
+        {activeTab === 'quotes' && (
+          <EntityListTab rows={quotations} columns={quoteColumns} emptyMessage="No quotations for this customer." />
+        )}
 
-      {activeTab === 'notes' && (
-        <NotesFilesTab
-          customerId={customerId}
-          customer={customer}
-          communications={communications}
-          attachments={attachments}
-        />
-      )}
+        {activeTab === 'deliveries' && (
+          <EntityListTab rows={deliveries} columns={deliveryColumns} emptyMessage="No delivery challans found." />
+        )}
 
-      </div>
+        {activeTab === 'returns' && (
+          <EntityListTab rows={returns} columns={returnColumns} emptyMessage="No returns for this customer." />
+        )}
+
+        {activeTab === 'activity' && <ActivityTab activities={activities} auditLogs={auditLogs} />}
+
+        {activeTab === 'notes' && (
+          <NotesFilesTab
+            customerId={customerId}
+            customer={customer}
+            communications={communications}
+            attachments={attachments}
+          />
+        )}
+      </ChildPageShell>
       <Footer />
     </>
   );

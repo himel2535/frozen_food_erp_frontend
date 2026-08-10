@@ -1,27 +1,33 @@
 'use client';
 
+import type { ReactNode } from 'react';
 import { FormHeader } from '@/components/layout/FormHeader';
 import { MODULE_LIST_SHELL } from '@/lib/ui/module-layout';
 
-interface DetailViewShellProps {
+type ChildPageShellProps = {
   title: string;
   subtitle?: string;
   onBack: () => void;
   backLabel?: string;
-  children: React.ReactNode;
-  actions?: React.ReactNode;
-}
+  actions?: ReactNode;
+  children: ReactNode;
+};
 
-export function DetailViewShell({ title, subtitle, onBack, backLabel, children, actions }: DetailViewShellProps) {
+export function ChildPageShell({
+  title,
+  subtitle,
+  onBack,
+  backLabel,
+  actions,
+  children,
+}: ChildPageShellProps) {
   return (
     <div className={MODULE_LIST_SHELL}>
       <div className="pt-3 md:pt-4 mb-3 flex flex-col lg:flex-row lg:items-start lg:justify-between gap-2">
         <FormHeader compact title={title} subtitle={subtitle} onBack={onBack} backLabel={backLabel} />
         {actions ? <div className="flex flex-wrap items-center gap-2 shrink-0">{actions}</div> : null}
       </div>
-      <div className="premium-card premium-shadow rounded-xl border border-slate-200/80 bg-white p-4 md:p-6 space-y-6 pb-4">
-        {children}
-      </div>
+      <div className="space-y-4 flex flex-col pb-4">{children}</div>
     </div>
   );
 }

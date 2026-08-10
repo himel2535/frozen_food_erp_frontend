@@ -4,6 +4,7 @@ import type { AppState, AuthUserRecord, Lang } from './types';
 import { ensureCrmState } from '../services/crm-service';
 import { ensureSettingsState } from '../services/settings-service';
 import { ensureRecipesState } from '../services/recipes-service';
+import { ensureAuditState, logSystemAudit } from '../services/audit-log-service';
 import { ensureBnTranslations, translate as translateKey } from '../i18n/translations';
 import {
   authUserToCurrentProfile,
@@ -51,6 +52,7 @@ function hydrateAppState(state: Partial<AppState> | null): AppState {
   ensureCrmState(nextState);
   ensureSettingsState(nextState);
   ensureRecipesState(nextState);
+  ensureAuditState(nextState);
   return nextState;
 }
 
@@ -255,10 +257,20 @@ export const useAppStore = create<AppStore>((set, get) => ({
   },
 
   logout: async () => {
+    const prevUser = get().authUser;
     try {
       await authSignOut();
     } catch {
       // still clear local session
+    }
+    if (prevUser) {
+      logSystemAudit(get().appState, {
+        action: 'LOGOUT',
+        module: 'Auth',
+        description: `Signed out (${prevUser.email})`,
+        actorId: prevUser.uid,
+        actorName: prevUser.name,
+      });
     }
     get().applyAuthSession(null);
   },

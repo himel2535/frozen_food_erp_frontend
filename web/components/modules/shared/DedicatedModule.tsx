@@ -32,6 +32,7 @@ export interface DedicatedModuleConfig extends PortModuleConfig {
   rowClassName?: string | ((row: Record<string, unknown>, index: number) => string);
   rowSort?: (a: Record<string, unknown>, b: Record<string, unknown>) => number;
   kpiGridClassName?: string;
+  hideAdd?: boolean;
   onAdd?: () => void;
   onEditRow?: (row: Record<string, unknown>) => void;
   hideInlineForm?: boolean;
@@ -223,8 +224,10 @@ function DedicatedModuleView({ config, configId }: { config: DedicatedModuleConf
     : resolveModuleText(t, configId, config, 'addLabel') || t('crm.add_entity', { entity: entityLabel });
 
   useRegisterModuleActions(
-    <ModuleToolbarActions onAdd={handleAdd} addLabel={resolvedAddLabel} />,
-    [handleAdd, resolvedAddLabel],
+    config.hideAdd ? null : (
+      <ModuleToolbarActions onAdd={handleAdd} addLabel={resolvedAddLabel} />
+    ),
+    [handleAdd, resolvedAddLabel, config.hideAdd],
   );
 
   return (

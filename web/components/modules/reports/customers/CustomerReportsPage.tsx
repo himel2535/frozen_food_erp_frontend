@@ -32,6 +32,7 @@ import {
   formatReportingPeriod,
   listCustomerReportRows,
 } from '@/components/modules/reports/customers/customer-report-utils';
+import { exportCustomerReportCsv } from '@/lib/services/report-export';
 
 export function CustomerReportsPage() {
   const appState = useAppStore((s) => s.appState);
@@ -87,7 +88,17 @@ export function CustomerReportsPage() {
   const reportingPeriod = useMemo(() => formatReportingPeriod(filters), [filters]);
 
   const handleExport = () => {
-    toast.info(t('reports.customers_export_soon'), { module: 'Reports' });
+    const count = exportCustomerReportCsv({
+      title: t('reports.customers_title'),
+      filterSummary,
+      kpis,
+      rows: filteredRows,
+    });
+    if (count === 0) {
+      toast.warning(t('reports.export_empty'), { module: 'Reports' });
+      return;
+    }
+    toast.success(t('reports.export_success', { rows: count }), { module: 'Reports' });
   };
 
   const handleResetFilters = () => {

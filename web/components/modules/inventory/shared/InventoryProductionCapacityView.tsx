@@ -5,7 +5,6 @@ import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
 import {
   AlertTriangle,
-  ArrowLeft,
   Calculator,
   Factory,
   Info,
@@ -14,6 +13,7 @@ import {
   Pencil,
   ShoppingCart,
 } from 'lucide-react';
+import { FormHeader } from '@/components/layout/FormHeader';
 import { AppTable, type AppTableColumn } from '@/components/shared/AppTable';
 import { RecipeSelect } from '@/components/modules/inventory/shared/selects';
 import { FORM_LABEL_CLS } from '@/components/shared/AppForm';
@@ -82,7 +82,7 @@ function ToggleSwitch({ checked, onChange }: { checked: boolean; onChange: (v: b
   );
 }
 
-function PageHeader({
+function CapacityPageHeader({
   onBack,
   backLabel,
 }: {
@@ -90,23 +90,14 @@ function PageHeader({
   backLabel: string;
 }) {
   return (
-    <div className="space-y-2">
-      <button
-        type="button"
-        onClick={onBack}
-        className="inline-flex items-center gap-1 text-xs font-bold text-blue-600 hover:text-blue-700 cursor-pointer"
-      >
-        <ArrowLeft className="w-3.5 h-3.5" />
-        {backLabel}
-      </button>
-      <div>
-        <h1 className="text-xl font-extrabold text-blue-600 tracking-tight">
-          Production Calculator (What-If Analysis)
-        </h1>
-        <p className="text-xs font-semibold text-slate-500 mt-1">
-          Plan a target production quantity and see material requirements, shortages &amp; remaining balance.
-        </p>
-      </div>
+    <div className="pt-3 md:pt-4 mb-2">
+      <FormHeader
+        compact
+        title="Production Calculator (What-If Analysis)"
+        subtitle="Plan a target production quantity and see material requirements, shortages & remaining balance."
+        onBack={onBack}
+        backLabel={backLabel}
+      />
     </div>
   );
 }
@@ -256,9 +247,9 @@ export function InventoryProductionCapacityView({
 
   if (!recipe) {
     return (
-      <div className={`${MODULE_LIST_SHELL} bg-slate-50`}>
+      <div className={MODULE_LIST_SHELL}>
         <div className="w-full space-y-2">
-          <PageHeader onBack={onBack} backLabel={backLabel} />
+          <CapacityPageHeader onBack={onBack} backLabel={backLabel} />
           <div className={`${CARD_CLS} flex flex-col items-center justify-center text-center py-10 px-4 max-w-md mx-auto`}>
             <span className="flex h-14 w-14 items-center justify-center rounded-full bg-slate-100 text-slate-400 mb-3">
               <Calculator className="w-7 h-7" />
@@ -313,9 +304,9 @@ export function InventoryProductionCapacityView({
   const { capacity } = analysis;
 
   return (
-    <div className={`${MODULE_LIST_SHELL} bg-slate-50`}>
+    <div className={MODULE_LIST_SHELL}>
       <div className="w-full space-y-2">
-        <PageHeader onBack={onBack} backLabel={backLabel} />
+        <CapacityPageHeader onBack={onBack} backLabel={backLabel} />
 
         {/* Product Overview Card */}
         <div className={CARD_CLS}>

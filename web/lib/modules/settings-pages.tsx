@@ -12,6 +12,8 @@ import { DedicatedModule } from '@/components/modules/shared/DedicatedModule';
 import { useLegacyParityConfig } from '@/hooks/use-legacy-parity-config';
 import { PORT_CONFIGS } from '@/lib/modules/port-configs';
 import type { DedicatedModuleConfig } from '@/components/modules/shared/DedicatedModule';
+import { AuditEventBadge } from '@/components/modules/settings/audit/AuditEventBadge';
+import { getAuditLogKpis } from '@/lib/services/audit-log-service';
 import { approvePurchaseRmOrder, rejectPurchaseRmOrder } from '@/lib/services/purchase-rm-service';
 import { employeeAvatarClass, employeeInitials } from '@/lib/services/hrm-service';
 import {
@@ -85,7 +87,40 @@ export function SettingsRolesPage() { return <DedicatedModule configId="settings
 export function SettingsPermissionsPage() { return <DedicatedModule configId="settings-permissions" />; }
 export function SettingsDocumentsPage() { return <DedicatedModule configId="settings-documents" />; }
 export function SettingsCompanyPage() { return <CompanySettingsPage />; }
-export function SettingsAuditLogsPage() { return <DedicatedModule config={PORT_CONFIGS['settings-audit-logs'] as DedicatedModuleConfig} />; }
+export function SettingsAuditLogsPage() {
+  const config = useMemo(
+    () => ({
+      ...(PORT_CONFIGS['settings-audit-logs'] as DedicatedModuleConfig),
+      hideAdd: true,
+      hideInlineForm: true,
+      hideDefaultRowActions: () => true,
+      searchKeys: ['user', 'type', 'module', 'desc'],
+      kpiGridClassName: 'grid grid-cols-1 sm:grid-cols-3 gap-2',
+      kpi: getAuditLogKpis,
+      rowSort: (a: Record<string, unknown>, b: Record<string, unknown>) =>
+        String(b.timestamp ?? b.ts ?? '').localeCompare(String(a.timestamp ?? a.ts ?? '')),
+      statusTabs: [
+        { id: 'all', label: 'common.all' },
+        { id: 'auth', label: 'Auth' },
+        { id: 'crm', label: 'CRM' },
+        { id: 'sales', label: 'Sales' },
+        { id: 'settings', label: 'Settings' },
+        { id: 'operations', label: 'Operations' },
+      ],
+      columnRender: {
+        type: (row: Record<string, unknown>) => <AuditEventBadge type={String(row.type ?? '—')} />,
+        module: (row: Record<string, unknown>) => (
+          <span className="text-xs font-semibold text-slate-700">{String(row.module ?? '—')}</span>
+        ),
+        desc: (row: Record<string, unknown>) => (
+          <span className="text-xs font-medium text-slate-700 leading-snug">{String(row.desc ?? '—')}</span>
+        ),
+      },
+    }),
+    [],
+  );
+  return <DedicatedModule config={config} />;
+}
 export function SettingsProfilePage() { return <ProfileSettingsPage />; }
 export function SettingsSignaturesPage() { return <SignatureSettingsPage />; }
 export function SettingsAlertSettingsPage() { return <AlertSettingsPage />; }

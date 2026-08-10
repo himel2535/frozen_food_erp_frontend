@@ -35,6 +35,7 @@ import {
   formatReportingPeriod,
   listSupplierReportRows,
 } from '@/components/modules/reports/suppliers/supplier-report-utils';
+import { exportSupplierReportCsv } from '@/lib/services/report-export';
 
 export function SupplierReportsPage() {
   const appState = useAppStore((s) => s.appState);
@@ -90,7 +91,17 @@ export function SupplierReportsPage() {
   const reportingPeriod = useMemo(() => formatReportingPeriod(filters), [filters]);
 
   const handleExport = () => {
-    toast.info(t('reports.suppliers_export_soon'), { module: 'Reports' });
+    const count = exportSupplierReportCsv({
+      title: t('reports.suppliers_title'),
+      filterSummary,
+      kpis,
+      rows: filteredRows,
+    });
+    if (count === 0) {
+      toast.warning(t('reports.export_empty'), { module: 'Reports' });
+      return;
+    }
+    toast.success(t('reports.export_success', { rows: count }), { module: 'Reports' });
   };
 
   const handleResetFilters = () => {

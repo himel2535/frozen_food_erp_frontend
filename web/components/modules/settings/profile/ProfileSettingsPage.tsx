@@ -3,6 +3,7 @@
 import { toast } from '@/lib/ui/feedback';
 import { useMemo, useState, type FormEvent } from 'react';
 import { Footer } from '@/components/layout/Footer';
+import { useChromeSuppressed } from '@/components/layout/ModuleActionsContext';
 import { FormHeader } from '@/components/layout/FormHeader';
 import { ProfileSettingsForm } from '@/components/modules/settings/profile/ProfileSettingsForm';
 import { ProfileSettingsOverview } from '@/components/modules/settings/profile/ProfileSettingsOverview';
@@ -35,6 +36,8 @@ export function ProfileSettingsPage() {
   const profile = useMemo(() => getProfileView(appState), [appState, bump]);
   const metrics = useMemo(() => getProfileMetrics(appState), [appState, bump]);
   const activity = useMemo(() => getProfileActivitySummary(appState), [appState, bump]);
+
+  useChromeSuppressed(view === 'form');
 
   const labels = useMemo(
     () => ({

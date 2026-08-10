@@ -44,6 +44,7 @@ import {
   sumDepartmentTotals,
   uniqueDepartments,
 } from '@/components/modules/reports/hr/hr-report-utils';
+import { exportHrReportCsv } from '@/lib/services/report-export';
 
 export function HrReportsPage() {
   const appState = useAppStore((s) => s.appState);
@@ -106,7 +107,20 @@ export function HrReportsPage() {
   const reportingPeriod = useMemo(() => formatReportingPeriod(filters), [filters]);
 
   const handleExport = () => {
-    toast.info(t('reports.hr_export_soon'), { module: 'Reports' });
+    const count = exportHrReportCsv({
+      title: t('reports.hr_title'),
+      filterSummary,
+      kpis,
+      departments: filteredDepartments,
+      joiners: filteredJoiners,
+      leavers: filteredLeavers,
+      birthdays: filteredBirthdays,
+    });
+    if (count === 0) {
+      toast.warning(t('reports.export_empty'), { module: 'Reports' });
+      return;
+    }
+    toast.success(t('reports.export_success', { rows: count }), { module: 'Reports' });
   };
 
   const handleResetFilters = () => {

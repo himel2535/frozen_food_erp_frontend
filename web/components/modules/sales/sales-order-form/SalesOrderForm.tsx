@@ -155,6 +155,7 @@ export function SalesOrderForm({
             title={mode === 'edit' ? 'Edit Sales Order' : 'Create Sales Order'}
             subtitle="Enter order details for your customer."
             onBack={onCancel}
+            backLabel="Back to Sales Orders"
           />
           <div className="flex flex-wrap items-center gap-2 self-start">
             <button type="button" onClick={onCancel} className={SO_BTN_GHOST}>Cancel</button>
@@ -182,7 +183,7 @@ export function SalesOrderForm({
           </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-[1fr_300px] gap-3 flex-1">
+        <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_340px] gap-3 flex-1">
           <div className="flex flex-col gap-3 min-w-0">
             <section className={SO_CARD_CLS}>
               <h3 className={SO_SECTION_TITLE_CLS}>Order Information</h3>
@@ -335,7 +336,7 @@ export function SalesOrderForm({
             </section>
           </div>
 
-          <aside className="flex flex-col gap-3 lg:sticky lg:top-4 lg:self-start">
+          <aside className="flex flex-col gap-3 xl:sticky xl:top-4 xl:self-start">
             <PoOrderSummary totals={totals} onEditDiscount={handleEditDiscount} onEditTax={handleEditTax} />
             <PoPaymentInfo
               paymentStatus={form.paymentStatus}

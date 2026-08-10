@@ -5,22 +5,13 @@ import Link from 'next/link';
 import { Calendar, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useLocaleFormat } from '@/hooks/useLocaleFormat';
 import { employeeAvatarClass, employeeInitials } from '@/lib/services/hrm-service';
-import {
-  RP_BREADCRUMB_CLS,
-  RP_NAV_CARD_CLS,
-  RP_PAGE_SUBTITLE_CLS,
-  RP_PAGE_TITLE_CLS,
-  RP_PERIOD_PILL_CLS,
-  RP_STATUS_PAID_CLS,
-  RP_STATUS_PENDING_CLS,
-} from '@/components/modules/payroll/salary-sheet/review/review-pay-styles';
+import { RP_BTN_OUTLINE, RP_NAV_CARD_CLS, RP_PERIOD_PILL_CLS, RP_STATUS_PAID_CLS, RP_STATUS_PENDING_CLS } from '@/components/modules/payroll/salary-sheet/review/review-pay-styles';
 
 export function EmployeeReviewHeader({
   employee,
   prevId,
   nextId,
   reviewUrl,
-  listUrl,
   period,
   locked,
 }: {
@@ -28,7 +19,6 @@ export function EmployeeReviewHeader({
   prevId: string | null;
   nextId: string | null;
   reviewUrl: (id: string) => string;
-  listUrl: string;
   period: string;
   locked: boolean;
 }) {
@@ -47,19 +37,7 @@ export function EmployeeReviewHeader({
 
   return (
     <div className="space-y-3">
-      <nav className={RP_BREADCRUMB_CLS}>
-        <Link href="/payroll/salary-sheet" className="hover:text-blue-600 cursor-pointer">Payroll</Link>
-        <span>/</span>
-        <Link href={listUrl} className="hover:text-blue-600 cursor-pointer">Salary Processing</Link>
-        <span>/</span>
-        <span className="text-slate-700">Employee Review &amp; Pay</span>
-      </nav>
-
-      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
-        <div>
-          <h1 className={RP_PAGE_TITLE_CLS}>Payroll Processing</h1>
-          <p className={RP_PAGE_SUBTITLE_CLS}>Review salary breakdown and approve payment for this employee.</p>
-        </div>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-end gap-3">
         <span className={RP_PERIOD_PILL_CLS}>
           <Calendar className="w-3.5 h-3.5 text-blue-600" />
           {formatMonthYear(periodDate)}

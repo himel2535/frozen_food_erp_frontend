@@ -23,6 +23,7 @@ const EXTRA_PAGE_ICONS: Record<string, PageIconEntry> = {
   '/recipes/semi-finished': { icon: 'fluent-color:puzzle-piece-24', sectionId: 'purchases' },
   '/sales/orders/new': { icon: 'fluent-color:clipboard-task-24', sectionId: 'sales-crm' },
   '/purchases/orders/new': { icon: 'fluent-color:document-add-24', sectionId: 'purchases' },
+  '/hrm/employees/new': { icon: 'fluent-color:person-add-24', sectionId: 'hrm' },
   '/payroll/structures/new': { icon: 'fluent-color:table-24', sectionId: 'payroll' },
   '/projects/new': { icon: 'fluent-color:document-add-24', sectionId: 'projects' },
   '/payroll/salary-sheet': { icon: 'flat-color-icons:calculator', sectionId: 'payroll' },

@@ -1,5 +1,6 @@
 import type { PortField, PortFilter, PortModuleConfig } from '@/lib/modules/port-types';
 import { MODULE_REGISTRY as MODULE_METADATA } from '@/lib/modules/module-metadata';
+import { auditLogsAdapter } from '@/lib/services/audit-log-service';
 import {
   crmActivityAdapter,
   stateKeyAdapter,
@@ -319,15 +320,8 @@ export const PORT_CONFIGS: Record<string, PortModuleConfig> = {
   ]),
 
   'settings-audit-logs': {
-    ...fromRegistry('settings-audit-logs', {
-      list: () => MODULE_METADATA['settings-audit-logs'].staticRows ?? [],
-    }),
-    fields: [
-      { key: 'user', label: 'User', type: 'text' },
-      { key: 'type', label: 'Event Type', type: 'text' },
-      { key: 'module', label: 'Module', type: 'text' },
-      { key: 'desc', label: 'Description', type: 'textarea' },
-    ],
+    ...fromRegistry('settings-audit-logs', auditLogsAdapter()),
+    fields: [],
   },
 
   'settings-profile': stateModule('settings-profile', 'profileSettings', 'PROF', [

@@ -3,7 +3,6 @@
 import {
   ST_BODY,
   ST_CARD_COMPACT,
-  ST_GRID,
   ST_LABEL,
 } from '@/components/modules/settings/settings-styles';
 import { SignatureInvoicePreview } from '@/components/modules/settings/signatures/SignatureInvoicePreview';
@@ -21,7 +20,7 @@ type SignatureSettingsFormProps = {
 
 export function SignatureSettingsForm({ form, onChange, labels }: SignatureSettingsFormProps) {
   return (
-    <div className={ST_GRID}>
+    <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_min(420px,38%)] gap-3">
       <div className={`${ST_CARD_COMPACT} space-y-4`}>
         <SignatureUploadZone
           value={form.imageDataUrl}

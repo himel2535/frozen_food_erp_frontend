@@ -105,6 +105,7 @@ export function SalarySetupForm({
             title="1. Salary Setup"
             subtitle={pageTitle}
             onBack={onCancel}
+            backLabel="Back to Salary Structures"
           />
           <div className="flex flex-wrap items-center gap-2 self-start">
             <button type="button" onClick={onCancel} className={SS_BTN_GHOST}>Cancel</button>

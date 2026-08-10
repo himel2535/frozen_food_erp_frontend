@@ -6,6 +6,11 @@ import {
   buildLeadSeed,
   buildLeadTasksSeed,
 } from './leads-seed';
+import {
+  buildEntityAuditDescription,
+  listEntityAuditLogs,
+  logSystemAudit,
+} from './audit-log-service';
 
 export { LEAD_PIPELINE_STAGES, LEAD_STAGE_LABELS };
 
@@ -314,19 +319,13 @@ function getNextId(state, prefix, ids) {
 }
 
 function logAudit(state, action, entityType, entityId, beforeSummary, afterSummary, module = 'CRM') {
-  const auditId = getNextId(state, 'AUD');
-  state.crmData.auditLogsById[auditId] = {
-    id: auditId,
+  logSystemAudit(state, {
+    action,
     module,
     entityType,
     entityId,
-    action,
-    actorId: getUserContext(state).id,
-    actorName: getUserContext(state).name,
-    timestamp: nowIso(),
-    beforeSummary: beforeSummary || null,
-    afterSummary: afterSummary || null
-  };
+    description: buildEntityAuditDescription(action, entityType, entityId, beforeSummary, afterSummary),
+  });
 }
 
 function logActivity(state, payload) {
@@ -1274,9 +1273,7 @@ export function getCustomerProfile(state, customerId) {
   const tasks = mapValues(state.crmData.tasksById)
     .filter((task) => task.entityType === 'customer' && task.entityId === customerId)
     .sort((a, b) => String(a.dueDate).localeCompare(String(b.dueDate)));
-  const auditLogs = mapValues(state.crmData.auditLogsById)
-    .filter((log) => log.entityType === 'customer' && log.entityId === customerId)
-    .sort((a, b) => String(b.timestamp).localeCompare(String(a.timestamp)));
+  const auditLogs = listEntityAuditLogs(state, 'customer', customerId);
   const invoices = (state.invoices || []).filter((invoice) => invoice.customerId === customerId).sort((a, b) => String(b.date).localeCompare(String(a.date)));
   const payments = mapValues(state.crmData.paymentsById).filter((payment) => payment.customerId === customerId).sort((a, b) => String(b.date).localeCompare(String(a.date)));
   const quotations = mapValues(state.crmData.quotationsById).filter((item) => item.customerId === customerId).sort((a, b) => String(b.date).localeCompare(String(a.date)));

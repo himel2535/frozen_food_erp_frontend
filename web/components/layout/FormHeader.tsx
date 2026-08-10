@@ -1,10 +1,11 @@
 'use client';
 
-import { ArrowLeft } from 'lucide-react';
+import { ChevronLeft } from 'lucide-react';
 import { Icon } from '@iconify/react';
 import { usePathname } from 'next/navigation';
 import { getPageIcon } from '@/lib/ui/page-icons';
 import { PageHeaderLayout } from '@/components/shared/PageHeaderLayout';
+import { FORM_BACK_BTN_CLS } from '@/lib/ui/form-styles';
 
 interface FormHeaderProps {
   title: string;
@@ -27,32 +28,34 @@ export function FormHeader({
 }: FormHeaderProps) {
   const pathname = usePathname();
   const resolvedIcon = icon ?? getPageIcon(pathname);
+  const label = backLabel ?? 'Back';
 
   return (
-    <div className={`flex items-start gap-3 ${compact ? 'mb-3' : 'mb-6'}`}>
-      <button
-        type="button"
-        onClick={onBack}
-        className="p-2.5 bg-white/60 hover:bg-white/90 border border-white/80 rounded-2xl shadow-xs transition-all text-slate-700 hover:text-slate-900 cursor-pointer shrink-0"
-        title={backLabel ?? 'Back'}
-      >
-        <ArrowLeft className="w-5 h-5" />
-      </button>
-      <div className="min-w-0 flex-1">
-        {backLabel ? (
-          <p className="text-[11px] font-bold text-slate-500 mb-1">{backLabel}</p>
-        ) : null}
-        <PageHeaderLayout
-          size="compact"
-          title={<span id={titleId}>{title}</span>}
-          subtitle={subtitle}
-          icon={
-            resolvedIcon ? (
-              <Icon icon={resolvedIcon} width={32} height={32} />
-            ) : undefined
-          }
-        />
+    <header className={compact ? 'mb-3' : 'mb-5'}>
+      <div className="flex items-start gap-3">
+        <button
+          type="button"
+          onClick={onBack}
+          className={FORM_BACK_BTN_CLS}
+          title={label}
+          aria-label={label}
+        >
+          <ChevronLeft className="w-4 h-4 text-slate-600 group-hover:text-blue-600 group-hover:-translate-x-0.5 transition-all" />
+        </button>
+
+        <div className="min-w-0 flex-1">
+          <PageHeaderLayout
+            size="compact"
+            title={<span id={titleId}>{title}</span>}
+            subtitle={subtitle}
+            icon={
+              resolvedIcon ? (
+                <Icon icon={resolvedIcon} width={32} height={32} />
+              ) : undefined
+            }
+          />
+        </div>
       </div>
-    </div>
+    </header>
   );
 }

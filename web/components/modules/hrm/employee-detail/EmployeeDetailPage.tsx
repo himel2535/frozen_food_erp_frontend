@@ -3,10 +3,9 @@
 import { toast } from '@/lib/ui/feedback';
 
 import { useMemo, useState, type FormEvent } from 'react';
-import { useParams } from 'next/navigation';
-import { ArrowLeft } from 'lucide-react';
-import Link from 'next/link';
+import { useParams, useRouter } from 'next/navigation';
 import { Footer } from '@/components/layout/Footer';
+import { ChildPageShell } from '@/components/layout/ChildPageShell';
 import { useChromeSuppressed } from '@/components/layout/ModuleActionsContext';
 import { AppFormFields, AppFormModal } from '@/components/shared/AppForm';
 import { EmployeeDetailHeader } from '@/components/modules/hrm/employee-detail/EmployeeDetailHeader';
@@ -27,6 +26,7 @@ import {
 
 export function EmployeeDetailPage() {
   const params = useParams();
+  const router = useRouter();
   const employeeId = String(params?.id ?? '');
   const appState = useAppStore((s) => s.appState);
   const saveAppState = useAppStore((s) => s.saveAppState);
@@ -82,19 +82,14 @@ export function EmployeeDetailPage() {
   if (!profile || !metrics) {
     return (
       <>
-        <div className="premium-card premium-shadow p-8 text-center space-y-4 max-w-lg mx-auto mt-12">
-          <h2 className="text-lg font-extrabold text-slate-900">Employee not found</h2>
-          <p className="text-xs text-slate-500">
-            The employee ID &quot;{employeeId}&quot; does not exist or was removed.
-          </p>
-          <Link
-            href="/hrm/employees"
-            className="inline-flex items-center gap-2 text-xs font-bold text-blue-600 hover:text-blue-700 cursor-pointer"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            Back to Employees
-          </Link>
-        </div>
+        <ChildPageShell
+          title="Employee not found"
+          subtitle={`The employee ID "${employeeId}" does not exist or was removed.`}
+          onBack={() => router.push('/hrm/employees')}
+          backLabel="Back to Employees"
+        >
+          <div className="premium-card premium-shadow p-8 text-center" />
+        </ChildPageShell>
         <Footer />
       </>
     );
@@ -102,18 +97,29 @@ export function EmployeeDetailPage() {
 
   const employee = profile.employee as Record<string, unknown>;
   const departmentInfo = profile.departmentInfo as Record<string, unknown> | null;
+  const name = String(employee.name ?? 'Employee');
+  const department = String(employee.department ?? departmentInfo?.name ?? '—');
+  const designation = String(employee.designation ?? '—');
 
   return (
     <>
-      <div className="space-y-4 flex flex-col">
-        <EmployeeDetailHeader
-          employee={employee}
-          departmentInfo={departmentInfo}
-          onEdit={openEdit}
-        />
-
+      <ChildPageShell
+        title={name}
+        subtitle={`${department} · ${designation}`}
+        onBack={() => router.push('/hrm/employees')}
+        backLabel="Back to Employees"
+        actions={(
+          <button
+            type="button"
+            onClick={openEdit}
+            className="bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold px-4 py-2.5 rounded-xl cursor-pointer transition-colors"
+          >
+            Edit Employee
+          </button>
+        )}
+      >
+        <EmployeeDetailHeader employee={employee} departmentInfo={departmentInfo} />
         <EmployeeDetailMetrics metrics={metrics} />
-
         <EmployeeDetailTabs active={activeTab} onChange={setActiveTab} />
 
         {activeTab === 'overview' && (
@@ -137,7 +143,7 @@ export function EmployeeDetailPage() {
             projectCount={profile.projects.length}
           />
         )}
-      </div>
+      </ChildPageShell>
       <Footer />
 
       <AppFormModal

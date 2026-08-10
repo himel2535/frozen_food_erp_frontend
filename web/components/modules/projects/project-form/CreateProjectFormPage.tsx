@@ -4,6 +4,7 @@ import { toast } from '@/lib/ui/feedback';
 
 import { useMemo } from 'react';
 import { useRouter } from 'next/navigation';
+import { useChromeSuppressed } from '@/components/layout/ModuleActionsContext';
 import { CreateProjectForm } from '@/components/modules/projects/project-form/CreateProjectForm';
 import type { ProjectSaveAction } from '@/components/modules/projects/project-form/project-form-types';
 import { useAppStore } from '@/lib/state/app-store';
@@ -16,6 +17,8 @@ export function CreateProjectFormPage() {
   const router = useRouter();
   const appState = useAppStore((s) => s.appState);
   const saveAppState = useAppStore((s) => s.saveAppState);
+
+  useChromeSuppressed(true);
 
   const initialValues = useMemo(
     () => getProjectInitialForm(appState),

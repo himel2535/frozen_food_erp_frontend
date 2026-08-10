@@ -21,7 +21,7 @@ export function ActivityTab({ activities, auditLogs }: ActivityTabProps) {
     })),
     ...auditLogs.map((log) => ({
       id: String(log.id),
-      title: String(log.action ?? log.summary ?? 'Audit entry'),
+      title: String(log.description ?? log.action ?? 'Audit entry'),
       meta: `${String(log.actorName ?? log.user ?? 'System')} · ${formatDetailDate(log.timestamp)}`,
     })),
   ].sort((a, b) => b.meta.localeCompare(a.meta));

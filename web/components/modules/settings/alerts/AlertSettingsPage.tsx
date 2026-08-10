@@ -4,6 +4,7 @@ import { useMemo, useState, type FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
 import { Icon } from '@iconify/react';
 import { Footer } from '@/components/layout/Footer';
+import { useChromeSuppressed } from '@/components/layout/ModuleActionsContext';
 import { FormHeader } from '@/components/layout/FormHeader';
 import { MODULE_LIST_SHELL } from '@/lib/ui/module-layout';
 import { FORM_BTN_PRIMARY, FORM_BTN_SECONDARY } from '@/lib/ui/form-styles';
@@ -15,6 +16,7 @@ import {
   DEFAULT_ALERT_SETTINGS,
   getAlertSettings,
 } from '@/lib/services/business-alert-service';
+import { logSystemAudit } from '@/lib/services/audit-log-service';
 import type { AlertCategory, AlertRole, AlertSettings } from '@/lib/services/business-alert-types';
 
 const ROLE_LABEL_KEYS: Record<AlertRole, string> = {
@@ -50,6 +52,8 @@ export function AlertSettingsPage() {
 
   const [form, setForm] = useState<AlertSettings>(() => cloneSettings(getAlertSettings(appState)));
 
+  useChromeSuppressed(true);
+
   const labels = useMemo(
     () => ({
       thresholds: t('alerts.settings_thresholds'),
@@ -74,6 +78,12 @@ export function AlertSettingsPage() {
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
     appState.alertSettings = cloneSettings(form);
+    logSystemAudit(appState, {
+      action: 'UPDATE',
+      module: 'Settings',
+      entityType: 'alertSettings',
+      description: 'Updated alert thresholds and role visibility',
+    });
     saveAppState();
     bump((n) => n + 1);
     toast.success(labels.saved, { module: 'Alert Settings' });
@@ -95,6 +105,7 @@ export function AlertSettingsPage() {
   return (
     <div className={MODULE_LIST_SHELL}>
       <FormHeader
+        compact
         title={t('alerts.settings_title')}
         subtitle={t('alerts.settings_subtitle')}
         onBack={() => router.push('/dashboard')}

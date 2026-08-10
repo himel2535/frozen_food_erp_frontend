@@ -48,9 +48,9 @@ export function PurchaseOrdersFilterBar({
   onDateToChange: (v: string) => void;
 }) {
   return (
-    <div className="p-4 border-b border-slate-100 space-y-3">
-      <div className="flex flex-wrap items-center gap-2 lg:gap-3">
-        <div className="relative w-full sm:w-[240px] lg:w-[280px] shrink-0">
+    <div className="p-4 border-b border-slate-100">
+      <div className="flex flex-wrap xl:flex-nowrap items-center gap-2 xl:gap-3">
+        <div className="relative flex-1 min-w-[200px] max-w-none xl:max-w-[280px]">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
           <input
             type="search"
@@ -63,7 +63,7 @@ export function PurchaseOrdersFilterBar({
         <select
           value={supplierFilter}
           onChange={(e) => onSupplierChange(e.target.value)}
-          className="px-3 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-xs font-medium cursor-pointer"
+          className="shrink-0 px-3 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-xs font-medium cursor-pointer min-w-[130px]"
         >
           <option value="">All Suppliers</option>
           {suppliers.map((s) => (
@@ -75,7 +75,7 @@ export function PurchaseOrdersFilterBar({
         <select
           value={paymentFilter}
           onChange={(e) => onPaymentChange(e.target.value)}
-          className="px-3 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-xs font-medium cursor-pointer"
+          className="shrink-0 px-3 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-xs font-medium cursor-pointer min-w-[120px]"
         >
           {PAYMENT_OPTIONS.map((opt) => (
             <option key={opt.id || 'all'} value={opt.id}>
@@ -83,25 +83,23 @@ export function PurchaseOrdersFilterBar({
             </option>
           ))}
         </select>
-      </div>
-      <div className="flex flex-wrap items-center gap-2">
         <DateInput
           value={dateFrom}
           onChange={onDateFromChange}
-          className="px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 text-xs font-medium cursor-pointer"
+          className="shrink-0 px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 text-xs font-medium cursor-pointer w-[130px]"
         />
         <DateInput
           value={dateTo}
           onChange={onDateToChange}
-          className="px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 text-xs font-medium cursor-pointer"
+          className="shrink-0 px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 text-xs font-medium cursor-pointer w-[130px]"
         />
-        <div className="flex flex-wrap items-center gap-1.5 min-w-0">
+        <div className="flex flex-wrap items-center gap-1.5 xl:ml-auto shrink-0">
           {STATUS_TABS.map((tab) => (
             <button
               key={tab.id}
               type="button"
               onClick={() => onStatusChange(tab.id)}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold cursor-pointer transition-colors ${
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold cursor-pointer transition-colors whitespace-nowrap ${
                 statusFilter === tab.id ? PO_PILL_ACTIVE : PO_PILL_INACTIVE
               }`}
             >

@@ -1,9 +1,7 @@
 'use client';
 
-import { toast } from '@/lib/ui/feedback';
-
 import { useMemo } from 'react';
-import { Eye, MoreVertical } from 'lucide-react';
+import { Eye } from 'lucide-react';
 import { AppTable, type AppTableColumn } from '@/components/shared/AppTable';
 import {
   formatDueDate,
@@ -139,14 +137,6 @@ export function SupplierDueTable({
                 View
               </button>
             )}
-            <button
-              type="button"
-              className="inline-flex h-7 w-7 items-center justify-center rounded-lg text-slate-500 hover:bg-slate-100 cursor-pointer"
-              title="More actions"
-              onClick={(e) => { e.stopPropagation(); toast.info('Feature coming soon', { module: 'Supplier Due', description: "More actions coming soon." }); }}
-            >
-              <MoreVertical className="w-4 h-4" />
-            </button>
           </div>
         )}
       />
