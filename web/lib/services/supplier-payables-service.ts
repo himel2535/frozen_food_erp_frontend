@@ -1,5 +1,5 @@
 import type { AppState } from '@/lib/state/types';
-import { createInState, listFromState, updateInState } from '@/lib/services/domain-service';
+import { createInState, listFromState, sortRowsNewestFirst, updateInState } from '@/lib/services/domain-service';
 import { listSuppliers } from '@/lib/services/purchases-service';
 export {
   formatDueMoney,
@@ -208,7 +208,7 @@ function buildSupplierPayable(state: AppState, supplier: Row): SupplierPayable {
 }
 
 export function listSupplierPayables(state: AppState): SupplierPayable[] {
-  return listSuppliers(state).map((supplier) => buildSupplierPayable(state, supplier as Row));
+  return sortRowsNewestFirst(listSuppliers(state).map((supplier) => buildSupplierPayable(state, supplier as Row)));
 }
 
 export function getSupplierPayableMetrics(state: AppState) {

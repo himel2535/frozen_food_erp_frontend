@@ -19,6 +19,7 @@ import { TableIconAction } from '@/components/shared/TableIconAction';
 import { useLegacyParityConfig } from '@/hooks/use-legacy-parity-config';
 import { useAppStore } from '@/lib/state/app-store';
 import { useLocaleFormat } from '@/hooks/useLocaleFormat';
+import { sortRowsNewestFirst } from '@/lib/services/domain-service';
 import { DEDICATED_MODULE_I18N, resolveLabel, type TranslateFn } from '@/lib/i18n/resolve-label';
 import type { PortModuleConfig } from '@/lib/modules/port-types';
 import type { AppState } from '@/lib/state/types';
@@ -118,6 +119,8 @@ function DedicatedModuleView({ config, configId }: { config: DedicatedModuleConf
     }
     if (config.rowSort) {
       data = [...data].sort(config.rowSort);
+    } else {
+      data = sortRowsNewestFirst(data);
     }
     return data;
   }, [appState, config, search, filterValues, statusFilter]);

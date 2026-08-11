@@ -4,6 +4,7 @@ import {
   createInState,
   formatCurrency,
   listFromState,
+  sortRowsNewestFirst,
   updateInState,
 } from '@/lib/services/domain-service';
 
@@ -92,7 +93,8 @@ function normalizeEntry(row: Row): DueEntry {
 export function listDueEntries(state: AppState, type?: DueEntryType): DueEntry[] {
   const rows = listFromState(state, 'dueEntries').map(normalizeEntry);
   const open = rows.filter((e) => e.due > 0);
-  return type ? open.filter((e) => e.type === type) : open;
+  const filtered = type ? open.filter((e) => e.type === type) : open;
+  return sortRowsNewestFirst(filtered);
 }
 
 export function getDueMetrics(state: AppState) {

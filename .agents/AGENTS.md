@@ -47,7 +47,7 @@ Reuse `<FormHeader title="..." subtitle="..." onBack={() => setView('main')} />`
 1. Add route: `web/app/(tenant)/[module]/page.tsx`
 2. Either register in `web/lib/modules/registry.ts` + use `ModulePage`, or create a dedicated component in `web/components/modules/`
 3. Add nav entry in `web/lib/navigation/tenant-sidebar.ts` if needed
-4. Run `node web/scripts/generate-routes.mjs` when bulk-adding routes
+4. Run `node web/scripts/generate-ported-pages.mjs` when bulk-adding routes
 
 ## Interactive Elements & UX Standards
 

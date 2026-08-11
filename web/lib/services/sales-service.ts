@@ -11,10 +11,10 @@ import {
   computeInvoiceTotalsFromItems,
   type InvoiceLineItem,
 } from '@/components/modules/sales/invoice-form/inv-form-types';
-import { listFromState, createInState, updateInState, deleteFromState } from '@/lib/services/domain-service';
+import { listFromState, createInState, updateInState, deleteFromState, sortRowsNewestFirst } from '@/lib/services/domain-service';
 
 export function listInvoices(state: AppState) {
-  return Array.isArray(state.invoices) ? [...state.invoices] : [];
+  return sortRowsNewestFirst(Array.isArray(state.invoices) ? [...state.invoices] : []);
 }
 
 type Row = Record<string, unknown>;
@@ -162,17 +162,18 @@ export function listSalesOrders(state: AppState): Row[] {
 }
 
 export function listDeliveries(state: AppState) {
-  return listFromState(state, 'salesDeliveries').length
+  const rows = listFromState(state, 'salesDeliveries').length
     ? listFromState(state, 'salesDeliveries')
     : listFromState(state, 'deliveries');
+  return sortRowsNewestFirst(rows);
 }
 
 export function listDispatches(state: AppState) {
-  return listFromState(state, 'dispatches');
+  return sortRowsNewestFirst(listFromState(state, 'dispatches'));
 }
 
 export function listReturns(state: AppState) {
-  return listFromState(state, 'salesReturns');
+  return sortRowsNewestFirst(listFromState(state, 'salesReturns'));
 }
 
 export function listPayments(state: AppState): Row[] {

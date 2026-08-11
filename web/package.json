@@ -3,10 +3,10 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev --webpack",
-    "dev:turbo": "node -e \"console.warn('WARNING: Admin APIs break on Windows with Turbopack. Use npm run dev instead.')\" && next dev --turbo",
-    "build": "next build --webpack",
-    "start": "next start",
+    "dev": "cross-env npm_config_devdir= NODE_OPTIONS=--disable-warning=DEP0169 next dev --webpack",
+    "dev:turbo": "node -e \"console.warn('WARNING: Admin APIs break on Windows with Turbopack. Use npm run dev instead.')\" && cross-env npm_config_devdir= NODE_OPTIONS=--disable-warning=DEP0169 next dev --turbo",
+    "build": "cross-env npm_config_devdir= NODE_OPTIONS=--disable-warning=DEP0169 next build --webpack",
+    "start": "cross-env npm_config_devdir= NODE_OPTIONS=--disable-warning=DEP0169 next start",
     "lint": "eslint",
     "analyze": "cross-env ANALYZE=true next build --webpack",
     "seed:admin": "node scripts/seed-main-admin.mjs",
@@ -14,27 +14,36 @@
   },
   "dependencies": {
     "@iconify/react": "^6.0.2",
-    "firebase": "^12.16.0",
+    "firebase": "^12.17.1",
     "firebase-admin": "^14.2.0",
     "jspdf": "^4.2.1",
     "jspdf-autotable": "^5.0.8",
     "lucide-react": "^1.27.0",
-    "next": "16.2.12",
+    "next": "16.3.0",
     "qrcode.react": "^4.2.0",
     "react": "19.2.4",
     "react-dom": "19.2.4",
     "zustand": "^5.0.14"
   },
   "devDependencies": {
-    "@next/bundle-analyzer": "^16.2.12",
+    "@next/bundle-analyzer": "^16.3.0",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "cross-env": "^7.0.3",
     "eslint": "^9",
-    "eslint-config-next": "16.2.12",
+    "eslint-config-next": "16.3.0",
     "tailwindcss": "^4",
     "typescript": "^5"
+  },
+  "overrides": {
+    "uuid": "^11.1.0"
+  },
+  "allowScripts": {
+    "@firebase/util@1.15.2": true,
+    "core-js@3.49.0": true,
+    "protobufjs@7.6.5": true,
+    "unrs-resolver@1.12.2": true
   }
 }

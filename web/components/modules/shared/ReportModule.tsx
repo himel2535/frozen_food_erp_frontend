@@ -12,6 +12,7 @@ import { DateInput } from '@/components/shared/DateInput';
 import { StatusBadge } from '@/components/shared/StatusBadge';
 import { isLikelyDateColumnKey } from '@/lib/i18n/date-utils';
 import { useAppStore } from '@/lib/state/app-store';
+import { sortRowsNewestFirst } from '@/lib/services/domain-service';
 import type { AppState } from '@/lib/state/types';
 
 export interface ReportColumn {
@@ -70,7 +71,7 @@ export function ReportModule({ config }: { config: ReportModuleConfig }) {
     if (config.statusFilterKey && statusFilter !== 'All') {
       data = data.filter((row) => String(row[config.statusFilterKey!] ?? '') === statusFilter);
     }
-    return data;
+    return sortRowsNewestFirst(data);
   }, [appState, config, search, filterValues, dateStart, dateEnd, statusFilter]);
 
   const kpis = useMemo(() => config.kpi(rows), [config, rows]);

@@ -55,7 +55,10 @@ export async function fetchAdminUsers(): Promise<AuthUserRecord[]> {
   const users = Object.entries(raw).map(([uid, value]) =>
     normalizeAuthUser(uid, value),
   );
-  users.sort((a, b) => a.name.localeCompare(b.name));
+  users.sort((a, b) => {
+    const diff = String(b.createdAt ?? '').localeCompare(String(a.createdAt ?? ''));
+    return diff !== 0 ? diff : a.name.localeCompare(b.name);
+  });
   return users;
 }
 

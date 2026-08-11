@@ -28,7 +28,10 @@ async function countUsersByRole(): Promise<Record<string, number>> {
 export async function fetchAdminRoles(): Promise<RoleRecord[]> {
   const raw = await listAuthRoleRecords();
   const roles = Object.entries(raw).map(([id, value]) => normalizeRole(id, value));
-  roles.sort((a, b) => a.name.localeCompare(b.name));
+  roles.sort((a, b) => {
+    const diff = String(b.createdAt ?? '').localeCompare(String(a.createdAt ?? ''));
+    return diff !== 0 ? diff : a.name.localeCompare(b.name);
+  });
   return roles;
 }
 

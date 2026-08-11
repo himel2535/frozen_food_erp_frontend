@@ -5,6 +5,7 @@ import {
   updateInState,
   deleteFromState,
   formatCurrency,
+  sortRowsNewestFirst,
 } from '@/lib/services/domain-service';
 
 export type StockStatus = 'ok' | 'low' | 'out' | 'unknown';
@@ -342,7 +343,7 @@ export function listRecipes(state: AppState): Recipe[] {
 
 export function listRecipesForVariant(state: AppState, variant: RecipeVariant): Recipe[] {
   ensureRecipesState(state);
-  return listFromState(state, RECIPE_COLLECTION[variant]).map(normalizeRecipe);
+  return sortRowsNewestFirst(listFromState(state, RECIPE_COLLECTION[variant]).map(normalizeRecipe));
 }
 
 export function findRecipeLocation(

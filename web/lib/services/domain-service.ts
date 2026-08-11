@@ -17,6 +17,27 @@ function nextId(prefix: string, existing: Row[]): string {
   return `${prefix}-${String(max + 1).padStart(3, '0')}`;
 }
 
+function extractTrailingNumber(value: string): number | null {
+  const match = value.match(/(\d+)$/);
+  if (!match) return null;
+  const num = Number(match[1]);
+  return Number.isNaN(num) ? null : num;
+}
+
+export function sortRowsNewestFirst<T extends Record<string, unknown>>(rows: T[]): T[] {
+  return [...rows].sort((a, b) => {
+    const aTime = Date.parse(String(a.lastUpdated ?? a.updatedAt ?? a.createdAt ?? a.date ?? a.datetime ?? a.timestamp ?? a.ts ?? '')) || 0;
+    const bTime = Date.parse(String(b.lastUpdated ?? b.updatedAt ?? b.createdAt ?? b.date ?? b.datetime ?? b.timestamp ?? b.ts ?? '')) || 0;
+    if (bTime !== aTime) return bTime - aTime;
+
+    const aNum = extractTrailingNumber(String(a.id ?? ''));
+    const bNum = extractTrailingNumber(String(b.id ?? ''));
+    if (aNum !== null && bNum !== null && aNum !== bNum) return bNum - aNum;
+
+    return String(b.id ?? '').localeCompare(String(a.id ?? ''));
+  });
+}
+
 export function listFromState(state: AppState, stateKey: keyof AppState | string): Row[] {
   const slice = state[stateKey as keyof AppState];
   return Array.isArray(slice) ? (slice as Row[]) : [];
@@ -32,9 +53,9 @@ export function createInState(
   const rows = listFromState(state, stateKey);
   const id = String(payload.id ?? nextId(idPrefix, rows));
   const record = { ...payload, id, createdAt: payload.createdAt ?? new Date().toISOString() };
-  (state as Record<string, unknown>)[stateKey as string] = options?.prepend
-    ? [record, ...rows]
-    : [...rows, record];
+  (state as Record<string, unknown>)[stateKey as string] = options?.prepend === false
+    ? [...rows, record]
+    : [record, ...rows];
   logStateMutation(state, String(stateKey), 'CREATE', id, rowSummary(record, id));
   return { ok: true, id };
 }

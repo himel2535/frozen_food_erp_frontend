@@ -12,6 +12,10 @@ const nunito = Nunito({
 export const metadata: Metadata = {
   title: 'Toys Factory ERP',
   description: 'Enterprise workspace for Toys Factory ERP',
+  icons: {
+    icon: [{ url: '/images/logo-toys.png', type: 'image/png' }],
+    apple: [{ url: '/images/logo-toys.png', type: 'image/png' }],
+  },
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {

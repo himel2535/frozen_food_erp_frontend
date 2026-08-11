@@ -1,5 +1,5 @@
 import type { AppState } from '@/lib/state/types';
-import { listFromState, createInState, updateInState, deleteFromState, formatCurrency } from '@/lib/services/domain-service';
+import { listFromState, createInState, updateInState, deleteFromState, formatCurrency, sortRowsNewestFirst } from '@/lib/services/domain-service';
 import { listMaterialOptions } from '@/lib/services/recipes-service';
 
 type Row = Record<string, unknown>;
@@ -78,11 +78,11 @@ export type PurchaseRmReceiveOpts = {
 };
 
 export function listPurchaseRmOrders(state: AppState) {
-  return listFromState(state, 'purchaseRmOrders');
+  return sortRowsNewestFirst(listFromState(state, 'purchaseRmOrders'));
 }
 
 export function listApprovals(state: AppState) {
-  return listFromState(state, 'approvals');
+  return sortRowsNewestFirst(listFromState(state, 'approvals'));
 }
 
 function markApprovalForOrder(state: AppState, refId: string, status: 'approved' | 'rejected') {

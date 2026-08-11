@@ -1,30 +1,9 @@
 import type { AppState } from '@/lib/state/types';
-import { listFromState, createInState, updateInState, deleteFromState, formatCurrency } from '@/lib/services/domain-service';
+import { listFromState, createInState, updateInState, deleteFromState, formatCurrency, sortRowsNewestFirst } from '@/lib/services/domain-service';
 
 type Row = Record<string, unknown>;
 
-const INVENTORY_CREATE_OPTS = { prepend: true } as const;
-
-function extractTrailingNumber(value: string): number | null {
-  const match = value.match(/(\d+)$/);
-  if (!match) return null;
-  const num = Number(match[1]);
-  return Number.isNaN(num) ? null : num;
-}
-
-export function sortInventoryRowsNewestFirst<T extends Record<string, unknown>>(rows: T[]): T[] {
-  return [...rows].sort((a, b) => {
-    const aTime = Date.parse(String(a.lastUpdated ?? a.createdAt ?? a.date ?? '')) || 0;
-    const bTime = Date.parse(String(b.lastUpdated ?? b.createdAt ?? b.date ?? '')) || 0;
-    if (bTime !== aTime) return bTime - aTime;
-
-    const aNum = extractTrailingNumber(String(a.id ?? ''));
-    const bNum = extractTrailingNumber(String(b.id ?? ''));
-    if (aNum !== null && bNum !== null && aNum !== bNum) return bNum - aNum;
-
-    return String(b.id ?? '').localeCompare(String(a.id ?? ''));
-  });
-}
+export const sortInventoryRowsNewestFirst = sortRowsNewestFirst;
 
 export const PRODUCT_TYPES = ['Raw Materials', 'Semi-Finished Goods', 'Finished Goods', 'Service'];
 
@@ -134,7 +113,7 @@ export function createProduct(state: AppState, payload: Row) {
     minStock: Number(payload.minStock ?? 0),
     reorderLevel: Number(payload.reorderLevel ?? 0),
     lastUpdated: new Date().toISOString(),
-  }, 'SKU', INVENTORY_CREATE_OPTS);
+  }, 'SKU');
 }
 
 export function updateProduct(state: AppState, id: string, payload: Row) {
@@ -207,7 +186,7 @@ export function createStockIn(state: AppState, payload: Row) {
     warehouseId: wh,
     date: payload.date ?? new Date().toISOString().slice(0, 10),
     status,
-  }, 'SI', INVENTORY_CREATE_OPTS);
+  }, 'SI');
   if (result.ok && status === 'Approved') applyStockChange(state, String(product.id), wh, qty);
   return result;
 }
@@ -231,7 +210,7 @@ export function createStockOut(state: AppState, payload: Row) {
     warehouseId: wh,
     date: payload.date ?? new Date().toISOString().slice(0, 10),
     status,
-  }, 'SO', INVENTORY_CREATE_OPTS);
+  }, 'SO');
   if (result.ok && status === 'Completed') applyStockChange(state, String(product.id), wh, -qty);
   return result;
 }
@@ -257,7 +236,7 @@ export function createTransfer(state: AppState, payload: Row) {
     toWarehouseId: to,
     date: payload.date ?? new Date().toISOString().slice(0, 10),
     status,
-  }, 'ST', INVENTORY_CREATE_OPTS);
+  }, 'ST');
   if (result.ok && status === 'Completed') {
     applyStockChange(state, String(product.id), from, -qty);
     applyStockChange(state, String(product.id), to, qty);
@@ -282,7 +261,7 @@ export function createAdjustment(state: AppState, payload: Row) {
     type,
     date: payload.date ?? new Date().toISOString().slice(0, 10),
     status,
-  }, 'ADJ', INVENTORY_CREATE_OPTS);
+  }, 'ADJ');
   if (result.ok && status === 'Completed') {
     const delta = type === 'Decrease' ? -qty : qty;
     applyStockChange(state, String(product.id), wh, delta);
@@ -291,7 +270,7 @@ export function createAdjustment(state: AppState, payload: Row) {
 }
 
 export function createCategory(state: AppState, payload: Row) {
-  return createInState(state, 'inventoryCategories', payload, 'CAT', INVENTORY_CREATE_OPTS);
+  return createInState(state, 'inventoryCategories', payload, 'CAT');
 }
 
 export function updateCategory(state: AppState, id: string, payload: Row) {
@@ -303,7 +282,7 @@ export function deleteCategory(state: AppState, id: string) {
 }
 
 export function createUnit(state: AppState, payload: Row) {
-  return createInState(state, 'inventoryUnits', payload, 'UOM', INVENTORY_CREATE_OPTS);
+  return createInState(state, 'inventoryUnits', payload, 'UOM');
 }
 
 export function updateUnit(state: AppState, id: string, payload: Row) {
@@ -315,7 +294,7 @@ export function deleteUnit(state: AppState, id: string) {
 }
 
 export function createWarehouse(state: AppState, payload: Row) {
-  return createInState(state, 'inventoryWarehouses', payload, 'WH', INVENTORY_CREATE_OPTS);
+  return createInState(state, 'inventoryWarehouses', payload, 'WH');
 }
 
 export function updateWarehouse(state: AppState, id: string, payload: Row) {
@@ -438,7 +417,7 @@ export function createSemiFinishedProduct(state: AppState, payload: Row) {
     avgCost: Number(payload.avgCost ?? payload.price ?? 0),
     status: payload.status ?? 'active',
     lastUpdated: new Date().toISOString(),
-  }, 'SF', INVENTORY_CREATE_OPTS);
+  }, 'SF');
 }
 
 export function updateSemiFinishedProduct(state: AppState, id: string, payload: Row) {
@@ -521,7 +500,7 @@ export function createFinishedGood(state: AppState, payload: Row) {
     avgCost: Number(payload.avgCost ?? payload.price ?? 0),
     status: payload.status ?? 'active',
     lastUpdated: new Date().toISOString(),
-  }, 'FG', INVENTORY_CREATE_OPTS);
+  }, 'FG');
 }
 
 export function updateFinishedGood(state: AppState, id: string, payload: Row) {
@@ -548,7 +527,7 @@ export function createRawMaterial(state: AppState, payload: Row) {
     supplierPrice: Number(payload.supplierPrice ?? 0),
     status: payload.status ?? 'active',
     lastUpdated: new Date().toISOString(),
-  }, 'RM', INVENTORY_CREATE_OPTS);
+  }, 'RM');
 }
 
 export function updateRawMaterial(state: AppState, id: string, payload: Row) {

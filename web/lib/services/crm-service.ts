@@ -1,4 +1,5 @@
 // @ts-nocheck
+import { sortRowsNewestFirst } from './domain-service';
 import {
   LEAD_PIPELINE_STAGES,
   LEAD_STAGE_LABELS,
@@ -1232,7 +1233,7 @@ export function getOpenTaskSummary(state, entityType, entityId) {
 }
 
 export function getCustomerList(state) {
-  return getVisibleCustomers(state).map((customer) => {
+  const rows = getVisibleCustomers(state).map((customer) => {
     const contacts = getCustomerContacts(state, customer.id);
     const primary = pickPrimary(contacts);
     const summary = getCustomerFinancialSummary(state, customer.id);
@@ -1251,6 +1252,7 @@ export function getCustomerList(state) {
       openTaskCount: tasks.count
     };
   });
+  return sortRowsNewestFirst(rows);
 }
 
 export function getCustomerProfile(state, customerId) {

@@ -1,4 +1,5 @@
 import type { NextConfig } from 'next';
+import path from 'path';
 import bundleAnalyzer from '@next/bundle-analyzer';
 
 const withBundleAnalyzer = bundleAnalyzer({
@@ -91,6 +92,7 @@ const htmlRedirects = [
 ] as const;
 
 const nextConfig: NextConfig = {
+  outputFileTracingRoot: path.join(__dirname),
   reactStrictMode: true,
   compress: true,
   poweredByHeader: false,

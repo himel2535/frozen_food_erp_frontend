@@ -4,12 +4,15 @@
   "private": true,
   "description": "Toys Factory ERP — Next.js frontend",
   "scripts": {
-    "dev": "npm run dev --prefix web",
-    "build": "npm run build --prefix web",
-    "start": "npm run start --prefix web",
-    "lint": "npm run lint --prefix web",
-    "analyze": "npm run analyze --prefix web",
+    "dev": "cross-env npm_config_devdir= npm run dev --prefix web",
+    "build": "cross-env npm_config_devdir= npm run build --prefix web",
+    "start": "cross-env npm_config_devdir= npm run start --prefix web",
+    "lint": "cross-env npm_config_devdir= npm run lint --prefix web",
+    "analyze": "cross-env npm_config_devdir= npm run analyze --prefix web",
     "deploy:rules": "node web/scripts/deploy-rtdb-rules.mjs",
-    "cleanup:orphan-auth": "npm run cleanup:orphan-auth --prefix web"
+    "cleanup:orphan-auth": "cross-env npm_config_devdir= npm run cleanup:orphan-auth --prefix web"
+  },
+  "devDependencies": {
+    "cross-env": "^7.0.3"
   }
 }

@@ -136,7 +136,7 @@ function CustomersPageContent() {
   const [view, setView] = useState<'main' | 'form'>('main');
   const [search, setSearch] = useState('');
   const [statusTab, setStatusTab] = useState('all');
-  const [sortKey, setSortKey] = useState('name-asc');
+  const [sortKey, setSortKey] = useState('newest-first');
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [editingId, setEditingId] = useState<string | null>(null);
   const [formValues, setFormValues] = useState<CustomerFormValues>(EMPTY_CUSTOMER_FORM);
@@ -171,7 +171,11 @@ function CustomersPageContent() {
     rows.sort((a, b) => {
       if (sortKey === 'name-desc') return String(b.name).localeCompare(String(a.name));
       if (sortKey === 'sales-desc') return Number(b.totalSales ?? 0) - Number(a.totalSales ?? 0);
-      return String(a.name).localeCompare(String(b.name));
+      if (sortKey === 'name-asc') return String(a.name).localeCompare(String(b.name));
+      const aTime = Date.parse(String(a.createdAt ?? a.lastActivityDate ?? '')) || 0;
+      const bTime = Date.parse(String(b.createdAt ?? b.lastActivityDate ?? '')) || 0;
+      if (bTime !== aTime) return bTime - aTime;
+      return String(b.id ?? '').localeCompare(String(a.id ?? ''));
     });
     return rows;
   }, [appState, search, statusTab, sortKey]);
@@ -385,6 +389,7 @@ function CustomersPageContent() {
           <>
             <FilterTabs tabs={statusTabs} active={statusTab} onChange={setStatusTab} />
             <select value={sortKey} onChange={(e) => setSortKey(e.target.value)} className={MODULE_FILTER_INPUT}>
+              <option value="newest-first">Sort: Newest first</option>
               <option value="name-asc">Sort: Name A-Z</option>
               <option value="name-desc">Sort: Name Z-A</option>
               <option value="sales-desc">Sort: Sales high-low</option>

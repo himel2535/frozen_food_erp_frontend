@@ -19,6 +19,7 @@ import { StatusBadge } from '@/components/shared/StatusBadge';
 import { TableIconAction } from '@/components/shared/TableIconAction';
 import { useAppStore } from '@/lib/state/app-store';
 import { useLocaleFormat } from '@/hooks/useLocaleFormat';
+import { sortRowsNewestFirst } from '@/lib/services/domain-service';
 import { translateStatus } from '@/lib/i18n/resolve-label';
 
 export interface SalesDocColumn {
@@ -87,7 +88,7 @@ export function SalesDocumentModule({ config }: { config: SalesDocumentConfig })
     if (statusFilter !== 'all') {
       data = data.filter((row) => String(row.status ?? '').toLowerCase() === statusFilter);
     }
-    return data;
+    return sortRowsNewestFirst(data);
   }, [appState, config, search, statusFilter]);
 
   const kpis = useMemo(() => (config.kpi ? config.kpi(rows) : []), [config, rows]);

@@ -1,4 +1,5 @@
 import type { AppState } from '@/lib/state/types';
+import { sortRowsNewestFirst } from '@/lib/services/domain-service';
 import {
   createPaymentRecord,
   ensureCrmState,
@@ -586,7 +587,7 @@ export function listCustomerReceivables(state: AppState): CustomerReceivable[] {
       return b.totalDue - a.totalDue;
     });
   }
-  return rows.filter((row) => row.totalDue > 0);
+  return sortRowsNewestFirst(rows.filter((row) => row.totalDue > 0));
 }
 
 export function getCustomerReceivableMetrics(state: AppState) {
