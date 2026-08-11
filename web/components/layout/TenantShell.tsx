@@ -18,27 +18,9 @@ export function TenantShell({ children }: { children: React.ReactNode }) {
   const showBootLoader = !hydrated || !ready;
 
   useEffect(() => {
-    const preloadCurrentPageIcon = () => {
-      void import('@/lib/ui/page-icons').then(({ getPageIcon }) => {
-        loadIcons([getPageIcon(window.location.pathname)]);
-      });
-    };
-
-    preloadCurrentPageIcon();
-
-    const preloadRemainingPageIcons = () => {
-      void import('@/lib/ui/page-icons').then(({ getAllPageIcons }) => {
-        loadIcons(getAllPageIcons());
-      });
-    };
-
-    const idle = (window as Window & { requestIdleCallback?: (cb: () => void, opts?: { timeout: number }) => number })
-      .requestIdleCallback;
-    if (idle) {
-      idle(preloadRemainingPageIcons, { timeout: 5000 });
-    } else {
-      setTimeout(preloadRemainingPageIcons, 2000);
-    }
+    void import('@/lib/ui/page-icons').then(({ getPageIcon }) => {
+      loadIcons([getPageIcon(window.location.pathname)]);
+    });
   }, []);
 
   return (

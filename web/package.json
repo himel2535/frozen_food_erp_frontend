@@ -9,6 +9,7 @@
     "start": "cross-env npm_config_devdir= NODE_OPTIONS=--disable-warning=DEP0169 next start",
     "lint": "eslint",
     "analyze": "cross-env ANALYZE=true next build --webpack",
+    "clean": "node -e \"require('fs').rmSync('.next',{recursive:true,force:true})\"",
     "seed:admin": "node scripts/seed-main-admin.mjs",
     "cleanup:orphan-auth": "node scripts/cleanup-orphan-auth.mjs"
   },

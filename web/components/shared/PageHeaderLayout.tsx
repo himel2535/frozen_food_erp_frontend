@@ -31,7 +31,7 @@ export function PageHeaderLayout({
       <span className="inline-flex w-8 h-8 shrink-0 items-center justify-center">
         {icon ?? null}
       </span>
-      <div className="min-h-[44px] min-w-0 flex-1">
+      <div className="min-h-[36px] min-w-0 flex-1">
         <h2 className={titleClass}>{title}</h2>
         <p className={subtitleClass}>{subtitle ?? '\u00A0'}</p>
       </div>

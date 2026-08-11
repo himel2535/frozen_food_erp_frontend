@@ -71,35 +71,51 @@ export const MONGODB_READY_MODULES: readonly ApiModule[] = [
   ...EXTENDED_API_MODULE_KEYS,
 ] as const;
 
+/** Loaded first — app becomes interactive before remaining modules hydrate. */
+export const API_BOOT_MODULES: readonly ApiModule[] = [
+  'customers',
+  'products',
+  'suppliers',
+  'employees',
+  'salesOrders',
+  'invoices',
+  'leads',
+  'deals',
+  'quotations',
+  'deliveries',
+  'payments',
+  'categories',
+  'units',
+  'warehouses',
+  'rawMaterials',
+  'semiFinishedProducts',
+  'finishedGoods',
+  'purchaseOrders',
+  'purchaseRm',
+  'recipes',
+  'projects',
+  'companySettings',
+] as const;
 
+const BOOT_MODULE_SET = new Set<string>(API_BOOT_MODULES);
+
+export function getApiBackgroundModules(): ApiModule[] {
+  return MONGODB_READY_MODULES.filter((mod) => !BOOT_MODULE_SET.has(mod));
+}
 
 export const INVENTORY_API_MODULES: ApiModule[] = [
-
   'products',
-
   'categories',
-
   'units',
-
   'warehouses',
-
   'rawMaterials',
-
   'semiFinishedProducts',
-
   'finishedGoods',
-
   'stockIn',
-
   'stockOut',
-
   'stockTransfers',
-
   'stockAdjustments',
-
 ];
-
-
 
 const globalBackend = process.env.NEXT_PUBLIC_DATA_BACKEND;
 

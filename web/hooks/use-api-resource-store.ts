@@ -56,13 +56,6 @@ export function useApiResourceStore(
 
   useEffect(() => {
     if (!enabled) return;
-    const onFocus = () => { void reload(); };
-    window.addEventListener('focus', onFocus);
-    return () => window.removeEventListener('focus', onFocus);
-  }, [enabled, reload]);
-
-  useEffect(() => {
-    if (!enabled) return;
     return onApiMutation((modules) => {
       if (!modules || modules.includes(module)) {
         void reload();
