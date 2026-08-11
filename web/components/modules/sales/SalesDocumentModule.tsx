@@ -21,6 +21,10 @@ import { useAppStore } from '@/lib/state/app-store';
 import { useLocaleFormat } from '@/hooks/useLocaleFormat';
 import { sortRowsNewestFirst } from '@/lib/services/domain-service';
 import { translateStatus } from '@/lib/i18n/resolve-label';
+import type { ApiModule } from '@/lib/config/data-source';
+import { useApiResourceStore } from '@/hooks/use-api-resource-store';
+import { mapApiSalesDocRow, mapSalesDocToApi, resolveApiRowId, convertQuotationToOrderViaApi } from '@/lib/services/entity-api-mappers';
+import { ApiModeBanner } from '@/components/shared/ApiModeBanner';
 
 export interface SalesDocColumn {
   key: string;
@@ -38,14 +42,10 @@ export interface SalesDocumentConfig {
   columns: SalesDocColumn[];
   searchKeys: string[];
   kpi?: (rows: Record<string, unknown>[]) => KpiCardItem[];
-  list: (appState: import('@/lib/state/types').AppState) => Record<string, unknown>[];
-  create: (appState: import('@/lib/state/types').AppState, payload: Record<string, unknown>) => { ok: boolean; id?: string; error?: string };
-  update: (appState: import('@/lib/state/types').AppState, id: string, payload: Record<string, unknown>) => { ok: boolean; error?: string };
-  delete?: (appState: import('@/lib/state/types').AppState, id: string) => { ok: boolean };
   showLineItems?: boolean;
   customerField?: boolean;
-  onConvert?: (appState: import('@/lib/state/types').AppState, id: string) => { ok: boolean; id?: string; error?: string };
   convertLabel?: string;
+  apiModule: ApiModule;
 }
 
 function itemsToLineItems(items: unknown): LineItem[] {
@@ -67,9 +67,8 @@ function lineItemsToPayload(items: LineItem[]) {
 
 export function SalesDocumentModule({ config }: { config: SalesDocumentConfig }) {
   const t = useAppStore((s) => s.t);
-  const appState = useAppStore((s) => s.appState);
-  const saveAppState = useAppStore((s) => s.saveAppState);
   const { formatMoney } = useLocaleFormat();
+  const apiStore = useApiResourceStore(config.apiModule, mapApiSalesDocRow);
   const [view, setView] = useState<'main' | 'form' | 'detail'>('main');
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
@@ -80,7 +79,7 @@ export function SalesDocumentModule({ config }: { config: SalesDocumentConfig })
   const [lineItems, setLineItems] = useState<LineItem[]>([]);
 
   const rows = useMemo(() => {
-    let data = config.list(appState);
+    let data = apiStore.rows;
     if (search) {
       const q = search.toLowerCase();
       data = data.filter((row) => config.searchKeys.some((k) => String(row[k] ?? '').toLowerCase().includes(q)));
@@ -89,7 +88,7 @@ export function SalesDocumentModule({ config }: { config: SalesDocumentConfig })
       data = data.filter((row) => String(row.status ?? '').toLowerCase() === statusFilter);
     }
     return sortRowsNewestFirst(data);
-  }, [appState, config, search, statusFilter]);
+  }, [apiStore.rows, config, search, statusFilter]);
 
   const kpis = useMemo(() => (config.kpi ? config.kpi(rows) : []), [config, rows]);
   const detailRow = useMemo(() => rows.find((r) => String(r.id) === detailId), [rows, detailId]);
@@ -127,25 +126,31 @@ export function SalesDocumentModule({ config }: { config: SalesDocumentConfig })
     setView('form');
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const payload = {
       ...form,
+      customerName: form.customer,
       items: config.showLineItems ? lineItemsToPayload(lineItems) : undefined,
       total: config.showLineItems ? total : Number((form as Record<string, unknown>).total ?? 0),
+      amount: config.showLineItems ? total : Number((form as Record<string, unknown>).amount ?? (form as Record<string, unknown>).total ?? 0),
     };
-    const result = editingId ? config.update(appState, editingId, payload) : config.create(appState, payload);
+
+    const body = mapSalesDocToApi({ ...payload, id: editingId ?? undefined }, editingId ?? undefined);
+    const editRow = editingId ? rows.find((r) => String(r.id) === editingId) : null;
+    const mongoId = editRow ? resolveApiRowId(editRow) : '';
+    const result = editingId && mongoId
+      ? await apiStore.update(mongoId, body)
+      : await apiStore.create(body);
     if (!result.ok) {
       toast.error('Operation failed', { module: 'Sales', description: 'error' in result ? String(result.error) : 'Save failed' });
       return;
     }
-    saveAppState();
     setView('main');
     resetForm();
   };
 
   const handleDelete = async (id: string) => {
-    if (!config.delete) return;
     const ok = await confirmAction({
       title: t('sales.delete_record'),
       message: t('sales.delete_record_confirm'),
@@ -154,8 +159,25 @@ export function SalesDocumentModule({ config }: { config: SalesDocumentConfig })
       module: config.title,
     });
     if (!ok) return;
-    config.delete(appState, id);
-    saveAppState();
+    const row = rows.find((r) => String(r.id) === id);
+    if (!row) return;
+    const result = await apiStore.remove(resolveApiRowId(row));
+    if (!result.ok) {
+      toast.error('Operation failed', { module: 'Sales', description: 'error' in result ? String(result.error) : 'Delete failed' });
+    }
+  };
+
+  const handleConvertQuotation = async () => {
+    if (!detailRow || config.apiModule !== 'quotations') return;
+    const r = await convertQuotationToOrderViaApi(detailRow);
+    if (r.ok) {
+      await apiStore.reload();
+      toast.success('Order created', { module: 'Sales', description: `Sales order ${r.id} created from quotation` });
+      setView('main');
+      setDetailId(null);
+    } else {
+      toast.error('Operation failed', { module: 'Sales', description: 'error' in r ? String(r.error) : 'Failed' });
+    }
   };
 
   if (view === 'detail' && detailRow) {
@@ -169,15 +191,11 @@ export function SalesDocumentModule({ config }: { config: SalesDocumentConfig })
           onBack={() => { setView('main'); setDetailId(null); }}
           actions={
             <div className="flex gap-2">
-              {config.onConvert && (
+              {config.apiModule === 'quotations' && (
                 <button
                   type="button"
                   className="px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl cursor-pointer"
-                  onClick={() => {
-                    const r = config.onConvert!(appState, String(detailRow.id));
-                    if (r.ok) { saveAppState(); toast.info('Notice', { module: 'Sales', description: `Created ${r.id}` }); }
-                    else toast.error('Operation failed', { module: 'Sales', description: String(r.error ?? 'Failed') });
-                  }}
+                  onClick={() => void handleConvertQuotation()}
                 >
                   {config.convertLabel ?? t('common.convert')}
                 </button>
@@ -250,6 +268,10 @@ export function SalesDocumentModule({ config }: { config: SalesDocumentConfig })
 
   return (
     <>
+      <ApiModeBanner module={config.apiModule} error={apiStore.error} />
+      {apiStore.loading && (
+        <div className="p-4 text-center text-sm text-slate-500">Loading…</div>
+      )}
       {kpis.length > 0 && <ModuleKpiSection items={kpis} />}
       <ListToolbar
         search={search}
@@ -275,9 +297,7 @@ export function SalesDocumentModule({ config }: { config: SalesDocumentConfig })
               }}
             />
             <TableIconAction variant="edit" onClick={() => openEdit(row)} />
-            {config.delete && (
-              <TableIconAction variant="delete" onClick={() => handleDelete(String(row.id))} />
-            )}
+            <TableIconAction variant="delete" onClick={() => handleDelete(String(row.id))} />
           </>
         )}
       />

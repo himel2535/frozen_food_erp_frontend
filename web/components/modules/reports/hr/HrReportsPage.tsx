@@ -4,6 +4,8 @@ import { useMemo, useState } from 'react';
 import { Download, Filter, Printer } from 'lucide-react';
 import { Footer } from '@/components/layout/Footer';
 import { useRegisterModuleActions } from '@/components/layout/ModuleActionsContext';
+import { useHrReportApiRows } from '@/hooks/use-report-api-data';
+import { ApiModeBanner } from '@/components/shared/ApiModeBanner';
 import { useAppStore } from '@/lib/state/app-store';
 import { toast } from '@/lib/ui/feedback';
 import { DateInput } from '@/components/shared/DateInput';
@@ -49,6 +51,7 @@ import { exportHrReportCsv } from '@/lib/services/report-export';
 
 export function HrReportsPage() {
   const appState = useAppStore((s) => s.appState);
+  const apiReport = useHrReportApiRows();
   const t = useAppStore((s) => s.t);
   const { printSection, printTarget } = useReportPrint<HrPrintSectionId>();
 
@@ -58,23 +61,31 @@ export function HrReportsPage() {
   const [departmentFilter, setDepartmentFilter] = useState('All');
 
   const allDepartments = useMemo(
-    () => listHrDepartmentRows(Array.isArray(appState.reportHRDepartments) ? appState.reportHRDepartments : []),
-    [appState.reportHRDepartments],
+    () => listHrDepartmentRows(
+      apiReport.initialized ? apiReport.rows.departments : (Array.isArray(appState.reportHRDepartments) ? appState.reportHRDepartments : []),
+    ),
+    [apiReport.initialized, apiReport.rows.departments, appState.reportHRDepartments],
   );
 
   const allJoiners = useMemo(
-    () => listHrJoinerRows(Array.isArray(appState.reportHRJoiners) ? appState.reportHRJoiners : []),
-    [appState.reportHRJoiners],
+    () => listHrJoinerRows(
+      apiReport.initialized ? apiReport.rows.joiners : (Array.isArray(appState.reportHRJoiners) ? appState.reportHRJoiners : []),
+    ),
+    [apiReport.initialized, apiReport.rows.joiners, appState.reportHRJoiners],
   );
 
   const allLeavers = useMemo(
-    () => listHrLeaverRows(Array.isArray(appState.reportHRLeavers) ? appState.reportHRLeavers : []),
-    [appState.reportHRLeavers],
+    () => listHrLeaverRows(
+      apiReport.initialized ? apiReport.rows.leavers : (Array.isArray(appState.reportHRLeavers) ? appState.reportHRLeavers : []),
+    ),
+    [apiReport.initialized, apiReport.rows.leavers, appState.reportHRLeavers],
   );
 
   const allBirthdays = useMemo(
-    () => listHrBirthdayRows(Array.isArray(appState.reportHRBirthdays) ? appState.reportHRBirthdays : []),
-    [appState.reportHRBirthdays],
+    () => listHrBirthdayRows(
+      apiReport.initialized ? apiReport.rows.birthdays : (Array.isArray(appState.reportHRBirthdays) ? appState.reportHRBirthdays : []),
+    ),
+    [apiReport.initialized, apiReport.rows.birthdays, appState.reportHRBirthdays],
   );
 
   const filters = useMemo(
@@ -168,6 +179,7 @@ export function HrReportsPage() {
 
   return (
     <>
+        {apiReport.error ? <ApiModeBanner module="employees" error={apiReport.error} /> : null}
         <HrReportMetrics items={kpis} />
 
         <ModuleFilterBar

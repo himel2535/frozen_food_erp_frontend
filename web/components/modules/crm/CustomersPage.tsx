@@ -36,6 +36,14 @@ import {
   deleteCustomer,
   exportCustomersCsv,
 } from '@/lib/services/crm-service';
+import { isModuleApiMode } from '@/lib/config/data-source';
+import { ApiModeBanner } from '@/components/shared/ApiModeBanner';
+import { useCustomersApiStore } from '@/hooks/use-customers-module';
+import {
+  exportCustomersCsvFromRows,
+  fetchCustomerFromApi,
+  mapApiCustomerToFormValues,
+} from '@/lib/services/customers-api-service';
 
 const AVATAR_COLORS = [
   'bg-blue-100 text-blue-700',
@@ -133,6 +141,8 @@ function CustomersPageContent() {
   const searchParams = useSearchParams();
   const appState = useAppStore((s) => s.appState);
   const saveAppState = useAppStore((s) => s.saveAppState);
+  const apiMode = isModuleApiMode('customers');
+  const apiStore = useCustomersApiStore();
   const [view, setView] = useState<'main' | 'form'>('main');
   const [search, setSearch] = useState('');
   const [statusTab, setStatusTab] = useState('all');
@@ -147,18 +157,38 @@ function CustomersPageContent() {
   useEffect(() => {
     const editId = searchParams.get('edit');
     if (!editId) return;
-    const customerProfile = getCustomerProfile(appState, editId);
-    if (customerProfile) {
+
+    const openFromProfile = (profile: NonNullable<ReturnType<typeof getCustomerProfile>> | null, apiDoc?: Awaited<ReturnType<typeof fetchCustomerFromApi>>) => {
       setEditingId(editId);
-      setFormValues(buildFormValuesFromProfile(customerProfile, owners[0]?.id ?? ''));
+      if (apiDoc) {
+        setFormValues(mapApiCustomerToFormValues(apiDoc, owners[0]?.id ?? ''));
+      } else if (profile) {
+        setFormValues(buildFormValuesFromProfile(profile, owners[0]?.id ?? ''));
+      }
       setFormKey((k) => k + 1);
       setView('form');
+      router.replace('/crm/customers');
+    };
+
+    if (apiMode) {
+      void fetchCustomerFromApi(editId).then((doc) => {
+        if (doc) openFromProfile(null, doc);
+      });
+      return;
     }
-    router.replace('/crm/customers');
-  }, [searchParams, appState, owners, router]);
+
+    const customerProfile = getCustomerProfile(appState, editId);
+    if (customerProfile) openFromProfile(customerProfile);
+    else router.replace('/crm/customers');
+  }, [searchParams, appState, owners, router, apiMode]);
+
+  const sourceCustomers = useMemo(() => {
+    if (apiMode) return apiStore.rows;
+    return getCustomerList(appState) as Array<Record<string, unknown>>;
+  }, [apiMode, apiStore.rows, appState]);
 
   const customers = useMemo(() => {
-    let rows = getCustomerList(appState) as Array<Record<string, unknown>>;
+    let rows = [...sourceCustomers];
     if (search) {
       const q = search.toLowerCase();
       rows = rows.filter((c) => [c.name, c.company, c.phone, c.email].some((v) => String(v ?? '').toLowerCase().includes(q)));
@@ -178,7 +208,7 @@ function CustomersPageContent() {
       return String(b.id ?? '').localeCompare(String(a.id ?? ''));
     });
     return rows;
-  }, [appState, search, statusTab, sortKey]);
+  }, [sourceCustomers, search, statusTab, sortKey]);
 
   const statusTabs = useMemo(() => [
     { id: 'all', label: t('common.all') },
@@ -189,7 +219,7 @@ function CustomersPageContent() {
   ], [t]);
 
   const kpis = useMemo(() => {
-    const all = getCustomerList(appState) as Array<Record<string, unknown>>;
+    const all = sourceCustomers;
     const active = all.filter((c) => c.status === 'active').length;
     const avg = all.length ? all.reduce((s, c) => s + Number(c.totalSales ?? 0), 0) / all.length : 0;
     const overdue = all.reduce((s, c) => s + Number(c.totalDue ?? 0), 0);
@@ -200,7 +230,7 @@ function CustomersPageContent() {
       { key: 'avg', label: t('crm.kpi_total_sales'), value: formatMoney(avg) },
       { key: 'due', label: t('crm.kpi_overdue_balance'), value: formatMoney(overdue), sub: formatCount(riskCount), alert: riskCount > 0 },
     ];
-  }, [appState, owners.length, t, formatMoney, formatCount]);
+  }, [sourceCustomers, owners.length, t, formatMoney, formatCount]);
 
   const resetForm = () => {
     setFormValues(buildEmptyFormValues(owners[0]?.id ?? ''));
@@ -224,30 +254,80 @@ function CustomersPageContent() {
 
   const openEdit = (row: Record<string, unknown>) => {
     const id = String(row.id);
-    const customerProfile = getCustomerProfile(appState, id);
     setEditingId(id);
-    if (customerProfile) {
-      setFormValues(buildFormValuesFromProfile(customerProfile, owners[0]?.id ?? ''));
-    } else {
-      setFormValues({
-        ...buildEmptyFormValues(String(row.ownerId ?? owners[0]?.id ?? '')),
-        companyName: String(row.company ?? ''),
-        contactPerson: String(row.name ?? ''),
-        customerType: String(row.companyType ?? ''),
-        mobile: String(row.phone ?? ''),
-        email: String(row.email ?? ''),
-        status: String(row.status ?? 'active'),
-        creditLimit: String(row.creditLimit ?? '0'),
-        paymentTerms: normalizePaymentTerms(String(row.paymentTerms ?? '')),
-        priceLevel: String(row.pricingTier ?? 'Standard'),
-        notes: String(row.notes ?? ''),
+
+    const openWithForm = (values: CustomerFormValues) => {
+      setFormValues(values);
+      setFormKey((k) => k + 1);
+      setView('form');
+    };
+
+    if (apiMode) {
+      void fetchCustomerFromApi(id).then((doc) => {
+        if (doc) {
+          openWithForm(mapApiCustomerToFormValues(doc, owners[0]?.id ?? ''));
+          return;
+        }
+        openWithForm({
+          ...buildEmptyFormValues(String(row.ownerId ?? owners[0]?.id ?? '')),
+          companyName: String(row.company ?? ''),
+          contactPerson: String(row.name ?? ''),
+          customerType: String(row.companyType ?? ''),
+          mobile: String(row.phone ?? ''),
+          email: String(row.email ?? ''),
+          status: String(row.status ?? 'active'),
+          creditLimit: String(row.creditLimit ?? '0'),
+          paymentTerms: normalizePaymentTerms(String(row.paymentTerms ?? '')),
+          priceLevel: String(row.pricingTier ?? 'Standard'),
+          notes: String(row.notes ?? ''),
+        });
       });
+      return;
     }
-    setFormKey((k) => k + 1);
-    setView('form');
+
+    const customerProfile = getCustomerProfile(appState, id);
+    if (customerProfile) {
+      openWithForm(buildFormValuesFromProfile(customerProfile, owners[0]?.id ?? ''));
+      return;
+    }
+    openWithForm({
+      ...buildEmptyFormValues(String(row.ownerId ?? owners[0]?.id ?? '')),
+      companyName: String(row.company ?? ''),
+      contactPerson: String(row.name ?? ''),
+      customerType: String(row.companyType ?? ''),
+      mobile: String(row.phone ?? ''),
+      email: String(row.email ?? ''),
+      status: String(row.status ?? 'active'),
+      creditLimit: String(row.creditLimit ?? '0'),
+      paymentTerms: normalizePaymentTerms(String(row.paymentTerms ?? '')),
+      priceLevel: String(row.pricingTier ?? 'Standard'),
+      notes: String(row.notes ?? ''),
+    });
   };
 
-  const handleSave = (payload: CustomerFormPayload, action: CustomerSaveAction) => {
+  const handleSave = async (payload: CustomerFormPayload, action: CustomerSaveAction) => {
+    if (apiMode) {
+      const result = editingId
+        ? await apiStore.update(editingId, payload)
+        : await apiStore.create(payload);
+      if (!result.ok) {
+        toast.error('Could not save customer', {
+          module: 'Customers',
+          description: 'error' in result && result.error ? String(result.error) : 'API save failed',
+        });
+        return;
+      }
+      if (action === 'save-and-add') {
+        setEditingId(null);
+        setFormValues(buildEmptyFormValues(owners[0]?.id ?? ''));
+        setFormKey((k) => k + 1);
+        return;
+      }
+      setView('main');
+      resetForm();
+      return;
+    }
+
     const result = editingId
       ? updateCustomer(appState, editingId, payload)
       : createCustomer(appState, payload);
@@ -279,7 +359,7 @@ function CustomersPageContent() {
   };
 
   const handleExport = () => {
-    const csv = exportCustomersCsv(appState);
+    const csv = apiMode ? exportCustomersCsvFromRows(sourceCustomers) : exportCustomersCsv(appState);
     const blob = new Blob([csv], { type: 'text/csv' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -379,6 +459,8 @@ function CustomersPageContent() {
 
   return (
     <>
+      {apiMode ? <ApiModeBanner module="customers" error={apiStore.error} /> : null}
+
       <ModuleKpiSection items={kpis} />
 
       <ModuleFilterBar
@@ -414,7 +496,7 @@ function CustomersPageContent() {
         className="min-w-[900px]"
         columns={customerColumns}
         rows={customers}
-        emptyMessage={t('crm.no_customers')}
+        emptyMessage={apiStore.loading ? 'Loading customers…' : t('crm.no_customers')}
         renderActions={(row) => (
           <>
             <TableIconAction
@@ -425,8 +507,15 @@ function CustomersPageContent() {
             <TableIconAction
               variant="delete"
               onClick={() => {
-                confirmAction({ title: 'Delete customer', message: 'Delete customer?', confirmLabel: 'Delete', tone: 'danger', module: 'Customers' }).then((__ok) => {
+                confirmAction({ title: 'Delete customer', message: 'Delete customer?', confirmLabel: 'Delete', tone: 'danger', module: 'Customers' }).then(async (__ok) => {
                   if (!__ok) return;
+                  if (apiMode) {
+                    const result = await apiStore.remove(String(row.id));
+                    if (!result.ok) {
+                      toast.error('Delete failed', { module: 'Customers', description: result.error });
+                    }
+                    return;
+                  }
                   deleteCustomer(appState, String(row.id));
                   saveAppState();
                 });

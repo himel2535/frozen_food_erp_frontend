@@ -12,6 +12,8 @@ import {
   payloadToRecord,
   recordToPoFormValues,
 } from '@/components/modules/purchases/purchase-order-form/po-form-types';
+import { usePurchaseOrderFormApi } from '@/hooks/use-purchase-order-api';
+import { isModuleApiMode } from '@/lib/config/data-source';
 import { useAppStore } from '@/lib/state/app-store';
 import {
   createPurchaseOrder,
@@ -24,21 +26,27 @@ import {
 
 export function PurchaseOrderFormPage({ mode, orderId }: { mode: 'create' | 'edit'; orderId?: string }) {
   const router = useRouter();
+  const apiMode = isModuleApiMode('purchaseOrders');
+  const poApi = usePurchaseOrderFormApi();
   const appState = useAppStore((s) => s.appState);
   const saveAppState = useAppStore((s) => s.saveAppState);
 
   useChromeSuppressed(true);
 
   const suppliers = useMemo(
-    () => listSuppliers(appState).map((s) => ({ id: String(s.id), name: String(s.name) })),
-    [appState],
+    () => (apiMode ? poApi.suppliers : listSuppliers(appState).map((s) => ({ id: String(s.id), name: String(s.name) }))),
+    [apiMode, poApi.suppliers, appState],
   );
-  const purchasers = useMemo(() => getPurchaserOptions(appState), [appState]);
+  const purchasers = useMemo(
+    () => (apiMode ? poApi.purchasers : getPurchaserOptions(appState)),
+    [apiMode, poApi.purchasers, appState],
+  );
 
   const existing = useMemo(() => {
     if (!orderId) return null;
+    if (apiMode) return poApi.findOrder(orderId);
     return listPurchases(appState).find((r) => String(r.id) === orderId) ?? null;
-  }, [appState, orderId]);
+  }, [apiMode, poApi, appState, orderId]);
 
   const initialValues = useMemo(() => {
     if (existing) return recordToPoFormValues(existing);
@@ -47,7 +55,7 @@ export function PurchaseOrderFormPage({ mode, orderId }: { mode: 'create' | 'edi
 
   const poPreviewId = orderId ?? previewPurchaseOrderId(appState);
 
-  if (mode === 'edit' && orderId && !existing) {
+  if (mode === 'edit' && orderId && !existing && (apiMode ? poApi.initialized : true)) {
     return (
       <div className="p-8 text-center text-sm text-slate-500">
         Purchase order not found.{' '}
@@ -58,12 +66,21 @@ export function PurchaseOrderFormPage({ mode, orderId }: { mode: 'create' | 'edi
     );
   }
 
-  const handleSave = (payload: PoFormPayload, action: PoSaveAction) => {
+  const handleSave = async (payload: PoFormPayload, action: PoSaveAction) => {
     const record = payloadToRecord({
       ...payload,
       id: orderId ?? payload.id ?? payload.poPreviewId,
       status: action === 'create' && payload.status === 'Draft' ? 'Sent' : payload.status,
     });
+    if (apiMode) {
+      const result = await poApi.saveOrder(orderId, record);
+      if (!result.ok) {
+        toast.error('Operation failed', { module: 'Purchases', description: 'error' in result ? String(result.error) : 'Save failed' });
+        return;
+      }
+      router.push('/purchases/orders');
+      return;
+    }
     const result = mode === 'edit' && orderId
       ? updatePurchaseOrder(appState, orderId, record)
       : createPurchaseOrder(appState, record);

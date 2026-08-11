@@ -18,6 +18,8 @@ import {
   updateProfile,
 } from '@/lib/services/settings-service';
 import { useAppStore } from '@/lib/state/app-store';
+import { isModuleApiMode } from '@/lib/config/data-source';
+import { saveSettingsDoc } from '@/lib/services/settings-api-service';
 import type { Lang } from '@/lib/state/types';
 import type { ProfileFormState } from '@/components/modules/settings/profile/ProfileSettingsForm';
 
@@ -114,14 +116,14 @@ export function ProfileSettingsPage() {
     setForm((prev) => ({ ...prev, [key]: value }));
   };
 
-  const handleSubmit = (e: FormEvent) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     if (!form.name.trim()) {
       toast.error('Validation failed', { module: 'Profile', description: 'Name is required.' });
       return;
     }
 
-    updateProfile(appState, {
+    const profilePayload = {
       imageUrl: form.imageUrl.trim(),
       name: form.name.trim(),
       phone: form.phone.trim(),
@@ -135,11 +137,20 @@ export function ProfileSettingsPage() {
       emergencyPhone: form.emergencyPhone.trim(),
       notifyEmail: form.notifyEmail,
       notifyPush: form.notifyPush,
-    });
+    };
+    updateProfile(appState, profilePayload);
+
+    if (isModuleApiMode('companySettings')) {
+      const result = await saveSettingsDoc('currentUser', getProfileView(appState));
+      if (!result.ok) {
+        toast.error('Operation failed', { module: 'Profile', description: 'error' in result ? String(result.error) : 'Save failed' });
+        return;
+      }
+    }
 
     if (form.lang !== appState.lang) {
       replaceAppState({ lang: form.lang as Lang });
-    } else {
+    } else if (!isModuleApiMode('companySettings')) {
       saveAppState();
     }
 

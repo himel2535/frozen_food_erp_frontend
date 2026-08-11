@@ -17,6 +17,12 @@ import { TableIconAction } from '@/components/shared/TableIconAction';
 import { AppTable, type AppTableColumn } from '@/components/shared/AppTable';
 import { CF_BTN_OUTLINE, CF_BTN_PRIMARY } from '@/components/modules/crm/customer-form/customer-form-styles';
 import { useAppStore } from '@/lib/state/app-store';
+import { useApiResourceStore } from '@/hooks/use-api-resource-store';
+import { mapGenericApiRow, mapGenericPayloadToApi } from '@/lib/services/generic-api-mapper';
+import { ApiModeBanner } from '@/components/shared/ApiModeBanner';
+import { isModuleApiMode } from '@/lib/config/data-source';
+import type { AppState } from '@/lib/state/types';
+import { syncInventoryQuantityDeltas } from '@/lib/services/inventory-api-sync';
 import {
   PurchaseRmForm,
   EMPTY_PURCHASE_RM_FORM,
@@ -41,6 +47,12 @@ import {
   sendPurchaseRmOrder,
   updatePurchaseRmOrder,
 } from '@/lib/services/purchase-rm-service';
+import { syncPurchaseRmApproval } from '@/lib/services/approvals-service';
+import {
+  listFinishedGoods,
+  listRawMaterials,
+  listSemiFinishedProducts,
+} from '@/lib/services/inventory-service';
 import { listVendorBills } from '@/lib/services/purchases-service';
 import { listSupplierOptions } from '@/lib/services/recipes-service';
 
@@ -115,6 +127,8 @@ export function PurchaseRmPage() {
   const searchParams = useSearchParams();
   const appState = useAppStore((s) => s.appState);
   const saveAppState = useAppStore((s) => s.saveAppState);
+  const apiMode = isModuleApiMode('purchaseRm');
+  const apiStore = useApiResourceStore('purchaseRm', mapGenericApiRow);
   const focusPoId = searchParams.get('focus');
   const fromApproval = searchParams.get('from') === 'approval';
   const [view, setView] = useState<'main' | 'form'>('main');
@@ -136,15 +150,22 @@ export function PurchaseRmPage() {
   const [activeProofId, setActiveProofId] = useState<string | null>(null);
   const [receiveModalPoId, setReceiveModalPoId] = useState<string | null>(null);
 
-  const suppliers = useMemo(() => listSupplierOptions(appState), [appState]);
+  const rmState = useMemo((): AppState => {
+    if (apiMode && apiStore.initialized) {
+      return { ...appState, purchaseRmOrders: apiStore.rows } as AppState;
+    }
+    return appState;
+  }, [apiMode, apiStore.initialized, apiStore.rows, appState]);
+
+  const suppliers = useMemo(() => listSupplierOptions(rmState), [rmState]);
   const warehouses = useMemo(
-    () => (appState.inventoryWarehouses ?? []).map((w) => ({ id: String(w.id), name: String(w.name) })),
-    [appState.inventoryWarehouses],
+    () => (rmState.inventoryWarehouses ?? []).map((w) => ({ id: String(w.id), name: String(w.name) })),
+    [rmState.inventoryWarehouses],
   );
   const defaultWarehouseId = warehouses.find((w) => w.name.toLowerCase().includes('main'))?.id ?? warehouses[0]?.id ?? '';
 
   const rows = useMemo(() => {
-    let data = listPurchaseRmOrders(appState);
+    let data = listPurchaseRmOrders(rmState);
     if (search) {
       const q = search.toLowerCase();
       data = data.filter((row) => {
@@ -168,7 +189,7 @@ export function PurchaseRmPage() {
     return data.sort((a, b) =>
       String(b.createdAt ?? b.date ?? '').localeCompare(String(a.createdAt ?? a.date ?? '')),
     );
-  }, [appState, search, statusFilter, supplierFilter, warehouseFilter, paymentFilter, dateFrom, dateTo, lowStockOnly]);
+  }, [rmState, search, statusFilter, supplierFilter, warehouseFilter, paymentFilter, dateFrom, dateTo, lowStockOnly]);
 
   useEffect(() => {
     if (skipSelectionResetRef.current) {
@@ -189,7 +210,7 @@ export function PurchaseRmPage() {
       setFocusNotFound(false);
       return;
     }
-    const order = listPurchaseRmOrders(appState).find((r) => String(r.id) === focusPoId);
+    const order = listPurchaseRmOrders(rmState).find((r) => String(r.id) === focusPoId);
     if (!order) {
       setFocusNotFound(true);
       return;
@@ -214,7 +235,7 @@ export function PurchaseRmPage() {
       }
       document.querySelector(`[data-row-id="${focusPoId}"]`)?.scrollIntoView({ block: 'nearest' });
     });
-  }, [fromApproval, focusPoId, appState]);
+  }, [fromApproval, focusPoId, rmState]);
 
   const dismissApprovalFocus = () => {
     router.replace('/purchases/purchase-rm');
@@ -229,8 +250,8 @@ export function PurchaseRmPage() {
   }, [activeProofId, selectedPo]);
   const receiveModalOrder = useMemo(() => {
     if (!receiveModalPoId) return null;
-    return listPurchaseRmOrders(appState).find((r) => String(r.id) === receiveModalPoId) ?? null;
-  }, [appState, receiveModalPoId]);
+    return listPurchaseRmOrders(rmState).find((r) => String(r.id) === receiveModalPoId) ?? null;
+  }, [rmState, receiveModalPoId]);
   const linkedBill = useMemo(() => {
     if (!selectedPo?.billId) return null;
     return listVendorBills(appState).find((b) => String(b.id) === String(selectedPo.billId)) ?? null;
@@ -251,13 +272,13 @@ export function PurchaseRmPage() {
   }, [selectedPo]);
   const focusedOrder = useMemo(() => {
     if (!focusPoId) return null;
-    return listPurchaseRmOrders(appState).find((r) => String(r.id) === focusPoId) ?? null;
-  }, [appState, focusPoId]);
-  const selectedSupplier = selectedPo ? getSupplierProfile(appState, String(selectedPo.supplierId)) : null;
-  const kpis = useMemo(() => getPurchaseRmMetrics(appState), [appState]);
+    return listPurchaseRmOrders(rmState).find((r) => String(r.id) === focusPoId) ?? null;
+  }, [rmState, focusPoId]);
+  const selectedSupplier = selectedPo ? getSupplierProfile(rmState, String(selectedPo.supplierId)) : null;
+  const kpis = useMemo(() => getPurchaseRmMetrics(rmState), [rmState]);
   const poPreviewId = useMemo(
-    () => (editingId ? editingId : previewPoNumber(appState, formValues.date)),
-    [appState, editingId, formValues.date],
+    () => (editingId ? editingId : previewPoNumber(rmState, formValues.date)),
+    [rmState, editingId, formValues.date],
   );
 
   const rmOrderColumns = useMemo<AppTableColumn<Record<string, unknown>>[]>(() => [
@@ -370,13 +391,31 @@ export function PurchaseRmPage() {
     setView('form');
   };
 
-  const persistPo = (payload: PurchaseRmPayload, action: PurchaseRmSaveAction) => {
+  const persistPo = async (payload: PurchaseRmPayload, action: PurchaseRmSaveAction) => {
     const record = {
       ...payload,
       id: editingId ?? undefined,
       grandTotal: payload.totals.grandTotal,
       total: payload.totals.grandTotal,
     };
+    if (apiMode) {
+      const body = mapGenericPayloadToApi(record as Record<string, unknown>);
+      const result = editingId
+        ? await apiStore.update(editingId, body)
+        : await apiStore.create(body);
+      if (!result.ok) {
+        toast.error('Operation failed', { module: 'Purchases', description: 'error' in result ? String(result.error) : 'Save failed' });
+        return null;
+      }
+      const savedId = editingId ?? ('id' in result ? String(result.id) : previewPoNumber(rmState, payload.date));
+      if (String(record.status) === 'pending_approval') {
+        const syncApproval = await syncPurchaseRmApproval({ ...record, id: savedId });
+        if (!syncApproval.ok) {
+          toast.error('Approval sync failed', { module: 'Purchases', description: syncApproval.error ?? 'Could not create approval request.' });
+        }
+      }
+      return savedId;
+    }
     const result = editingId
       ? updatePurchaseRmOrder(appState, editingId, record)
       : createPurchaseRmOrder(appState, record);
@@ -385,11 +424,11 @@ export function PurchaseRmPage() {
       return null;
     }
     saveAppState();
-    return editingId ?? ('id' in result ? result.id : previewPoNumber(appState, payload.date));
+    return editingId ?? ('id' in result ? result.id : previewPoNumber(rmState, payload.date));
   };
 
-  const handleSave = (payload: PurchaseRmPayload, action: PurchaseRmSaveAction) => {
-    const savedId = persistPo(payload, action);
+  const handleSave = async (payload: PurchaseRmPayload, action: PurchaseRmSaveAction) => {
+    const savedId = await persistPo(payload, action);
     if (!savedId) return;
     resetListFilters();
     setStatusFilter(action === 'complete' ? 'pending_approval' : 'draft');
@@ -397,6 +436,57 @@ export function PurchaseRmPage() {
     setView('main');
     setSelectedPoId(savedId);
     resetForm();
+  };
+
+  const runRmMutation = async (
+    id: string,
+    mutator: (state: AppState) => { ok: boolean; error?: string },
+    successMsg?: string,
+  ) => {
+    if (apiMode) {
+      const inventoryBefore = { ...appState } as AppState;
+      const pseudo = {
+        ...appState,
+        purchaseRmOrders: apiStore.rows.map((r) => ({ ...r })),
+        rawMaterials: listRawMaterials(appState).map((r) => ({ ...r })),
+        semiFinishedProducts: listSemiFinishedProducts(appState).map((r) => ({ ...r })),
+        finishedGoods: listFinishedGoods(appState).map((r) => ({ ...r })),
+      } as AppState;
+      const result = mutator(pseudo);
+      if (!result.ok) {
+        toast.error('Operation failed', { module: 'Purchases', description: String(result.error ?? 'Action failed') });
+        return false;
+      }
+      const updated = listPurchaseRmOrders(pseudo).find((r) => String(r.id) === id);
+      if (updated) {
+        const sync = await apiStore.update(id, mapGenericPayloadToApi(updated as Record<string, unknown>));
+        if (!sync.ok) {
+          toast.error('Operation failed', { module: 'Purchases', description: 'error' in sync ? String(sync.error) : 'Sync failed' });
+          return false;
+        }
+      }
+      const invSync = await syncInventoryQuantityDeltas(inventoryBefore, pseudo);
+      if (!invSync.ok) {
+        toast.error('Operation failed', { module: 'Purchases', description: invSync.error });
+        return false;
+      }
+      if (updated && String(updated.status) === 'pending_approval') {
+        const syncApproval = await syncPurchaseRmApproval(updated as Record<string, unknown>);
+        if (!syncApproval.ok) {
+          toast.error('Approval sync failed', { module: 'Purchases', description: syncApproval.error ?? 'Could not create approval request.' });
+        }
+      }
+      if (successMsg) toast.success('Success', { module: 'Purchases', description: successMsg });
+      return true;
+    }
+    const result = mutator(appState);
+    if (!result.ok) {
+      toast.error('Operation failed', { module: 'Purchases', description: String(result.error ?? 'Action failed') });
+      return false;
+    }
+    saveAppState();
+    if (successMsg) toast.success('Success', { module: 'Purchases', description: successMsg });
+    return true;
   };
 
   const runAction = (fn: () => { ok: boolean; error?: string }, successMsg?: string) => {
@@ -410,12 +500,24 @@ export function PurchaseRmPage() {
     return true;
   };
 
-  const handleSendForApproval = (id: string) => {
-    if (!runAction(() => sendPurchaseRmOrder(appState, id), 'Sent for approval.')) return;
+  const handleSendForApproval = async (id: string) => {
+    if (apiMode) {
+      if (!await runRmMutation(id, (s) => sendPurchaseRmOrder(s, id), 'Sent for approval.')) return;
+    } else if (!runAction(() => sendPurchaseRmOrder(appState, id), 'Sent for approval.')) return;
     router.push('/workflow-approvals');
   };
 
-  const handleReceiveSubmit = (poId: string, payload: PurchaseRmReceiveSubmitPayload) => {
+  const handleReceiveSubmit = async (poId: string, payload: PurchaseRmReceiveSubmitPayload) => {
+    if (apiMode) {
+      if (!await runRmMutation(poId, (s) => receivePurchaseRmOrder(s, poId, {
+        proofType: payload.proofType,
+        proofNote: payload.proofNote,
+        attachments: payload.attachments,
+      }))) return;
+      setReceiveModalPoId(null);
+      toast.success('Success', { module: 'Purchases', description: 'Goods received.' });
+      return;
+    }
     const result = receivePurchaseRmOrder(appState, poId, {
       proofType: payload.proofType,
       proofNote: payload.proofNote,
@@ -474,6 +576,7 @@ export function PurchaseRmPage() {
 
   return (
     <>
+      {apiStore.error ? <ApiModeBanner module="purchaseRm" error={apiStore.error} /> : null}
       <ModuleKpiSection items={kpis} />
 
       <ModuleFilterBar>
@@ -607,14 +710,31 @@ export function PurchaseRmPage() {
                   ) : receiveButton
                 )}
                 {!['completed', 'cancelled'].includes(String(row.status)) && (
-                  <button type="button" title="Cancel" onClick={() => runAction(() => cancelPurchaseRmOrder(appState, String(row.id)))} className="p-1.5 rounded-lg hover:bg-rose-50 text-rose-500 cursor-pointer text-[10px] font-bold">Cancel</button>
+                  <button
+                    type="button"
+                    title="Cancel"
+                    onClick={() => {
+                      const id = String(row.id);
+                      if (apiMode) void runRmMutation(id, (s) => cancelPurchaseRmOrder(s, id));
+                      else runAction(() => cancelPurchaseRmOrder(appState, id));
+                    }}
+                    className="p-1.5 rounded-lg hover:bg-rose-50 text-rose-500 cursor-pointer text-[10px] font-bold"
+                  >
+                    Cancel
+                  </button>
                 )}
                 {['draft', 'cancelled'].includes(String(row.status)) && (
                   <TableIconAction
                     variant="delete"
                     onClick={() => {
                       confirmAction({ title: 'Delete RM order', message: 'Delete this RM order?', confirmLabel: 'Delete', tone: 'danger', module: 'Purchase RM' }).then((__ok) => {
-                        if (__ok) runAction(() => deletePurchaseRmOrder(appState, String(row.id)));
+                        if (!__ok) return;
+                        const id = String(row.id);
+                        if (apiMode) {
+                          void apiStore.remove(id);
+                          return;
+                        }
+                        runAction(() => deletePurchaseRmOrder(appState, id));
                       });
                     }}
                   />

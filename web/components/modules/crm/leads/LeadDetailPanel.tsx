@@ -28,7 +28,7 @@ type LeadRow = Record<string, unknown>;
 type Activity = Record<string, unknown>;
 type DetailTab = 'activity' | 'details' | 'notes' | 'files';
 
-const PANEL_SHELL = 'rounded-xl border border-slate-200 bg-white min-h-[580px] h-full flex flex-col overflow-hidden';
+const PANEL_SHELL = 'rounded-xl border border-slate-200 bg-white min-h-[580px] h-full w-full min-w-0 max-w-full flex flex-col overflow-hidden';
 
 const DETAIL_TABS: { id: DetailTab; labelKey: string }[] = [
   { id: 'activity', labelKey: 'crm.tab_activity' },
@@ -39,9 +39,11 @@ const DETAIL_TABS: { id: DetailTab; labelKey: string }[] = [
 
 function InfoRow({ label, value }: { label: string; value: string }) {
   return (
-    <div className="flex justify-between gap-3 text-xs py-1.5 border-b border-slate-50 last:border-0">
+    <div className="flex items-start justify-between gap-3 text-xs py-1.5 border-b border-slate-50 last:border-0 min-w-0">
       <span className="text-slate-500 font-semibold shrink-0">{label}</span>
-      <span className="text-slate-800 font-bold text-right">{value || '—'}</span>
+      <span className="text-slate-800 font-bold text-right min-w-0 truncate max-w-[58%]" title={value || undefined}>
+        {value || '—'}
+      </span>
     </div>
   );
 }
@@ -114,7 +116,7 @@ export function LeadDetailPanel({
           </div>
         </div>
 
-        <div className="flex flex-wrap gap-1.5 mt-3">
+        <div className="flex flex-wrap gap-1.5 mt-3 overflow-x-auto pb-0.5">
           {[
             { icon: Phone, label: t('crm.action_call') },
             { icon: MessageCircle, label: t('crm.action_whatsapp') },
@@ -238,14 +240,16 @@ export function LeadDetailPanel({
         ) : null}
       </div>
 
-      <div className="p-4 border-t border-slate-100 flex flex-wrap gap-2 mt-auto">
-        <button type="button" onClick={onEdit} className="flex-1 min-w-[100px] text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white rounded-xl py-2.5 cursor-pointer">
-          {t('crm.edit_lead')}
-        </button>
-        <button type="button" onClick={onConvert} className="flex-1 min-w-[100px] text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white rounded-xl py-2.5 cursor-pointer">
-          {t('crm.convert_to_customer')}
-        </button>
-        <button type="button" onClick={onMarkLost} className="text-xs font-bold bg-rose-50 hover:bg-rose-100 text-rose-700 rounded-xl py-2.5 px-3 cursor-pointer">
+      <div className="p-3 border-t border-slate-100 mt-auto shrink-0 space-y-2">
+        <div className="grid grid-cols-2 gap-2">
+          <button type="button" onClick={onEdit} className="text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white rounded-xl py-2.5 px-2 cursor-pointer truncate">
+            {t('crm.edit_lead')}
+          </button>
+          <button type="button" onClick={onConvert} className="text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white rounded-xl py-2.5 px-2 cursor-pointer truncate">
+            {t('crm.convert_to_customer')}
+          </button>
+        </div>
+        <button type="button" onClick={onMarkLost} className="w-full text-xs font-bold bg-rose-50 hover:bg-rose-100 text-rose-700 rounded-xl py-2.5 px-3 cursor-pointer">
           {t('crm.mark_lost')}
         </button>
       </div>

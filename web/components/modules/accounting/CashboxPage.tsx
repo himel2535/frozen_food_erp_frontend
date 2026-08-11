@@ -6,6 +6,10 @@ import { useMemo, useState } from 'react';
 import { Footer } from '@/components/layout/Footer';
 import { useChromeSuppressed } from '@/components/layout/ModuleActionsContext';
 import { useAppStore } from '@/lib/state/app-store';
+import { useApiResourceStore } from '@/hooks/use-api-resource-store';
+import { mapGenericApiRow, mapGenericPayloadToApi } from '@/lib/services/generic-api-mapper';
+import { ApiModeBanner } from '@/components/shared/ApiModeBanner';
+import { isModuleApiMode } from '@/lib/config/data-source';
 import {
   createCashboxEntry,
   deleteCashboxEntry,
@@ -31,6 +35,8 @@ const PAGE_SIZE = 6;
 export function CashboxPage() {
   const appState = useAppStore((s) => s.appState);
   const saveAppState = useAppStore((s) => s.saveAppState);
+  const apiMode = isModuleApiMode('cashbox');
+  const apiStore = useApiResourceStore('cashbox', mapGenericApiRow);
 
   const [view, setView] = useState<'main' | 'form'>('main');
   const [formType, setFormType] = useState<CashboxTab>('cash_in');
@@ -41,8 +47,15 @@ export function CashboxPage() {
   const [categoryFilter, setCategoryFilter] = useState('all');
   const [page, setPage] = useState(1);
 
-  const allEntries = useMemo(() => listCashboxEntries(appState), [appState]);
-  const metrics = useMemo(() => getCashboxMetrics(appState), [appState]);
+  const allEntries = useMemo(() => {
+    if (apiMode && apiStore.initialized) {
+      return listCashboxEntries({ cashboxEntries: apiStore.rows } as import('@/lib/state/types').AppState);
+    }
+    return listCashboxEntries(appState);
+  }, [apiMode, apiStore.initialized, apiStore.rows, appState]);
+  const metrics = useMemo(() => getCashboxMetrics(
+    apiMode && apiStore.initialized ? { cashboxEntries: apiStore.rows } as import('@/lib/state/types').AppState : appState,
+  ), [apiMode, apiStore.initialized, apiStore.rows, appState]);
   const partyOptions = useMemo(() => getCashboxPartyOptions(appState), [appState]);
 
   const filteredRows = useMemo(
@@ -71,7 +84,7 @@ export function CashboxPage() {
     setEditingEntry(null);
   };
 
-  const handleSave = (type: CashboxTab, values: CashboxFormValues) => {
+  const handleSave = async (type: CashboxTab, values: CashboxFormValues) => {
     const payload = {
       amount: Number(values.amount),
       datetime: new Date(values.datetime).toISOString(),
@@ -81,7 +94,30 @@ export function CashboxPage() {
       reference: values.reference,
       note: values.note,
       description: values.description || values.note,
+      type,
     };
+
+    if (apiMode) {
+      const amount = Number(values.amount);
+      const body = mapGenericPayloadToApi({
+        ...payload,
+        cashIn: type === 'cash_in' ? amount : 0,
+        cashOut: type === 'cash_out' ? amount : 0,
+      });
+      const result = editingEntry
+        ? await apiStore.update(editingEntry.id, body)
+        : await apiStore.create(body);
+      if (!result.ok) {
+        toast.error('Operation failed', { module: 'Cashbox', description: 'error' in result ? String(result.error) : 'Failed to save entry' });
+        return;
+      }
+      toast.success('Saved', { module: 'Cashbox', description: editingEntry ? 'Entry updated.' : 'Entry added.' });
+      closeForm();
+      setTypeFilter('all');
+      setCategoryFilter('all');
+      setPage(1);
+      return;
+    }
 
     if (editingEntry) {
       updateCashboxEntry(appState, editingEntry.id, { ...payload, type });
@@ -95,6 +131,16 @@ export function CashboxPage() {
 
   const handleDelete = async (entry: CashboxEntry) => {
     const __ok = await confirmAction({ title: 'Confirm action', message: `Delete "${entry.description}"?`, confirmLabel: 'Confirm', tone: 'danger', module: 'Cashbox' }); if (!__ok) return;
+    if (apiMode) {
+      const result = await apiStore.remove(entry.id);
+      if (!result.ok) {
+        toast.error('Operation failed', { module: 'Cashbox', description: 'error' in result ? String(result.error) : 'Failed to delete entry' });
+        return;
+      }
+      if (editingEntry?.id === entry.id) closeForm();
+      toast.success('Deleted', { module: 'Cashbox', description: 'Entry removed.' });
+      return;
+    }
     deleteCashboxEntry(appState, entry.id);
     saveAppState();
     if (editingEntry?.id === entry.id) closeForm();
@@ -108,6 +154,7 @@ export function CashboxPage() {
 
   return (
     <>
+      {apiStore.error ? <ApiModeBanner module="cashbox" error={apiStore.error} /> : null}
       <div className="space-y-3 min-w-0">
           <CashboxMetrics
             currentBalance={metrics.currentBalance}

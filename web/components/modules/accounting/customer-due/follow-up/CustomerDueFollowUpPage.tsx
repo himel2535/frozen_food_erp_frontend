@@ -10,7 +10,12 @@ import { useChromeSuppressed } from '@/components/layout/ModuleActionsContext';
 import { AppFormFields, AppFormModal } from '@/components/shared/AppForm';
 import { MODULE_LIST_SHELL } from '@/lib/ui/module-layout';
 import { useAppStore } from '@/lib/state/app-store';
+import { isModuleApiMode } from '@/lib/config/data-source';
+import { useApiResourceStore } from '@/hooks/use-api-resource-store';
+import { mapGenericApiRow, mapGenericPayloadToApi } from '@/lib/services/generic-api-mapper';
+import { mapApiInvoiceRow, mapInvoiceRecordToApi, mapPaymentRecordToApi, resolveApiRowId } from '@/lib/services/entity-api-mappers';
 import {
+  buildReceivableAppState,
   getCustomerReceivableDetail,
   getCustomerReceivablePayments,
   getFollowUpTimeline,
@@ -40,7 +45,12 @@ export function CustomerDueFollowUpPage({ customerId }: { customerId: string }) 
   const searchParams = useSearchParams();
   const appState = useAppStore((s) => s.appState);
   const saveAppState = useAppStore((s) => s.saveAppState);
+  const apiMode = isModuleApiMode('invoices');
+  const invoiceStore = useApiResourceStore('invoices', mapApiInvoiceRow);
+  const paymentStore = useApiResourceStore('payments', mapGenericApiRow);
+  const cashboxStore = useApiResourceStore('cashbox', mapGenericApiRow);
   const [, bump] = useState(0);
+  const [saving, setSaving] = useState(false);
 
   useChromeSuppressed(true);
 
@@ -54,19 +64,30 @@ export function CustomerDueFollowUpPage({ customerId }: { customerId: string }) 
     reference: '',
   });
 
+  const receivableState = useMemo(
+    () => buildReceivableAppState(appState, {
+      apiMode,
+      invoiceRows: invoiceStore.rows,
+      paymentRows: paymentStore.rows,
+      invoicesReady: apiMode ? invoiceStore.initialized : true,
+      paymentsReady: apiMode ? paymentStore.initialized : true,
+    }),
+    [appState, apiMode, invoiceStore.rows, invoiceStore.initialized, paymentStore.rows, paymentStore.initialized],
+  );
+
   const customer = useMemo(
-    () => getCustomerReceivableDetail(appState, customerId),
-    [appState, customerId, bump],
+    () => getCustomerReceivableDetail(receivableState, customerId),
+    [receivableState, customerId, bump],
   );
 
   const timeline = useMemo(
-    () => getFollowUpTimeline(appState, customerId),
-    [appState, customerId, bump],
+    () => getFollowUpTimeline(receivableState, customerId),
+    [receivableState, customerId, bump],
   );
 
   const payments = useMemo(
-    () => getCustomerReceivablePayments(appState, customerId),
-    [appState, customerId, bump],
+    () => getCustomerReceivablePayments(receivableState, customerId),
+    [receivableState, customerId, bump],
   );
 
   const tabCounts = useMemo(() => ({
@@ -105,7 +126,7 @@ export function CustomerDueFollowUpPage({ customerId }: { customerId: string }) 
       : undefined;
     const promiseAmount = Number(values.promiseAmount) || 0;
 
-    const result = scheduleCustomerFollowUp(appState, customerId, {
+    const result = scheduleCustomerFollowUp(receivableState, customerId, {
       contactMethod: values.contactMethod,
       contactPerson: values.contactPerson,
       contactAt,
@@ -127,7 +148,7 @@ export function CustomerDueFollowUpPage({ customerId }: { customerId: string }) 
       toast.error('Could not save follow-up', { module: 'Customer Due', description: result.error ?? 'Unknown error' });
       return;
     }
-    saveAppState();
+    if (!apiMode) saveAppState();
     bump((n) => n + 1);
     toast.success('Follow-up saved', { module: 'Customer Due', description: 'Activity has been recorded and timeline updated.' });
     setPageView('timeline');
@@ -144,21 +165,96 @@ export function CustomerDueFollowUpPage({ customerId }: { customerId: string }) 
     setShowReceiveModal(true);
   };
 
-  const handleReceive = () => {
-    const amount = Number(receiveForm.amount);
+  const handleReceive = async () => {
+    const amount = Math.min(Number(receiveForm.amount), customer.totalDue);
     if (!amount || amount <= 0) {
       toast.error('Invalid amount', { module: 'Customer Due', description: 'Enter a valid payment amount.' });
       return;
     }
-    const result = receiveCustomerPayment(appState, customerId, amount, receiveForm.date, receiveForm.method);
-    if (!result.ok) {
-      toast.error('Payment failed', { module: 'Customer Due', description: result.error ?? 'Could not record payment.' });
-      return;
+
+    setSaving(true);
+    try {
+      const baseInvoices = (apiMode ? invoiceStore.rows : appState.invoices ?? []).map((r) => ({ ...r }));
+      const beforePayments = new Set(Object.keys(receivableState.crmData?.paymentsById ?? {}));
+      const pseudo = buildReceivableAppState(
+        { ...appState, invoices: baseInvoices },
+        {
+          apiMode,
+          invoiceRows: baseInvoices,
+          paymentRows: paymentStore.rows,
+          invoicesReady: true,
+          paymentsReady: paymentStore.initialized,
+        },
+      );
+
+      const result = receiveCustomerPayment(
+        pseudo,
+        customerId,
+        amount,
+        receiveForm.date,
+        receiveForm.method,
+      );
+      if (!result.ok) {
+        toast.error('Payment failed', { module: 'Customer Due', description: result.error ?? 'Could not record payment.' });
+        return;
+      }
+
+      if (apiMode) {
+        for (const inv of pseudo.invoices ?? []) {
+          const prev = baseInvoices.find((r) => String(r.id) === String(inv.id));
+          const prevDue = Number(prev?.due ?? prev?.dueAmount ?? 0);
+          const nextDue = Number(inv.due ?? inv.dueAmount ?? 0);
+          if (prev && prevDue !== nextDue) {
+            const sync = await invoiceStore.update(
+              resolveApiRowId(inv as Record<string, unknown>),
+              mapInvoiceRecordToApi(inv as Record<string, unknown>, String(inv.legacyId ?? inv.id)),
+            );
+            if (!sync.ok) {
+              toast.error('Payment failed', { module: 'Customer Due', description: 'error' in sync ? String(sync.error) : 'Invoice update failed' });
+              return;
+            }
+          }
+        }
+
+        const newPaymentEntries = Object.entries(pseudo.crmData?.paymentsById ?? {})
+          .filter(([id]) => !beforePayments.has(id));
+        for (const [, payment] of newPaymentEntries) {
+          await paymentStore.create(mapPaymentRecordToApi(payment as Record<string, unknown>));
+        }
+
+        if (receiveForm.method === 'Cash' && isModuleApiMode('cashbox')) {
+          await cashboxStore.create(mapGenericPayloadToApi({
+            type: 'cash_in',
+            cashIn: amount,
+            cashOut: 0,
+            amount,
+            datetime: new Date(`${receiveForm.date}T12:00:00`).toISOString(),
+            category: 'Customer Collection',
+            party: customer.company || customer.name,
+            paymentMethod: 'Cash',
+            reference: receiveForm.reference,
+            description: `Collection from ${customer.company || customer.name}`,
+            note: receiveForm.reference,
+          }));
+        }
+      } else {
+        Object.assign(appState, {
+          invoices: pseudo.invoices,
+          crmData: pseudo.crmData,
+          paymentAllocationsById: pseudo.paymentAllocationsById,
+        });
+        saveAppState();
+      }
+
+      bump((n) => n + 1);
+      setShowReceiveModal(false);
+      toast.success('Payment recorded', {
+        module: 'Customer Due',
+        description: `${amount.toLocaleString()} recorded${receiveForm.method === 'Cash' ? ' — cashbox updated.' : '.'}`,
+      });
+    } finally {
+      setSaving(false);
     }
-    saveAppState();
-    bump((n) => n + 1);
-    setShowReceiveModal(false);
-    toast.success('Payment recorded', { module: 'Customer Due', description: 'Payment has been applied to open invoices.' });
   };
 
   return (
@@ -198,17 +294,14 @@ export function CustomerDueFollowUpPage({ customerId }: { customerId: string }) 
         <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_340px] gap-4 items-start pb-4">
           <div className="space-y-4 min-w-0">
             <FollowUpCustomerCard customer={customer} />
-            <div className="rounded-xl border border-slate-200 bg-white p-4 space-y-4">
-              <FollowUpTabBar activeTab={activeTab} onTabChange={setActiveTab} counts={tabCounts} />
-              <FollowUpTabContent
-                activeTab={activeTab}
-                customer={customer}
-                timeline={timeline}
-                payments={payments}
-              />
-            </div>
+            <FollowUpTabBar activeTab={activeTab} counts={tabCounts} onTabChange={setActiveTab} />
+            <FollowUpTabContent
+              activeTab={activeTab}
+              customer={customer}
+              timeline={timeline}
+              payments={payments}
+            />
           </div>
-
           <FollowUpSidebar
             customer={customer}
             onReceivePayment={() => openReceive(customer)}
@@ -219,16 +312,17 @@ export function CustomerDueFollowUpPage({ customerId }: { customerId: string }) 
 
       <AppFormModal
         open={showReceiveModal}
-        title="Receive Payment"
-        subtitle="Apply payment to open invoices."
         onClose={() => setShowReceiveModal(false)}
-        onSubmit={handleReceive}
-        submitLabel="Record Payment"
+        title="Receive Payment"
+        subtitle={`${customer.name} — ${customer.company}`}
+        onSubmit={(e) => { e.preventDefault(); void handleReceive(); }}
+        submitLabel={saving ? 'Saving…' : 'Save Payment'}
+        size="md"
       >
         <AppFormFields
           fields={RECEIVE_PAYMENT_FIELDS}
           values={receiveForm}
-          onChange={(key, value) => setReceiveForm((prev) => ({ ...prev, [key]: value }))}
+          onChange={(k, v) => setReceiveForm((f) => ({ ...f, [k]: v }))}
         />
       </AppFormModal>
 

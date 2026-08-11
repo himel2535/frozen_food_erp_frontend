@@ -12,6 +12,16 @@ import { StatusBadge } from '@/components/shared/StatusBadge';
 import { TableIconAction } from '@/components/shared/TableIconAction';
 import { InventoryListLayout, FilterBar, FilterSelect } from '@/components/modules/inventory/shared/inventory-ui';
 import { useAppStore } from '@/lib/state/app-store';
+import { isModuleApiMode } from '@/lib/config/data-source';
+import { useApiResourceStore } from '@/hooks/use-api-resource-store';
+import { useInventoryLookups, resolveWarehouseName } from '@/hooks/use-inventory-lookups';
+import { ApiModeBanner } from '@/components/shared/ApiModeBanner';
+import { apiListEmptyMessage } from '@/lib/services/api-list-ui';
+import {
+  mapApiStockAdjustmentRow,
+  mapStockAdjustmentPayloadToApi,
+} from '@/lib/services/inventory-api-mappers';
+import { approveStockAdjustmentApi } from '@/lib/services/inventory-api-actions';
 import {
   listAdjustmentRecords,
   getAdjustmentMetrics,
@@ -26,6 +36,9 @@ import {
 export function AdjustmentsPage() {
   const appState = useAppStore((s) => s.appState);
   const saveAppState = useAppStore((s) => s.saveAppState);
+  const apiMode = isModuleApiMode('stockAdjustments');
+  const apiStore = useApiResourceStore('stockAdjustments', mapApiStockAdjustmentRow);
+  const lookups = useInventoryLookups();
   const [view, setView] = useState<'main' | 'form'>('main');
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
@@ -36,10 +49,42 @@ export function AdjustmentsPage() {
     reason: '', status: 'Pending', approvedBy: '', notes: '',
   });
 
-  const records = useMemo(() => listAdjustmentRecords(appState), [appState]);
-  const metrics = useMemo(() => getAdjustmentMetrics(appState), [appState]);
-  const products = useMemo(() => listInventory(appState), [appState]);
+  const records = useMemo(
+    () => (apiMode ? apiStore.rows : listAdjustmentRecords(appState)),
+    [apiMode, apiStore.rows, appState],
+  );
+  const metrics = useMemo(() => {
+    if (!apiMode) return getAdjustmentMetrics(appState);
+    let totalIncreasedQty = 0;
+    let totalDecreasedQty = 0;
+    let netValue = 0;
+    let pendingCount = 0;
+    records.forEach((item) => {
+      const val = Number(item.qty ?? 0) * Number(item.unitValue ?? 0);
+      if (String(item.status) === 'Completed') {
+        if (String(item.type) === 'Increase') {
+          totalIncreasedQty += Number(item.qty ?? 0);
+          netValue += val;
+        } else {
+          totalDecreasedQty += Number(item.qty ?? 0);
+          netValue -= val;
+        }
+      } else if (String(item.status) === 'Pending') {
+        pendingCount += 1;
+      }
+    });
+    return { totalRuns: records.length, totalIncreasedQty, totalDecreasedQty, netValue, pendingCount };
+  }, [apiMode, records, appState]);
+  const products = useMemo(
+    () => (apiMode ? lookups.products : listInventory(appState)),
+    [apiMode, lookups.products, appState],
+  );
+  const warehouses = useMemo(
+    () => (apiMode ? lookups.warehouses : appState.inventoryWarehouses ?? []),
+    [apiMode, lookups.warehouses, appState.inventoryWarehouses],
+  );
   const productName = (id: unknown) => products.find((p) => String(p.id) === String(id))?.name ?? String(id);
+  const whName = (id: string) => (apiMode ? resolveWarehouseName(lookups.warehouses, id) : getWarehouseName(appState, id));
 
   const filtered = useMemo(() => {
     let data = records;
@@ -47,12 +92,18 @@ export function AdjustmentsPage() {
     if (typeFilter !== 'all') data = data.filter((r) => String(r.type) === typeFilter);
     if (search) {
       const q = search.toLowerCase();
-      data = data.filter((r) => `${r.id} ${r.reason}`.toLowerCase().includes(q));
+      data = data.filter((r) => `${r.legacyId ?? ''} ${r.id} ${r.reason}`.toLowerCase().includes(q));
     }
     return sortInventoryRowsNewestFirst(data);
   }, [records, search, statusFilter, typeFilter]);
 
   const netPrefix = metrics.netValue > 0 ? '+' : '';
+
+  const resetFilters = () => {
+    setSearch('');
+    setStatusFilter('all');
+    setTypeFilter('all');
+  };
 
   const resetForm = () => {
     setForm({
@@ -62,8 +113,29 @@ export function AdjustmentsPage() {
     setShowAdvanced(false);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (apiMode) {
+      const product = products.find((p) => String(p.id) === form.productId);
+      const body = mapStockAdjustmentPayloadToApi(
+        { ...form, qty: Number(form.qty || 0), unitValue: Number(form.unitValue || 0) },
+        product ? String(product.name) : undefined,
+      );
+      const result = await apiStore.create(body);
+      if (!result.ok) {
+        toast.error('Operation failed', { module: 'Stock Correction', description: 'error' in result ? String(result.error) : 'Save failed' });
+        return;
+      }
+      if (form.status === 'Completed') {
+        await approveStockAdjustmentApi(result.id);
+        await apiStore.reload();
+        await lookups.reload();
+      }
+      resetFilters();
+      setView('main');
+      resetForm();
+      return;
+    }
     const result = createAdjustment(appState, {
       ...form, qty: Number(form.qty || 0), unitValue: Number(form.unitValue || 0),
     });
@@ -73,16 +145,26 @@ export function AdjustmentsPage() {
     resetForm();
   };
 
-  const handleApprove = (id: string) => {
+  const handleApprove = async (id: string) => {
+    if (apiMode) {
+      const result = await approveStockAdjustmentApi(id);
+      if (!result.ok) {
+        toast.error('Operation failed', { module: 'Stock Correction', description: result.error });
+        return;
+      }
+      await apiStore.reload();
+      await lookups.reload();
+      return;
+    }
     const result = approveAdjustment(appState, id);
     if (!result.ok) { toast.error('Operation failed', { module: 'Stock Correction', description: 'error' in result ? String(result.error) : 'Approve failed' }); return; }
     saveAppState();
   };
 
   const columns = useMemo<AppTableColumn<Record<string, unknown>>[]>(() => [
-    { key: 'id', label: 'ID', render: (row) => <span className="font-mono text-slate-600">{String(row.id)}</span> },
+    { key: 'id', label: 'ID', render: (row) => <span className="font-mono text-slate-600">{String(row.legacyId ?? row.id)}</span> },
     { key: 'product', label: 'Product', render: (row) => <span className="font-bold text-slate-800">{String(productName(row.productId))}</span> },
-    { key: 'warehouse', label: 'Warehouse', render: (row) => getWarehouseName(appState, String(row.warehouseId)) },
+    { key: 'warehouse', label: 'Warehouse', render: (row) => whName(String(row.warehouseId)) },
     {
       key: 'type',
       label: 'Type',
@@ -107,10 +189,11 @@ export function AdjustmentsPage() {
     { key: 'date', label: 'Date', render: (row) => String(row.date ?? '—') },
     { key: 'approvedBy', label: 'Approved By', render: (row) => String(row.approvedBy ?? '—') },
     { key: 'status', label: 'Status', render: (row) => <StatusBadge status={String(row.status ?? 'Pending')} /> },
-  ], [appState, products]);
+  ], [productName, whName]);
 
   return (
     <>
+    {apiMode && <ApiModeBanner module="stockAdjustments" error={apiStore.error} />}
     <InventoryListLayout
       title="Stock Adjustments"
       subtitle="Audit and approve inventory quantity corrections."
@@ -118,16 +201,16 @@ export function AdjustmentsPage() {
       onAdd={() => { resetForm(); setView('form'); }}
       kpis={[
         { key: 'total', label: 'Total Adjustments', value: String(metrics.totalRuns) },
-        { key: 'inc', label: 'Increased Qty', value: `+${metrics.totalIncreasedQty}` },
-        { key: 'dec', label: 'Decreased Qty', value: `-${metrics.totalDecreasedQty}` },
-        { key: 'net', label: 'Net Value Change', value: `${netPrefix}${formatMoney(metrics.netValue)}` },
-        { key: 'pending', label: 'Pending Audits', value: String(metrics.pendingCount), alert: metrics.pendingCount > 0 },
+        { key: 'inc', label: 'Qty Increased', value: `+${metrics.totalIncreasedQty}` },
+        { key: 'dec', label: 'Qty Decreased', value: `-${metrics.totalDecreasedQty}` },
+        { key: 'net', label: 'Net Value Impact', value: `${netPrefix}${formatMoney(Math.abs(metrics.netValue))}` },
+        { key: 'pending', label: 'Pending Approval', value: String(metrics.pendingCount), alert: metrics.pendingCount > 0 },
       ]}
       filters={
         <FilterBar
           search={search}
           onSearchChange={setSearch}
-          searchPlaceholder="Search reason, ID..."
+          searchPlaceholder="Search adjustments..."
         >
           <FilterSelect label="Status" value={statusFilter} onChange={setStatusFilter}><option value="all">All</option><option value="Pending">Pending</option><option value="Completed">Completed</option></FilterSelect>
           <FilterSelect label="Type" value={typeFilter} onChange={setTypeFilter}><option value="all">All</option><option value="Increase">Increase</option><option value="Decrease">Decrease</option></FilterSelect>
@@ -137,10 +220,10 @@ export function AdjustmentsPage() {
       <AppTable
         columns={columns}
         rows={filtered}
-        emptyMessage="No adjustment records found."
+        emptyMessage={apiListEmptyMessage(apiStore.loading, apiStore.initialized, 'adjustment records', { totalCount: records.length, filteredCount: filtered.length })}
         renderActions={(row) => (
           String(row.status) === 'Pending' ? (
-            <TableIconAction variant="approve" onClick={() => handleApprove(String(row.id))} />
+            <TableIconAction variant="approve" onClick={() => void handleApprove(String(row.id))} />
           ) : null
         )}
       />
@@ -149,23 +232,23 @@ export function AdjustmentsPage() {
       open={view === 'form'}
       onClose={() => { setView('main'); resetForm(); }}
       title="Create Adjustment"
-      subtitle="Record stock increases or decreases with audit trail."
+      subtitle="Correct inventory quantities with audit trail."
       onSubmit={handleSubmit}
       submitLabel="Save Adjustment"
       size="lg"
     >
       <div className={FORM_GRID_CLS}>
-        <div><label className={FORM_LABEL_CLS}>Product *</label><ProductSelect state={appState} value={form.productId} onChange={(v) => setForm({ ...form, productId: v })} required /></div>
-        <div><label className={FORM_LABEL_CLS}>Warehouse *</label><WarehouseSelect state={appState} value={form.warehouseId} onChange={(v) => setForm({ ...form, warehouseId: v })} required /></div>
-        <div><label className={FORM_LABEL_CLS}>Adjustment Type *</label><select required className={FORM_SELECT_CLS} value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value })}><option value="Increase">Increase</option><option value="Decrease">Decrease</option></select></div>
+        <div><label className={FORM_LABEL_CLS}>Product *</label><ProductSelect state={appState} items={apiMode ? products : undefined} value={form.productId} onChange={(v) => setForm({ ...form, productId: v })} required /></div>
+        <div><label className={FORM_LABEL_CLS}>Warehouse *</label><WarehouseSelect state={appState} items={apiMode ? warehouses : undefined} value={form.warehouseId} onChange={(v) => setForm({ ...form, warehouseId: v })} required /></div>
+        <div><label className={FORM_LABEL_CLS}>Type *</label><select className={FORM_SELECT_CLS} value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value })}><option value="Increase">Increase</option><option value="Decrease">Decrease</option></select></div>
         <div><label className={FORM_LABEL_CLS}>Quantity *</label><input required type="number" min={1} className={FORM_INPUT_CLS} value={form.qty} onChange={(e) => setForm({ ...form, qty: e.target.value })} /></div>
         <div><label className={FORM_LABEL_CLS}>Unit Value</label><input type="number" min={0} step="0.01" className={FORM_INPUT_CLS} value={form.unitValue} onChange={(e) => setForm({ ...form, unitValue: e.target.value })} /></div>
         <div><label className={FORM_LABEL_CLS}>Date</label><DateInput className={`${FORM_INPUT_CLS} cursor-pointer`} value={form.date} onChange={(v) => setForm({ ...form, date: v })} /></div>
-        <div className="md:col-span-2"><label className={FORM_LABEL_CLS}>Reason *</label><input required className={FORM_INPUT_CLS} value={form.reason} onChange={(e) => setForm({ ...form, reason: e.target.value })} /></div>
       </div>
       <AdvancedDetailsToggle open={showAdvanced} onToggle={() => setShowAdvanced(!showAdvanced)} />
       {showAdvanced && (
         <div className={`${FORM_GRID_CLS} pt-4 border-t border-slate-100/80`}>
+          <div><label className={FORM_LABEL_CLS}>Reason</label><input className={FORM_INPUT_CLS} value={form.reason} onChange={(e) => setForm({ ...form, reason: e.target.value })} /></div>
           <div><label className={FORM_LABEL_CLS}>Status</label><select className={FORM_SELECT_CLS} value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value })}><option value="Pending">Pending</option><option value="Completed">Completed</option></select></div>
           <div className="md:col-span-2"><label className={FORM_LABEL_CLS}>Notes</label><textarea className={FORM_INPUT_CLS} rows={2} value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} /></div>
         </div>

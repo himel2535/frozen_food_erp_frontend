@@ -5,9 +5,16 @@ import { toast } from '@/lib/ui/feedback';
 import { useMemo, useState } from 'react';
 import { Plus, CreditCard } from 'lucide-react';
 import { Footer } from '@/components/layout/Footer';
+import { PageSkeleton } from '@/components/shared/PageSkeleton';
 import { useRegisterModuleActions } from '@/components/layout/ModuleActionsContext';
 import { AppFormFields, AppFormModal } from '@/components/shared/AppForm';
 import { useAppStore } from '@/lib/state/app-store';
+import { isModuleApiMode } from '@/lib/config/data-source';
+import { useApiResourceStore } from '@/hooks/use-api-resource-store';
+import { mapGenericApiRow, mapGenericPayloadToApi } from '@/lib/services/generic-api-mapper';
+import { mapVendorBillRecordToApi, resolveApiRowId } from '@/lib/services/entity-api-mappers';
+import { ApiModeBanner } from '@/components/shared/ApiModeBanner';
+import type { AppState } from '@/lib/state/types';
 import type { PortField } from '@/lib/modules/port-types';
 import { listSuppliers } from '@/lib/services/purchases-service';
 import {
@@ -34,9 +41,36 @@ function supplierOptionLabel(name: string) {
   return name;
 }
 
+function isValidIsoDate(value: string) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value.trim())) return false;
+  const parsed = new Date(`${value.trim()}T00:00:00`);
+  return !Number.isNaN(parsed.getTime());
+}
+
+function buildPayableAppState(
+  base: AppState,
+  billRows: Record<string, unknown>[],
+  paymentRows: Record<string, unknown>[],
+  apiMode: boolean,
+  billsReady: boolean,
+  paymentsReady: boolean,
+): AppState {
+  if (!apiMode || !billsReady) return base;
+  return {
+    ...base,
+    vendorBills: billRows,
+    purchasePayments: paymentsReady ? paymentRows : base.purchasePayments,
+  } as AppState;
+}
+
 export function SupplierDuePage() {
   const appState = useAppStore((s) => s.appState);
+  const apiDataReady = useAppStore((s) => s.apiDataReady);
   const saveAppState = useAppStore((s) => s.saveAppState);
+  const apiMode = isModuleApiMode('vendorBills');
+  const billStore = useApiResourceStore('vendorBills', mapGenericApiRow);
+  const paymentStore = useApiResourceStore('purchasePayments', mapGenericApiRow);
+  const cashboxStore = useApiResourceStore('cashbox', mapGenericApiRow);
 
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all_due');
@@ -58,8 +92,21 @@ export function SupplierDuePage() {
   const [paymentForm, setPaymentForm] = useState({
     amount: '', date: new Date().toISOString().slice(0, 10), method: 'Bank Transfer', reference: '',
   });
+  const [saving, setSaving] = useState(false);
 
-  const suppliers = useMemo(() => listSuppliers(appState), [appState]);
+  const payableState = useMemo(
+    () => buildPayableAppState(
+      appState,
+      billStore.rows,
+      paymentStore.rows,
+      apiMode,
+      billStore.initialized,
+      paymentStore.initialized,
+    ),
+    [appState, apiMode, billStore.rows, billStore.initialized, paymentStore.rows, paymentStore.initialized],
+  );
+
+  const suppliers = useMemo(() => listSuppliers(payableState), [payableState]);
   const supplierIdByLabel = useMemo(() => {
     const map: Record<string, string> = {};
     suppliers.forEach((supplier) => {
@@ -82,8 +129,8 @@ export function SupplierDuePage() {
     { key: 'notes', label: 'Notes', type: 'textarea', advanced: true },
   ], [suppliers]);
 
-  const allSuppliers = useMemo(() => listSupplierPayables(appState), [appState]);
-  const metrics = useMemo(() => getSupplierPayableMetrics(appState), [appState]);
+  const allSuppliers = useMemo(() => listSupplierPayables(payableState), [payableState]);
+  const metrics = useMemo(() => getSupplierPayableMetrics(payableState), [payableState]);
 
   const filteredRows = useMemo(
     () => filterSupplierPayables(allSuppliers, { search, status: statusFilter }),
@@ -91,8 +138,8 @@ export function SupplierDuePage() {
   );
 
   const selectedSupplier = useMemo(
-    () => (selectedSupplierId ? getSupplierPayableDetail(appState, selectedSupplierId) : null),
-    [appState, selectedSupplierId],
+    () => (selectedSupplierId ? getSupplierPayableDetail(payableState, selectedSupplierId) : null),
+    [payableState, selectedSupplierId],
   );
 
   const computePaymentAmount = (supplier: SupplierPayable, billIds?: string[]) => {
@@ -121,44 +168,149 @@ export function SupplierDuePage() {
     ));
   };
 
-  const handleAddPayableSubmit = (e: React.FormEvent) => {
+  const handleAddPayableSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!addPayableForm.supplier || !addPayableForm.amount || !addPayableForm.dueDate) return;
-    const supplierId = supplierIdByLabel[addPayableForm.supplier] ?? addPayableForm.supplier;
-    const result = createSupplierPayable(appState, { ...addPayableForm, supplier: supplierId });
-    if (!result.ok) {
-      toast.error('Operation failed', { module: 'Accounting', description: 'error' in result ? String(result.error) : 'Failed to save payable' });
+    if (!isValidIsoDate(addPayableForm.dueDate)) {
+      toast.error('Invalid date', { module: 'Supplier Due', description: 'Choose a valid due date.' });
       return;
     }
-    saveAppState();
-    setShowAddPayableModal(false);
-    setAddPayableForm({ supplier: '', amount: '', dueDate: new Date().toISOString().slice(0, 10), notes: '' });
-    if (result.id) {
-      setSelectedSupplierId(result.id);
-      setSelectedBillIds([]);
+    const supplierId = supplierIdByLabel[addPayableForm.supplier] ?? addPayableForm.supplier;
+    setSaving(true);
+    try {
+      const baseBills = (apiMode ? billStore.rows : (appState.vendorBills as Record<string, unknown>[] | undefined) ?? []).map((r) => ({ ...r }));
+      const pseudo = buildPayableAppState(appState, baseBills, paymentStore.rows, apiMode, true, paymentStore.initialized);
+      const beforeIds = new Set(baseBills.map((bill) => String(bill.id)));
+      const result = createSupplierPayable(pseudo, { ...addPayableForm, supplier: supplierId });
+      if (!result.ok) {
+        toast.error('Operation failed', { module: 'Supplier Due', description: 'error' in result ? String(result.error) : 'Failed to save payable' });
+        return;
+      }
+      if (apiMode) {
+        const vendorBills = (pseudo.vendorBills ?? []) as Record<string, unknown>[];
+        const created = vendorBills.filter((bill) => !beforeIds.has(String(bill.id)));
+        for (const bill of created) {
+          const sync = await billStore.create(mapVendorBillRecordToApi(bill as Record<string, unknown>));
+          if (!sync.ok) {
+            toast.error('Operation failed', { module: 'Supplier Due', description: 'error' in sync ? String(sync.error) : 'Bill sync failed' });
+            return;
+          }
+        }
+      } else {
+        Object.assign(appState, { vendorBills: pseudo.vendorBills });
+        saveAppState();
+      }
+      toast.success('Saved', { module: 'Supplier Due', description: 'Supplier payable recorded.' });
+      setShowAddPayableModal(false);
+      setAddPayableForm({ supplier: '', amount: '', dueDate: new Date().toISOString().slice(0, 10), notes: '' });
+      setSearch('');
+      setStatusFilter('all_due');
+      setPage(1);
+      if (result.id) {
+        setSelectedSupplierId(result.id);
+        setSelectedBillIds([]);
+      }
+    } finally {
+      setSaving(false);
     }
   };
 
-  const handlePaymentSubmit = (e: React.FormEvent) => {
+  const handlePaymentSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!paymentTarget || !paymentForm.amount) return;
-    const result = makeSupplierPayment(
-      appState,
-      paymentTarget.supplierId,
-      Number(paymentForm.amount),
-      paymentForm.date,
-      paymentForm.method,
-      paymentBillIds,
-    );
-    if (!result.ok) {
-      toast.error('Operation failed', { module: 'Accounting', description: String(result.error ?? 'Failed to record payment') });
+    if (!isValidIsoDate(paymentForm.date)) {
+      toast.error('Invalid date', { module: 'Supplier Due', description: 'Choose a valid payment date.' });
       return;
     }
-    saveAppState();
-    setShowPaymentModal(false);
-    setPaymentTarget(null);
-    setPaymentBillIds(undefined);
-    setSelectedBillIds([]);
+    const payAmount = Math.min(Number(paymentForm.amount), paymentTarget.totalDue);
+    if (payAmount <= 0) {
+      toast.error('Invalid amount', { module: 'Supplier Due', description: 'Enter a valid payment amount.' });
+      return;
+    }
+    setSaving(true);
+    try {
+      const baseBills = (apiMode ? billStore.rows : (appState.vendorBills as Record<string, unknown>[] | undefined) ?? []).map((r) => ({ ...r }));
+      const beforePaymentIds = new Set((payableState.purchasePayments ?? []).map((p) => String((p as Record<string, unknown>).id)));
+      const pseudo = buildPayableAppState(appState, baseBills, paymentStore.rows, apiMode, true, paymentStore.initialized);
+      const result = makeSupplierPayment(
+        pseudo,
+        paymentTarget.supplierId,
+        payAmount,
+        paymentForm.date,
+        paymentForm.method,
+        paymentBillIds,
+      );
+      if (!result.ok) {
+        toast.error('Operation failed', { module: 'Supplier Due', description: String(result.error ?? 'Failed to record payment') });
+        return;
+      }
+      if (apiMode) {
+        const vendorBills = (pseudo.vendorBills ?? []) as Record<string, unknown>[];
+        for (const bill of vendorBills) {
+          const prev = baseBills.find((r) => String(r.id) === String(bill.id));
+          const prevDue = Number(prev?.due ?? prev?.balance ?? 0);
+          const nextDue = Number(bill.due ?? bill.balance ?? 0);
+          if (prev && prevDue !== nextDue) {
+            const sync = await billStore.update(
+              resolveApiRowId(bill as Record<string, unknown>),
+              mapVendorBillRecordToApi(bill as Record<string, unknown>),
+            );
+            if (!sync.ok) {
+              toast.error('Operation failed', { module: 'Supplier Due', description: 'error' in sync ? String(sync.error) : 'Bill update failed' });
+              return;
+            }
+          }
+        }
+        const newPayments = (pseudo.purchasePayments ?? []).filter(
+          (payment) => !beforePaymentIds.has(String((payment as Record<string, unknown>).id)),
+        ) as Record<string, unknown>[];
+        for (const payment of newPayments) {
+          const sync = await paymentStore.create(mapGenericPayloadToApi(payment));
+          if (!sync.ok) {
+            toast.error('Operation failed', { module: 'Supplier Due', description: 'error' in sync ? String(sync.error) : 'Payment sync failed' });
+            return;
+          }
+        }
+        if (paymentForm.method === 'Cash' && isModuleApiMode('cashbox')) {
+          const cashSync = await cashboxStore.create(mapGenericPayloadToApi({
+            type: 'cash_out',
+            cashIn: 0,
+            cashOut: payAmount,
+            amount: payAmount,
+            datetime: new Date(`${paymentForm.date}T12:00:00`).toISOString(),
+            category: 'Supplier Payment',
+            party: paymentTarget.name,
+            paymentMethod: 'Cash',
+            reference: paymentForm.reference,
+            description: `Payment to ${paymentTarget.name}`,
+            note: paymentForm.reference,
+          }));
+          if (!cashSync.ok) {
+            toast.error('Operation failed', { module: 'Supplier Due', description: 'error' in cashSync ? String(cashSync.error) : 'Cashbox sync failed' });
+            return;
+          }
+        }
+      } else {
+        Object.assign(appState, {
+          vendorBills: pseudo.vendorBills,
+          purchasePayments: pseudo.purchasePayments,
+        });
+        saveAppState();
+      }
+      toast.success('Payment recorded', {
+        module: 'Supplier Due',
+        description: `${payAmount.toLocaleString()} recorded${paymentForm.method === 'Cash' ? ' — cashbox updated.' : '.'}`,
+      });
+      setShowPaymentModal(false);
+      setPaymentTarget(null);
+      setPaymentBillIds(undefined);
+      setSelectedBillIds([]);
+      setSearch('');
+      setStatusFilter('all_due');
+      setPage(1);
+    } finally {
+      setSaving(false);
+    }
   };
 
   useRegisterModuleActions(
@@ -190,8 +342,15 @@ export function SupplierDuePage() {
     [selectedSupplier, allSuppliers, selectedBillIds, openPay],
   );
 
+  if (apiMode && !apiDataReady && !billStore.initialized) {
+    return <PageSkeleton variant="module-list" label="Loading payables" />;
+  }
+
   return (
     <>
+        {(billStore.error || paymentStore.error) ? (
+          <ApiModeBanner module="vendorBills" error={billStore.error ?? paymentStore.error ?? ''} />
+        ) : null}
         <SupplierDueMetrics metrics={metrics} />
 
         <div className="grid grid-cols-1 xl:grid-cols-[1fr_380px] gap-3 items-stretch">
@@ -235,7 +394,7 @@ export function SupplierDuePage() {
         title="Add Payable"
         subtitle="Record a new supplier payable balance."
         onSubmit={handleAddPayableSubmit}
-        submitLabel="Save Payable"
+        submitLabel={saving ? 'Saving…' : 'Save Payable'}
         size="md"
       >
         <AppFormFields
@@ -253,7 +412,7 @@ export function SupplierDuePage() {
         title="Make Payment"
         subtitle={paymentTarget ? paymentTarget.name : ''}
         onSubmit={handlePaymentSubmit}
-        submitLabel="Save Payment"
+        submitLabel={saving ? 'Saving…' : 'Save Payment'}
         size="md"
       >
         <AppFormFields

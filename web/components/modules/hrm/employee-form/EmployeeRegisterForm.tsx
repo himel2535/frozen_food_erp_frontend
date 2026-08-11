@@ -27,7 +27,7 @@ import {
 } from '@/components/modules/hrm/employee-form/employee-form-types';
 import { ImageUploadField } from '@/components/shared/ImageUploadField';
 import type { AppState } from '@/lib/state/types';
-import { listDepartments, listDesignations, listEmployees } from '@/lib/services/hrm-service';
+import { useHrmDepartmentOptions, useHrmDesignationOptions } from '@/hooks/use-form-options';
 import { formatMoney, getSalaryStructureById, listSalaryStructures } from '@/lib/services/payroll-service';
 
 function formatStructureOptionLabel(structure: Record<string, unknown>) {
@@ -48,23 +48,8 @@ export function EmployeeRegisterForm({
   setField: (key: string, value: string) => void;
   appState: AppState;
 }) {
-  const departments = useMemo(() => {
-    const fromMaster = listDepartments(appState).map((d) => String(d.name ?? '')).filter(Boolean);
-    const fromEmployees = listEmployees(appState).map((e) => String(e.department ?? '')).filter(Boolean);
-    return [...new Set([...fromMaster, ...fromEmployees])].sort();
-  }, [appState]);
-
-  const designations = useMemo(() => {
-    const fromMaster = listDesignations(appState)
-      .filter((d) => !form.department || String(d.department ?? '') === form.department)
-      .map((d) => String(d.title ?? d.name ?? ''))
-      .filter(Boolean);
-    const fromEmployees = listEmployees(appState)
-      .filter((e) => !form.department || String(e.department ?? '') === form.department)
-      .map((e) => String(e.designation ?? ''))
-      .filter(Boolean);
-    return [...new Set([...fromMaster, ...fromEmployees])].sort();
-  }, [appState, form.department]);
+  const departments = useHrmDepartmentOptions(appState);
+  const designations = useHrmDesignationOptions(appState, form.department);
 
   const salaryStructures = useMemo(
     () => listSalaryStructures(appState).filter((s) => String(s.status ?? '').toLowerCase() === 'active'),
@@ -133,7 +118,10 @@ export function EmployeeRegisterForm({
               icon={Building2}
               required
               value={form.department ?? ''}
-              onChange={(e) => setField('department', e.target.value)}
+              onChange={(e) => {
+                setField('department', e.target.value);
+                setField('designation', '');
+              }}
             >
               <option value="">Select department</option>
               {departments.map((dept) => (
@@ -148,8 +136,8 @@ export function EmployeeRegisterForm({
               onChange={(e) => setField('designation', e.target.value)}
             >
               <option value="">Select designation</option>
-              {designations.map((title) => (
-                <option key={title} value={title}>{title}</option>
+              {designations.map((option) => (
+                <option key={option.value} value={option.value}>{option.label}</option>
               ))}
             </IconSelect>
             <IconInput

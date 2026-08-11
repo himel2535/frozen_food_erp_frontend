@@ -1,4 +1,5 @@
 import type { AppState } from '@/lib/state/types';
+import { mapGenericPayloadToApi } from '@/lib/services/generic-api-mapper';
 import {
   listFromState,
   createInState,
@@ -926,6 +927,20 @@ export function listSupplierOptions(state: AppState) {
   }));
 }
 
+export function mapRecipeToApi(recipe: Recipe, variant: RecipeVariant): Record<string, unknown> {
+  return mapGenericPayloadToApi({
+    product: recipe.product,
+    model: recipe.model,
+    recipeNumber: recipe.recipeNumber,
+    version: recipe.version,
+    productSku: recipe.productSku,
+    productId: recipe.productId,
+    status: recipe.status,
+    variant,
+    materials: recipe.materials,
+    notes: recipe.notes ?? '',
+  });
+}
 export function createRecipe(
   state: AppState,
   payload: { product: string; model: string; recipeNumber?: string; status?: string; notes?: string },

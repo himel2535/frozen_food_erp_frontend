@@ -4,6 +4,8 @@ import { useMemo, useState } from 'react';
 import { Download, Filter, Printer } from 'lucide-react';
 import { Footer } from '@/components/layout/Footer';
 import { useRegisterModuleActions } from '@/components/layout/ModuleActionsContext';
+import { usePurchaseReportApiRows } from '@/hooks/use-report-api-data';
+import { ApiModeBanner } from '@/components/shared/ApiModeBanner';
 import { useAppStore } from '@/lib/state/app-store';
 import { toast } from '@/lib/ui/feedback';
 import { DateInput } from '@/components/shared/DateInput';
@@ -34,6 +36,7 @@ const STATUS_OPTIONS = ['All', 'Received', 'Sent', 'Draft', 'Cancelled'] as cons
 
 export function PurchaseReportsPage() {
   const appState = useAppStore((s) => s.appState);
+  const apiReport = usePurchaseReportApiRows();
   const t = useAppStore((s) => s.t);
   const { printSection, printTarget } = useReportPrint<ReportPrintSectionId>();
 
@@ -44,8 +47,10 @@ export function PurchaseReportsPage() {
   const [statusFilter, setStatusFilter] = useState('All');
 
   const allRows = useMemo(
-    () => listPurchaseReportRows(Array.isArray(appState.reportPurchases) ? appState.reportPurchases : []),
-    [appState.reportPurchases],
+    () => listPurchaseReportRows(
+      apiReport.initialized ? apiReport.rows : (Array.isArray(appState.reportPurchases) ? appState.reportPurchases : []),
+    ),
+    [apiReport.initialized, apiReport.rows, appState.reportPurchases],
   );
 
   const suppliers = useMemo(() => uniqueSuppliers(allRows), [allRows]);

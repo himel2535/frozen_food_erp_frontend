@@ -5,6 +5,7 @@ import {
   listFromState,
   updateInState,
 } from '@/lib/services/domain-service';
+import { mapGenericPayloadToApi } from '@/lib/services/generic-api-mapper';
 import { listEmployees } from '@/lib/services/hrm-service';
 import { resolveKpiIcon } from '@/lib/ui/kpi-icons';
 import type { ProjectFormValues, ProjectLineItem, ProjectSaveAction } from '@/components/modules/projects/project-form/project-form-types';
@@ -133,7 +134,6 @@ function deriveProjectName(form: ProjectFormValues) {
 
 export function projectFormToRecord(form: ProjectFormValues, action: ProjectSaveAction) {
   const totals = computeProjectTotals(form.items);
-  const status = action === 'create' ? 'active' : 'draft';
   const setupStep = action === 'create' ? 2 : 1;
 
   return {
@@ -156,7 +156,7 @@ export function projectFormToRecord(form: ProjectFormValues, action: ProjectSave
     sampleRequired: form.sampleRequired,
     specialInstructions: form.specialInstructions,
     attachments: form.attachments,
-    status,
+    status: 'draft',
     setupStep,
     setupStage: action === 'create' ? 'bom' : 'project_details',
     name: deriveProjectName(form),
@@ -170,9 +170,41 @@ export function projectFormToRecord(form: ProjectFormValues, action: ProjectSave
   };
 }
 
+export function getProjectById(state: AppState, id: string) {
+  const trimmed = id.trim();
+  return listProjects(state).find(
+    (row) =>
+      String(row.id) === trimmed
+      || String(row._mongoId ?? '') === trimmed
+      || String(row.legacyId ?? '') === trimmed
+      || String(row.projectId ?? '') === trimmed,
+  ) ?? null;
+}
+
+export function mapProjectFormToApi(form: ProjectFormValues, action: ProjectSaveAction) {
+  return mapGenericPayloadToApi(projectFormToRecord(form, action) as Record<string, unknown>);
+}
+
 export function createProject(state: AppState, form: ProjectFormValues, action: ProjectSaveAction) {
   const record = projectFormToRecord(form, action);
   return createInState(state, 'projects', record, 'PRJ');
+}
+
+export function advanceProjectSetup(
+  state: AppState,
+  id: string,
+  nextStep: number,
+  patch: Record<string, unknown> = {},
+) {
+  const stages = ['project_details', 'bom', 'production_plan', 'review'] as const;
+  const setupStage = stages[Math.min(Math.max(nextStep, 1), 4) - 1];
+  const progressMap: Record<number, number> = { 1: 0, 2: 25, 3: 60, 4: 100 };
+  return updateInState(state, 'projects', id, {
+    setupStep: nextStep,
+    setupStage,
+    progress: progressMap[nextStep] ?? Number(patch.progress ?? 0),
+    ...patch,
+  });
 }
 
 export function updateProject(state: AppState, id: string, form: ProjectFormValues, action: ProjectSaveAction) {

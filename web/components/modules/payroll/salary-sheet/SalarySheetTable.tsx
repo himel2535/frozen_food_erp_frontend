@@ -62,7 +62,7 @@ export function SalarySheetTable({
 }: {
   rows: SheetRowView[];
   filters: SheetFilterState;
-  onUpdate: (entryId: string, patch: Record<string, unknown>) => void;
+  onUpdate: (entryId: string, employeeId: string, patch: Record<string, unknown>) => void;
 }) {
   const router = useRouter();
 
@@ -88,6 +88,7 @@ export function SalarySheetTable({
 
   const cellInput = (
     entryId: string,
+    employeeId: string,
     field: NumField,
     value: number,
     locked: boolean,
@@ -95,12 +96,21 @@ export function SalarySheetTable({
   ) => (
     <input
       type="number"
+      min={0}
+      step={field === 'bonusPercent' ? 0.01 : 1}
       className={`${cls}${inputLockedCls(locked)}`}
-      value={value}
+      value={Number.isFinite(value) ? value : 0}
       readOnly={locked}
       onChange={(e) => {
         if (locked) return;
-        onUpdate(entryId, { [field]: Math.max(0, Number(e.target.value) || 0) });
+        const raw = e.target.value;
+        if (raw === '') {
+          onUpdate(entryId, employeeId, { [field]: 0 });
+          return;
+        }
+        const num = Number(raw);
+        if (!Number.isFinite(num)) return;
+        onUpdate(entryId, employeeId, { [field]: Math.max(0, num) });
       }}
     />
   );
@@ -162,6 +172,8 @@ export function SalarySheetTable({
           <tbody>
             {rows.map((row, index) => {
               const entryId = String(row.entry.id);
+              const employeeId = String(row.employee.id);
+              const rowKey = `${String(row.employee.id)}-${entryId || index}`;
               const status = String(row.entry.status ?? 'pending');
               const locked = status === 'paid';
               const name = String(row.employee.name ?? 'Employee');
@@ -170,7 +182,7 @@ export function SalarySheetTable({
 
               return (
                 <tr
-                  key={entryId}
+                  key={rowKey}
                   className={`border-t border-slate-100 hover:bg-blue-50/20 transition-colors ${rowBg}`}
                 >
                   <td className={`${SS_TABLE_CELL_CLS} ${SS_TABLE_STICKY_EMPLOYEE_CLS} ${rowBg}`}>
@@ -186,23 +198,23 @@ export function SalarySheetTable({
                     </span>
                   </td>
                   <td className={`${SS_TABLE_CELL_CLS} ${SS_CELL_READONLY_CLS}`}>{formatMoney(row.computed.basic)}</td>
-                  <td className={`${SS_TABLE_CELL_CLS} text-left ${SS_TABLE_GROUP_ATTENDANCE}`}>{cellInput(entryId, 'presentDays', Number(row.entry.presentDays ?? 0), locked, SS_CELL_EDIT_DAY_CLS)}</td>
-                  <td className={`${SS_TABLE_CELL_CLS} text-left ${SS_TABLE_GROUP_ATTENDANCE}`}>{cellInput(entryId, 'absentDays', Number(row.entry.absentDays ?? 0), locked, SS_CELL_EDIT_DAY_CLS)}</td>
-                  <td className={`${SS_TABLE_CELL_CLS} text-left ${SS_TABLE_GROUP_ATTENDANCE}`}>{cellInput(entryId, 'leaveDays', Number(row.entry.leaveDays ?? 0), locked, SS_CELL_EDIT_DAY_CLS)}</td>
-                  <td className={`${SS_TABLE_CELL_CLS} text-left ${SS_TABLE_GROUP_ATTENDANCE}`}>{cellInput(entryId, 'lateDays', Number(row.entry.lateDays ?? 0), locked, SS_CELL_EDIT_DAY_CLS)}</td>
-                  <td className={`${SS_TABLE_CELL_CLS} text-left ${SS_TABLE_GROUP_ADVANCE}`}>{cellInput(entryId, 'advanceBalance', Number(row.entry.advanceBalance ?? 0), locked, SS_CELL_EDIT_MONEY_CLS)}</td>
-                  <td className={`${SS_TABLE_CELL_CLS} text-left ${SS_TABLE_GROUP_ADVANCE}`}>{cellInput(entryId, 'advanceDeduct', Number(row.entry.advanceDeduct ?? 0), locked, SS_CELL_EDIT_MONEY_CLS)}</td>
+                  <td className={`${SS_TABLE_CELL_CLS} text-left ${SS_TABLE_GROUP_ATTENDANCE}`}>{cellInput(entryId, employeeId, 'presentDays', Number(row.entry.presentDays ?? 0), locked, SS_CELL_EDIT_DAY_CLS)}</td>
+                  <td className={`${SS_TABLE_CELL_CLS} text-left ${SS_TABLE_GROUP_ATTENDANCE}`}>{cellInput(entryId, employeeId, 'absentDays', Number(row.entry.absentDays ?? 0), locked, SS_CELL_EDIT_DAY_CLS)}</td>
+                  <td className={`${SS_TABLE_CELL_CLS} text-left ${SS_TABLE_GROUP_ATTENDANCE}`}>{cellInput(entryId, employeeId, 'leaveDays', Number(row.entry.leaveDays ?? 0), locked, SS_CELL_EDIT_DAY_CLS)}</td>
+                  <td className={`${SS_TABLE_CELL_CLS} text-left ${SS_TABLE_GROUP_ATTENDANCE}`}>{cellInput(entryId, employeeId, 'lateDays', Number(row.entry.lateDays ?? 0), locked, SS_CELL_EDIT_DAY_CLS)}</td>
+                  <td className={`${SS_TABLE_CELL_CLS} text-left ${SS_TABLE_GROUP_ADVANCE}`}>{cellInput(entryId, employeeId, 'advanceBalance', Number(row.entry.advanceBalance ?? 0), locked, SS_CELL_EDIT_MONEY_CLS)}</td>
+                  <td className={`${SS_TABLE_CELL_CLS} text-left ${SS_TABLE_GROUP_ADVANCE}`}>{cellInput(entryId, employeeId, 'advanceDeduct', Number(row.entry.advanceDeduct ?? 0), locked, SS_CELL_EDIT_MONEY_CLS)}</td>
                   <td className={`${SS_TABLE_CELL_CLS} text-center border-l border-slate-100`}>
                     <span className={`inline-flex px-1.5 py-0.5 rounded-md border text-[10px] font-bold ${SS_EXTRA_PAY_BADGE[extraType] ?? SS_EXTRA_PAY_BADGE.None}`}>
                       {extraType}
                     </span>
                   </td>
-                  <td className={`${SS_TABLE_CELL_CLS} text-left ${SS_TABLE_GROUP_OT}`}>{cellInput(entryId, 'otHours', Number(row.entry.otHours ?? 0), locked, SS_CELL_EDIT_DAY_CLS)}</td>
+                  <td className={`${SS_TABLE_CELL_CLS} text-left ${SS_TABLE_GROUP_OT}`}>{cellInput(entryId, employeeId, 'otHours', Number(row.entry.otHours ?? 0), locked, SS_CELL_EDIT_DAY_CLS)}</td>
                   <td className={`${SS_TABLE_CELL_CLS} text-left ${SS_TABLE_GROUP_OT} ${SS_CELL_READONLY_MUTED_CLS}`}>{formatMoney(row.computed.otRate)}</td>
                   <td className={`${SS_TABLE_CELL_CLS} text-left ${SS_TABLE_GROUP_OT} ${SS_CELL_READONLY_CLS}`}>{formatMoney(row.computed.otAmount)}</td>
-                  <td className={`${SS_TABLE_CELL_CLS} text-left ${SS_TABLE_GROUP_BONUS}`}>{cellInput(entryId, 'bonusPercent', Number(row.entry.bonusPercent ?? 0), locked, SS_CELL_EDIT_PCT_CLS)}</td>
+                  <td className={`${SS_TABLE_CELL_CLS} text-left ${SS_TABLE_GROUP_BONUS}`}>{cellInput(entryId, employeeId, 'bonusPercent', Number(row.entry.bonusPercent ?? 0), locked, SS_CELL_EDIT_PCT_CLS)}</td>
                   <td className={`${SS_TABLE_CELL_CLS} text-left ${SS_TABLE_GROUP_BONUS} ${SS_CELL_READONLY_CLS}`}>{formatMoney(row.computed.bonusAmount)}</td>
-                  <td className={`${SS_TABLE_CELL_CLS} text-left ${SS_TABLE_GROUP_DEDUCTION}`}>{cellInput(entryId, 'otherDeduction', Number(row.entry.otherDeduction ?? 0), locked, SS_CELL_EDIT_MONEY_CLS)}</td>
+                  <td className={`${SS_TABLE_CELL_CLS} text-left ${SS_TABLE_GROUP_DEDUCTION}`}>{cellInput(entryId, employeeId, 'otherDeduction', Number(row.entry.otherDeduction ?? 0), locked, SS_CELL_EDIT_MONEY_CLS)}</td>
                   <td className={`${SS_TABLE_CELL_CLS} text-left ${SS_TABLE_GROUP_DEDUCTION} text-xs font-bold text-rose-600 tabular-nums`}>{formatMoney(row.computed.totalDeductions)}</td>
                   <td className={`${SS_TABLE_CELL_CLS} border-l border-slate-100 text-xs font-extrabold text-emerald-700 tabular-nums text-left`}>
                     {formatMoney(row.computed.netPayable)}

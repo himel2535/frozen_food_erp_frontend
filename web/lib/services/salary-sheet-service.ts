@@ -9,9 +9,12 @@ import { listEmployees } from '@/lib/services/hrm-service';
 import {
   computePerDaySalary,
   computeTotalFixed,
+  enrichSalaryStructureRecord,
   getBasicSalaryAmount,
   getSalaryStructureById,
   listSalaryStructures,
+  parseSalaryAmount,
+  resolveBasicSalary,
   type SalaryComponentRow,
 } from '@/lib/services/payroll-service';
 
@@ -69,50 +72,87 @@ export function getSheetEntryByEmployee(state: AppState, period: string, employe
 }
 
 export function resolveStructureForEmployee(state: AppState, employeeId: string) {
-  const structures = listSalaryStructures(state).filter((s) => String(s.status).toLowerCase() === 'active');
+  const structures = listSalaryStructures(state)
+    .map((row) => enrichSalaryStructureRecord(row))
+    .filter((s) => String(s.status).toLowerCase() === 'active');
+  const employee = listEmployees(state).find((e) => String(e.id) === employeeId);
+  const meta = (employee?.meta ?? {}) as Record<string, unknown>;
+  const assignedStructureId = String(
+    employee?.salaryStructureId ?? meta.salaryStructureId ?? '',
+  ).trim();
+
+  if (assignedStructureId) {
+    const linked = getSalaryStructureById(state, assignedStructureId);
+    if (linked) return linked;
+  }
+
   const assigned = structures.find((s) =>
     Array.isArray(s.assignedEmployeeIds) && (s.assignedEmployeeIds as string[]).includes(employeeId),
   );
   if (assigned) return assigned;
 
-  const employee = listEmployees(state).find((e) => String(e.id) === employeeId);
   const employeeType = String(employee?.employeeType ?? '');
   if (employeeType) {
     const byType = structures.find((s) => String(s.employeeType) === employeeType);
     if (byType) return byType;
   }
 
-  return structures[0] ?? null;
+  const withValidBase = structures.find((s) => resolveBasicSalary(s, employee) > 0);
+  return withValidBase ?? structures[0] ?? null;
 }
 
-export function computeSheetRow(entry: Row, structure: Row): ComputedSheetRow {
-  const components = (structure.components as SalaryComponentRow[]) ?? [];
-  const basic = getBasicSalaryAmount(components) || Number(structure.base ?? 0);
-  const totalFixed = computeTotalFixed(components) || Number(structure.totalFixed ?? basic);
+export function normalizeSheetEntry(
+  state: AppState,
+  entry: Row,
+  employee: Row,
+): { entry: Row; structure: Row } {
+  const employeeId = String(employee.id);
+  const structure = resolveStructureForEmployee(state, employeeId)
+    ?? getSalaryStructureById(state, String(entry.structureId ?? ''))
+    ?? {};
+  const workingDays = Math.max(1, Math.min(Number(structure.workingDays ?? 26), 31));
+  const presentRaw = Number(entry.presentDays ?? workingDays);
+  const presentDays = Math.min(Math.max(0, presentRaw), workingDays) || workingDays;
+  return {
+    entry: {
+      ...entry,
+      structureId: String(structure.id ?? entry.structureId ?? ''),
+      presentDays,
+      bonusPercent: Number(entry.bonusPercent ?? structure.bonusPercent ?? 0),
+    },
+    structure,
+  };
+}
+
+export function computeSheetRow(entry: Row, structure: Row, employee?: Row | null): ComputedSheetRow {
+  const enriched = enrichSalaryStructureRecord(structure);
+  const components = (enriched.components as SalaryComponentRow[]) ?? [];
+  const basic = resolveBasicSalary(enriched, employee);
+  const totalFixed = computeTotalFixed(components) || parseSalaryAmount(enriched.totalFixed) || basic;
   const allowances = Math.max(0, totalFixed - basic);
-  const workingDays = Number(structure.workingDays ?? 26);
+  const workingDays = Math.max(1, Math.min(Number(enriched.workingDays ?? 26), 31));
   const perDay = computePerDaySalary(basic, workingDays);
 
   const absentDays = Number(entry.absentDays ?? 0);
   const lateDays = Number(entry.lateDays ?? 0);
   const otHours = Number(entry.otHours ?? 0);
-  const bonusPercent = Number(entry.bonusPercent ?? structure.bonusPercent ?? 0);
+  const bonusPercent = Number(entry.bonusPercent ?? enriched.bonusPercent ?? 0);
   const otherAllowance = Number(entry.otherAllowance ?? 0);
   const otherDeduction = Number(entry.otherDeduction ?? 0);
   const advanceDeduct = Number(entry.advanceDeduct ?? 0);
 
-  const absentRule = String(structure.absentDeduction ?? '');
+  const absentRule = String(enriched.absentDeduction ?? '');
   const absentDeduction = absentRule === 'Per Day Salary' ? absentDays * perDay : 0;
 
-  const lateRule = String(structure.lateDeduction ?? '');
-  const lateAmount = Number(structure.lateDeductionAmount ?? 0);
+  const lateRule = String(enriched.lateDeduction ?? '');
+  const lateAmount = Number(enriched.lateDeductionAmount ?? 0);
   const lateDeduction = lateRule === 'Per Late (Fixed)' ? lateDays * lateAmount : 0;
 
-  const otEnabled = Boolean(structure.overtimeEnabled);
-  const otRate = otEnabled ? Number(structure.otRate ?? 0) : 0;
+  const otEnabled = Boolean(enriched.overtimeEnabled);
+  const otRate = otEnabled ? Number(enriched.otRate ?? 0) : 0;
   const otAmount = otEnabled ? otHours * otRate : 0;
 
-  const bonusEnabled = Boolean(structure.bonusEnabled);
+  const bonusEnabled = Boolean(enriched.bonusEnabled);
   const bonusAmount = bonusEnabled ? (basic * bonusPercent) / 100 : 0;
 
   const totalEarnings = basic + otAmount + bonusAmount + otherAllowance;
@@ -155,12 +195,13 @@ export function buildDefaultSheetEntry(
 ): SalarySheetEntry | null {
   const structure = resolveStructureForEmployee(state, employeeId);
   if (!structure) return null;
+  const workingDays = Math.max(1, Math.min(Number(structure.workingDays ?? 26), 31));
   return {
     id: '',
     period,
     employeeId,
     structureId: String(structure.id),
-    presentDays: Number(structure.workingDays ?? 26),
+    presentDays: workingDays,
     absentDays: 0,
     leaveDays: 0,
     lateDays: 0,
@@ -213,6 +254,7 @@ export function getSheetMetrics(computedRows: ComputedSheetRow[]) {
 export function getSheetMetricsFromEntries(
   entries: Row[],
   structures: Record<string, Row>,
+  employeesById: Record<string, Row> = {},
 ) {
   let presentManDays = 0;
   let absentManDays = 0;
@@ -223,7 +265,8 @@ export function getSheetMetricsFromEntries(
 
   entries.forEach((entry) => {
     const structure = structures[String(entry.structureId)] ?? {};
-    const computed = computeSheetRow(entry, structure);
+    const employee = employeesById[String(entry.employeeId)] ?? null;
+    const computed = computeSheetRow(entry, structure, employee);
     presentManDays += Number(entry.presentDays ?? 0);
     absentManDays += Number(entry.absentDays ?? 0);
     otHours += Number(entry.otHours ?? 0);
@@ -252,8 +295,11 @@ export function approveAndPay(
   if (!entry) return { ok: false as const, error: 'Salary sheet entry not found.' };
   if (String(entry.status) === 'paid') return { ok: false as const, error: 'Salary already paid.' };
 
-  const structure = getSalaryStructureById(state, String(entry.structureId)) ?? {};
-  const computed = computeSheetRow(entry, structure);
+  const structure = getSalaryStructureById(state, String(entry.structureId))
+    ?? resolveStructureForEmployee(state, String(entry.employeeId))
+    ?? {};
+  const employee = listEmployees(state).find((row) => String(row.id) === String(entry.employeeId)) ?? null;
+  const computed = computeSheetRow(entry, structure, employee);
   const payAmount = Math.min(Math.max(0, payment.amount), computed.dueAmount || computed.netPayable);
   if (payAmount <= 0) return { ok: false as const, error: 'Pay amount must be greater than zero.' };
 
@@ -277,7 +323,6 @@ export function approveAndPay(
   });
   if (!updateResult.ok) return updateResult;
 
-  const employee = listEmployees(state).find((e) => String(e.id) === String(entry.employeeId));
   createInState(state, 'payroll', {
     employeeId: entry.employeeId,
     name: String(employee?.name ?? 'Employee'),
@@ -297,7 +342,7 @@ export function approveAndPay(
 export function listSheetEmployees(state: AppState) {
   return listEmployees(state).filter((e) => {
     const status = String(e.status ?? '').toLowerCase();
-    return status === 'active' || status === 'on-leave';
+    return status !== 'terminated';
   });
 }
 
@@ -351,10 +396,10 @@ export function listPaymentsDueRows(state: AppState, period: string): PaymentsDu
         displayStatus: 'notProcessed' as const,
       };
     }
-    const structure = getSalaryStructureById(state, String(entry.structureId)) ?? {};
-    const computed = computeSheetRow(entry, structure);
+    const { entry: normalizedEntry, structure } = normalizeSheetEntry(state, entry, employee);
+    const computed = computeSheetRow(normalizedEntry, structure, employee);
     return {
-      entry,
+      entry: normalizedEntry,
       employee,
       structure,
       computed,

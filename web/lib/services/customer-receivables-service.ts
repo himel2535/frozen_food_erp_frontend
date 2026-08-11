@@ -1,4 +1,5 @@
 import type { AppState } from '@/lib/state/types';
+import { isMongoDbBackend } from '@/lib/config/data-source';
 import { sortRowsNewestFirst } from '@/lib/services/domain-service';
 import {
   createPaymentRecord,
@@ -85,6 +86,51 @@ export type CustomerReceivableFilters = {
 
 type Row = Record<string, unknown>;
 type CrmCustomer = ReturnType<typeof getCustomerList>[number];
+
+function useLiveReceivablesOnly() {
+  return isMongoDbBackend();
+}
+
+/** Merge live invoice/payment API rows into app state for receivables (rows already mapped by useApiResourceStore). */
+export function buildReceivableAppState(
+  base: AppState,
+  options: {
+    apiMode: boolean;
+    invoiceRows: Record<string, unknown>[];
+    paymentRows: Record<string, unknown>[];
+    invoicesReady: boolean;
+    paymentsReady: boolean;
+  },
+): AppState {
+  const { apiMode, invoiceRows, paymentRows, invoicesReady, paymentsReady } = options;
+  if (!apiMode || !invoicesReady) return base;
+
+  const next = { ...base } as AppState;
+  next.invoices = invoiceRows as AppState['invoices'];
+
+  if (paymentsReady) {
+    ensureCrmState(next);
+    const existing = (next.crmData?.paymentsById ?? {}) as Record<string, Record<string, unknown>>;
+    const paymentsById: Record<string, Record<string, unknown>> = { ...existing };
+    for (const row of paymentRows) {
+      const id = String(row.id ?? row.legacyId ?? '');
+      if (!id) continue;
+      paymentsById[id] = {
+        id,
+        customerId: row.customerId,
+        invoiceId: row.invoiceId ?? null,
+        amount: Number(row.amount ?? 0),
+        date: String(row.date ?? ''),
+        method: String(row.method ?? 'Cash'),
+        reference: String(row.reference ?? ''),
+        status: String(row.status ?? 'received'),
+      };
+    }
+    next.crmData = { ...next.crmData!, paymentsById };
+  }
+
+  return next;
+}
 
 function todayIso() {
   return new Date().toISOString().slice(0, 10);
@@ -178,6 +224,9 @@ function getCollectedToday(state: AppState) {
     (payment) => String(payment.date ?? '') === today,
   );
   const liveTotal = livePayments.reduce((sum, payment) => sum + Number(payment.amount ?? 0), 0);
+  if (useLiveReceivablesOnly()) {
+    return { total: liveTotal, paymentCount: livePayments.length };
+  }
   const demoTotal = COLLECTION_DEMO_PAYMENTS_TODAY.reduce((sum, payment) => sum + payment.amount, 0);
   const demoCount = COLLECTION_DEMO_PAYMENTS_TODAY.length;
   return {
@@ -580,7 +629,7 @@ export function listCustomerReceivables(state: AppState): CustomerReceivable[] {
     .map((row) => applyCollectionOverlay(state, row));
 
   const collectionRows = rows.filter((row) => isCollectionDemoCompany(row.company) && row.totalDue > 0);
-  if (collectionRows.length >= 9) {
+  if (!useLiveReceivablesOnly() && collectionRows.length >= 9) {
     return collectionRows.sort((a, b) => {
       if (a.isMissed && !b.isMissed) return -1;
       if (!a.isMissed && b.isMissed) return 1;
@@ -597,7 +646,7 @@ export function getCustomerReceivableMetrics(state: AppState) {
   const dueSoonCustomers = customers.filter((customer) => customer.status === 'due_soon' && customer.totalDue > 0);
   const collectedMonth = getCollectedThisMonth(state);
   const collectedToday = getCollectedToday(state);
-  const useDemoKpi = hasCollectionDemoData(state) && withDue.length >= 9;
+  const useDemoKpi = !useLiveReceivablesOnly() && hasCollectionDemoData(state) && withDue.length >= 9;
 
   const promisedToday = customers.filter((c) => c.isPromised && c.paymentPromise?.dueDate === todayIso());
   const expectedToday = promisedToday.reduce((sum, c) => sum + Number(c.paymentPromise?.amount ?? 0), 0);
@@ -657,7 +706,7 @@ export function getCustomerReceivableMetrics(state: AppState) {
 
 export function getTodayCollectionStats(state: AppState) {
   const customers = listCustomerReceivables(state);
-  const useDemoKpi = hasCollectionDemoData(state) && customers.length >= 9;
+  const useDemoKpi = !useLiveReceivablesOnly() && hasCollectionDemoData(state) && customers.length >= 9;
 
   const followUps = customers.filter(
     (c) => c.nextAction?.type === 'follow_up' || c.collectionStatus === 'follow_up_scheduled',
@@ -687,11 +736,9 @@ export function filterCustomerReceivables(
   filters: CustomerReceivableFilters,
 ): CustomerReceivable[] {
   return entries.filter((entry) => {
-    if (filters.status && filters.status !== 'all') {
+    if (filters.status && filters.status !== 'all' && filters.status !== 'all_due') {
       if (filters.status === 'overdue' && entry.status !== 'overdue') return false;
       if (filters.status === 'due_soon' && entry.status !== 'due_soon') return false;
-      if (filters.status === 'paid' && entry.status !== 'paid') return false;
-      if (filters.status === 'all_due' && entry.totalDue <= 0) return false;
       if (filters.status === 'my_tasks' && !entry.isMyTask) return false;
       if (filters.status === 'today' && !entry.isToday) return false;
       if (filters.status === 'promised' && !entry.isPromised && entry.collectionStatus !== 'payment_promise') return false;
@@ -824,7 +871,7 @@ export function createCustomerDue(
     approvalStatus: 'approved',
     postedAt: issueDate,
     sentAt: issueDate,
-    status: 'sent',
+    status: 'pending',
     notes: String(payload.notes ?? ''),
   });
 

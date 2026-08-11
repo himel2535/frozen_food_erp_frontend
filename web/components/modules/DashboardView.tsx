@@ -1,11 +1,11 @@
 'use client';
 
 import dynamic from 'next/dynamic';
-import { useDeferredValue, useEffect, useMemo } from 'react';
+import { useMemo, useEffect } from 'react';
 import { loadIcons } from '@iconify/react';
 import { Icon } from '@iconify/react';
 import { Footer } from '@/components/layout/Footer';
-import { useAppStore } from '@/lib/state/app-store';
+import { PageSkeleton } from '@/components/shared/PageSkeleton';
 import type { AppState } from '@/lib/state/types';
 import { useLocaleFormat } from '@/hooks/useLocaleFormat';
 import { pageSkeletonLoader } from '@/components/shared/PageSkeleton';
@@ -15,7 +15,9 @@ import {
   getRawMaterialMetrics,
   getSemiFinishedMetrics,
 } from '@/lib/services/inventory-service';
+import { useDashboardAppState, useDashboardReady } from '@/hooks/use-dashboard-api-data';
 import { getLeadList } from '@/lib/services/crm-service';
+import { useAppStore } from '@/lib/state/app-store';
 
 const SalesTrendChart = dynamic(
   () => import('@/components/modules/dashboard/SalesTrendChart').then((m) => m.SalesTrendChart),
@@ -109,8 +111,8 @@ const KPI_CARDS: { key: string; labelKey: string; icon: string; alert?: boolean 
 ];
 
 export function DashboardView() {
-  const appState = useAppStore((s) => s.appState);
-  const deferredState = useDeferredValue(appState);
+  const dashboardState = useDashboardAppState();
+  const ready = useDashboardReady();
   const t = useAppStore((s) => s.t);
   const { formatMoney } = useLocaleFormat();
 
@@ -120,7 +122,10 @@ export function DashboardView() {
     return () => document.body.classList.remove('dashboard-page');
   }, []);
 
-  const metrics = useMemo(() => getDashboardMetrics(deferredState), [deferredState]);
+  const metrics = useMemo(
+    () => getDashboardMetrics(dashboardState),
+    [dashboardState],
+  );
 
   const metricValues = useMemo<Record<string, { value: string; sub?: string }>>(
     () => ({
@@ -178,6 +183,10 @@ export function DashboardView() {
     }),
     [t, formatMoney, metrics],
   );
+
+  if (!ready) {
+    return <PageSkeleton variant="dashboard" label="Loading dashboard" />;
+  }
 
   return (
     <div className="space-y-2 flex flex-col">

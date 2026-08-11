@@ -8,6 +8,10 @@ import { Footer } from '@/components/layout/Footer';
 import { useRegisterModuleActions } from '@/components/layout/ModuleActionsContext';
 import { AppFormFields, AppFormModal } from '@/components/shared/AppForm';
 import { useAppStore } from '@/lib/state/app-store';
+import { useApiResourceStore } from '@/hooks/use-api-resource-store';
+import { mapGenericApiRow, mapGenericPayloadToApi } from '@/lib/services/generic-api-mapper';
+import { ApiModeBanner } from '@/components/shared/ApiModeBanner';
+import { isModuleApiMode } from '@/lib/config/data-source';
 import type { PortField } from '@/lib/modules/port-types';
 import {
   buildProfitLossDisplayRows,
@@ -69,6 +73,8 @@ function formToPayload(form: ProfitLossFormState) {
 export function ProfitLossPage() {
   const appState = useAppStore((s) => s.appState);
   const saveAppState = useAppStore((s) => s.saveAppState);
+  const apiMode = isModuleApiMode('profitLoss');
+  const apiStore = useApiResourceStore('profitLoss', mapGenericApiRow);
 
   const [period, setPeriod] = useState(DEFAULT_PL_PERIOD);
   const [generatedAt, setGeneratedAt] = useState(() => formatGeneratedAt(new Date()));
@@ -78,7 +84,12 @@ export function ProfitLossPage() {
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [form, setForm] = useState<ProfitLossFormState>(EMPTY_PL_FORM);
 
-  const lines = useMemo(() => listProfitLossLines(appState), [appState]);
+  const lines = useMemo(() => {
+    if (apiMode && apiStore.initialized) {
+      return listProfitLossLines({ profitLoss: apiStore.rows } as import('@/lib/state/types').AppState);
+    }
+    return listProfitLossLines(appState);
+  }, [apiMode, apiStore.initialized, apiStore.rows, appState]);
   const metrics = useMemo(() => getProfitLossMetrics(lines), [lines]);
   const displayRows = useMemo(() => buildProfitLossDisplayRows(lines), [lines]);
 
@@ -103,10 +114,25 @@ export function ProfitLossPage() {
     setShowModal(true);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.lineItem.trim()) return;
     const payload = formToPayload(form);
+    if (apiMode) {
+      const result = editingId
+        ? await apiStore.update(editingId, mapGenericPayloadToApi(payload))
+        : await apiStore.create(mapGenericPayloadToApi(payload));
+      if (!result.ok) {
+        toast.error('Operation failed', { module: 'Profit & Loss', description: 'error' in result ? String(result.error) : 'Failed to save line' });
+        return;
+      }
+      toast.success('Saved', { module: 'Profit & Loss', description: editingId ? 'Line updated.' : 'Line added.' });
+      setShowModal(false);
+      setEditingId(null);
+      setForm(EMPTY_PL_FORM);
+      setGeneratedAt(formatGeneratedAt(new Date()));
+      return;
+    }
     const result = editingId
       ? updateProfitLossLine(appState, editingId, payload)
       : createProfitLossLine(appState, payload);
@@ -135,6 +161,7 @@ export function ProfitLossPage() {
 
   return (
     <>
+        {apiStore.error ? <ApiModeBanner module="profitLoss" error={apiStore.error} /> : null}
         <ProfitLossMetrics metrics={metrics} />
 
         <ProfitLossPeriodBar

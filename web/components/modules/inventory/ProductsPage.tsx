@@ -22,6 +22,12 @@ import {
   rowToProductFormValues,
   warehouseStockToStrings,
 } from '@/components/modules/inventory/product-form/product-form-types';
+import { isModuleApiMode } from '@/lib/config/data-source';
+import { useApiResourceStore } from '@/hooks/use-api-resource-store';
+import { useInventoryLookups } from '@/hooks/use-inventory-lookups';
+import { ApiModeBanner } from '@/components/shared/ApiModeBanner';
+import { apiListEmptyMessage } from '@/lib/services/api-list-ui';
+import { mapApiProductRow, mapProductPayloadToApi } from '@/lib/services/entity-api-mappers';
 import {
   listInventory,
   listCategories,
@@ -81,6 +87,9 @@ function emptyWarehouseStock(warehouseIds: string[]): Record<string, string> {
 export function ProductsPage() {
   const appState = useAppStore((s) => s.appState);
   const saveAppState = useAppStore((s) => s.saveAppState);
+  const apiMode = isModuleApiMode('products');
+  const apiStore = useApiResourceStore('products', mapApiProductRow);
+  const lookups = useInventoryLookups();
   const [view, setView] = useState<'main' | 'form'>('main');
   const [search, setSearch] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('all');
@@ -92,12 +101,24 @@ export function ProductsPage() {
   const [page, setPage] = useState(1);
   const pageSize = 10;
 
-  const categories = useMemo(() => listCategories(appState), [appState]);
-  const units = useMemo(() => listUnits(appState), [appState]);
-  const warehouses = useMemo(() => listWarehouses(appState), [appState]);
+  const categories = useMemo(
+    () => (apiMode ? lookups.categories : listCategories(appState)),
+    [apiMode, lookups.categories, appState],
+  );
+  const units = useMemo(
+    () => (apiMode ? lookups.units : listUnits(appState)),
+    [apiMode, lookups.units, appState],
+  );
+  const warehouses = useMemo(
+    () => (apiMode ? lookups.warehouses : listWarehouses(appState)),
+    [apiMode, lookups.warehouses, appState],
+  );
   const warehouseIds = useMemo(() => warehouses.map((wh) => String(wh.id)), [warehouses]);
 
-  const allProducts = useMemo(() => listInventory(appState, { excludeRaw: true }), [appState]);
+  const allProducts = useMemo(() => {
+    if (apiMode) return apiStore.rows;
+    return listInventory(appState, { excludeRaw: true });
+  }, [apiMode, apiStore.rows, appState]);
 
   const products = useMemo(() => {
     let data = allProducts;
@@ -110,7 +131,26 @@ export function ProductsPage() {
     return sortInventoryRowsNewestFirst(data);
   }, [allProducts, search, categoryFilter, typeFilter]);
 
-  const metrics = useMemo(() => getProductMetrics(appState, allProducts), [appState, allProducts]);
+  const metrics = useMemo(() => {
+    if (apiMode) {
+      const totalStock = allProducts.reduce((s, p) => s + computeTotalStock(p), 0);
+      const inventoryValue = allProducts.reduce((s, p) => s + computeTotalStock(p) * Number(p.cost ?? 0), 0);
+      const lowStock = allProducts.filter((p) => {
+        const avail = computeAvailableStock(p);
+        const min = Number(p.minStock ?? 0);
+        return avail > 0 && avail <= min;
+      }).length;
+      const outOfStock = allProducts.filter((p) => computeAvailableStock(p) <= 0).length;
+      return {
+        totalSkus: allProducts.length,
+        totalStock,
+        lowStock,
+        outOfStock,
+        inventoryValue,
+      };
+    }
+    return getProductMetrics(appState, allProducts);
+  }, [apiMode, allProducts, appState]);
   const paged = products.slice((page - 1) * pageSize, page * pageSize);
   const totalPages = Math.max(1, Math.ceil(products.length / pageSize));
 
@@ -165,6 +205,13 @@ export function ProductsPage() {
     { key: 'status', label: 'Status', render: (row) => <StatusBadge status={getProductStockStatus(row)} /> },
   ], [warehouses]);
 
+  const resetFilters = () => {
+    setSearch('');
+    setCategoryFilter('all');
+    setTypeFilter('all');
+    setPage(1);
+  };
+
   const resetForm = () => {
     const sku = previewProductSku(appState);
     setFormValues(buildEmptyFormValues(categories, units, warehouses, sku));
@@ -195,7 +242,28 @@ export function ProductsPage() {
     setView('form');
   };
 
-  const handleSave = (payload: ProductFormPayload, action: 'save' | 'save-and-add') => {
+  const handleSave = async (payload: ProductFormPayload, action: 'save' | 'save-and-add') => {
+    if (apiMode) {
+      const body = mapProductPayloadToApi(payload);
+      const result = editingId
+        ? await apiStore.update(editingId, body)
+        : await apiStore.create(body);
+      if (!result.ok) {
+        toast.error('Operation failed', { module: 'Products', description: 'error' in result ? String(result.error) : 'Save failed' });
+        return;
+      }
+      if (!editingId) resetFilters();
+      if (action === 'save-and-add') {
+        if (!editingId) setPage(1);
+        resetForm();
+        return;
+      }
+      if (!editingId) setPage(1);
+      setView('main');
+      resetForm();
+      return;
+    }
+
     const result = editingId
       ? updateProduct(appState, editingId, payload)
       : createProduct(appState, payload);
@@ -238,6 +306,8 @@ export function ProductsPage() {
 
   return (
     <>
+      {apiMode ? <ApiModeBanner module="products" error={apiStore.error} /> : null}
+
       <ModuleKpiSection
         gridClassName="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-2"
         items={[
@@ -270,13 +340,38 @@ export function ProductsPage() {
       <AppTable
         columns={columns}
         rows={paged}
-        emptyMessage="No products found."
+        emptyMessage={apiListEmptyMessage(apiStore.loading, apiStore.initialized, 'products', { totalCount: allProducts.length, filteredCount: products.length })}
         renderActions={(row) => (
           <>
             <TableIconAction variant="edit" onClick={() => openEdit(row)} />
             <TableIconAction
               variant={row.discontinued ? 'restore' : 'discontinue'}
-              onClick={() => {
+              onClick={async () => {
+                if (apiMode) {
+                  await apiStore.update(String(row.id), {
+                    ...mapProductPayloadToApi({
+                      name: String(row.name),
+                      sku: String(row.sku ?? ''),
+                      category: String(row.category ?? ''),
+                      uom: String(row.uom ?? 'pcs'),
+                      barcode: String(row.barcode ?? ''),
+                      productType: String(row.productType ?? 'Finished Goods'),
+                      imageUrl: String(row.imageUrl ?? ''),
+                      cost: Number(row.cost ?? 0),
+                      price: Number(row.price ?? 0),
+                      taxRate: Number(row.taxRate ?? 0),
+                      minStock: Number(row.minStock ?? 0),
+                      reserved: Number(row.reserved ?? 0),
+                      wholesalePrice: Number(row.wholesalePrice ?? 0),
+                      reorderLevel: Number(row.reorderLevel ?? 0),
+                      defaultWarehouse: String(row.defaultWarehouse ?? ''),
+                      description: String(row.description ?? ''),
+                      discontinued: !row.discontinued,
+                      warehouseStock: (row.warehouseStock as Record<string, number>) ?? {},
+                    }),
+                  });
+                  return;
+                }
                 toggleDiscontinued(appState, String(row.id));
                 saveAppState();
               }}
@@ -284,8 +379,13 @@ export function ProductsPage() {
             <TableIconAction
               variant="delete"
               onClick={() => {
-                confirmAction({ title: 'Delete', message: 'Delete?', confirmLabel: 'Delete', tone: 'danger', module: 'Products' }).then((__ok) => {
+                confirmAction({ title: 'Delete', message: 'Delete?', confirmLabel: 'Delete', tone: 'danger', module: 'Products' }).then(async (__ok) => {
                   if (!__ok) return;
+                  if (apiMode) {
+                    const result = await apiStore.remove(String(row.id));
+                    if (!result.ok) toast.error('Delete failed', { module: 'Products', description: result.error });
+                    return;
+                  }
                   deleteProduct(appState, String(row.id));
                   saveAppState();
                 });

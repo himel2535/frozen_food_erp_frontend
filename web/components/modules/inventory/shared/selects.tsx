@@ -13,6 +13,7 @@ export function ProductSelect({
   required,
   includeAll,
   productType,
+  items,
 }: {
   state: AppState;
   value: string;
@@ -20,8 +21,9 @@ export function ProductSelect({
   required?: boolean;
   includeAll?: boolean;
   productType?: string;
+  items?: Record<string, unknown>[];
 }) {
-  const products = listInventory(state, productType
+  const products = items ?? listInventory(state, productType
     ? { productType, excludeRaw: true }
     : undefined);
   return (
@@ -72,8 +74,22 @@ export function RecipeSelect({
   );
 }
 
-export function WarehouseSelect({ state, value, onChange, required, includeAll }: { state: AppState; value: string; onChange: (v: string) => void; required?: boolean; includeAll?: boolean }) {
-  const warehouses = listWarehouses(state);
+export function WarehouseSelect({
+  state,
+  value,
+  onChange,
+  required,
+  includeAll,
+  items,
+}: {
+  state: AppState;
+  value: string;
+  onChange: (v: string) => void;
+  required?: boolean;
+  includeAll?: boolean;
+  items?: Record<string, unknown>[];
+}) {
+  const warehouses = items ?? listWarehouses(state);
   return (
     <select required={required} value={value} onChange={(e) => onChange(e.target.value)} className={SELECT_CLS}>
       {includeAll && <option value="all">All Warehouses</option>}

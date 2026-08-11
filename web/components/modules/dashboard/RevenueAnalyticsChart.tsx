@@ -3,6 +3,7 @@
 import { useMemo, useState } from 'react';
 import { Icon } from '@iconify/react';
 import { useAppStore } from '@/lib/state/app-store';
+import { useDashboardAppState } from '@/hooks/use-dashboard-api-data';
 import { useLocaleFormat } from '@/hooks/useLocaleFormat';
 import {
   getRevenueSeries,
@@ -29,7 +30,7 @@ const RANGE_HINT_KEYS: Record<SalesTrendRange, string> = {
 };
 
 export function RevenueAnalyticsChart() {
-  const appState = useAppStore((s) => s.appState);
+  const appState = useDashboardAppState();
   const t = useAppStore((s) => s.t);
   const { formatMoney, formatCompactMoney } = useLocaleFormat();
   const [range, setRange] = useState<SalesTrendRange>('month');

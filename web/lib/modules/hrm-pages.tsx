@@ -10,6 +10,8 @@ import { useLegacyParityConfig } from '@/hooks/use-legacy-parity-config';
 import { useLocaleFormat } from '@/hooks/useLocaleFormat';
 import { employeeAvatarClass, employeeInitials } from '@/lib/services/hrm-service';
 import { formatMoney } from '@/lib/services/payroll-service';
+import { isModuleApiMode } from '@/lib/config/data-source';
+import { EmployeesApiPage } from '@/components/modules/hrm/EmployeesApiPage';
 
 function formatEffectiveDate(value: unknown, formatDateFn: (value: Date | string) => string) {
   const raw = String(value ?? '').split('T')[0];
@@ -38,6 +40,7 @@ const EMPLOYEE_TYPE_STYLES: Record<string, string> = {
 
 export function EmployeesPage() {
   const router = useRouter();
+  const apiMode = isModuleApiMode('employees');
   const base = useLegacyParityConfig('hrm-employees');
   const config = useMemo(() => {
     if (!base) return null;
@@ -85,6 +88,8 @@ export function EmployeesPage() {
     ),
   };
   }, [base, router]);
+
+  if (apiMode) return <EmployeesApiPage />;
 
   if (!config) return <DedicatedModule configId="hrm-employees" />;
 
@@ -179,7 +184,7 @@ export function PayrollStructuresPage() {
 
   if (!config) return <DedicatedModule configId="payroll-structures" />;
 
-  return <DedicatedModule config={config} />;
+  return <DedicatedModule config={config} configId="payroll-structures" />;
 }
 export function PayrollRunsPage() { return <DedicatedModule configId="payroll-runs" />; }
 export function PayrollSlipsPage() { return <DedicatedModule configId="payroll-slips" />; }

@@ -20,6 +20,13 @@ import { RecipeCard } from '@/components/modules/purchases/RecipeCard';
 import { RecipesBomMetrics } from '@/components/modules/purchases/RecipesBomMetrics';
 import { RecipeProductionPlanView } from '@/components/modules/purchases/RecipeProductionPlanView';
 import { useAppStore } from '@/lib/state/app-store';
+import { useApiResourceStore } from '@/hooks/use-api-resource-store';
+import { mapGenericApiRow, mapGenericPayloadToApi } from '@/lib/services/generic-api-mapper';
+import { ApiModeBanner } from '@/components/shared/ApiModeBanner';
+import { PageSkeleton } from '@/components/shared/PageSkeleton';
+import { isModuleApiMode } from '@/lib/config/data-source';
+import { resolveApiRowId } from '@/lib/services/entity-api-mappers';
+import type { AppState } from '@/lib/state/types';
 import type { PortField } from '@/lib/modules/port-types';
 import {
   listRecipesForVariant,
@@ -36,6 +43,7 @@ import {
   removeMaterialFromRecipe,
   reorderMaterialInRecipe,
   formatMoney,
+  mapRecipeToApi,
   resolveRecipeForInventoryRow,
   type Recipe,
   type BomMaterial,
@@ -80,6 +88,31 @@ const RECIPE_CREATE_FIELDS: PortField[] = [
 ];
 
 const INPUT_CLS = 'w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-xs font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500/10';
+
+function cloneRecipeState(state: AppState): AppState {
+  const cloneRows = (rows: Record<string, unknown>[] | undefined) =>
+    (rows ?? []).map((row) => ({
+      ...row,
+      materials: Array.isArray(row.materials)
+        ? (row.materials as Record<string, unknown>[]).map((material) => ({ ...material }))
+        : [],
+    }));
+
+  return {
+    ...state,
+    finishedGoodsRecipes: cloneRows(state.finishedGoodsRecipes as Record<string, unknown>[] | undefined),
+    semiFinishedRecipes: cloneRows(state.semiFinishedRecipes as Record<string, unknown>[] | undefined),
+  } as AppState;
+}
+
+function resolveRecipeApiId(rows: Record<string, unknown>[], recipeId: string): string {
+  const match = rows.find(
+    (row) => String(row.id) === recipeId
+      || String(row.legacyId) === recipeId
+      || String(row.recipeNumber) === recipeId,
+  );
+  return match ? resolveApiRowId(match) : recipeId;
+}
 
 function MaterialCell({ name, attachmentName }: { name: string; attachmentName?: string }) {
   return (
@@ -141,7 +174,10 @@ function BomSummaryStrip({
 
 export function RecipesPage({ variant = 'finished-goods' }: { variant?: RecipeVariant }) {
   const appState = useAppStore((s) => s.appState);
+  const apiDataReady = useAppStore((s) => s.apiDataReady);
   const saveAppState = useAppStore((s) => s.saveAppState);
+  const apiMode = isModuleApiMode('recipes');
+  const apiStore = useApiResourceStore('recipes', mapGenericApiRow);
   const searchParams = useSearchParams();
   const config = VARIANT_CONFIG[variant];
 
@@ -167,12 +203,19 @@ export function RecipesPage({ variant = 'finished-goods' }: { variant?: RecipeVa
     window.localStorage.setItem(config.layoutKey, layout);
   };
 
+  const recipeState = useMemo((): AppState => {
+    if (!apiMode) return appState;
+    const fg = apiStore.rows.filter((r) => String(r.variant ?? 'finished-goods') === 'finished-goods');
+    const sf = apiStore.rows.filter((r) => String(r.variant) === 'semi-finished');
+    return { ...appState, finishedGoodsRecipes: fg, semiFinishedRecipes: sf } as AppState;
+  }, [apiMode, apiStore.rows, appState]);
+
   const recipes = useMemo(
-    () => listRecipesForVariant(appState, variant),
-    [appState, variant],
+    () => listRecipesForVariant(recipeState, variant),
+    [recipeState, variant],
   );
-  const materialOptions = useMemo(() => listMaterialOptions(appState), [appState]);
-  const supplierOptions = useMemo(() => listSupplierOptions(appState), [appState]);
+  const materialOptions = useMemo(() => listMaterialOptions(recipeState), [recipeState]);
+  const supplierOptions = useMemo(() => listSupplierOptions(recipeState), [recipeState]);
 
   const filteredRecipes = useMemo(() => {
     if (!search.trim()) return recipes;
@@ -188,12 +231,12 @@ export function RecipesPage({ variant = 'finished-goods' }: { variant?: RecipeVa
 
   const bomKpiMetrics = useMemo(() => getRecipeBomKpiMetrics(recipes), [recipes]);
   const activeRecipe = useMemo(
-    () => (bomRecipeId ? getRecipe(appState, bomRecipeId) : null),
-    [appState, bomRecipeId],
+    () => (bomRecipeId ? getRecipe(recipeState, bomRecipeId) : null),
+    [recipeState, bomRecipeId],
   );
   const planRecipe = useMemo(
-    () => (planRecipeId ? getRecipe(appState, planRecipeId) : null),
-    [appState, planRecipeId],
+    () => (planRecipeId ? getRecipe(recipeState, planRecipeId) : null),
+    [recipeState, planRecipeId],
   );
   const bomTotals = useMemo(
     () => (activeRecipe ? getRecipeBomTotals(activeRecipe) : null),
@@ -266,7 +309,7 @@ export function RecipesPage({ variant = 'finished-goods' }: { variant?: RecipeVa
     }
     const productParam = searchParams.get('product');
     if (!productParam) return;
-    const linked = resolveRecipeForInventoryRow(appState, {
+    const linked = resolveRecipeForInventoryRow(recipeState, {
       id: productParam,
       sku: productParam,
       name: productParam,
@@ -278,7 +321,7 @@ export function RecipesPage({ variant = 'finished-goods' }: { variant?: RecipeVa
   }, [searchParams, recipes]);
 
   const openPlanInput = (recipeId: string) => {
-    const recipe = getRecipe(appState, recipeId);
+    const recipe = getRecipe(recipeState, recipeId);
     if (!recipe || recipe.materials.length === 0) return;
     setPlanRecipeId(recipeId);
     setPlanQtyInput('');
@@ -319,7 +362,14 @@ export function RecipesPage({ variant = 'finished-goods' }: { variant?: RecipeVa
     setMaterialFormKey((k) => k + 1);
   };
 
-  const handleMaterialSubmit = (values: BomMaterialFormValues) => {
+  const syncRecipeToApi = async (recipeId: string, sourceState: AppState) => {
+    const updated = getRecipe(sourceState, recipeId);
+    if (!updated) return { ok: false as const, error: 'Recipe not found' };
+    const apiId = resolveRecipeApiId(apiStore.rows, recipeId);
+    return apiStore.update(apiId, mapRecipeToApi(updated, variant));
+  };
+
+  const handleMaterialSubmit = async (values: BomMaterialFormValues) => {
     if (!bomRecipeId) return;
     const payload = {
       materialId: values.materialId || `custom-${Date.now()}`,
@@ -334,6 +384,25 @@ export function RecipesPage({ variant = 'finished-goods' }: { variant?: RecipeVa
       attachmentName: values.attachmentName,
       attachmentDataUrl: values.attachmentDataUrl,
     };
+
+    if (apiMode) {
+      const pseudo = cloneRecipeState(recipeState);
+      const result = editingMaterialId
+        ? updateMaterialInRecipe(pseudo, bomRecipeId, editingMaterialId, payload)
+        : addMaterialToRecipe(pseudo, bomRecipeId, payload);
+      if (!result.ok) {
+        toast.error('Operation failed', { module: 'Recipes', description: 'error' in result ? String(result.error) : 'Failed to save material' });
+        return;
+      }
+      const sync = await syncRecipeToApi(bomRecipeId, pseudo);
+      if (!sync.ok) {
+        toast.error('Operation failed', { module: 'Recipes', description: 'error' in sync ? String(sync.error) : 'Sync failed' });
+        return;
+      }
+      toast.success('Material saved', { module: 'Recipes', description: editingMaterialId ? 'BOM material updated.' : 'Material added to BOM.' });
+      resetMaterialForm();
+      return;
+    }
 
     const result = editingMaterialId
       ? updateMaterialInRecipe(appState, bomRecipeId, editingMaterialId, payload)
@@ -376,6 +445,22 @@ export function RecipesPage({ variant = 'finished-goods' }: { variant?: RecipeVa
       module: 'Recipes',
     });
     if (!ok) return;
+    if (apiMode) {
+      const pseudo = cloneRecipeState(recipeState);
+      const result = removeMaterialFromRecipe(pseudo, bomRecipeId, materialId);
+      if (!result.ok) {
+        toast.error('Operation failed', { module: 'Recipes', description: 'error' in result ? String(result.error) : 'Failed to remove material' });
+        return;
+      }
+      const sync = await syncRecipeToApi(bomRecipeId, pseudo);
+      if (!sync.ok) {
+        toast.error('Operation failed', { module: 'Recipes', description: 'error' in sync ? String(sync.error) : 'Sync failed' });
+        return;
+      }
+      toast.success('Material removed', { module: 'Recipes' });
+      if (editingMaterialId === materialId) resetMaterialForm();
+      return;
+    }
     const result = removeMaterialFromRecipe(appState, bomRecipeId, materialId);
     if (!result.ok) {
       toast.error('Operation failed', { module: 'Recipes', description: 'error' in result ? String(result.error) : 'Failed to remove material' });
@@ -385,14 +470,38 @@ export function RecipesPage({ variant = 'finished-goods' }: { variant?: RecipeVa
     if (editingMaterialId === materialId) resetMaterialForm();
   };
 
-  const handleReorder = (materialId: string, direction: 'up' | 'down') => {
+  const handleReorder = async (materialId: string, direction: 'up' | 'down') => {
     if (!bomRecipeId) return;
+    if (apiMode) {
+      const pseudo = cloneRecipeState(recipeState);
+      reorderMaterialInRecipe(pseudo, bomRecipeId, materialId, direction);
+      await syncRecipeToApi(bomRecipeId, pseudo);
+      return;
+    }
     reorderMaterialInRecipe(appState, bomRecipeId, materialId, direction);
     saveAppState();
   };
 
-  const handleCreateRecipe = (e?: React.FormEvent) => {
+  const handleCreateRecipe = async (e?: React.FormEvent) => {
     e?.preventDefault();
+    if (apiMode) {
+      const result = await apiStore.create(mapGenericPayloadToApi({
+        product: newRecipe.product,
+        model: newRecipe.model,
+        recipeNumber: newRecipe.recipeNumber || undefined,
+        status: 'active',
+        variant,
+        materials: [],
+      }));
+      if (!result.ok) {
+        toast.error('Operation failed', { module: 'Recipes', description: 'error' in result ? String(result.error) : 'Failed to create recipe' });
+        return;
+      }
+      toast.success('Recipe created', { module: 'Recipes' });
+      setNewRecipe({ product: '', model: '', recipeNumber: '' });
+      setView('main');
+      return;
+    }
     const result = createRecipe(appState, {
       product: newRecipe.product,
       model: newRecipe.model,
@@ -410,6 +519,11 @@ export function RecipesPage({ variant = 'finished-goods' }: { variant?: RecipeVa
 
   const handleDeleteRecipe = async (id: string) => {
     const __ok = await confirmAction({ title: "Delete this recipe and all BOM materials", message: "Delete this recipe and all BOM materials?", confirmLabel: 'Delete', tone: 'danger', module: 'Recipes' }); if (!__ok) return;
+    if (apiMode) {
+      await apiStore.remove(resolveRecipeApiId(apiStore.rows, id));
+      toast.success('Recipe deleted', { module: 'Recipes' });
+      return;
+    }
     deleteRecipe(appState, id);
     saveAppState();
   };
@@ -423,13 +537,17 @@ export function RecipesPage({ variant = 'finished-goods' }: { variant?: RecipeVa
     [view],
   );
 
+  if (apiMode && !apiDataReady && !apiStore.initialized) {
+    return <PageSkeleton variant="module-list" label="Loading recipes" />;
+  }
+
   if (view === 'plan' && planRecipe) {
     return (
       <>
         <RecipeProductionPlanView
           recipe={planRecipe}
           batchQty={planBatchQty}
-          appState={appState}
+          appState={recipeState}
           onBack={backToMain}
           onEditQty={() => {
             setPlanQtyInput(String(planBatchQty));
@@ -470,7 +588,7 @@ export function RecipesPage({ variant = 'finished-goods' }: { variant?: RecipeVa
 
         <BomMaterialForm
           key={materialFormKey}
-          appState={appState}
+          appState={recipeState}
           materialOptions={materialOptions}
           supplierOptions={supplierOptions}
           unitOptions={UNIT_OPTIONS}
@@ -527,6 +645,7 @@ export function RecipesPage({ variant = 'finished-goods' }: { variant?: RecipeVa
 
   return (
     <>
+      {apiStore.error ? <ApiModeBanner module="recipes" error={apiStore.error} /> : null}
       <RecipesBomMetrics variant={variant} metrics={bomKpiMetrics} />
 
       <ListToolbar

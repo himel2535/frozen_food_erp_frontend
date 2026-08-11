@@ -11,6 +11,7 @@ import {
   onAuthSession,
   signOut as authSignOut,
 } from '../services/auth-service';
+import { isMongoDbBackend } from '../config/data-source';
 
 type FirebaseApi = typeof import('../firebase');
 
@@ -60,7 +61,16 @@ function loadInitialState(): AppState {
   if (typeof window === 'undefined') return hydrateAppState(null);
   try {
     const raw = localStorage.getItem(LOCAL_STORAGE_KEY);
-    return hydrateAppState(raw ? JSON.parse(raw) : null);
+    const parsed = raw ? JSON.parse(raw) : null;
+    if (isMongoDbBackend()) {
+      const base = hydrateAppState(null);
+      if (parsed?.lang) base.lang = parsed.lang;
+      if (typeof parsed?.sidebarCollapsed === 'boolean') {
+        base.sidebarCollapsed = parsed.sidebarCollapsed;
+      }
+      return base;
+    }
+    return hydrateAppState(parsed);
   } catch {
     return hydrateAppState(null);
   }
@@ -86,6 +96,7 @@ interface AppStore {
   authReady: boolean;
   ready: boolean;
   hydrated: boolean;
+  apiDataReady: boolean;
   lastSyncedState: string;
   ignoreRemoteEcho: boolean;
   remoteListenerStarted: boolean;
@@ -96,6 +107,7 @@ interface AppStore {
   applyAuthSession: (authUser: AuthUserRecord | null) => void;
   saveAppState: (options?: { immediate?: boolean }) => void;
   replaceAppState: (next: Partial<AppState>) => void;
+  setApiDataReady: (ready: boolean) => void;
   setLoggedIn: (value: boolean) => void;
   logout: () => Promise<void>;
   toggleSidebar: () => void;
@@ -111,6 +123,22 @@ function flushPersistedAppState(
   set: (partial: Partial<AppStore>) => void,
 ) {
   const { appState, ignoreRemoteEcho, lastSyncedState, remoteListenerStarted } = get();
+
+  if (isMongoDbBackend()) {
+    try {
+      localStorage.setItem(
+        LOCAL_STORAGE_KEY,
+        JSON.stringify({
+          lang: appState.lang,
+          sidebarCollapsed: appState.sidebarCollapsed,
+        }),
+      );
+    } catch (error) {
+      console.warn('localStorage save failed', error);
+    }
+    return;
+  }
+
   const serialized = JSON.stringify(appState);
   try {
     localStorage.setItem(LOCAL_STORAGE_KEY, serialized);
@@ -138,6 +166,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
   authReady: false,
   ready: false,
   hydrated: false,
+  apiDataReady: !isMongoDbBackend(),
   lastSyncedState: '',
   ignoreRemoteEcho: false,
   remoteListenerStarted: false,
@@ -152,6 +181,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
       appState,
       hydrated: true,
       ready: true,
+      apiDataReady: !isMongoDbBackend(),
       lastSyncedState: JSON.stringify(appState),
       t: createT(lang),
     });
@@ -197,6 +227,12 @@ export const useAppStore = create<AppStore>((set, get) => ({
         return;
       }
       set({ remoteListenerStarted: true, ready: true });
+
+      if (isMongoDbBackend()) {
+        resolve();
+        return;
+      }
+
       void getFirebase()
         .then(({ subscribeToRemoteAppState, saveRemoteAppState }) => {
           let isFirstRemote = true;
@@ -289,7 +325,13 @@ export const useAppStore = create<AppStore>((set, get) => ({
     }
     const lang = (hydrated.lang ?? 'en') as Lang;
     set({ appState: hydrated, t: createT(lang) });
-    get().saveAppState({ immediate: true });
+    if (!isMongoDbBackend()) {
+      get().saveAppState({ immediate: true });
+    }
+  },
+
+  setApiDataReady: (ready) => {
+    set({ apiDataReady: ready });
   },
 
   setLoggedIn: (value) => {

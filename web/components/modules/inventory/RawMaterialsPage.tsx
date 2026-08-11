@@ -19,6 +19,15 @@ import { SupplierSelect, WarehouseSelect } from '@/components/modules/inventory/
 import { useAppStore } from '@/lib/state/app-store';
 import type { PortField } from '@/lib/modules/port-types';
 import { INVENTORY_STANDARD_KPI_ICONS as KPI_ICON } from '@/lib/ui/kpi-icons';
+import { isModuleApiMode } from '@/lib/config/data-source';
+import { useApiResourceStore } from '@/hooks/use-api-resource-store';
+import { useInventoryLookups, resolveWarehouseName } from '@/hooks/use-inventory-lookups';
+import { ApiModeBanner } from '@/components/shared/ApiModeBanner';
+import { apiListEmptyMessage } from '@/lib/services/api-list-ui';
+import {
+  mapApiRawMaterialRow,
+  mapRawMaterialPayloadToApi,
+} from '@/lib/services/inventory-api-mappers';
 import {
   createRawMaterial,
   deleteRawMaterial,
@@ -76,6 +85,9 @@ function MaterialThumb({ category }: { category: string }) {
 export function RawMaterialsPage() {
   const appState = useAppStore((s) => s.appState);
   const saveAppState = useAppStore((s) => s.saveAppState);
+  const apiMode = isModuleApiMode('rawMaterials');
+  const apiStore = useApiResourceStore('rawMaterials', mapApiRawMaterialRow);
+  const lookups = useInventoryLookups();
   const [view, setView] = useState<'main' | 'form'>('main');
   const [search, setSearch] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('all');
@@ -102,10 +114,32 @@ export function RawMaterialsPage() {
     imageUrl: '',
   });
 
-  const warehouses = useMemo(() => listWarehouses(appState), [appState]);
-  const categories = useMemo(() => listRawMaterialCategories(appState), [appState]);
-  const allMaterials = useMemo(() => listRawMaterials(appState), [appState]);
-  const metrics = useMemo(() => getRawMaterialMetrics(appState), [appState]);
+  const warehouses = useMemo(
+    () => (apiMode ? lookups.warehouses : listWarehouses(appState)),
+    [apiMode, lookups.warehouses, appState],
+  );
+  const categories = useMemo(() => {
+    if (apiMode) {
+      const cats = new Set(apiStore.rows.map((r) => String(r.category ?? 'Uncategorized').trim() || 'Uncategorized'));
+      return Array.from(cats).sort((a, b) => a.localeCompare(b));
+    }
+    return listRawMaterialCategories(appState);
+  }, [apiMode, apiStore.rows, appState]);
+  const allMaterials = useMemo(
+    () => (apiMode ? apiStore.rows : listRawMaterials(appState)),
+    [apiMode, apiStore.rows, appState],
+  );
+  const metrics = useMemo(() => {
+    if (apiMode) {
+      const items = apiStore.rows;
+      const totalValue = items.reduce((s, r) => s + getRawMaterialTotalValue(r), 0);
+      const totalQuantity = items.reduce((s, r) => s + Number(r.quantity ?? 0), 0);
+      const lowStock = items.filter((r) => getRawMaterialStockStatus(r) === 'Low Stock').length;
+      const outOfStock = items.filter((r) => getRawMaterialStockStatus(r) === 'Out of Stock').length;
+      return { count: items.length, totalValue, totalQuantity, lowStock, outOfStock };
+    }
+    return getRawMaterialMetrics(appState);
+  }, [apiMode, apiStore.rows, appState]);
 
   const filtered = useMemo(() => {
     let data = allMaterials;
@@ -150,6 +184,15 @@ export function RawMaterialsPage() {
     setStockLevelFilter('all');
     setStockTab('all');
     setPage(1);
+  };
+
+  const materialLocation = (rm: Record<string, unknown>) => {
+    if (apiMode) {
+      const whName = resolveWarehouseName(lookups.warehouses, String(rm.warehouseId ?? ''));
+      const bin = String(rm.location ?? '').trim();
+      return bin ? `${whName} · ${bin}` : whName;
+    }
+    return getRawMaterialLocationLabel(appState, rm);
   };
 
   const columns = useMemo<AppTableColumn<Record<string, unknown>>[]>(() => [
@@ -222,11 +265,11 @@ export function RawMaterialsPage() {
       label: 'Location',
       render: (rm) => (
         <span className="text-[11px] font-medium text-slate-600 leading-snug block max-w-[140px]">
-          {getRawMaterialLocationLabel(appState, rm)}
+          {materialLocation(rm)}
         </span>
       ),
     },
-  ], [appState]);
+  ], [materialLocation]);
 
   const resetForm = () => {
     setForm({
@@ -266,7 +309,7 @@ export function RawMaterialsPage() {
     setView('form');
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const payload = {
       ...form,
@@ -276,6 +319,22 @@ export function RawMaterialsPage() {
       supplierPrice: Number(form.supplierPrice || 0),
       status: 'active',
     };
+    if (apiMode) {
+      const body = mapRawMaterialPayloadToApi(payload);
+      const result = editingId ? await apiStore.update(editingId, body) : await apiStore.create(body);
+      if (!result.ok) {
+        toast.error('Operation failed', { module: 'Inventory', description: 'error' in result ? String(result.error) : 'Save failed' });
+        return;
+      }
+      if (!editingId) {
+        resetFilters();
+      } else {
+        setPage(1);
+      }
+      setView('main');
+      resetForm();
+      return;
+    }
     const result = editingId
       ? updateRawMaterial(appState, editingId, payload)
       : createRawMaterial(appState, payload);
@@ -318,6 +377,7 @@ export function RawMaterialsPage() {
 
   return (
     <>
+        {apiMode && <ApiModeBanner module="rawMaterials" error={apiStore.error} />}
         <ModuleKpiSection
           gridClassName="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2"
           items={[
@@ -389,15 +449,20 @@ export function RawMaterialsPage() {
           className="flex-1"
           columns={columns}
           rows={paged}
-          emptyMessage="No raw materials found."
+          emptyMessage={apiListEmptyMessage(apiStore.loading, apiStore.initialized, 'raw materials', { totalCount: allMaterials.length, filteredCount: filtered.length })}
           renderActions={(rm) => (
             <>
               <TableIconAction variant="edit" onClick={() => openEdit(rm)} />
               <TableIconAction
                 variant="delete"
                 onClick={() => {
-                  confirmAction({ title: 'Delete raw material', message: 'Delete this raw material?', confirmLabel: 'Delete', tone: 'danger', module: 'Raw Materials' }).then((__ok) => {
+                  confirmAction({ title: 'Delete raw material', message: 'Delete this raw material?', confirmLabel: 'Delete', tone: 'danger', module: 'Raw Materials' }).then(async (__ok) => {
                     if (!__ok) return;
+                    if (apiMode) {
+                      const result = await apiStore.remove(String(rm.id));
+                      if (!result.ok) toast.error('Delete failed', { module: 'Raw Materials', description: result.error });
+                      return;
+                    }
                     deleteRawMaterial(appState, String(rm.id));
                     saveAppState();
                   });
@@ -483,7 +548,7 @@ export function RawMaterialsPage() {
           </div>
           <div>
             <label className={FORM_LABEL_CLS}>Warehouse</label>
-            <WarehouseSelect state={appState} value={form.warehouseId} onChange={(v) => setForm({ ...form, warehouseId: v })} />
+            <WarehouseSelect state={appState} items={apiMode ? warehouses : undefined} value={form.warehouseId} onChange={(v) => setForm({ ...form, warehouseId: v })} />
           </div>
           <div className="md:col-span-2 bg-emerald-50/80 border border-emerald-200/80 rounded-xl p-4">
             <span className="text-[11px] font-bold uppercase tracking-wide text-emerald-700">Live Total Value</span>

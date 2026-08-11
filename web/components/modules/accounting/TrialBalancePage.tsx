@@ -8,6 +8,10 @@ import { Footer } from '@/components/layout/Footer';
 import { useRegisterModuleActions } from '@/components/layout/ModuleActionsContext';
 import { AppFormFields, AppFormModal } from '@/components/shared/AppForm';
 import { useAppStore } from '@/lib/state/app-store';
+import { useApiResourceStore } from '@/hooks/use-api-resource-store';
+import { mapGenericApiRow, mapGenericPayloadToApi } from '@/lib/services/generic-api-mapper';
+import { ApiModeBanner } from '@/components/shared/ApiModeBanner';
+import { isModuleApiMode } from '@/lib/config/data-source';
 import type { PortField } from '@/lib/modules/port-types';
 import {
   createTrialBalanceLine,
@@ -41,6 +45,8 @@ function formatGeneratedAt(date: Date) {
 export function TrialBalancePage() {
   const appState = useAppStore((s) => s.appState);
   const saveAppState = useAppStore((s) => s.saveAppState);
+  const apiMode = isModuleApiMode('trialBalance');
+  const apiStore = useApiResourceStore('trialBalance', mapGenericApiRow);
 
   const [draftFilters, setDraftFilters] = useState<TrialBalanceFilterState>(DEFAULT_TRIAL_BALANCE_FILTERS);
   const [appliedFilters, setAppliedFilters] = useState<TrialBalanceFilterState>(DEFAULT_TRIAL_BALANCE_FILTERS);
@@ -57,7 +63,12 @@ export function TrialBalancePage() {
     notes: '',
   });
 
-  const allAccounts = useMemo(() => listTrialBalanceAccounts(appState), [appState]);
+  const allAccounts = useMemo(() => {
+    if (apiMode && apiStore.initialized) {
+      return listTrialBalanceAccounts({ trialBalance: apiStore.rows } as import('@/lib/state/types').AppState);
+    }
+    return listTrialBalanceAccounts(appState);
+  }, [apiMode, apiStore.initialized, apiStore.rows, appState]);
 
   const filteredRows = useMemo(
     () => filterTrialBalanceAccounts(allAccounts, {
@@ -80,17 +91,30 @@ export function TrialBalancePage() {
     setGeneratedAt(formatGeneratedAt(new Date()));
   };
 
-  const handleAddSubmit = (e: React.FormEvent) => {
+  const handleAddSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!addForm.accountCode.trim() || !addForm.accountName.trim()) return;
-    const result = createTrialBalanceLine(appState, {
+    const payload = {
       accountCode: addForm.accountCode,
       accountName: addForm.accountName,
       parentAccount: addForm.parentAccount,
       debit: Number(addForm.debit || 0),
       credit: Number(addForm.credit || 0),
       notes: addForm.notes,
-    });
+    };
+    if (apiMode) {
+      const result = await apiStore.create(mapGenericPayloadToApi(payload));
+      if (!result.ok) {
+        toast.error('Operation failed', { module: 'Trial Balance', description: 'error' in result ? String(result.error) : 'Failed to add line' });
+        return;
+      }
+      toast.success('Saved', { module: 'Trial Balance', description: 'Account line added.' });
+      setShowAddModal(false);
+      setAddForm({ accountCode: '', accountName: '', parentAccount: 'Assets', debit: '', credit: '', notes: '' });
+      resetFilters();
+      return;
+    }
+    const result = createTrialBalanceLine(appState, payload);
     if (!result.ok) {
       toast.error('Operation failed', { module: 'Trial Balance', description: String(result.error ?? 'Failed to add line') });
       return;
@@ -132,6 +156,7 @@ export function TrialBalancePage() {
 
   return (
     <>
+        {apiStore.error ? <ApiModeBanner module="trialBalance" error={apiStore.error} /> : null}
         <TrialBalanceMetricsCards metrics={metrics} />
 
         <TrialBalanceFilterCard

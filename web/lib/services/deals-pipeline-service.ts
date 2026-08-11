@@ -111,6 +111,22 @@ function todayIso() {
   return new Date().toISOString().slice(0, 10);
 }
 
+/** Won/lost can live on stage or status — API drag often updates stage only. */
+export function resolveDealOutcome(deal: Pick<DealRecord, 'stage' | 'status'>): 'won' | 'lost' | 'open' {
+  const stage = String(deal.stage ?? '').trim().toLowerCase();
+  const status = String(deal.status ?? '').trim().toLowerCase();
+  if (status === 'won' || stage === 'won') return 'won';
+  if (status === 'lost' || stage === 'lost') return 'lost';
+  return 'open';
+}
+
+export function inferDealStatusForStage(stage: string): 'won' | 'lost' | 'open' {
+  const normalized = String(stage ?? '').trim().toLowerCase();
+  if (normalized === 'won') return 'won';
+  if (normalized === 'lost') return 'lost';
+  return 'open';
+}
+
 function inferPriority(probability: number, value: number) {
   if (probability >= 70 || value >= 10000) return 'high';
   if (probability >= 40) return 'medium';
@@ -196,9 +212,9 @@ export function getEnrichedDealList(state: AppState): DealRecord[] {
 export function getDealPipelineMetrics(state: AppState, deals = getEnrichedDealList(state)): DealPipelineMetrics {
   const month = todayIso().slice(0, 7);
   const all = deals;
-  const open = all.filter((d) => d.status === 'open');
-  const won = all.filter((d) => d.status === 'won');
-  const lost = all.filter((d) => d.status === 'lost');
+  const open = all.filter((d) => resolveDealOutcome(d) === 'open');
+  const won = all.filter((d) => resolveDealOutcome(d) === 'won');
+  const lost = all.filter((d) => resolveDealOutcome(d) === 'lost');
   const thisMonth = all.filter((d) => String(d.createdAt ?? '').startsWith(month)).length;
   const closed = won.length + lost.length;
   const conversionRate = closed > 0 ? Math.round((won.length / closed) * 1000) / 10 : 0;
@@ -214,7 +230,7 @@ export function getDealPipelineMetrics(state: AppState, deals = getEnrichedDealL
     lostValue: lost.reduce((s, d) => s + Number(d.expectedValue ?? 0), 0),
     conversionRate,
     conversionDelta: 4.2,
-    pipelineValue: all.reduce((s, d) => s + Number(d.expectedValue ?? 0), 0),
+    pipelineValue: open.reduce((s, d) => s + Number(d.expectedValue ?? 0), 0),
   };
 }
 
@@ -281,7 +297,7 @@ export function getUpcomingDealFollowUps(state: AppState, limit = 3): DealFollow
 export function getTopDealPerformers(state: AppState, deals = getEnrichedDealList(state), limit = 3): DealPerformerItem[] {
   const totals = new Map<string, { name: string; value: number }>();
   deals
-    .filter((d) => d.status === 'won')
+    .filter((d) => resolveDealOutcome(d) === 'won')
     .forEach((deal) => {
       const name = String(deal.assignedRepName ?? 'Unassigned');
       const prev = totals.get(name) ?? { name, value: 0 };

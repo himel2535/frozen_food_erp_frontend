@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { Footer } from '@/components/layout/Footer';
 import { ChildPageShell } from '@/components/layout/ChildPageShell';
@@ -34,6 +34,10 @@ import {
   getCustomerDeliveries,
   getCustomerReturns,
 } from '@/lib/services/crm-service';
+import { isCustomersApiMode } from '@/lib/config/data-source';
+import { fetchCustomerFromApi, mapApiCustomerToListRow } from '@/lib/services/customers-api-service';
+import { useApiAppState } from '@/hooks/use-api-app-state';
+import { ApiModeBanner } from '@/components/shared/ApiModeBanner';
 
 export function CustomerDetailPage() {
   const params = useParams();
@@ -42,6 +46,22 @@ export function CustomerDetailPage() {
   const appState = useAppStore((s) => s.appState);
   const { formatMoney } = useLocaleFormat();
   const [activeTab, setActiveTab] = useState<CustomerDetailTabId>('overview');
+  const apiMode = isCustomersApiMode();
+  const apiRelated = useApiAppState(
+    apiMode ? ['invoices', 'salesOrders', 'payments', 'quotations', 'deliveries', 'returns'] : undefined,
+  );
+  const dataState = apiMode && apiRelated.state ? apiRelated.state : appState;
+  const [apiDoc, setApiDoc] = useState<Awaited<ReturnType<typeof fetchCustomerFromApi>>>(null);
+  const [apiLoading, setApiLoading] = useState(apiMode);
+
+  useEffect(() => {
+    if (!apiMode || !customerId) return;
+    setApiLoading(true);
+    void fetchCustomerFromApi(customerId).then((doc) => {
+      setApiDoc(doc);
+      setApiLoading(false);
+    });
+  }, [apiMode, customerId]);
 
   useChromeSuppressed(true);
 
@@ -52,30 +72,84 @@ export function CustomerDetailPage() {
   const deliveryColumns = useMemo(() => getDeliveryColumns(), []);
   const returnColumns = useMemo(() => getReturnColumns(formatMoney), [formatMoney]);
 
-  const profile = useMemo(
-    () => (customerId ? getCustomerProfile(appState, customerId) : null),
-    [appState, customerId],
-  );
+  const profile = useMemo(() => {
+    if (apiMode) {
+      if (!apiDoc) return null;
+      const customer = mapApiCustomerToListRow(apiDoc);
+      return {
+        customer,
+        contacts: [{ id: 'primary', name: customer.name, phone: customer.phone, email: customer.email, primary: true }],
+        addresses: [
+          { id: 'billing', type: 'billing', line1: apiDoc.billingAddress, city: apiDoc.billingCity, primary: true },
+          { id: 'shipping', type: 'shipping', line1: apiDoc.shippingAddress, city: apiDoc.shippingCity, primary: true },
+        ],
+        tags: [],
+        attachments: [],
+        communications: [],
+        activities: [],
+        auditLogs: [],
+        invoices: [],
+        salesOrders: [],
+        payments: [],
+        quotations: [],
+      };
+    }
+    return customerId ? getCustomerProfile(dataState, customerId) : null;
+  }, [apiMode, apiDoc, dataState, customerId]);
 
-  const metrics = useMemo(
-    () => (customerId ? getCustomerDetailMetrics(appState, customerId) : null),
-    [appState, customerId],
-  );
+  const metrics = useMemo(() => {
+    if (apiMode) {
+      if (!apiDoc) return null;
+      const totalSales = Number(apiDoc.totalSales ?? 0);
+      const totalDue = Number(apiDoc.totalDue ?? 0);
+      const creditLimit = Number(apiDoc.creditLimit ?? 0);
+      return {
+        totalSales,
+        totalPaid: Math.max(totalSales - totalDue, 0),
+        totalDue,
+        totalOrders: 0,
+        avgOrderValue: 0,
+        creditLimit,
+        creditRemaining: Math.max(creditLimit - totalDue, 0),
+        creditUsedPercent: creditLimit > 0 ? Math.min((totalDue / creditLimit) * 100, 100) : 0,
+        overdueAmount: 0,
+        lastPaymentDate: null,
+        lastPurchaseDate: null,
+        customerSince: apiDoc.createdAt ?? null,
+        lastActivityDate: apiDoc.updatedAt ?? apiDoc.createdAt ?? null,
+        invoiceCount: 0,
+        paymentCount: 0,
+      };
+    }
+    return customerId ? getCustomerDetailMetrics(dataState, customerId) : null;
+  }, [apiMode, apiDoc, dataState, customerId]);
 
   const transactions = useMemo(
-    () => (customerId ? getCustomerTransactions(appState, customerId) : []),
-    [appState, customerId],
+    () => (customerId ? getCustomerTransactions(dataState, customerId) : []),
+    [dataState, customerId],
   );
 
   const deliveries = useMemo(
-    () => (customerId ? getCustomerDeliveries(appState, customerId) : []),
-    [appState, customerId],
+    () => (customerId ? getCustomerDeliveries(dataState, customerId) : []),
+    [dataState, customerId],
   );
 
   const returns = useMemo(
-    () => (customerId ? getCustomerReturns(appState, customerId) : []),
-    [appState, customerId],
+    () => (customerId ? getCustomerReturns(dataState, customerId) : []),
+    [dataState, customerId],
   );
+
+  if (apiLoading) {
+    return (
+      <>
+        {apiRelated.error ? <ApiModeBanner module="customers" error={apiRelated.error} /> : null}
+        <ChildPageShell title="Loading customer…" subtitle="" onBack={() => router.push('/crm/customers')} backLabel="Back to Customers">
+          <div className="premium-card premium-shadow p-8 text-center text-sm text-slate-500">Loading customer…</div>
+        </ChildPageShell>
+        <Footer />
+      </>
+    );
+  }
 
   if (!profile || !metrics) {
     return (

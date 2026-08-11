@@ -46,7 +46,11 @@ export const HEADERLESS_MODULE_PATHS = new Set([
 ]);
 
 export function isHeaderlessModulePath(pathname: string): boolean {
-  return HEADERLESS_MODULE_PATHS.has(normalizePath(pathname));
+  const path = normalizePath(pathname);
+  if (HEADERLESS_MODULE_PATHS.has(path)) return true;
+  if (path === '/projects/new') return true;
+  if (/^\/projects\/[^/]+\/setup$/.test(path)) return true;
+  return false;
 }
 
 function resolveMetaSource(source: MetaSource, t: TranslateFn): { title: string; subtitle: string } {

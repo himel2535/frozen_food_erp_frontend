@@ -64,6 +64,13 @@ function rowToPosProduct(row: Record<string, unknown>): PosProduct {
   };
 }
 
+export function mapRowsToPosProducts(rows: Record<string, unknown>[]): PosProduct[] {
+  return rows
+    .filter((row) => !row.discontinued && Number(row.price ?? 0) > 0)
+    .map((row) => rowToPosProduct(row))
+    .sort((a, b) => a.name.localeCompare(b.name));
+}
+
 export function listPosProducts(state: AppState): PosProduct[] {
   const inventoryRows = listInventory(state, { excludeRaw: true }).filter((row) => !row.discontinued);
   const bySku = new Map<string, PosProduct>();

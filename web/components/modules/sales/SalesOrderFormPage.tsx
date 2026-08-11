@@ -2,7 +2,7 @@
 
 import { toast } from '@/lib/ui/feedback';
 
-import { useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { SalesOrderForm, type SoSaveAction } from '@/components/modules/sales/sales-order-form/SalesOrderForm';
 import type { SoFormPayload } from '@/components/modules/sales/sales-order-form/so-form-types';
@@ -12,41 +12,60 @@ import {
   recordToSoFormValues,
 } from '@/components/modules/sales/sales-order-form/so-form-types';
 import { useAppStore } from '@/lib/state/app-store';
-import { getCustomerList } from '@/lib/services/crm-service';
+import { isModuleApiMode } from '@/lib/config/data-source';
+import { useApiResourceStore } from '@/hooks/use-api-resource-store';
+import { useCustomersOptions, useSalesPersonOptions } from '@/hooks/use-form-options';
 import {
   createSalesOrder,
-  getSalesPersonOptions,
   listSalesOrders,
   previewSalesOrderId,
   updateSalesOrder,
 } from '@/lib/services/sales-service';
+import {
+  findApiSalesOrderRow,
+  mapApiSalesOrderRow,
+  mapSalesOrderRecordToApi,
+  resolveApiRowId,
+} from '@/lib/services/entity-api-mappers';
+import { fetchResourceList } from '@/lib/services/api-resource-service';
+import { API_RESOURCE_PATHS } from '@/lib/config/data-source';
 
 export function SalesOrderFormPage({ mode, orderId }: { mode: 'create' | 'edit'; orderId?: string }) {
   const router = useRouter();
   const appState = useAppStore((s) => s.appState);
   const saveAppState = useAppStore((s) => s.saveAppState);
+  const apiMode = isModuleApiMode('salesOrders');
+  const apiStore = useApiResourceStore('salesOrders', mapApiSalesOrderRow);
+  const customers = useCustomersOptions();
+  const salesPersons = useSalesPersonOptions();
+  const [apiOrder, setApiOrder] = useState<Record<string, unknown> | null>(null);
+  const [apiLoading, setApiLoading] = useState(apiMode && mode === 'edit' && Boolean(orderId));
 
-  const customers = useMemo(
-    () => getCustomerList(appState).map((c) => ({
-      id: String(c.id),
-      name: String(c.name ?? ''),
-      company: String(c.company ?? ''),
-    })),
-    [appState],
-  );
-  const salesPersons = useMemo(() => getSalesPersonOptions(appState), [appState]);
+  useEffect(() => {
+    if (!apiMode || mode !== 'edit' || !orderId) return;
+    setApiLoading(true);
+    void fetchResourceList(API_RESOURCE_PATHS.salesOrders).then((docs) => {
+      setApiOrder(findApiSalesOrderRow(docs, orderId));
+      setApiLoading(false);
+    });
+  }, [apiMode, mode, orderId]);
 
   const existing = useMemo(() => {
+    if (apiMode) return apiOrder;
     if (!orderId) return null;
     return listSalesOrders(appState).find((r) => String(r.id) === orderId) ?? null;
-  }, [appState, orderId]);
+  }, [apiMode, apiOrder, appState, orderId]);
 
   const initialValues = useMemo(() => {
     if (existing) return recordToSoFormValues(existing);
     return { ...EMPTY_SO_FORM, items: EMPTY_SO_FORM.items };
   }, [existing]);
 
-  const orderPreviewId = orderId ?? previewSalesOrderId(appState);
+  const orderPreviewId = orderId ?? (apiMode ? `SO-${new Date().getFullYear()}-${String(Date.now()).slice(-4)}` : previewSalesOrderId(appState));
+
+  if (apiLoading) {
+    return <div className="p-8 text-center text-sm text-slate-500">Loading sales order…</div>;
+  }
 
   if (mode === 'edit' && orderId && !existing) {
     return (
@@ -59,12 +78,27 @@ export function SalesOrderFormPage({ mode, orderId }: { mode: 'create' | 'edit';
     );
   }
 
-  const handleSave = (payload: SoFormPayload, action: SoSaveAction) => {
+  const handleSave = async (payload: SoFormPayload, action: SoSaveAction) => {
     const record = payloadToRecord({
       ...payload,
       id: orderId ?? payload.id ?? payload.orderPreviewId,
       status: action === 'create' && payload.status === 'draft' ? 'confirmed' : payload.status,
     });
+
+    if (apiMode) {
+      const body = mapSalesOrderRecordToApi(record, mode === 'edit' ? orderId ?? undefined : undefined);
+      const mongoId = existing ? resolveApiRowId(existing) : '';
+      const result = mode === 'edit' && mongoId
+        ? await apiStore.update(mongoId, body)
+        : await apiStore.create(body);
+      if (!result.ok) {
+        toast.error('Operation failed', { module: 'Sales', description: 'error' in result ? String(result.error) : 'Save failed' });
+        return;
+      }
+      router.push('/sales/orders');
+      return;
+    }
+
     const result = mode === 'edit' && orderId
       ? updateSalesOrder(appState, orderId, record)
       : createSalesOrder(appState, record);

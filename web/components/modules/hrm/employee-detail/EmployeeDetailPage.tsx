@@ -2,7 +2,7 @@
 
 import { toast } from '@/lib/ui/feedback';
 
-import { useMemo, useState, type FormEvent } from 'react';
+import { useEffect, useMemo, useState, type FormEvent } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { Footer } from '@/components/layout/Footer';
 import { ChildPageShell } from '@/components/layout/ChildPageShell';
@@ -18,6 +18,13 @@ import { PayrollTab } from '@/components/modules/hrm/employee-detail/tabs/Payrol
 import { NotesTab } from '@/components/modules/hrm/employee-detail/tabs/NotesTab';
 import { useLegacyParityConfig } from '@/hooks/use-legacy-parity-config';
 import { useAppStore } from '@/lib/state/app-store';
+import { isModuleApiMode } from '@/lib/config/data-source';
+import { API_RESOURCE_PATHS } from '@/lib/config/data-source';
+import { useApiResourceStore } from '@/hooks/use-api-resource-store';
+import { fetchResourceById } from '@/lib/services/api-resource-service';
+import { mapApiEmployeeRow, mapEmployeeFormToApi } from '@/lib/services/entity-api-mappers';
+import { useApiAppState } from '@/hooks/use-api-app-state';
+import { ApiModeBanner } from '@/components/shared/ApiModeBanner';
 import {
   getEmployeeProfile,
   getEmployeeDetailMetrics,
@@ -30,6 +37,12 @@ export function EmployeeDetailPage() {
   const employeeId = String(params?.id ?? '');
   const appState = useAppStore((s) => s.appState);
   const saveAppState = useAppStore((s) => s.saveAppState);
+  const apiMode = isModuleApiMode('employees');
+  const apiStore = useApiResourceStore('employees', mapApiEmployeeRow);
+  const apiRelated = useApiAppState(apiMode ? ['attendance', 'payrollSlips'] : undefined);
+  const dataState = apiMode ? apiRelated.state : appState;
+  const [apiEmployee, setApiEmployee] = useState<Record<string, unknown> | null>(null);
+  const [apiLoading, setApiLoading] = useState(apiMode && Boolean(employeeId));
   const [activeTab, setActiveTab] = useState<EmployeeDetailTabId>('overview');
   const [editOpen, setEditOpen] = useState(false);
   const [showAdvanced, setShowAdvanced] = useState(false);
@@ -38,17 +51,47 @@ export function EmployeeDetailPage() {
   const config = useLegacyParityConfig('hrm-employees');
   const fields = config?.fields ?? [];
 
+  useEffect(() => {
+    if (!apiMode || !employeeId) return;
+    setApiLoading(true);
+    void fetchResourceById(API_RESOURCE_PATHS.employees, employeeId).then((doc) => {
+      setApiEmployee(doc ? mapApiEmployeeRow(doc) : null);
+      setApiLoading(false);
+    });
+  }, [apiMode, employeeId]);
+
   useChromeSuppressed(true);
 
-  const profile = useMemo(
-    () => (employeeId ? getEmployeeProfile(appState, employeeId) : null),
-    [appState, employeeId],
-  );
+  const profile = useMemo(() => {
+    if (apiMode) {
+      const local = employeeId ? getEmployeeProfile(dataState, employeeId) : null;
+      if (local) return local;
+      if (!apiEmployee) return null;
+      return {
+        employee: apiEmployee,
+        attendance: [] as Array<Record<string, unknown>>,
+        payrollSlips: [] as Array<Record<string, unknown>>,
+        projects: [] as Array<Record<string, unknown>>,
+        departmentInfo: null,
+      };
+    }
+    return employeeId ? getEmployeeProfile(appState, employeeId) : null;
+  }, [apiMode, apiEmployee, dataState, appState, employeeId]);
 
-  const metrics = useMemo(
-    () => (employeeId ? getEmployeeDetailMetrics(appState, employeeId) : null),
-    [appState, employeeId],
-  );
+  const metrics = useMemo(() => {
+    if (apiMode) {
+      if (!apiEmployee) return null;
+      return {
+        tenureMonths: 0,
+        tenureLabel: '—',
+        attendancePresentRate: 0,
+        lastPayrollNet: Number(apiEmployee.salary ?? 0),
+        lastPayrollDate: '—',
+        assignedProjects: 0,
+      };
+    }
+    return employeeId ? getEmployeeDetailMetrics(appState, employeeId) : null;
+  }, [apiMode, apiEmployee, appState, employeeId]);
 
   const openEdit = () => {
     if (!profile) return;
@@ -64,12 +107,23 @@ export function EmployeeDetailPage() {
     setForm((prev) => ({ ...prev, [key]: value }));
   };
 
-  const handleSubmit = (e: FormEvent) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     const payload: Record<string, unknown> = { ...form };
     fields.forEach((f) => {
       if (f.type === 'number') payload[f.key] = Number(form[f.key] || 0);
     });
+    if (apiMode) {
+      const result = await apiStore.update(employeeId, mapEmployeeFormToApi(form));
+      if (!result.ok) {
+        toast.error('Operation failed', { module: 'HRM', description: 'error' in result ? String(result.error) : 'Save failed' });
+        return;
+      }
+      const doc = await fetchResourceById(API_RESOURCE_PATHS.employees, employeeId);
+      setApiEmployee(doc ? mapApiEmployeeRow(doc) : null);
+      setEditOpen(false);
+      return;
+    }
     const result = updateEmployee(appState, employeeId, payload);
     if (!result.ok) {
       toast.error('Operation failed', { module: 'HRM', description: String(result.error ?? 'Save failed') });
@@ -78,6 +132,10 @@ export function EmployeeDetailPage() {
     saveAppState();
     setEditOpen(false);
   };
+
+  if (apiLoading) {
+    return <div className="p-8 text-center text-sm text-slate-500">Loading employee…</div>;
+  }
 
   if (!profile || !metrics) {
     return (
@@ -103,6 +161,7 @@ export function EmployeeDetailPage() {
 
   return (
     <>
+      {apiRelated.error ? <ApiModeBanner module="employees" error={apiRelated.error} /> : null}
       <ChildPageShell
         title={name}
         subtitle={`${department} · ${designation}`}

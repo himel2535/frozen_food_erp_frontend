@@ -34,13 +34,16 @@ import {
   listPosProducts,
   loadPosDraft,
   loadPosHolds,
+  mapRowsToPosProducts,
   savePosDraft,
   savePosHolds,
 } from '@/components/modules/sales/pos/pos-utils';
 import { useAppStore } from '@/lib/state/app-store';
 import { useLocaleFormat } from '@/hooks/useLocaleFormat';
-import { getCustomerList } from '@/lib/services/crm-service';
-import { posCheckout } from '@/lib/services/sales-service';
+import { useApiResourceStore } from '@/hooks/use-api-resource-store';
+import { useCustomersApiStore } from '@/hooks/use-customers-module';
+import { mapApiPosRow, mapApiProductRow, mapPosToApi } from '@/lib/services/entity-api-mappers';
+import { ApiModeBanner } from '@/components/shared/ApiModeBanner';
 import { getCompanyProfile } from '@/lib/services/settings-service';
 import { MODULE_SECONDARY_BTN } from '@/lib/ui/module-chrome-styles';
 import { getPageIcon } from '@/lib/ui/page-icons';
@@ -67,8 +70,10 @@ function buildCompanyInfo(appState: Parameters<typeof getCompanyProfile>[0]): Po
 export function PosPage() {
   const t = useAppStore((s) => s.t);
   const appState = useAppStore((s) => s.appState);
-  const saveAppState = useAppStore((s) => s.saveAppState);
   const { formatMoney, formatNumber } = useLocaleFormat();
+  const productsStore = useApiResourceStore('products', mapApiProductRow);
+  const customersStore = useCustomersApiStore();
+  const apiStore = useApiResourceStore('pos', mapApiPosRow);
 
   const [posView, setPosView] = useState<PosView>('terminal');
   const [search, setSearch] = useState('');
@@ -83,6 +88,7 @@ export function PosPage() {
   const [barcodeMode, setBarcodeMode] = useState(false);
   const [lastCompletedReceipt, setLastCompletedReceipt] = useState<PosReceiptData | null>(null);
   const [showRecentPanel, setShowRecentPanel] = useState(false);
+  const [showHoldPanel, setShowHoldPanel] = useState(false);
 
   useEffect(() => {
     loadIcons([getPageIcon('/sales/pos')]);
@@ -125,14 +131,21 @@ export function PosPage() {
     [t, taxRate],
   );
 
-  const products = useMemo(() => listPosProducts(appState), [appState]);
+  const products = useMemo(() => {
+    const fromApi = mapRowsToPosProducts(productsStore.rows);
+    if (fromApi.length > 0) return fromApi;
+    return listPosProducts(appState);
+  }, [productsStore.rows, appState]);
   const filteredProducts = useMemo(
     () => filterPosProducts(products, search, category),
     [products, search, category],
   );
   const customers = useMemo(
-    () => getCustomerList(appState).map((c) => ({ id: String(c.id), name: String(c.name ?? c.company ?? 'Customer') })),
-    [appState],
+    () => customersStore.rows.map((c) => ({
+      id: String(c.id),
+      name: String(c.name ?? c.company ?? 'Customer'),
+    })),
+    [customersStore.rows],
   );
   const customerName = useMemo(() => {
     if (customerId === 'walk-in') return t('sales.pos_walk_in');
@@ -143,13 +156,12 @@ export function PosPage() {
   const itemCount = cartItemCount(cart);
 
   const recentReceipts = useMemo(() => {
-    const receipts = Array.isArray(appState.posReceipts) ? [...appState.posReceipts] : [];
-    return receipts
+    return apiStore.rows
       .slice()
-      .reverse()
-      .slice(0, 5)
-      .map((row) => receiptFromPosRecord(row as Record<string, unknown>, { company: companyInfo, taxRate }));
-  }, [appState.posReceipts, companyInfo, taxRate]);
+      .sort((a, b) => String(b.createdAt ?? b.date ?? '').localeCompare(String(a.createdAt ?? a.date ?? '')))
+      .slice(0, 10)
+      .map((row) => receiptFromPosRecord(row, { company: companyInfo, taxRate }));
+  }, [apiStore.rows, companyInfo, taxRate]);
 
   const resetSale = useCallback(() => {
     setCart([]);
@@ -162,7 +174,9 @@ export function PosPage() {
   const startNewSale = useCallback(() => {
     setPosView('terminal');
     setShowRecentPanel(false);
+    setShowHoldPanel(false);
     resetSale();
+    toast.success('New sale started', { module: 'POS', description: 'Cart cleared — add products to begin.' });
   }, [resetSale]);
 
   const addToCart = useCallback((product: PosProduct) => {
@@ -177,9 +191,10 @@ export function PosPage() {
           toast.info('Stock limit reached', { module: 'POS', description: product.name });
           return prev;
         }
-        return prev.map((item) => (item.id === product.id ? { ...item, qty: item.qty + 1 } : item));
+        const next = prev.map((item) => (item.id === product.id ? { ...item, qty: item.qty + 1 } : item));
+        return next;
       }
-      return [
+      const next = [
         ...prev,
         {
           id: product.id,
@@ -192,6 +207,7 @@ export function PosPage() {
           imageUrl: product.imageUrl,
         },
       ];
+      return next;
     });
   }, []);
 
@@ -204,30 +220,34 @@ export function PosPage() {
     });
   }, [products]);
 
-  const completeSale = useCallback(() => {
+  const completeSale = useCallback(async () => {
     if (cart.length === 0) {
       toast.error('Action required', { module: 'POS', description: t('sales.pos_empty_cart') });
       return;
     }
-    const result = posCheckout(appState, {
-      customer: customerName,
+
+    const body = mapPosToApi({
+      customerName,
       customerId: customerId === 'walk-in' ? undefined : customerId,
-      cart: cart as unknown as Record<string, unknown>[],
+      items: cart,
       subtotal: totals.subtotal,
       discount: totals.discount,
       tax: totals.tax,
       total: totals.total,
+      paymentMethod: 'cash',
       note,
-      taxRate,
+      date: new Date().toISOString().slice(0, 10),
     });
+    const result = await apiStore.create(body);
     if (!result.ok) {
       toast.error('Operation failed', { module: 'POS', description: 'error' in result ? String(result.error) : 'Checkout failed' });
       return;
     }
 
+    const receiptId = 'id' in result ? String(result.id) : `POS-${Date.now()}`;
     const now = new Date();
     const receiptData: PosReceiptData = {
-      receiptId: result.id,
+      receiptId,
       date: now.toISOString().slice(0, 10),
       displayDate: now.toLocaleString(),
       customer: customerName,
@@ -239,21 +259,20 @@ export function PosPage() {
       total: totals.total,
       note,
       company: companyInfo,
-      invoiceId: 'invoiceId' in result ? result.invoiceId : undefined,
     };
 
     const printed = printPosReceipt(receiptData, formatMoney);
     setLastCompletedReceipt(receiptData);
     setPosView('receipt');
     setShowRecentPanel(false);
+    setShowHoldPanel(false);
     resetSale();
-    saveAppState();
 
     toast.success('Sale completed', {
       module: 'POS',
       description: printed
-        ? `${result.id} · ${formatMoney(totals.total)}`
-        : `${result.id} · Sale saved — allow popups to print receipt`,
+        ? `${receiptId} · ${formatMoney(totals.total)}`
+        : `${receiptId} · Sale saved — allow popups to print receipt`,
     });
     if (!printed) {
       toast.info('Receipt ready on screen', {
@@ -262,7 +281,6 @@ export function PosPage() {
       });
     }
   }, [
-    appState,
     cart,
     companyInfo,
     customerId,
@@ -270,14 +288,30 @@ export function PosPage() {
     formatMoney,
     note,
     resetSale,
-    saveAppState,
     t,
     taxRate,
     totals,
+    apiStore,
   ]);
+
+  const loadHeldSale = useCallback((hold: (typeof holds)[number]) => {
+    setCart(hold.cart);
+    setCustomerId(hold.customerId);
+    setDiscount(hold.discount);
+    setNote(hold.note);
+    setTaxRate(hold.taxRate);
+    setPosView('terminal');
+    setShowHoldPanel(false);
+    toast.success('Held sale loaded', { module: 'POS', description: hold.label });
+  }, []);
 
   const holdSale = useCallback(() => {
     if (cart.length === 0) {
+      if (holds.length > 0) {
+        setShowHoldPanel(true);
+        setShowRecentPanel(false);
+        return;
+      }
       toast.info('Nothing to hold', { module: 'POS', description: t('sales.pos_empty_cart') });
       return;
     }
@@ -296,34 +330,14 @@ export function PosPage() {
     setHolds(next);
     savePosHolds(next);
     resetSale();
+    setShowHoldPanel(true);
     toast.success('Sale held', { module: 'POS', description: nextHold.label });
   }, [cart, customerId, customerName, discount, holds, itemCount, note, resetSale, t, taxRate]);
 
-  const restoreHold = useCallback(async () => {
-    if (holds.length === 0) {
-      toast.info('No held sales', { module: 'POS' });
-      return;
-    }
-    const latest = holds[0];
-    const ok = cart.length === 0 || await confirmAction({
-      title: 'Restore held sale?',
-      message: 'Current cart will be replaced.',
-      confirmLabel: 'Restore',
-      module: 'POS',
-    });
-    if (!ok) return;
-    setCart(latest.cart);
-    setCustomerId(latest.customerId);
-    setDiscount(latest.discount);
-    setNote(latest.note);
-    setTaxRate(latest.taxRate);
-    setPosView('terminal');
-    toast.success('Held sale restored', { module: 'POS', description: latest.label });
-  }, [cart.length, holds]);
-
   const showRecentSales = useCallback(() => {
+    setShowHoldPanel(false);
     if (recentReceipts.length === 0) {
-      toast.info('No recent POS sales yet', { module: 'POS' });
+      toast.info('No recent POS sales yet', { module: 'POS', description: 'Complete a sale to see it here.' });
       setShowRecentPanel(false);
       return;
     }
@@ -540,6 +554,7 @@ export function PosPage() {
 
   return (
     <>
+      <ApiModeBanner module="pos" error={apiStore.error || productsStore.error} />
       <PageHeader
         title={t('sales.pos_title')}
         subtitle={t('sales.pos_subtitle')}
@@ -560,6 +575,75 @@ export function PosPage() {
           </>
         }
       />
+
+      {(productsStore.loading || apiStore.loading) && (
+        <div className="mb-2 text-center text-xs text-slate-500">Loading products & sales…</div>
+      )}
+
+      {showHoldPanel ? (
+        <div className="mb-3 premium-card premium-shadow p-3 shrink-0">
+          <div className="flex items-center justify-between gap-2 mb-2">
+            <h3 className="text-xs font-extrabold text-slate-800">{t('sales.pos_held_sales')}</h3>
+            <button
+              type="button"
+              onClick={() => setShowHoldPanel(false)}
+              className="w-7 h-7 rounded-lg border border-slate-200 bg-white text-slate-500 inline-flex items-center justify-center cursor-pointer"
+              aria-label="Close held sales"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
+          </div>
+          {holds.length === 0 ? (
+            <p className="text-xs text-slate-500">No held sales. Add items and click Hold Sale.</p>
+          ) : (
+            <div className="space-y-1.5">
+              {holds.map((hold) => (
+                <div
+                  key={hold.id}
+                  className="flex items-center justify-between gap-3 rounded-xl border border-amber-100 bg-amber-50/80 px-3 py-2"
+                >
+                  <div className="min-w-0">
+                    <p className="text-xs font-bold text-slate-800 truncate">{hold.label}</p>
+                    <p className="text-[10px] text-slate-500">{new Date(hold.savedAt).toLocaleString()}</p>
+                  </div>
+                  <div className="flex gap-1.5 shrink-0">
+                    <button
+                      type="button"
+                      onClick={() => void (async () => {
+                        if (cart.length > 0) {
+                          const ok = await confirmAction({
+                            title: 'Restore held sale?',
+                            message: 'Current cart will be replaced.',
+                            confirmLabel: 'Restore',
+                            module: 'POS',
+                          });
+                          if (!ok) return;
+                        }
+                        loadHeldSale(hold);
+                      })()}
+                      className="px-2.5 py-1.5 rounded-lg bg-blue-600 text-white text-[11px] font-bold cursor-pointer"
+                    >
+                      Restore
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const next = holds.filter((h) => h.id !== hold.id);
+                        setHolds(next);
+                        savePosHolds(next);
+                        toast.success('Held sale removed', { module: 'POS' });
+                      }}
+                      className="px-2.5 py-1.5 rounded-lg border border-rose-200 bg-rose-50 text-[11px] font-bold text-rose-700 cursor-pointer"
+                    >
+                      Delete
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      ) : null}
 
       {showRecentPanel ? (
         <div className="mb-3 premium-card premium-shadow p-3 shrink-0">
@@ -670,22 +754,25 @@ export function PosPage() {
             <button
               key={hold.id}
               type="button"
-              onClick={() => {
-                setCart(hold.cart);
-                setCustomerId(hold.customerId);
-                setDiscount(hold.discount);
-                setNote(hold.note);
-                setTaxRate(hold.taxRate);
-                setPosView('terminal');
-                toast.success('Held sale loaded', { module: 'POS', description: hold.label });
-              }}
+              onClick={() => void (async () => {
+                if (cart.length > 0) {
+                  const ok = await confirmAction({
+                    title: 'Restore held sale?',
+                    message: 'Current cart will be replaced.',
+                    confirmLabel: 'Restore',
+                    module: 'POS',
+                  });
+                  if (!ok) return;
+                }
+                loadHeldSale(hold);
+              })()}
               className="px-2.5 py-1 rounded-lg bg-amber-50 border border-amber-100 text-[11px] font-bold text-amber-800 cursor-pointer"
             >
               {hold.label}
             </button>
           ))}
-          <button type="button" onClick={() => void restoreHold()} className="text-[11px] font-bold text-blue-700 cursor-pointer">
-            {t('sales.pos_restore_latest')}
+          <button type="button" onClick={() => setShowHoldPanel(true)} className="text-[11px] font-bold text-blue-700 cursor-pointer">
+            View all ({holds.length})
           </button>
         </div>
       ) : null}

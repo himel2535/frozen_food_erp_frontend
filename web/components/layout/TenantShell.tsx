@@ -7,6 +7,7 @@ import { BengaliFontLoader } from '@/components/shared/BengaliFontLoader';
 import { ToysLoader } from '@/components/shared/ToysLoader';
 import { ModuleActionsProvider } from '@/components/layout/ModuleActionsContext';
 import { ModuleShell } from '@/components/layout/ModuleShell';
+import { ApiStateHydrator } from '@/components/providers/ApiStateHydrator';
 import { useAppStore } from '@/lib/state/app-store';
 import { useEffect } from 'react';
 import { loadIcons } from '@iconify/react';
@@ -42,6 +43,7 @@ export function TenantShell({ children }: { children: React.ReactNode }) {
 
   return (
     <>
+      <ApiStateHydrator />
       <BengaliFontLoader />
       {showBootLoader ? <ToysLoader label="Loading Workspace..." /> : null}
       <div id="screen-workspace" className="min-h-screen flex">

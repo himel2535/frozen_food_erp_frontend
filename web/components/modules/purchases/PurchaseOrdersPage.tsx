@@ -11,6 +11,12 @@ import { Plus } from 'lucide-react';
 import { Footer } from '@/components/layout/Footer';
 import { useRegisterModuleActions } from '@/components/layout/ModuleActionsContext';
 import { useAppStore } from '@/lib/state/app-store';
+import { API_RESOURCE_PATHS, isModuleApiMode } from '@/lib/config/data-source';
+import { useApiResourceStore } from '@/hooks/use-api-resource-store';
+import { mapGenericApiRow } from '@/lib/services/generic-api-mapper';
+import { ApiModeBanner } from '@/components/shared/ApiModeBanner';
+import { fetchResourceList } from '@/lib/services/api-resource-service';
+import { mapApiSupplierRow } from '@/lib/services/entity-api-mappers';
 
 import {
 
@@ -41,6 +47,8 @@ import { PO_BTN_PRIMARY, PO_CARD_CLS } from './purchase-orders/purchase-orders-s
 export function PurchaseOrdersPage() {
 
   const router = useRouter();
+  const apiMode = isModuleApiMode('purchaseOrders');
+  const apiStore = useApiResourceStore('purchaseOrders', mapGenericApiRow);
 
   const appState = useAppStore((s) => s.appState);
 
@@ -64,14 +72,24 @@ export function PurchaseOrdersPage() {
 
 
 
-  const allRows = useMemo(() => listPurchases(appState), [appState]);
+  const allRows = useMemo(
+    () => (apiMode ? apiStore.rows : listPurchases(appState)),
+    [apiMode, apiStore.rows, appState],
+  );
+
+  const [apiSuppliers, setApiSuppliers] = useState<Record<string, unknown>[]>([]);
+  useEffect(() => {
+    if (!apiMode) return;
+    void fetchResourceList(API_RESOURCE_PATHS.suppliers).then((docs) => {
+      setApiSuppliers(docs.map((d) => mapApiSupplierRow(d)));
+    });
+  }, [apiMode, apiStore.rows.length]);
 
   const suppliers = useMemo(
-
-    () => listSuppliers(appState).map((s) => ({ id: String(s.id), name: String(s.name ?? s.id) })),
-
-    [appState],
-
+    () => (apiMode
+      ? apiSuppliers.map((s) => ({ id: String(s.id), name: String(s.name ?? s.id) }))
+      : listSuppliers(appState).map((s) => ({ id: String(s.id), name: String(s.name ?? s.id) }))),
+    [apiMode, apiSuppliers, appState],
   );
 
 
@@ -176,6 +194,7 @@ export function PurchaseOrdersPage() {
 
   return (
     <>
+      {apiMode && <ApiModeBanner module="purchaseOrders" error={apiStore.error} />}
       <PurchaseOrdersMetrics metrics={metrics} />
 
 

@@ -9,6 +9,10 @@ import { useRegisterModuleActions } from '@/components/layout/ModuleActionsConte
 import { AppFormFields, AppFormModal } from '@/components/shared/AppForm';
 import { DateInput } from '@/components/shared/DateInput';
 import { useAppStore } from '@/lib/state/app-store';
+import { useApiResourceStore } from '@/hooks/use-api-resource-store';
+import { mapGenericApiRow, mapGenericPayloadToApi } from '@/lib/services/generic-api-mapper';
+import { ApiModeBanner } from '@/components/shared/ApiModeBanner';
+import { isModuleApiMode } from '@/lib/config/data-source';
 import type { PortField } from '@/lib/modules/port-types';
 import {
   buildBalanceSheetDisplayRows,
@@ -87,6 +91,8 @@ function formToPayload(form: BalanceSheetFormState) {
 export function BalanceSheetPage() {
   const appState = useAppStore((s) => s.appState);
   const saveAppState = useAppStore((s) => s.saveAppState);
+  const apiMode = isModuleApiMode('balanceSheet');
+  const apiStore = useApiResourceStore('balanceSheet', mapGenericApiRow);
 
   const [asOnDate, setAsOnDate] = useState('2026-05-31');
   const [generatedAt, setGeneratedAt] = useState(() => formatGeneratedAt(new Date()));
@@ -97,7 +103,12 @@ export function BalanceSheetPage() {
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [form, setForm] = useState<BalanceSheetFormState>(EMPTY_BS_FORM);
 
-  const allLines = useMemo(() => listBalanceSheetLines(appState), [appState]);
+  const allLines = useMemo(() => {
+    if (apiMode && apiStore.initialized) {
+      return listBalanceSheetLines({ balanceSheet: apiStore.rows } as import('@/lib/state/types').AppState);
+    }
+    return listBalanceSheetLines(appState);
+  }, [apiMode, apiStore.initialized, apiStore.rows, appState]);
   const filteredLines = useMemo(
     () => filterBalanceSheetLines(allLines, filters),
     [allLines, filters],
@@ -130,6 +141,15 @@ export function BalanceSheetPage() {
     const line = allLines.find((l) => l.id === sourceId);
     if (!line) return;
     const __ok = await confirmAction({ title: 'Confirm action', message: `Delete "${line.lineItem}"?`, confirmLabel: 'Confirm', tone: 'danger', module: 'Balance Sheet' }); if (!__ok) return;
+    if (apiMode) {
+      const result = await apiStore.remove(sourceId);
+      if (!result.ok) {
+        toast.error('Operation failed', { module: 'Balance Sheet', description: 'error' in result ? String(result.error) : 'Failed to delete line' });
+        return;
+      }
+      setGeneratedAt(formatGeneratedAt(new Date()));
+      return;
+    }
     const result = deleteBalanceSheetLine(appState, sourceId);
     if (!result.ok) {
       toast.error('Operation failed', { module: 'Balance Sheet', description: String(result.error ?? 'Failed to delete line') });
@@ -139,10 +159,25 @@ export function BalanceSheetPage() {
     setGeneratedAt(formatGeneratedAt(new Date()));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.lineItem.trim()) return;
     const payload = formToPayload(form);
+    if (apiMode) {
+      const result = editingId
+        ? await apiStore.update(editingId, mapGenericPayloadToApi(payload))
+        : await apiStore.create(mapGenericPayloadToApi(payload));
+      if (!result.ok) {
+        toast.error('Operation failed', { module: 'Balance Sheet', description: 'error' in result ? String(result.error) : 'Failed to save line' });
+        return;
+      }
+      toast.success('Saved', { module: 'Balance Sheet', description: editingId ? 'Line updated.' : 'Line added.' });
+      setShowModal(false);
+      setEditingId(null);
+      setForm(EMPTY_BS_FORM);
+      setGeneratedAt(formatGeneratedAt(new Date()));
+      return;
+    }
     const result = editingId
       ? updateBalanceSheetLine(appState, editingId, payload)
       : createBalanceSheetLine(appState, payload);
@@ -200,6 +235,7 @@ export function BalanceSheetPage() {
 
   return (
     <>
+        {apiStore.error ? <ApiModeBanner module="balanceSheet" error={apiStore.error} /> : null}
         <BalanceSheetMetrics metrics={metrics} />
         <BalanceSheetEquationBar metrics={metrics} />
         <BalanceSheetFilterBar filters={filters} onChange={setFilters} />

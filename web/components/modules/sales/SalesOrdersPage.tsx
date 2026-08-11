@@ -21,6 +21,10 @@ import {
   deleteSalesOrder,
   listSalesOrders,
 } from '@/lib/services/sales-service';
+import { isModuleApiMode } from '@/lib/config/data-source';
+import { useApiResourceStore } from '@/hooks/use-api-resource-store';
+import { ApiModeBanner } from '@/components/shared/ApiModeBanner';
+import { mapApiSalesOrderRow, resolveApiRowId } from '@/lib/services/entity-api-mappers';
 import type { PoLineItem } from '@/lib/services/purchases-service';
 
 function summarizeItems(row: Record<string, unknown>, t: TranslateFn): string {
@@ -60,6 +64,8 @@ export function SalesOrdersPage() {
   const t = useAppStore((s) => s.t);
   const appState = useAppStore((s) => s.appState);
   const saveAppState = useAppStore((s) => s.saveAppState);
+  const apiMode = isModuleApiMode('salesOrders');
+  const apiStore = useApiResourceStore('salesOrders', mapApiSalesOrderRow);
   const { formatMoney, formatCount } = useLocaleFormat();
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
@@ -72,7 +78,10 @@ export function SalesOrdersPage() {
     { id: 'fulfilled', label: translateStatus(t, 'fulfilled') },
   ], [t]);
 
-  const allRows = useMemo(() => listSalesOrders(appState), [appState]);
+  const allRows = useMemo(() => {
+    if (apiMode) return apiStore.rows;
+    return listSalesOrders(appState);
+  }, [apiMode, apiStore.rows, appState]);
 
   const rows = useMemo(() => {
     let data = allRows;
@@ -123,7 +132,8 @@ export function SalesOrdersPage() {
     },
   ], [t, formatMoney]);
 
-  const handleDelete = async (id: string) => {
+  const handleDelete = async (row: Record<string, unknown>) => {
+    const id = String(row.id);
     const __ok = await confirmAction({
       title: t('sales.delete_order'),
       message: t('common.delete_confirm'),
@@ -132,6 +142,10 @@ export function SalesOrdersPage() {
       module: t('sales.orders_title'),
     });
     if (!__ok) return;
+    if (apiMode) {
+      await apiStore.remove(resolveApiRowId(row));
+      return;
+    }
     deleteSalesOrder(appState, id);
     saveAppState();
   };
@@ -149,6 +163,8 @@ export function SalesOrdersPage() {
 
   return (
     <>
+      {apiMode ? <ApiModeBanner module="salesOrders" error={apiStore.error} /> : null}
+
       <ModuleKpiSection items={kpis} />
 
       <ModuleFilterBar
@@ -163,11 +179,11 @@ export function SalesOrdersPage() {
           columns={columns}
           rows={rows}
           rowKey={(row) => String(row.id)}
-          emptyMessage={t('sales.no_orders')}
+          emptyMessage={apiStore.loading ? 'Loading orders…' : t('sales.no_orders')}
           renderActions={(row) => (
             <div className="flex items-center gap-2">
               <TableIconAction variant="edit" onClick={() => router.push(`/sales/orders/${String(row.id)}/edit`)} />
-              <TableIconAction variant="delete" onClick={() => handleDelete(String(row.id))} />
+              <TableIconAction variant="delete" onClick={() => handleDelete(row)} />
             </div>
           )}
         />

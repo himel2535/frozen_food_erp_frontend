@@ -129,17 +129,30 @@ export function receiptFromPosRecord(
   const date = String(record.date ?? record.at ?? new Date().toISOString());
   const displayDate = String(record.displayDate ?? (record.at ? new Date(String(record.at)).toLocaleString() : date));
   return {
-    receiptId: String(record.receipt ?? record.id ?? 'RCPT'),
+    receiptId: String(record.receiptNo ?? record.receipt ?? record.id ?? 'RCPT'),
     date,
     displayDate,
-    customer: String(record.customer ?? fallbacks?.customer ?? 'Walk-in Customer'),
-    items: (Array.isArray(record.items) ? record.items : []) as PosCartItem[],
+    customer: String(record.customerName ?? record.customer ?? fallbacks?.customer ?? 'Walk-in Customer'),
+    items: (Array.isArray(record.items) ? record.items : []).map((item) => {
+      const row = item as Record<string, unknown>;
+      const qty = Number(row.qty ?? row.quantity ?? 1);
+      const price = Number(row.price ?? row.rate ?? 0);
+      return {
+        id: String(row.id ?? row.sku ?? row.description ?? ''),
+        name: String(row.name ?? row.description ?? 'Item'),
+        sku: String(row.sku ?? ''),
+        price,
+        qty,
+        imageEmoji: '🛍️',
+        imageGradient: 'from-slate-100 via-zinc-50 to-stone-100',
+      };
+    }) as PosCartItem[],
     subtotal: Number(record.subtotal ?? record.amount ?? 0),
     discount: Number(record.discount ?? 0),
     tax: Number(record.tax ?? 0),
     taxRate: Number(record.taxRate ?? fallbacks?.taxRate ?? 0),
     total: Number(record.total ?? record.amount ?? 0),
-    note: String(record.note ?? ''),
+    note: String(record.notes ?? record.note ?? ''),
     company: fallbacks?.company,
     invoiceId: record.invoiceId ? String(record.invoiceId) : undefined,
   };

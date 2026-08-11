@@ -25,6 +25,10 @@ import {
   type SupplierFormValues,
 } from './suppliers/SupplierForm';
 import { SUPPLIER_BTN_PRIMARY, SUPPLIER_CARD_CLS } from './suppliers/suppliers-styles';
+import { isModuleApiMode } from '@/lib/config/data-source';
+import { useApiResourceStore } from '@/hooks/use-api-resource-store';
+import { ApiModeBanner } from '@/components/shared/ApiModeBanner';
+import { mapApiSupplierRow, mapSupplierFormToApi } from '@/lib/services/entity-api-mappers';
 
 const PAGE_SIZE = 8;
 
@@ -35,6 +39,8 @@ export function SuppliersPage() {
   const searchParams = useSearchParams();
   const appState = useAppStore((s) => s.appState);
   const saveAppState = useAppStore((s) => s.saveAppState);
+  const apiMode = isModuleApiMode('suppliers');
+  const apiStore = useApiResourceStore('suppliers', mapApiSupplierRow);
   const [, bump] = useState(0);
 
   const [view, setView] = useState<PageView>('main');
@@ -47,8 +53,28 @@ export function SuppliersPage() {
   const [formKey, setFormKey] = useState(0);
   const [formValues, setFormValues] = useState<SupplierFormValues>(EMPTY_SUPPLIER_FORM);
 
-  const allSuppliers = useMemo(() => listEnrichedSuppliers(appState), [appState, bump]);
-  const metrics = useMemo(() => getSupplierListMetrics(appState), [appState, bump]);
+  const allSuppliers = useMemo(() => {
+    if (apiMode) return apiStore.rows as EnrichedSupplier[];
+    return listEnrichedSuppliers(appState);
+  }, [apiMode, apiStore.rows, appState, bump]);
+  const metrics = useMemo(() => {
+    if (apiMode) {
+      const activeCount = allSuppliers.filter((s) => s.recordStatus === 'active').length;
+      const payableRows = allSuppliers.filter((s) => s.payable > 0);
+      return {
+        totalSuppliers: allSuppliers.length,
+        activeCount,
+        inactiveCount: allSuppliers.length - activeCount,
+        totalPayable: payableRows.reduce((s, r) => s + r.payable, 0),
+        payableSupplierCount: payableRows.length,
+        overdueAmount: 0,
+        overdueSupplierCount: 0,
+        dueThisWeek: 0,
+        dueThisWeekSupplierCount: 0,
+      };
+    }
+    return getSupplierListMetrics(appState);
+  }, [apiMode, allSuppliers, appState, bump]);
 
   const filtered = useMemo(
     () => filterEnrichedSuppliers(allSuppliers, { search, tab, sort, category }),
@@ -89,14 +115,19 @@ export function SuppliersPage() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams, allSuppliers]);
 
-  const handleDeactivate = (supplier: EnrichedSupplier) => {
+  const handleDeactivate = async (supplier: EnrichedSupplier) => {
+    if (apiMode) {
+      await apiStore.update(String(supplier.id), { ...mapSupplierFormToApi(supplierToFormValues(supplier)), status: 'inactive' });
+      toast.success('Supplier deactivated', { module: 'Suppliers', description: `${supplier.name} marked as inactive.` });
+      return;
+    }
     updateSupplier(appState, supplier.id, { status: 'inactive' });
     saveAppState();
     bump((n) => n + 1);
     toast.success('Supplier deactivated', { module: 'Suppliers', description: `${supplier.name} marked as inactive.` });
   };
 
-  const handleSave = (values: SupplierFormValues) => {
+  const handleSave = async (values: SupplierFormValues) => {
     const payload = {
       name: values.name.trim(),
       contact: values.contact.trim(),
@@ -113,6 +144,22 @@ export function SuppliersPage() {
       imageUrl: values.imageUrl.trim(),
       createdAt: new Date().toISOString().slice(0, 10),
     };
+
+    if (apiMode) {
+      const body = mapSupplierFormToApi(values);
+      const result = editingId
+        ? await apiStore.update(editingId, body)
+        : await apiStore.create(body);
+      if (!result.ok) {
+        toast.error('Save failed', { module: 'Suppliers', description: 'error' in result ? result.error : 'API error' });
+        return;
+      }
+      toast.success(editingId ? 'Supplier updated' : 'Supplier added', { module: 'Suppliers', description: `${values.name} saved.` });
+      setView('main');
+      setEditingId(null);
+      setFormValues(EMPTY_SUPPLIER_FORM);
+      return;
+    }
 
     if (editingId) {
       updateSupplier(appState, editingId, payload);
@@ -148,6 +195,8 @@ export function SuppliersPage() {
 
   return (
     <>
+      {apiMode ? <ApiModeBanner module="suppliers" error={apiStore.error} /> : null}
+
       <SuppliersMetrics metrics={metrics} />
 
       <div className={SUPPLIER_CARD_CLS}>

@@ -67,7 +67,12 @@ export function updateInState(
   payload: Row
 ): { ok: boolean; error?: string } {
   const rows = listFromState(state, stateKey);
-  const idx = rows.findIndex((r) => String(r.id) === id);
+  const idx = rows.findIndex((r) => {
+    const rowId = String(r.id ?? '');
+    const legacyId = String(r.legacyId ?? '');
+    const recipeNumber = String(r.recipeNumber ?? '');
+    return rowId === id || legacyId === id || recipeNumber === id;
+  });
   if (idx < 0) return { ok: false, error: 'Record not found' };
   const updated = { ...rows[idx], ...payload, id, updatedAt: new Date().toISOString() };
   const next = [...rows];

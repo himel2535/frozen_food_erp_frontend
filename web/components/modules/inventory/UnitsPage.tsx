@@ -10,6 +10,15 @@ import { TableIconAction } from '@/components/shared/TableIconAction';
 import { InventoryListLayout, FilterBar, FilterSelect } from '@/components/modules/inventory/shared/inventory-ui';
 import { useAppStore } from '@/lib/state/app-store';
 import type { PortField } from '@/lib/modules/port-types';
+import { isModuleApiMode } from '@/lib/config/data-source';
+import { useApiResourceStore } from '@/hooks/use-api-resource-store';
+import { useInventoryLookups } from '@/hooks/use-inventory-lookups';
+import { ApiModeBanner } from '@/components/shared/ApiModeBanner';
+import { apiListEmptyMessage } from '@/lib/services/api-list-ui';
+import {
+  mapApiUnitRow,
+  mapUnitPayloadToApi,
+} from '@/lib/services/inventory-api-mappers';
 import {
   getUnitMetrics,
   countProductsUsingUnit,
@@ -32,6 +41,9 @@ const UNIT_FIELDS: PortField[] = [
 export function UnitsPage() {
   const appState = useAppStore((s) => s.appState);
   const saveAppState = useAppStore((s) => s.saveAppState);
+  const apiMode = isModuleApiMode('units');
+  const apiStore = useApiResourceStore('units', mapApiUnitRow);
+  const lookups = useInventoryLookups();
   const [view, setView] = useState<'main' | 'form'>('main');
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
@@ -41,7 +53,15 @@ export function UnitsPage() {
     name: '', code: '', symbol: '', status: 'Active', description: '', baseUnit: '', conversionFactor: '',
   });
 
-  const { total, activeUnits, usedUnits, units } = useMemo(() => getUnitMetrics(appState), [appState]);
+  const { total, activeUnits, usedUnits, units } = useMemo(() => {
+    if (apiMode) {
+      const rows = apiStore.rows;
+      const active = rows.filter((u) => String(u.status) === 'Active').length;
+      const used = rows.filter((u) => countProductsUsingUnit({ inventory: lookups.products } as import('@/lib/state/types').AppState, u) > 0).length;
+      return { total: rows.length, activeUnits: active, usedUnits: used, units: rows };
+    }
+    return getUnitMetrics(appState);
+  }, [apiMode, apiStore.rows, lookups.products, appState]);
 
   const filtered = useMemo(() => {
     let data = units;
@@ -52,6 +72,11 @@ export function UnitsPage() {
     }
     return sortInventoryRowsNewestFirst(data);
   }, [units, search, statusFilter]);
+
+  const resetFilters = () => {
+    setSearch('');
+    setStatusFilter('all');
+  };
 
   const resetForm = () => {
     setForm({ name: '', code: '', symbol: '', status: 'Active', description: '', baseUnit: '', conversionFactor: '' });
@@ -69,9 +94,21 @@ export function UnitsPage() {
     setView('form');
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const payload = { ...form, conversionFactor: Number(form.conversionFactor || 1) };
+    if (apiMode) {
+      const body = mapUnitPayloadToApi(payload);
+      const result = editingId ? await apiStore.update(editingId, body) : await apiStore.create(body);
+      if (!result.ok) {
+        toast.error('Operation failed', { module: 'Units', description: 'error' in result ? String(result.error) : 'Save failed' });
+        return;
+      }
+      if (!editingId) resetFilters();
+      setView('main');
+      resetForm();
+      return;
+    }
     const result = editingId ? updateUnit(appState, editingId, payload) : createUnit(appState, payload);
     if (!result.ok) { toast.error('Operation failed', { module: 'Units', description: 'error' in result ? String(result.error) : 'Save failed' }); return; }
     saveAppState();
@@ -81,8 +118,18 @@ export function UnitsPage() {
 
   const handleDelete = async (id: string) => {
     const __ok = await confirmAction({ title: "Delete this unit", message: "Delete this unit?", confirmLabel: 'Delete', tone: 'danger', module: 'Units' }); if (!__ok) return;
+    if (apiMode) {
+      const result = await apiStore.remove(id);
+      if (!result.ok) toast.error('Delete failed', { module: 'Units', description: result.error });
+      return;
+    }
     deleteUnit(appState, id);
     saveAppState();
+  };
+
+  const countProducts = (unit: Record<string, unknown>) => {
+    if (apiMode) return countProductsUsingUnit({ inventory: lookups.products } as import('@/lib/state/types').AppState, unit);
+    return countProductsUsingUnit(appState, unit);
   };
 
   const columns = useMemo<AppTableColumn<Record<string, unknown>>[]>(() => [
@@ -91,13 +138,14 @@ export function UnitsPage() {
     { key: 'symbol', label: 'Symbol', render: (unit) => String(unit.symbol ?? unit.code) },
     { key: 'baseUnit', label: 'Base Unit', render: (unit) => String(unit.baseUnit || '—') },
     { key: 'conversionFactor', label: 'Conversion', render: (unit) => (unit.conversionFactor ? String(unit.conversionFactor) : '1') },
-    { key: 'productsUsing', label: 'Products Using', render: (unit) => countProductsUsingUnit(appState, unit) },
+    { key: 'productsUsing', label: 'Products Using', render: (unit) => countProducts(unit) },
     { key: 'description', label: 'Description', className: 'max-w-[160px] truncate', render: (unit) => String(unit.description || '—') },
     { key: 'status', label: 'Status', render: (unit) => <StatusBadge status={String(unit.status ?? 'Active')} /> },
-  ], [appState]);
+  ], [countProducts]);
 
   return (
     <>
+    {apiMode && <ApiModeBanner module="units" error={apiStore.error} />}
     <InventoryListLayout
       title="Units of Measure"
       subtitle="Manage units used across products and inventory transactions."
@@ -122,7 +170,7 @@ export function UnitsPage() {
       <AppTable
         columns={columns}
         rows={filtered}
-        emptyMessage="No units found."
+        emptyMessage={apiListEmptyMessage(apiStore.loading, apiStore.initialized, 'units', { totalCount: units.length, filteredCount: filtered.length })}
         renderActions={(unit) => (
           <>
             <TableIconAction variant="edit" onClick={() => openEdit(unit)} />

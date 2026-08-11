@@ -3,7 +3,7 @@
 import { useMemo, useRef, useState, type FormEvent } from 'react';
 import { ArrowRight, Plus, Save } from 'lucide-react';
 import { FormHeader } from '@/components/layout/FormHeader';
-import { MODULE_LIST_SHELL } from '@/lib/ui/module-layout';
+import { MODULE_SHELL_SUPPRESSED } from '@/lib/ui/module-layout';
 import { ProjectFormStepper } from '@/components/modules/projects/project-form/ProjectFormStepper';
 import { ProjectSectionCard } from '@/components/modules/projects/project-form/ProjectSectionCard';
 import { ProjectOrderInfoSection } from '@/components/modules/projects/project-form/ProjectOrderInfoSection';
@@ -78,7 +78,7 @@ export function CreateProjectForm({
   };
 
   return (
-    <div className={MODULE_LIST_SHELL}>
+    <div className={`${MODULE_SHELL_SUPPRESSED} pb-4`}>
       <form ref={formRef} onSubmit={handleSubmit} noValidate className="w-full flex flex-col min-h-full pb-4">
         <div className="pt-3 md:pt-4 mb-2">
           <FormHeader

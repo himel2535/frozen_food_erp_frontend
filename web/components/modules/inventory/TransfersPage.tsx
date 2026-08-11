@@ -12,6 +12,16 @@ import { StatusBadge } from '@/components/shared/StatusBadge';
 import { TableIconAction } from '@/components/shared/TableIconAction';
 import { InventoryListLayout, FilterBar, FilterSelect } from '@/components/modules/inventory/shared/inventory-ui';
 import { useAppStore } from '@/lib/state/app-store';
+import { isModuleApiMode } from '@/lib/config/data-source';
+import { useApiResourceStore } from '@/hooks/use-api-resource-store';
+import { useInventoryLookups, resolveWarehouseName } from '@/hooks/use-inventory-lookups';
+import { ApiModeBanner } from '@/components/shared/ApiModeBanner';
+import { apiListEmptyMessage } from '@/lib/services/api-list-ui';
+import {
+  mapApiStockTransferRow,
+  mapStockTransferPayloadToApi,
+} from '@/lib/services/inventory-api-mappers';
+import { completeStockTransferApi } from '@/lib/services/inventory-api-actions';
 import {
   listTransferRecords,
   getTransferMetrics,
@@ -25,6 +35,9 @@ import {
 export function TransfersPage() {
   const appState = useAppStore((s) => s.appState);
   const saveAppState = useAppStore((s) => s.saveAppState);
+  const apiMode = isModuleApiMode('stockTransfers');
+  const apiStore = useApiResourceStore('stockTransfers', mapApiStockTransferRow);
+  const lookups = useInventoryLookups();
   const [view, setView] = useState<'main' | 'form'>('main');
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
@@ -33,28 +46,71 @@ export function TransfersPage() {
     productId: '', fromWarehouseId: '', toWarehouseId: '', qty: '', date: new Date().toISOString().slice(0, 10), status: 'Pending', notes: '',
   });
 
-  const records = useMemo(() => listTransferRecords(appState), [appState]);
-  const metrics = useMemo(() => getTransferMetrics(appState), [appState]);
-  const products = useMemo(() => listInventory(appState), [appState]);
+  const records = useMemo(
+    () => (apiMode ? apiStore.rows : listTransferRecords(appState)),
+    [apiMode, apiStore.rows, appState],
+  );
+  const metrics = useMemo(() => {
+    if (!apiMode) return getTransferMetrics(appState);
+    const pending = records.filter((i) => String(i.status) === 'Pending').length;
+    const completed = records.filter((i) => String(i.status) === 'Completed').length;
+    const totalQty = records.reduce((s, i) => s + Number(i.qty ?? 0), 0);
+    return { total: records.length, pending, completed, totalQty };
+  }, [apiMode, records, appState]);
+  const products = useMemo(
+    () => (apiMode ? lookups.products : listInventory(appState)),
+    [apiMode, lookups.products, appState],
+  );
+  const warehouses = useMemo(
+    () => (apiMode ? lookups.warehouses : appState.inventoryWarehouses ?? []),
+    [apiMode, lookups.warehouses, appState.inventoryWarehouses],
+  );
   const productName = (id: unknown) => products.find((p) => String(p.id) === String(id))?.name ?? String(id);
+  const whName = (id: string) => (apiMode ? resolveWarehouseName(lookups.warehouses, id) : getWarehouseName(appState, id));
 
   const filtered = useMemo(() => {
     let data = records;
     if (statusFilter !== 'all') data = data.filter((r) => String(r.status) === statusFilter);
     if (search) {
       const q = search.toLowerCase();
-      data = data.filter((r) => String(r.id).toLowerCase().includes(q));
+      data = data.filter((r) => String(r.id).toLowerCase().includes(q) || String(r.legacyId ?? '').toLowerCase().includes(q));
     }
     return sortInventoryRowsNewestFirst(data);
   }, [records, search, statusFilter]);
+
+  const resetFilters = () => {
+    setSearch('');
+    setStatusFilter('all');
+  };
 
   const resetForm = () => {
     setForm({ productId: '', fromWarehouseId: '', toWarehouseId: '', qty: '', date: new Date().toISOString().slice(0, 10), status: 'Pending', notes: '' });
     setShowAdvanced(false);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (apiMode) {
+      const product = products.find((p) => String(p.id) === form.productId);
+      const body = mapStockTransferPayloadToApi(
+        { ...form, qty: Number(form.qty || 0) },
+        product ? String(product.name) : undefined,
+      );
+      const result = await apiStore.create(body);
+      if (!result.ok) {
+        toast.error('Operation failed', { module: 'Stock Transfers', description: 'error' in result ? String(result.error) : 'Save failed' });
+        return;
+      }
+      if (form.status === 'Completed') {
+        await completeStockTransferApi(result.id);
+        await apiStore.reload();
+        await lookups.reload();
+      }
+      resetFilters();
+      setView('main');
+      resetForm();
+      return;
+    }
     const result = createTransfer(appState, { ...form, qty: Number(form.qty || 0) });
     if (!result.ok) { toast.error('Operation failed', { module: 'Stock Transfers', description: 'error' in result ? String(result.error) : 'Save failed' }); return; }
     saveAppState();
@@ -62,26 +118,36 @@ export function TransfersPage() {
     resetForm();
   };
 
-  const handleComplete = (id: string) => {
+  const handleComplete = async (id: string) => {
+    if (apiMode) {
+      const result = await completeStockTransferApi(id);
+      if (!result.ok) {
+        toast.error('Operation failed', { module: 'Stock Transfers', description: result.error });
+        return;
+      }
+      await apiStore.reload();
+      await lookups.reload();
+      return;
+    }
     const result = completeTransfer(appState, id);
     if (!result.ok) { toast.error('Operation failed', { module: 'Stock Transfers', description: 'error' in result ? String(result.error) : 'Complete failed' }); return; }
     saveAppState();
   };
 
   const columns = useMemo<AppTableColumn<Record<string, unknown>>[]>(() => [
-    { key: 'id', label: 'ID', render: (row) => <span className="font-mono text-slate-600">{String(row.id)}</span> },
+    { key: 'id', label: 'ID', render: (row) => <span className="font-mono text-slate-600">{String(row.legacyId ?? row.id)}</span> },
     { key: 'product', label: 'Product', render: (row) => <span className="font-bold text-slate-800">{String(productName(row.productId))}</span> },
-    { key: 'from', label: 'From', render: (row) => getWarehouseName(appState, String(row.fromWarehouseId ?? row.fromWh)) },
-    { key: 'to', label: 'To', render: (row) => getWarehouseName(appState, String(row.toWarehouseId ?? row.toWh)) },
+    { key: 'from', label: 'From', render: (row) => whName(String(row.fromWarehouseId ?? row.fromWh)) },
+    { key: 'to', label: 'To', render: (row) => whName(String(row.toWarehouseId ?? row.toWh)) },
     { key: 'qty', label: 'Qty', render: (row) => Number(row.qty ?? 0) },
     { key: 'date', label: 'Date', render: (row) => String(row.date ?? '—') },
     { key: 'notes', label: 'Notes', className: 'max-w-[120px] truncate', render: (row) => String(row.notes ?? '—') },
     { key: 'status', label: 'Status', render: (row) => <StatusBadge status={String(row.status ?? 'Pending')} /> },
-    { key: 'created', label: 'Created', render: (row) => String(row.date ?? '—') },
-  ], [appState, products]);
+  ], [productName, whName]);
 
   return (
     <>
+    {apiMode && <ApiModeBanner module="stockTransfers" error={apiStore.error} />}
     <InventoryListLayout
       title="Stock Transfers"
       subtitle="Move inventory between warehouse locations."
@@ -106,10 +172,10 @@ export function TransfersPage() {
       <AppTable
         columns={columns}
         rows={filtered}
-        emptyMessage="No transfer records found."
+        emptyMessage={apiListEmptyMessage(apiStore.loading, apiStore.initialized, 'transfer records', { totalCount: records.length, filteredCount: filtered.length })}
         renderActions={(row) => (
           String(row.status) === 'Pending' ? (
-            <TableIconAction variant="approve" label="Complete" onClick={() => handleComplete(String(row.id))} />
+            <TableIconAction variant="approve" label="Complete" onClick={() => void handleComplete(String(row.id))} />
           ) : null
         )}
       />
@@ -118,16 +184,16 @@ export function TransfersPage() {
       open={view === 'form'}
       onClose={() => { setView('main'); resetForm(); }}
       title="Create Transfer"
-      subtitle="Move stock between warehouses with from/to tracking."
+      subtitle="Move stock from one warehouse to another."
       onSubmit={handleSubmit}
       submitLabel="Save Transfer"
       size="lg"
     >
       <div className={FORM_GRID_CLS}>
-        <div><label className={FORM_LABEL_CLS}>Product *</label><ProductSelect state={appState} value={form.productId} onChange={(v) => setForm({ ...form, productId: v })} required /></div>
+        <div><label className={FORM_LABEL_CLS}>Product *</label><ProductSelect state={appState} items={apiMode ? products : undefined} value={form.productId} onChange={(v) => setForm({ ...form, productId: v })} required /></div>
+        <div><label className={FORM_LABEL_CLS}>From Warehouse *</label><WarehouseSelect state={appState} items={apiMode ? warehouses : undefined} value={form.fromWarehouseId} onChange={(v) => setForm({ ...form, fromWarehouseId: v })} required /></div>
+        <div><label className={FORM_LABEL_CLS}>To Warehouse *</label><WarehouseSelect state={appState} items={apiMode ? warehouses : undefined} value={form.toWarehouseId} onChange={(v) => setForm({ ...form, toWarehouseId: v })} required /></div>
         <div><label className={FORM_LABEL_CLS}>Quantity *</label><input required type="number" min={1} className={FORM_INPUT_CLS} value={form.qty} onChange={(e) => setForm({ ...form, qty: e.target.value })} /></div>
-        <div><label className={FORM_LABEL_CLS}>From Warehouse *</label><WarehouseSelect state={appState} value={form.fromWarehouseId} onChange={(v) => setForm({ ...form, fromWarehouseId: v })} required /></div>
-        <div><label className={FORM_LABEL_CLS}>To Warehouse *</label><WarehouseSelect state={appState} value={form.toWarehouseId} onChange={(v) => setForm({ ...form, toWarehouseId: v })} required /></div>
         <div><label className={FORM_LABEL_CLS}>Date</label><DateInput className={`${FORM_INPUT_CLS} cursor-pointer`} value={form.date} onChange={(v) => setForm({ ...form, date: v })} /></div>
       </div>
       <AdvancedDetailsToggle open={showAdvanced} onToggle={() => setShowAdvanced(!showAdvanced)} />

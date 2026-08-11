@@ -1,4 +1,4 @@
-export const EMPLOYEE_TYPE_OPTIONS = ['Worker', 'Staff', 'Manager', 'Executive'] as const;
+export const EMPLOYEE_TYPE_OPTIONS = ['Worker', 'Staff', 'Contract'] as const;
 
 export const EMPLOYEE_STATUS_OPTIONS = [
   { value: 'active', label: 'Active' },

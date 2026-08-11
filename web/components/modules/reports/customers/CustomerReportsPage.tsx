@@ -4,6 +4,8 @@ import { useMemo, useState } from 'react';
 import { Download, Filter, Printer } from 'lucide-react';
 import { Footer } from '@/components/layout/Footer';
 import { useRegisterModuleActions } from '@/components/layout/ModuleActionsContext';
+import { useCustomerReportApiRows } from '@/hooks/use-report-api-data';
+import { ApiModeBanner } from '@/components/shared/ApiModeBanner';
 import { useAppStore } from '@/lib/state/app-store';
 import { toast } from '@/lib/ui/feedback';
 import { DateInput } from '@/components/shared/DateInput';
@@ -37,6 +39,7 @@ import { exportCustomerReportCsv } from '@/lib/services/report-export';
 
 export function CustomerReportsPage() {
   const appState = useAppStore((s) => s.appState);
+  const apiReport = useCustomerReportApiRows();
   const t = useAppStore((s) => s.t);
   const { printSection, printTarget } = useReportPrint<CustomerPrintSectionId>();
 
@@ -46,8 +49,10 @@ export function CustomerReportsPage() {
   const [statusFilter, setStatusFilter] = useState('All');
 
   const allRows = useMemo(
-    () => listCustomerReportRows(Array.isArray(appState.reportCustomers) ? appState.reportCustomers : []),
-    [appState.reportCustomers],
+    () => listCustomerReportRows(
+      apiReport.initialized ? apiReport.rows : (Array.isArray(appState.reportCustomers) ? appState.reportCustomers : []),
+    ),
+    [apiReport.initialized, apiReport.rows, appState.reportCustomers],
   );
 
   const filters = useMemo(
@@ -135,6 +140,7 @@ export function CustomerReportsPage() {
 
   return (
     <>
+        {apiReport.error ? <ApiModeBanner module="customers" error={apiReport.error} /> : null}
         <CustomerReportMetrics items={kpis} />
 
         <ModuleFilterBar

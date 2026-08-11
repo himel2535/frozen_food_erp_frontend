@@ -140,15 +140,45 @@ function computeSupplierStatus(
   };
 }
 
+function vendorBillToPayableRow(row: Row): Row {
+  const total = Number(row.amount ?? row.total ?? 0);
+  const paid = Number(row.paid ?? 0);
+  const due = Number(row.due ?? Math.max(0, total - paid));
+  return {
+    ...row,
+    type: 'supplier',
+    partyId: String(row.supplierId ?? row.partyId ?? ''),
+    partyName: String(row.supplierName ?? row.supplier ?? row.partyName ?? ''),
+    total,
+    paid,
+    due,
+    invoiceId: String(row.invoiceId ?? row.id ?? ''),
+    invoiceDate: String(row.invoiceDate ?? row.date ?? ''),
+  };
+}
+
 function listSupplierBillRows(state: AppState) {
+  const vendorBills = listFromState(state, 'vendorBills');
+  if (vendorBills.length > 0) {
+    return vendorBills.map((row) => vendorBillToPayableRow(row as Row));
+  }
   return listFromState(state, 'dueEntries').filter((row) => row.type === 'supplier');
+}
+
+function billStorageKey(state: AppState, entryId: string): 'vendorBills' | 'dueEntries' {
+  const inVendorBills = listFromState(state, 'vendorBills').some((row) => String(row.id) === entryId);
+  return inVendorBills ? 'vendorBills' : 'dueEntries';
 }
 
 function matchSupplierBills(state: AppState, supplier: Row): SupplierPayableBill[] {
   const supplierId = String(supplier.id ?? '');
   const supplierName = String(supplier.name ?? '');
   return listSupplierBillRows(state)
-    .filter((row) => String(row.partyId) === supplierId || String(row.partyName) === supplierName)
+    .filter((row) =>
+      String(row.partyId) === supplierId
+      || String(row.partyName) === supplierName
+      || String(row.supplierId) === supplierId
+      || String(row.supplier) === supplierName)
     .map((row) => normalizeBillRow(row as Row));
 }
 
@@ -299,11 +329,13 @@ export function makeSupplierPayment(
     const paid = Number(row.paid ?? 0) + pay;
     const due = Math.max(0, total - paid);
 
-    updateInState(state, 'dueEntries', entryId, {
+    updateInState(state, billStorageKey(state, entryId), entryId, {
       ...row,
+      amount: total,
+      total,
       paid,
       due,
-      status: due <= 0 ? 'partial' : paid > 0 ? 'partial' : row.status,
+      status: due <= 0 ? 'paid' : 'posted',
     });
 
     createInState(state, 'purchasePayments', {
@@ -348,21 +380,21 @@ export function createSupplierPayable(
 
   const today = todayIso();
   const billId = `BILL-${String(Date.now()).slice(-6)}`;
-  const result = createInState(state, 'dueEntries', {
-    type: 'supplier',
-    partyId: supplierId,
-    partyName: String(supplier.name ?? ''),
-    partyLocation: String(supplier.address ?? '—'),
+  const result = createInState(state, 'vendorBills', {
+    supplierId,
+    supplier: String(supplier.name ?? ''),
+    supplierName: String(supplier.name ?? ''),
     invoiceId: billId,
     invoiceDate: today,
+    date: today,
+    amount,
     total: amount,
     paid: 0,
     due: amount,
     dueDate,
-    status: dueDate === today ? 'due_today' : dueDate < today ? 'overdue' : 'upcoming',
-    totalBusiness: amount,
+    status: 'posted',
     notes: String(payload.notes ?? ''),
-  }, 'DUE');
+  }, 'BILL');
 
   if (!result.ok) return result;
 

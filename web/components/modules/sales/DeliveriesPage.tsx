@@ -16,7 +16,6 @@ import { TableIconAction } from '@/components/shared/TableIconAction';
 import { useAppStore } from '@/lib/state/app-store';
 import { useLocaleFormat } from '@/hooks/useLocaleFormat';
 import { translateStatus } from '@/lib/i18n/resolve-label';
-import { getCustomerList } from '@/lib/services/crm-service';
 import {
   buildChallanItemsFromOrder,
   createDelivery,
@@ -36,6 +35,11 @@ import {
 import type { DeliveryChallanFormValues, DeliveryChallanLineItem } from '@/components/modules/sales/delivery-challan-form/dc-form-types';
 import { DeliveryChallanPrint } from '@/components/modules/sales/delivery-challan-form/DeliveryChallanPrint';
 import { deleteFromState } from '@/lib/services/domain-service';
+import { isModuleApiMode } from '@/lib/config/data-source';
+import { useApiResourceStore } from '@/hooks/use-api-resource-store';
+import { mapApiSalesDocRow, mapDeliveryToApi, resolveApiRowId } from '@/lib/services/entity-api-mappers';
+import { ApiModeBanner } from '@/components/shared/ApiModeBanner';
+import { useCustomersOptions } from '@/hooks/use-form-options';
 
 const statusTabsFor = (t: (key: string) => string) => [
   { id: 'all', label: t('common.all') },
@@ -78,6 +82,8 @@ export function DeliveriesPage() {
   const { formatMoney, formatNumber, formatCount } = useLocaleFormat();
   const appState = useAppStore((s) => s.appState);
   const saveAppState = useAppStore((s) => s.saveAppState);
+  const apiMode = isModuleApiMode('deliveries');
+  const apiStore = useApiResourceStore('deliveries', mapApiSalesDocRow);
   const [view, setView] = useState<'main' | 'form'>('main');
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
@@ -94,33 +100,26 @@ export function DeliveriesPage() {
     [appState.inventoryWarehouses],
   );
 
-  const customers = useMemo(
-    () => getCustomerList(appState).map((c) => ({
-      id: String(c.id),
-      name: String(c.name ?? ''),
-      company: String(c.company ?? ''),
-    })),
-    [appState],
-  );
+  const customers = useCustomersOptions();
 
   const defaultWarehouseId = warehouses.find((w) => w.name.includes('Main'))?.id ?? warehouses[0]?.id ?? '';
 
   const rows = useMemo(() => {
-    let data = listDeliveries(appState);
+    let data = apiMode ? apiStore.rows : listDeliveries(appState);
     if (search) {
       const q = search.toLowerCase();
       data = data.filter((row) =>
-        `${row.id} ${resolveChallanCustomerLabel(appState, row)} ${row.orderId}`.toLowerCase().includes(q),
+        `${row.id} ${apiMode ? row.customerName ?? row.customer : resolveChallanCustomerLabel(appState, row)} ${row.orderId}`.toLowerCase().includes(q),
       );
     }
     if (statusFilter !== 'all') {
       data = data.filter((row) => String(row.status).toLowerCase() === statusFilter);
     }
     return data;
-  }, [appState, search, statusFilter]);
+  }, [apiMode, apiStore.rows, appState, search, statusFilter]);
 
   const kpis = useMemo(() => {
-    const allRows = listDeliveries(appState);
+    const allRows = apiMode ? apiStore.rows : listDeliveries(appState);
     const open = allRows.filter((r) => !['delivered', 'cancelled'].includes(String(r.status).toLowerCase())).length;
     const delivered = allRows.filter((r) => String(r.status).toLowerCase() === 'delivered').length;
     const totalQty = allRows.reduce((s, r) => s + Number(r.totalDeliverQty ?? 0), 0);
@@ -130,7 +129,7 @@ export function DeliveriesPage() {
       { key: 'qty', label: t('sales.deliveries_kpi_qty'), value: `${formatNumber(totalQty)} ${t('sales.pcs_suffix')}` },
       { key: 'delivered', label: t('sales.deliveries_kpi_delivered'), value: formatCount(delivered) },
     ];
-  }, [appState, t, formatNumber, formatCount]);
+  }, [apiMode, apiStore.rows, appState, t, formatNumber, formatCount]);
 
   const challanPreviewId = useMemo(
     () => (editingId ? editingId : previewChallanNumber(appState, formValues.date)),
@@ -202,12 +201,24 @@ export function DeliveriesPage() {
     }));
   };
 
-  const persistChallan = (payload: DeliveryChallanPayload, action: DeliveryChallanSaveAction) => {
+  const persistChallan = async (payload: DeliveryChallanPayload, action: DeliveryChallanSaveAction) => {
     const record = {
       ...payload,
       customer: payload.customerName,
       id: editingId ?? undefined,
     };
+    if (apiMode) {
+      const body = mapDeliveryToApi(record as unknown as Record<string, unknown>, editingId ?? undefined);
+      const editRow = editingId ? rows.find((r) => String(r.id) === editingId) : null;
+      const result = editingId && editRow
+        ? await apiStore.update(resolveApiRowId(editRow), body)
+        : await apiStore.create(body);
+      if (!result.ok) {
+        toast.error('Operation failed', { module: 'Delivery Challan', description: 'error' in result ? String(result.error) : 'Save failed' });
+        return null;
+      }
+      return editingId ?? ('id' in result ? String(result.id) : `DC-${Date.now()}`);
+    }
     const result = editingId
       ? updateDelivery(appState, editingId, record)
       : createDelivery(appState, record);
@@ -216,12 +227,12 @@ export function DeliveriesPage() {
       return null;
     }
     saveAppState();
-    const savedId = editingId ?? ('id' in result ? result.id : previewChallanNumber(appState, payload.date));
+    const savedId = editingId ?? ('id' in result ? String(result.id) : previewChallanNumber(appState, payload.date));
     return savedId;
   };
 
-  const handleSave = (payload: DeliveryChallanPayload, action: DeliveryChallanSaveAction) => {
-    const savedId = persistChallan(payload, action);
+  const handleSave = async (payload: DeliveryChallanPayload, action: DeliveryChallanSaveAction) => {
+    const savedId = await persistChallan(payload, action);
     if (!savedId) return;
     if (action === 'print') {
       setPrintPayload({ id: savedId, data: payload });
@@ -316,6 +327,10 @@ export function DeliveriesPage() {
 
   return (
     <>
+        {apiMode && <ApiModeBanner module="deliveries" />}
+        {apiMode && apiStore.loading && (
+          <div className="p-4 text-center text-sm text-slate-500">Loading delivery challans…</div>
+        )}
         <ModuleKpiSection items={kpis} />
 
         <ModuleFilterBar

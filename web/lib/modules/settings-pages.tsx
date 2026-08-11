@@ -1,7 +1,5 @@
 'use client';
 
-import { toast, confirmAction } from '@/lib/ui/feedback';
-
 import { useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { CompanySettingsPage } from '@/components/modules/settings/company/CompanySettingsPage';
@@ -14,7 +12,6 @@ import { PORT_CONFIGS } from '@/lib/modules/port-configs';
 import type { DedicatedModuleConfig } from '@/components/modules/shared/DedicatedModule';
 import { AuditEventBadge } from '@/components/modules/settings/audit/AuditEventBadge';
 import { getAuditLogKpis } from '@/lib/services/audit-log-service';
-import { approvePurchaseRmOrder, rejectPurchaseRmOrder } from '@/lib/services/purchase-rm-service';
 import { employeeAvatarClass, employeeInitials } from '@/lib/services/hrm-service';
 import {
   formatProjectDeadline,
@@ -29,58 +26,6 @@ import {
   PRIORITY_BADGE_CLS,
   PRIORITY_DOT_CLS,
 } from '@/components/modules/projects/project-form/project-form-types';
-
-function workflowApprovalsConfig(base: DedicatedModuleConfig): DedicatedModuleConfig {
-  return {
-    ...base,
-    rowActions: (row, { appState, save }) => {
-      if (String(row.status) !== 'pending' || String(row.refType) !== 'purchase_rm_order') return null;
-      const refId = String(row.refId);
-      return (
-        <>
-          <button
-            type="button"
-            title="Approve"
-            onClick={() => {
-              const result = approvePurchaseRmOrder(appState, refId);
-              if (!result.ok) {
-                toast.error('Operation failed', { module: 'Workflow Approvals', description: String(result.error ?? 'Approve failed') });
-                return;
-              }
-              save();
-            }}
-            className="p-1.5 rounded-lg hover:bg-blue-50 text-blue-600 cursor-pointer text-[10px] font-bold"
-          >
-            Approve
-          </button>
-          <button
-            type="button"
-            title="Reject"
-            onClick={async () => {
-              const ok = await confirmAction({
-                title: 'Reject RM order',
-                message: 'Reject this RM order?',
-                confirmLabel: 'Reject',
-                tone: 'danger',
-                module: 'Workflow Approvals',
-              });
-              if (!ok) return;
-              const result = rejectPurchaseRmOrder(appState, refId);
-              if (!result.ok) {
-                toast.error('Operation failed', { module: 'Workflow Approvals', description: String(result.error ?? 'Reject failed') });
-                return;
-              }
-              save();
-            }}
-            className="p-1.5 rounded-lg hover:bg-rose-50 text-rose-500 cursor-pointer text-[10px] font-bold"
-          >
-            Reject
-          </button>
-        </>
-      );
-    },
-  };
-}
 
 export function SettingsUsersPage() { return <DedicatedModule configId="settings-users" />; }
 export function SettingsRolesPage() { return <DedicatedModule configId="settings-roles" />; }
@@ -119,7 +64,7 @@ export function SettingsAuditLogsPage() {
     }),
     [],
   );
-  return <DedicatedModule config={config} />;
+  return <DedicatedModule config={config} configId="settings-audit-logs" />;
 }
 export function SettingsProfilePage() { return <ProfileSettingsPage />; }
 export function SettingsSignaturesPage() { return <SignatureSettingsPage />; }
@@ -134,6 +79,12 @@ export function ProjectsPage() {
     kpiGridClassName: 'grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2',
     hideInlineForm: true,
     onAdd: () => router.push('/projects/new'),
+    onRowClick: (row: Record<string, unknown>) => {
+      const id = String(row.id ?? row.projectId ?? '');
+      if (!id) return;
+      const step = Math.min(4, Math.max(2, Number(row.setupStep ?? 2)));
+      router.push(`/projects/${encodeURIComponent(id)}/setup?step=${step}`);
+    },
     rowSort: (a: Record<string, unknown>, b: Record<string, unknown>) => {
       const statusOrder = (row: Record<string, unknown>) => {
         const status = projectStatus(row);
@@ -236,26 +187,9 @@ export function ProjectsPage() {
   };
   }, [base, router]);
   if (!config) return <DedicatedModule configId="projects" />;
-  return <DedicatedModule config={config} />;
+  return <DedicatedModule config={config} configId="projects" />;
 }
 export function AssetManagementPage() { return <DedicatedModule configId="asset-management" />; }
-export function WorkflowApprovalsPage() {
-  const router = useRouter();
-  const base = useLegacyParityConfig('workflow-approvals');
-  const config = useMemo(() => {
-    if (!base) return null;
-    return {
-    ...workflowApprovalsConfig(base),
-    rowSort: (a: Record<string, unknown>, b: Record<string, unknown>) =>
-      String(b.createdAt ?? '').localeCompare(String(a.createdAt ?? '')),
-    onRowClick: (row: Record<string, unknown>) => {
-      if (String(row.refType) !== 'purchase_rm_order') return;
-      router.push(`/purchases/purchase-rm?focus=${encodeURIComponent(String(row.refId))}&from=approval`);
-    },
-  };
-  }, [base, router]);
-  if (!config) return <DedicatedModule configId="workflow-approvals" />;
-  return <DedicatedModule config={config} />;
-}
+export { WorkflowApprovalsPage } from '@/components/modules/approvals/WorkflowApprovalsPage';
 export function CrmActivitiesPage() { return <DedicatedModule configId="crm-activities" />; }
 export function SalesWholesalePage() { return <DedicatedModule configId="sales-wholesale" />; }

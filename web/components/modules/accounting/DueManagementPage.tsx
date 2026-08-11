@@ -8,6 +8,10 @@ import { Footer } from '@/components/layout/Footer';
 import { useRegisterModuleActions } from '@/components/layout/ModuleActionsContext';
 import { AppFormFields, AppFormModal } from '@/components/shared/AppForm';
 import { useAppStore } from '@/lib/state/app-store';
+import { useApiResourceStore } from '@/hooks/use-api-resource-store';
+import { mapGenericApiRow, mapGenericPayloadToApi } from '@/lib/services/generic-api-mapper';
+import { ApiModeBanner } from '@/components/shared/ApiModeBanner';
+import { isModuleApiMode } from '@/lib/config/data-source';
 import type { PortField } from '@/lib/modules/port-types';
 import {
   createOpeningDue,
@@ -46,6 +50,9 @@ const RECEIVE_FIELDS: PortField[] = [
 export function DueManagementPage() {
   const appState = useAppStore((s) => s.appState);
   const saveAppState = useAppStore((s) => s.saveAppState);
+  const apiMode = isModuleApiMode('dues');
+  const apiStore = useApiResourceStore('dues', mapGenericApiRow);
+  const cashboxStore = useApiResourceStore('cashbox', mapGenericApiRow);
 
   const [activeTab, setActiveTab] = useState<DueTab>('customer');
   const [search, setSearch] = useState('');
@@ -67,8 +74,18 @@ export function DueManagementPage() {
     amount: '', date: new Date().toISOString().slice(0, 10), method: 'Cash', reference: '',
   });
 
-  const allEntries = useMemo(() => listDueEntries(appState), [appState]);
-  const metrics = useMemo(() => getDueMetrics(appState), [appState]);
+  const allEntries = useMemo(() => {
+    if (apiMode && apiStore.initialized) {
+      return listDueEntries({ dueEntries: apiStore.rows } as import('@/lib/state/types').AppState);
+    }
+    return listDueEntries(appState);
+  }, [apiMode, apiStore.initialized, apiStore.rows, appState]);
+  const metrics = useMemo(() => {
+    if (apiMode && apiStore.initialized) {
+      return getDueMetrics({ dueEntries: apiStore.rows } as import('@/lib/state/types').AppState);
+    }
+    return getDueMetrics(appState);
+  }, [apiMode, apiStore.initialized, apiStore.rows, appState]);
 
   const filteredRows = useMemo(
     () => filterDueEntries(allEntries, { type: activeTab, search, status: statusFilter }),
@@ -92,18 +109,84 @@ export function DueManagementPage() {
     setShowReceiveModal(true);
   };
 
-  const handleOpeningSubmit = (e: React.FormEvent) => {
+  const handleOpeningSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!openingForm.party || !openingForm.amount || !openingForm.dueDate) return;
+    if (apiMode) {
+      const total = Number(openingForm.amount);
+      const result = await apiStore.create(mapGenericPayloadToApi({
+        type: openingForm.type,
+        partyName: openingForm.party,
+        partyLocation: openingForm.location || '—',
+        total,
+        paid: 0,
+        due: total,
+        dueDate: openingForm.dueDate,
+        notes: openingForm.notes,
+        status: 'upcoming',
+      }));
+      if (!result.ok) {
+        toast.error('Operation failed', { module: 'Due Management', description: 'error' in result ? String(result.error) : 'Failed to create opening due' });
+        return;
+      }
+      toast.success('Saved', { module: 'Due Management', description: 'Opening due created.' });
+      setActiveTab(openingForm.type as DueTab);
+      setShowOpeningModal(false);
+      setOpeningForm({ party: '', type: activeTab, amount: '', dueDate: new Date().toISOString().slice(0, 10), location: '', notes: '' });
+      setSearch('');
+      setStatusFilter('all');
+      setPage(1);
+      return;
+    }
     createOpeningDue(appState, openingForm);
     saveAppState();
     setShowOpeningModal(false);
     setOpeningForm({ party: '', type: activeTab, amount: '', dueDate: new Date().toISOString().slice(0, 10), location: '', notes: '' });
   };
 
-  const handleReceiveSubmit = (e: React.FormEvent) => {
+  const handleReceiveSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!receiveTarget || !receiveForm.amount) return;
+    if (apiMode) {
+      const payAmount = Math.min(Number(receiveForm.amount), receiveTarget.due);
+      const paid = receiveTarget.paid + payAmount;
+      const due = Math.max(0, receiveTarget.total - paid);
+      const result = await apiStore.update(receiveTarget.id, mapGenericPayloadToApi({
+        paid,
+        due,
+        status: due <= 0 ? 'upcoming' : 'partial',
+      }));
+      if (!result.ok) {
+        toast.error('Operation failed', { module: 'Due Management', description: 'error' in result ? String(result.error) : 'Failed to record payment' });
+        return;
+      }
+      if (receiveForm.method === 'Cash' && isModuleApiMode('cashbox')) {
+        const cashSync = await cashboxStore.create(mapGenericPayloadToApi({
+          type: 'cash_in',
+          cashIn: payAmount,
+          cashOut: 0,
+          amount: payAmount,
+          datetime: new Date(`${receiveForm.date}T12:00:00`).toISOString(),
+          category: 'Due Collection',
+          party: receiveTarget.partyName,
+          paymentMethod: 'Cash',
+          reference: receiveForm.reference,
+          description: `Due collection from ${receiveTarget.partyName}`,
+          note: receiveForm.reference,
+        }));
+        if (!cashSync.ok) {
+          toast.error('Operation failed', { module: 'Due Management', description: 'error' in cashSync ? String(cashSync.error) : 'Cashbox sync failed' });
+          return;
+        }
+      }
+      toast.success('Saved', { module: 'Due Management', description: 'Payment recorded.' });
+      setShowReceiveModal(false);
+      setReceiveTarget(null);
+      setSearch('');
+      setStatusFilter('all');
+      setPage(1);
+      return;
+    }
     receiveDuePayment(appState, receiveTarget.id, Number(receiveForm.amount));
     saveAppState();
     setShowReceiveModal(false);
@@ -127,6 +210,7 @@ export function DueManagementPage() {
 
   return (
     <>
+        {apiStore.error ? <ApiModeBanner module="dues" error={apiStore.error} /> : null}
         <DueMetrics metrics={metrics} />
 
         <div className={`grid gap-3 items-start ${selectedPartyId ? 'grid-cols-1 xl:grid-cols-[1fr_360px]' : 'grid-cols-1'}`}>

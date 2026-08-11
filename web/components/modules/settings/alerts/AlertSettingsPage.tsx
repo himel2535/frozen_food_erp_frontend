@@ -10,6 +10,8 @@ import { MODULE_LIST_SHELL } from '@/lib/ui/module-layout';
 import { FORM_BTN_PRIMARY, FORM_BTN_SECONDARY } from '@/lib/ui/form-styles';
 import { ST_FORM_FOOTER } from '@/components/modules/settings/settings-styles';
 import { useAppStore } from '@/lib/state/app-store';
+import { isModuleApiMode } from '@/lib/config/data-source';
+import { saveSettingsDoc } from '@/lib/services/settings-api-service';
 import { toast } from '@/lib/ui/feedback';
 import {
   ALL_ALERT_CATEGORIES,
@@ -75,7 +77,7 @@ export function AlertSettingsPage() {
     setForm(cloneSettings(DEFAULT_ALERT_SETTINGS));
   };
 
-  const handleSubmit = (e: FormEvent) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     appState.alertSettings = cloneSettings(form);
     logSystemAudit(appState, {
@@ -84,7 +86,15 @@ export function AlertSettingsPage() {
       entityType: 'alertSettings',
       description: 'Updated alert thresholds and role visibility',
     });
-    saveAppState();
+    if (isModuleApiMode('companySettings')) {
+      const result = await saveSettingsDoc('alertSettings', appState.alertSettings);
+      if (!result.ok) {
+        toast.error('Operation failed', { module: 'Alert Settings', description: 'error' in result ? String(result.error) : 'Save failed' });
+        return;
+      }
+    } else {
+      saveAppState();
+    }
     bump((n) => n + 1);
     toast.success(labels.saved, { module: 'Alert Settings' });
   };

@@ -38,9 +38,14 @@ import {
   getEnrichedDealList,
   getTopDealPerformers,
   getUpcomingDealFollowUps,
+  inferDealStatusForStage,
   stageLabel,
   type DealRecord,
 } from '@/lib/services/deals-pipeline-service';
+import { isModuleApiMode } from '@/lib/config/data-source';
+import { useApiResourceStore } from '@/hooks/use-api-resource-store';
+import { mapApiDealRow, mapDealToApi, resolveApiRowId } from '@/lib/services/entity-api-mappers';
+import { ApiModeBanner } from '@/components/shared/ApiModeBanner';
 import { MODULE_FILTER_INPUT } from '@/lib/ui/module-chrome-styles';
 
 const DEAL_FORM_FIELDS: PortField[] = [
@@ -62,6 +67,8 @@ export function DealsPage() {
   const { formatMoney, formatCount } = useLocaleFormat();
   const appState = useAppStore((s) => s.appState);
   const saveAppState = useAppStore((s) => s.saveAppState);
+  const apiMode = isModuleApiMode('deals');
+  const apiStore = useApiResourceStore('deals', mapApiDealRow);
 
   const [view, setView] = useState<'main' | 'form'>('main');
   const [search, setSearch] = useState('');
@@ -87,11 +94,35 @@ export function DealsPage() {
 
   const owners = useMemo(() => getOwnerOptions(appState), [appState]);
 
-  const allDeals = useMemo(() => getEnrichedDealList(appState), [appState]);
+  const allDeals = useMemo(() => {
+    if (apiMode) return apiStore.rows as DealRecord[];
+    return getEnrichedDealList(appState);
+  }, [apiMode, apiStore.rows, appState]);
   const metrics = useMemo(() => getDealPipelineMetrics(appState, allDeals), [appState, allDeals]);
   const stageSlices = useMemo(() => getDealStageBreakdown(appState, allDeals), [appState, allDeals]);
   const sourceSlices = useMemo(() => getDealsBySource(appState, allDeals), [appState, allDeals]);
-  const followUps = useMemo(() => getUpcomingDealFollowUps(appState), [appState]);
+  const followUps = useMemo(() => {
+    if (apiMode) {
+      return [...allDeals]
+        .filter((d) => String(d.expectedCloseDate ?? d.closeDate ?? '').trim())
+        .sort((a, b) => String(a.expectedCloseDate ?? a.closeDate).localeCompare(String(b.expectedCloseDate ?? b.closeDate)))
+        .slice(0, 3)
+        .map((d, idx) => {
+          const dateRaw = String(d.expectedCloseDate ?? d.closeDate ?? '');
+          const date = dateRaw ? new Date(dateRaw) : new Date();
+          const tones: Array<'violet' | 'amber' | 'blue'> = ['violet', 'amber', 'blue'];
+          return {
+            id: String(d.id),
+            dealTitle: String(d.title ?? 'Deal'),
+            company: String(d.company ?? ''),
+            date: date.toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' }),
+            time: date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true }),
+            tone: tones[idx % tones.length],
+          };
+        });
+    }
+    return getUpcomingDealFollowUps(appState);
+  }, [apiMode, allDeals, appState]);
   const topPerformers = useMemo(() => getTopDealPerformers(appState, allDeals), [appState, allDeals]);
 
   const deals = useMemo(() => {
@@ -165,7 +196,9 @@ export function DealsPage() {
     setView('form');
   };
 
-  const detailDeal = detailId ? getDealById(appState, detailId) : null;
+  const detailDeal = detailId
+    ? (apiMode ? allDeals.find((d) => String(d.id) === detailId) : getDealById(appState, detailId))
+    : null;
   const timeline = useMemo(() => (detailId ? getDealTimeline(appState, detailId) : []), [appState, detailId]);
 
   const openEdit = (ref: string | DealRecord) => {
@@ -190,7 +223,20 @@ export function DealsPage() {
     setView('form');
   };
 
-  const handleStageChange = (cardId: string, _fromStage: string, toStage: string) => {
+  const handleStageChange = async (cardId: string, _fromStage: string, toStage: string) => {
+    const status = inferDealStatusForStage(toStage);
+    if (apiMode) {
+      const row = allDeals.find((d) => String(d.id) === cardId);
+      if (!row) return;
+      const result = await apiStore.update(
+        resolveApiRowId(row),
+        mapDealToApi({ ...row, stage: toStage, status }, String(row.id)),
+      );
+      if (!result.ok) {
+        toast.error('Operation failed', { module: 'Deals', description: 'error' in result ? String(result.error) : 'Stage update failed' });
+      }
+      return;
+    }
     const result = updateDealStage(appState, cardId, toStage);
     if (!result.ok) {
       toast.error('Operation failed', { module: 'Deals', description: String(result.error ?? 'Stage update failed') });
@@ -199,7 +245,49 @@ export function DealsPage() {
     saveAppState();
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleMarkWon = async () => {
+    if (!detailDeal) return;
+    if (apiMode) {
+      const result = await apiStore.update(
+        resolveApiRowId(detailDeal),
+        mapDealToApi({ ...detailDeal, stage: 'won', status: 'won' }, String(detailDeal.id)),
+      );
+      if (!result.ok) {
+        toast.error('Operation failed', { module: 'Deals', description: 'error' in result ? String(result.error) : 'Update failed' });
+        return;
+      }
+      setDetailId(null);
+      toast.success('Deal marked won', { module: 'Deals' });
+      return;
+    }
+    markDealWon(appState, String(detailDeal.id), {});
+    saveAppState();
+    setDetailId(null);
+    toast.success('Deal marked won', { module: 'Deals' });
+  };
+
+  const handleMarkLost = async () => {
+    if (!detailDeal) return;
+    if (apiMode) {
+      const result = await apiStore.update(
+        resolveApiRowId(detailDeal),
+        mapDealToApi({ ...detailDeal, stage: 'lost', status: 'lost' }, String(detailDeal.id)),
+      );
+      if (!result.ok) {
+        toast.error('Operation failed', { module: 'Deals', description: 'error' in result ? String(result.error) : 'Update failed' });
+        return;
+      }
+      setDetailId(null);
+      toast.success('Deal marked lost', { module: 'Deals' });
+      return;
+    }
+    markDealLost(appState, String(detailDeal.id), {});
+    saveAppState();
+    setDetailId(null);
+    toast.success('Deal marked lost', { module: 'Deals' });
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const owner = owners.find((o: { id: string; name: string }) => o.id === form.assignedRepId) || owners[0];
     const payload = {
@@ -222,11 +310,31 @@ export function DealsPage() {
       ? updateDeal(appState, editingId, payload)
       : createDeal(appState, payload);
 
+    if (apiMode) {
+      const body = mapDealToApi(payload as unknown as Record<string, unknown>, editingId ?? undefined);
+      const editRow = editingId ? allDeals.find((d) => String(d.id) === editingId) : null;
+      const apiResult = editingId && editRow
+        ? await apiStore.update(resolveApiRowId(editRow), body)
+        : await apiStore.create(body);
+      if (!apiResult.ok) {
+        toast.error('Operation failed', { module: 'Deals', description: 'error' in apiResult ? String(apiResult.error) : 'Save failed' });
+        return;
+      }
+      setStageFilter('all');
+      setSearch('');
+      setView('main');
+      resetForm();
+      toast.success(editingId ? 'Deal updated' : 'Deal created', { module: 'Deals' });
+      return;
+    }
+
     if (!result.ok) {
       toast.error('Operation failed', { module: 'Deals', description: 'error' in result ? String(result.error) : 'Save failed' });
       return;
     }
     saveAppState();
+    setStageFilter('all');
+    setSearch('');
     setView('main');
     resetForm();
     toast.success(editingId ? 'Deal updated' : 'Deal created', { module: 'Deals' });
@@ -243,6 +351,10 @@ export function DealsPage() {
 
   return (
     <>
+      {apiMode && <ApiModeBanner module="deals" />}
+      {apiMode && apiStore.loading && (
+        <div className="p-4 text-center text-sm text-slate-500">Loading deals…</div>
+      )}
       <ModuleKpiSection
         gridClassName="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-5 gap-2"
         items={[
@@ -307,11 +419,25 @@ export function DealsPage() {
               </button>
             </div>
             <select value={stageFilter} onChange={(e) => setStageFilter(e.target.value)} className={MODULE_FILTER_INPUT}>
-              <option value="all">All Stages</option>
-              {DEAL_KANBAN_STAGES.map((stage) => (
-                <option key={stage} value={stage}>{stageLabel(stage)}</option>
-              ))}
+              <option value="all">All Stages{allDeals.length ? ` (${allDeals.length})` : ''}</option>
+              {DEAL_KANBAN_STAGES.map((stage) => {
+                const count = allDeals.filter((d) => d.stage === stage).length;
+                return (
+                  <option key={stage} value={stage}>
+                    {stageLabel(stage)}{count ? ` (${count})` : ''}
+                  </option>
+                );
+              })}
             </select>
+            {stageFilter !== 'all' && (
+              <button
+                type="button"
+                onClick={() => setStageFilter('all')}
+                className="text-xs font-semibold text-blue-600 hover:text-blue-800 cursor-pointer shrink-0"
+              >
+                Clear stage filter
+              </button>
+            )}
             <button type="button" className={`${MODULE_FILTER_INPUT} inline-flex items-center gap-1.5`}>
               <SlidersHorizontal className="w-3.5 h-3.5" /> Filters
             </button>
@@ -332,7 +458,11 @@ export function DealsPage() {
         <AppTable
           columns={dealListColumns}
           rows={deals}
-          emptyMessage={t('crm.no_records_yet')}
+          emptyMessage={
+            stageFilter !== 'all' && allDeals.length > 0
+              ? `No deals in "${stageLabel(stageFilter)}". Select "All Stages" or create a deal in this stage.`
+              : t('crm.no_records_yet')
+          }
           onRowClick={(row) => setDetailId(String(row.id))}
         />
       )}
@@ -375,8 +505,8 @@ export function DealsPage() {
               <li key={i} className="border-l-2 border-blue-200 pl-3">{String(e.summary ?? e.type ?? e.note)}</li>
             ))}</ul>
             <div className="flex gap-2 flex-wrap">
-              <button type="button" className="px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl cursor-pointer" onClick={() => { markDealWon(appState, String(detailDeal.id), {}); saveAppState(); setDetailId(null); toast.success('Deal marked won', { module: 'Deals' }); }}>{t('crm.mark_won')}</button>
-              <button type="button" className="px-3 py-2 bg-rose-600 text-white font-bold rounded-xl cursor-pointer" onClick={() => { markDealLost(appState, String(detailDeal.id), {}); saveAppState(); setDetailId(null); toast.success('Deal marked lost', { module: 'Deals' }); }}>{t('crm.mark_lost_deal')}</button>
+              <button type="button" className="px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl cursor-pointer" onClick={() => void handleMarkWon()}>{t('crm.mark_won')}</button>
+              <button type="button" className="px-3 py-2 bg-rose-600 text-white font-bold rounded-xl cursor-pointer" onClick={() => void handleMarkLost()}>{t('crm.mark_lost_deal')}</button>
               <button type="button" className="px-3 py-2 border border-slate-200 font-bold rounded-xl cursor-pointer" onClick={() => openEdit(String(detailDeal.id))}>{t('common.edit')}</button>
             </div>
           </div>

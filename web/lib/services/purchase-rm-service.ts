@@ -1,6 +1,12 @@
 import type { AppState } from '@/lib/state/types';
 import { listFromState, createInState, updateInState, deleteFromState, formatCurrency, sortRowsNewestFirst } from '@/lib/services/domain-service';
 import { listMaterialOptions } from '@/lib/services/recipes-service';
+import {
+  listApprovals,
+  markApprovalStatus,
+  upsertApprovalInState,
+  buildPurchaseRmApproval,
+} from '@/lib/services/approvals-service';
 
 type Row = Record<string, unknown>;
 
@@ -81,39 +87,15 @@ export function listPurchaseRmOrders(state: AppState) {
   return sortRowsNewestFirst(listFromState(state, 'purchaseRmOrders'));
 }
 
-export function listApprovals(state: AppState) {
-  return sortRowsNewestFirst(listFromState(state, 'approvals'));
+export function upsertPurchaseRmApproval(state: AppState, order: Row) {
+  return upsertApprovalInState(state, buildPurchaseRmApproval(order));
 }
 
 function markApprovalForOrder(state: AppState, refId: string, status: 'approved' | 'rejected') {
-  const linked = listApprovals(state).find(
-    (a) => String(a.refType) === 'purchase_rm_order' && String(a.refId) === refId,
-  );
-  if (linked) {
-    updateInState(state, 'approvals', String(linked.id), { status });
-  }
+  markApprovalStatus(state, 'purchase_rm_order', refId, status);
 }
 
-export function upsertPurchaseRmApproval(state: AppState, order: Row) {
-  const refId = String(order.id);
-  const item = `${refId} — ${String(order.supplierName ?? 'Supplier')}`;
-  const payload = {
-    item,
-    requester: String(order.createdBy ?? 'Sarah Connor'),
-    module: 'Purchase RM',
-    refType: 'purchase_rm_order',
-    refId,
-    status: 'pending',
-    notes: String(order.notes ?? ''),
-  };
-  const existing = listApprovals(state).find(
-    (a) => String(a.refType) === 'purchase_rm_order' && String(a.refId) === refId,
-  );
-  if (existing) {
-    return updateInState(state, 'approvals', String(existing.id), { ...payload, status: 'pending' });
-  }
-  return createInState(state, 'approvals', payload, 'APR');
-}
+export { listApprovals };
 
 export function previewPoNumber(state: AppState, dateStr?: string) {
   const year = dateStr ? new Date(`${dateStr}T00:00:00`).getFullYear() : new Date().getFullYear();
@@ -381,24 +363,34 @@ export function sendPurchaseRmOrder(state: AppState, id: string) {
 }
 
 export function approvePurchaseRmOrder(state: AppState, id: string) {
-  const row = listPurchaseRmOrders(state).find((r) => String(r.id) === id);
+  const row = listPurchaseRmOrders(state).find(
+    (r) =>
+      String(r.id) === id
+      || String(r.legacyId ?? '') === id
+      || String(r._mongoId ?? '') === id,
+  );
   if (!row || String(row.status) !== 'pending_approval') {
     return { ok: false, error: 'Only pending approval orders can be approved' };
   }
-  const result = updateInState(state, 'purchaseRmOrders', id, { status: 'sent' });
+  const result = updateInState(state, 'purchaseRmOrders', String(row.id), { status: 'sent' });
   if (!result.ok) return result;
-  markApprovalForOrder(state, id, 'approved');
+  markApprovalForOrder(state, String(row.legacyId ?? row.id), 'approved');
   return { ok: true };
 }
 
 export function rejectPurchaseRmOrder(state: AppState, id: string) {
-  const row = listPurchaseRmOrders(state).find((r) => String(r.id) === id);
+  const row = listPurchaseRmOrders(state).find(
+    (r) =>
+      String(r.id) === id
+      || String(r.legacyId ?? '') === id
+      || String(r._mongoId ?? '') === id,
+  );
   if (!row || String(row.status) !== 'pending_approval') {
     return { ok: false, error: 'Only pending approval orders can be rejected' };
   }
-  const result = updateInState(state, 'purchaseRmOrders', id, { status: 'draft' });
+  const result = updateInState(state, 'purchaseRmOrders', String(row.id), { status: 'draft' });
   if (!result.ok) return result;
-  markApprovalForOrder(state, id, 'rejected');
+  markApprovalForOrder(state, String(row.legacyId ?? row.id), 'rejected');
   return { ok: true };
 }
 

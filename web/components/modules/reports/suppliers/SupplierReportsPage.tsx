@@ -4,6 +4,8 @@ import { useMemo, useState } from 'react';
 import { Download, Filter, Printer } from 'lucide-react';
 import { Footer } from '@/components/layout/Footer';
 import { useRegisterModuleActions } from '@/components/layout/ModuleActionsContext';
+import { useSupplierReportApiRows } from '@/hooks/use-report-api-data';
+import { ApiModeBanner } from '@/components/shared/ApiModeBanner';
 import { useAppStore } from '@/lib/state/app-store';
 import { toast } from '@/lib/ui/feedback';
 import { DateInput } from '@/components/shared/DateInput';
@@ -40,6 +42,7 @@ import { exportSupplierReportCsv } from '@/lib/services/report-export';
 
 export function SupplierReportsPage() {
   const appState = useAppStore((s) => s.appState);
+  const apiReport = useSupplierReportApiRows();
   const t = useAppStore((s) => s.t);
   const { printSection, printTarget } = useReportPrint<SupplierPrintSectionId>();
 
@@ -49,8 +52,10 @@ export function SupplierReportsPage() {
   const [statusFilter, setStatusFilter] = useState('All');
 
   const allRows = useMemo(
-    () => listSupplierReportRows(Array.isArray(appState.reportSuppliers) ? appState.reportSuppliers : []),
-    [appState.reportSuppliers],
+    () => listSupplierReportRows(
+      apiReport.initialized ? apiReport.rows : (Array.isArray(appState.reportSuppliers) ? appState.reportSuppliers : []),
+    ),
+    [apiReport.initialized, apiReport.rows, appState.reportSuppliers],
   );
 
   const filters = useMemo(
@@ -138,6 +143,7 @@ export function SupplierReportsPage() {
 
   return (
     <>
+        {apiReport.error ? <ApiModeBanner module="suppliers" error={apiReport.error} /> : null}
         <SupplierReportMetrics items={kpis} />
 
         <ModuleFilterBar

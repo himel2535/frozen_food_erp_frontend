@@ -23,7 +23,28 @@ export function listSalaryStructures(state: AppState) {
 }
 
 export function getSalaryStructureById(state: AppState, id: string) {
-  return listSalaryStructures(state).find((row) => String(row.id) === id) ?? null;
+  const trimmed = id.trim();
+  if (!trimmed) return null;
+  const row = listSalaryStructures(state).find(
+    (item) =>
+      String(item.id) === trimmed
+      || String(item.legacyId ?? '') === trimmed
+      || String(item.code ?? '') === trimmed,
+  ) ?? null;
+  return row ? enrichSalaryStructureRecord(row) : null;
+}
+
+export function enrichSalaryStructureRecord(payload: Row): Row {
+  const components = (payload.components as SalaryComponentRow[]) ?? [];
+  const base = getBasicSalaryAmount(components);
+  const totalFixed = computeTotalFixed(components);
+  return {
+    ...payload,
+    base,
+    allowances: Math.max(0, totalFixed - base),
+    totalFixed,
+    assignedCount: Array.isArray(payload.assignedEmployeeIds) ? payload.assignedEmployeeIds.length : 0,
+  };
 }
 
 export function getAssignedEmployees(state: AppState, ids: string[]) {
@@ -33,9 +54,42 @@ export function getAssignedEmployees(state: AppState, ids: string[]) {
     .filter(Boolean) as Row[];
 }
 
+export function parseSalaryAmount(value: unknown): number {
+  if (typeof value === 'number' && Number.isFinite(value)) return value;
+  const str = String(value ?? '').trim();
+  if (!str) return 0;
+  const match = str.replace(/,/g, '').match(/-?\d+(?:\.\d+)?/);
+  if (!match) return 0;
+  const num = Number(match[0]);
+  return Number.isFinite(num) ? num : 0;
+}
+
 export function getBasicSalaryAmount(components: SalaryComponentRow[]) {
-  const basic = components.find((c) => c.name.toLowerCase().includes('basic'));
-  return Number(basic?.amount ?? 0);
+  const basic = components.find((c) => String(c.name ?? '').toLowerCase().includes('basic'));
+  if (basic) {
+    const amount = parseSalaryAmount(basic.amount);
+    if (amount > 0) return amount;
+  }
+  for (const row of components) {
+    const calc = String(row.calculation ?? '').toLowerCase();
+    const type = String(row.type ?? '').toLowerCase();
+    if (calc === 'fixed' || type.includes('fixed')) {
+      const amount = parseSalaryAmount(row.amount);
+      if (amount > 0) return amount;
+    }
+  }
+  return 0;
+}
+
+export function resolveBasicSalary(structure: Row, employee?: Row | null): number {
+  const components = (structure.components as SalaryComponentRow[]) ?? [];
+  const fromComponents = getBasicSalaryAmount(components);
+  if (fromComponents > 0) return fromComponents;
+  const fromBase = parseSalaryAmount(structure.base);
+  if (fromBase > 0) return fromBase;
+  const fromTotal = parseSalaryAmount(structure.totalFixed);
+  if (fromTotal > 0) return fromTotal;
+  return parseSalaryAmount(employee?.salary);
 }
 
 export function computePerDaySalary(basicAmount: number, workingDays: number) {
@@ -46,7 +100,7 @@ export function computePerDaySalary(basicAmount: number, workingDays: number) {
 export function computeTotalFixed(components: SalaryComponentRow[]) {
   const basic = getBasicSalaryAmount(components);
   return components.reduce((sum, row) => {
-    const amount = Number(row.amount || 0);
+    const amount = parseSalaryAmount(row.amount);
     if (row.calculation === '% of Basic' || row.type === 'Percentage (%)') {
       return sum + (basic * amount) / 100;
     }
@@ -55,23 +109,11 @@ export function computeTotalFixed(components: SalaryComponentRow[]) {
 }
 
 export function createSalaryStructure(state: AppState, payload: Row) {
-  const totalFixed = computeTotalFixed((payload.components as SalaryComponentRow[]) ?? []);
-  return createInState(state, 'salaryStructures', {
-    ...payload,
-    base: getBasicSalaryAmount((payload.components as SalaryComponentRow[]) ?? []),
-    allowances: Math.max(0, totalFixed - getBasicSalaryAmount((payload.components as SalaryComponentRow[]) ?? [])),
-    totalFixed,
-  }, 'SS');
+  return createInState(state, 'salaryStructures', enrichSalaryStructureRecord(payload), 'SS');
 }
 
 export function updateSalaryStructure(state: AppState, id: string, payload: Row) {
-  const totalFixed = computeTotalFixed((payload.components as SalaryComponentRow[]) ?? []);
-  return updateInState(state, 'salaryStructures', id, {
-    ...payload,
-    base: getBasicSalaryAmount((payload.components as SalaryComponentRow[]) ?? []),
-    allowances: Math.max(0, totalFixed - getBasicSalaryAmount((payload.components as SalaryComponentRow[]) ?? [])),
-    totalFixed,
-  });
+  return updateInState(state, 'salaryStructures', id, enrichSalaryStructureRecord(payload));
 }
 
 export function deleteSalaryStructure(state: AppState, id: string) {

@@ -24,6 +24,15 @@ import { ProductSelect, RecipeSelect, WarehouseSelect } from '@/components/modul
 import { useAppStore } from '@/lib/state/app-store';
 import type { PortField } from '@/lib/modules/port-types';
 import { INVENTORY_STANDARD_KPI_ICONS as KPI_ICON } from '@/lib/ui/kpi-icons';
+import { isModuleApiMode } from '@/lib/config/data-source';
+import { useApiResourceStore } from '@/hooks/use-api-resource-store';
+import { useInventoryLookups } from '@/hooks/use-inventory-lookups';
+import { ApiModeBanner } from '@/components/shared/ApiModeBanner';
+import { apiListEmptyMessage } from '@/lib/services/api-list-ui';
+import {
+  mapApiFinishedGoodRow,
+  mapFinishedGoodPayloadToApi,
+} from '@/lib/services/inventory-api-mappers';
 import {
   createFinishedGood,
   formatMoney,
@@ -99,6 +108,9 @@ function ProductThumb({ category }: { category: string }) {
 export function FinishedGoodsPage() {
   const appState = useAppStore((s) => s.appState);
   const saveAppState = useAppStore((s) => s.saveAppState);
+  const apiMode = isModuleApiMode('finishedGoods');
+  const apiStore = useApiResourceStore('finishedGoods', mapApiFinishedGoodRow);
+  const lookups = useInventoryLookups();
   const [view, setView] = useState<'main' | 'form' | 'detail' | 'summary' | 'capacity' | 'materials' | 'bom'>('main');
   const [detailId, setDetailId] = useState<string | null>(null);
   const [capacityId, setCapacityId] = useState<string | null>(null);
@@ -132,11 +144,40 @@ export function FinishedGoodsPage() {
     imageUrl: '',
   });
 
-  const warehouses = useMemo(() => listWarehouses(appState), [appState]);
-  const categories = useMemo(() => listFinishedGoodsCategories(appState), [appState]);
-  const units = useMemo(() => listFinishedGoodsUnits(appState), [appState]);
-  const allProducts = useMemo(() => listFinishedGoods(appState), [appState]);
-  const metrics = useMemo(() => getFinishedGoodsMetrics(appState), [appState]);
+  const warehouses = useMemo(
+    () => (apiMode ? lookups.warehouses : listWarehouses(appState)),
+    [apiMode, lookups.warehouses, appState],
+  );
+  const categories = useMemo(() => {
+    if (apiMode) {
+      const cats = new Set(apiStore.rows.map((r) => String(r.category ?? 'Uncategorized').trim() || 'Uncategorized'));
+      return Array.from(cats).sort((a, b) => a.localeCompare(b));
+    }
+    return listFinishedGoodsCategories(appState);
+  }, [apiMode, apiStore.rows, appState]);
+  const units = useMemo(() => {
+    if (apiMode) {
+      const u = new Set(apiStore.rows.map((r) => String(r.unit ?? 'pcs').trim() || 'pcs'));
+      return Array.from(u).sort((a, b) => a.localeCompare(b));
+    }
+    return listFinishedGoodsUnits(appState);
+  }, [apiMode, apiStore.rows, appState]);
+  const allProducts = useMemo(
+    () => (apiMode ? apiStore.rows : listFinishedGoods(appState)),
+    [apiMode, apiStore.rows, appState],
+  );
+  const metrics = useMemo(() => {
+    if (apiMode) {
+      const items = apiStore.rows;
+      const totalValue = items.reduce((s, r) => s + getFinishedGoodsStockValue(r), 0);
+      const totalQuantity = items.reduce((s, r) => s + Number(r.quantity ?? 0), 0);
+      const lowStock = items.filter((r) => getFinishedGoodsStockStatus(r) === 'Low Stock').length;
+      const outOfStock = items.filter((r) => getFinishedGoodsStockStatus(r) === 'Out of Stock').length;
+      const inStock = items.filter((r) => getFinishedGoodsStockStatus(r) === 'In Stock').length;
+      return { count: items.length, totalValue, totalQuantity, lowStock, outOfStock, inStock };
+    }
+    return getFinishedGoodsMetrics(appState);
+  }, [apiMode, apiStore.rows, appState]);
 
   const filtered = useMemo(() => {
     let data = allProducts;
@@ -369,7 +410,7 @@ export function FinishedGoodsPage() {
     }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const payload = {
       ...form,
@@ -381,6 +422,22 @@ export function FinishedGoodsPage() {
       minStock: Number(form.minStock || 0),
       status: 'active',
     };
+    if (apiMode) {
+      const body = mapFinishedGoodPayloadToApi(payload);
+      const result = editingId ? await apiStore.update(editingId, body) : await apiStore.create(body);
+      if (!result.ok) {
+        toast.error('Operation failed', { module: 'Inventory', description: 'error' in result ? String(result.error) : 'Save failed' });
+        return;
+      }
+      if (!editingId) {
+        resetFilters();
+      } else {
+        setPage(1);
+      }
+      setView('main');
+      resetForm();
+      return;
+    }
     const result = editingId
       ? updateFinishedGood(appState, editingId, payload)
       : createFinishedGood(appState, { ...payload, id: previewFinishedGoodCode(appState) });
@@ -577,6 +634,7 @@ export function FinishedGoodsPage() {
 
   return (
     <>
+        {apiMode && <ApiModeBanner module="finishedGoods" error={apiStore.error} />}
         <ModuleKpiSection
           gridClassName="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2"
           items={[
@@ -648,7 +706,7 @@ export function FinishedGoodsPage() {
           className="flex-1"
           columns={columns}
           rows={paged}
-          emptyMessage="No finished goods found."
+          emptyMessage={apiListEmptyMessage(apiStore.loading, apiStore.initialized, 'finished goods', { totalCount: allProducts.length, filteredCount: filtered.length })}
           renderActions={(row) => (
             <>
               <TableIconAction
@@ -803,7 +861,7 @@ export function FinishedGoodsPage() {
         <div className={FORM_GRID_CLS}>
           <div>
             <label className={FORM_LABEL_CLS}>Warehouse</label>
-            <WarehouseSelect state={appState} value={form.warehouseId} onChange={(v) => setForm({ ...form, warehouseId: v })} />
+            <WarehouseSelect state={appState} items={apiMode ? warehouses : undefined} value={form.warehouseId} onChange={(v) => setForm({ ...form, warehouseId: v })} />
           </div>
           <div className="md:col-span-2 bg-blue-50/80 border border-blue-200/80 rounded-xl p-4">
             <span className="text-[11px] font-bold uppercase tracking-wide text-blue-700">Live Stock Value</span>

@@ -21,6 +21,8 @@ import {
   updateCompanyProfile,
 } from '@/lib/services/settings-service';
 import { useAppStore } from '@/lib/state/app-store';
+import { isModuleApiMode } from '@/lib/config/data-source';
+import { saveSettingsDoc } from '@/lib/services/settings-api-service';
 
 function editTitle(section: CompanyEditSection, labels: Record<string, string>) {
   if (section === 'identity') return labels.editIdentityTitle;
@@ -125,15 +127,24 @@ export function CompanySettingsPage() {
     setForm((prev) => ({ ...prev, [key]: value }));
   };
 
-  const handleSubmit = (e: FormEvent) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     if ((editSection === 'all' || editSection === 'identity') && !form.name.trim()) {
       toast.error('Validation failed', { module: 'Company Settings', description: 'Company name is required.' });
       return;
     }
 
-    updateCompanyProfile(appState, sectionPayload(editSection, form));
-    saveAppState();
+    const payload = sectionPayload(editSection, form);
+    updateCompanyProfile(appState, payload);
+    if (isModuleApiMode('companySettings')) {
+      const result = await saveSettingsDoc('companyProfile', getCompanyProfile(appState));
+      if (!result.ok) {
+        toast.error('Operation failed', { module: 'Company Settings', description: 'error' in result ? String(result.error) : 'Save failed' });
+        return;
+      }
+    } else {
+      saveAppState();
+    }
     bump((n) => n + 1);
     toast.success(labels.saved, { module: 'Company Settings' });
     closeForm();

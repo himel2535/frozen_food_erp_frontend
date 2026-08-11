@@ -13,8 +13,18 @@ import { TableIconAction } from '@/components/shared/TableIconAction';
 import { InventoryListLayout, FilterBar, FilterSelect } from '@/components/modules/inventory/shared/inventory-ui';
 import { useAppStore } from '@/lib/state/app-store';
 import type { PortField } from '@/lib/modules/port-types';
+import { isModuleApiMode } from '@/lib/config/data-source';
+import { useApiResourceStore } from '@/hooks/use-api-resource-store';
+import { useInventoryLookups } from '@/hooks/use-inventory-lookups';
+import { ApiModeBanner } from '@/components/shared/ApiModeBanner';
+import { apiListEmptyMessage } from '@/lib/services/api-list-ui';
+import {
+  mapApiWarehouseRow,
+  mapWarehousePayloadToApi,
+} from '@/lib/services/inventory-api-mappers';
 import {
   getWarehouseMetrics,
+  getWarehouseDerivedStats,
   createWarehouse,
   updateWarehouse,
   deleteWarehouse,
@@ -37,6 +47,9 @@ const WAREHOUSE_FIELDS: PortField[] = [
 export function WarehousesPage() {
   const appState = useAppStore((s) => s.appState);
   const saveAppState = useAppStore((s) => s.saveAppState);
+  const apiMode = isModuleApiMode('warehouses');
+  const apiStore = useApiResourceStore('warehouses', mapApiWarehouseRow);
+  const lookups = useInventoryLookups();
   const [view, setView] = useState<'main' | 'form'>('main');
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
@@ -47,7 +60,27 @@ export function WarehousesPage() {
     allowedProductTypes: '', storageRules: '', imageUrl: '',
   });
 
-  const metrics = useMemo(() => getWarehouseMetrics(appState), [appState]);
+  const metrics = useMemo(() => {
+    if (apiMode) {
+      const warehouses: Record<string, unknown>[] = apiStore.rows.map((wh) => {
+        const derived = getWarehouseDerivedStats(
+          { inventory: lookups.products } as import('@/lib/state/types').AppState,
+          String(wh.id),
+        );
+        const capacity = Number(wh.capacity ?? 0);
+        const utilizationPercent = capacity > 0 ? (derived.currentStock / capacity) * 100 : 0;
+        return { ...wh, ...derived, utilizationPercent };
+      });
+      const totalCapacity = warehouses.reduce((s, w) => s + Number(w.capacity ?? 0), 0);
+      const totalCurrentStock = warehouses.reduce((s, w) => s + Number(w.currentStock ?? 0), 0);
+      const activeWarehouses = warehouses.filter((w) => String(w.status) === 'Active').length;
+      const inactiveWarehouses = warehouses.length - activeWarehouses;
+      const utilizationPercent = totalCapacity > 0 ? (totalCurrentStock / totalCapacity) * 100 : 0;
+      const totalStockValue = warehouses.reduce((s, w) => s + Number(w.stockValueStored ?? 0), 0);
+      return { warehouses, totalCapacity, totalCurrentStock, activeWarehouses, inactiveWarehouses, utilizationPercent, totalStockValue };
+    }
+    return getWarehouseMetrics(appState);
+  }, [apiMode, apiStore.rows, lookups.products, appState]);
 
   const filtered = useMemo(() => {
     let data = metrics.warehouses;
@@ -58,6 +91,11 @@ export function WarehousesPage() {
     }
     return sortInventoryRowsNewestFirst(data);
   }, [metrics.warehouses, search, statusFilter]);
+
+  const resetFilters = () => {
+    setSearch('');
+    setStatusFilter('all');
+  };
 
   const resetForm = () => {
     setForm({ name: '', location: '', capacity: '', type: 'Main Warehouse', manager: '', contact: '', status: 'Active', allowedProductTypes: '', storageRules: '', imageUrl: '' });
@@ -76,9 +114,21 @@ export function WarehousesPage() {
     setView('form');
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const payload = { ...form, capacity: Number(form.capacity || 0) };
+    if (apiMode) {
+      const body = mapWarehousePayloadToApi(payload);
+      const result = editingId ? await apiStore.update(editingId, body) : await apiStore.create(body);
+      if (!result.ok) {
+        toast.error('Operation failed', { module: 'Warehouses', description: 'error' in result ? String(result.error) : 'Save failed' });
+        return;
+      }
+      if (!editingId) resetFilters();
+      setView('main');
+      resetForm();
+      return;
+    }
     const result = editingId ? updateWarehouse(appState, editingId, payload) : createWarehouse(appState, payload);
     if (!result.ok) { toast.error('Operation failed', { module: 'Warehouses', description: 'error' in result ? String(result.error) : 'Save failed' }); return; }
     saveAppState();
@@ -88,6 +138,11 @@ export function WarehousesPage() {
 
   const handleDelete = async (id: string) => {
     const __ok = await confirmAction({ title: "Delete this warehouse", message: "Delete this warehouse?", confirmLabel: 'Delete', tone: 'danger', module: 'Warehouses' }); if (!__ok) return;
+    if (apiMode) {
+      const result = await apiStore.remove(id);
+      if (!result.ok) toast.error('Delete failed', { module: 'Warehouses', description: result.error });
+      return;
+    }
     deleteWarehouse(appState, id);
     saveAppState();
   };
@@ -125,6 +180,7 @@ export function WarehousesPage() {
 
   return (
     <>
+    {apiMode && <ApiModeBanner module="warehouses" error={apiStore.error} />}
     <InventoryListLayout
       title="Warehouses"
       subtitle="Manage warehouse facilities, capacity, and utilization."
@@ -149,7 +205,7 @@ export function WarehousesPage() {
       <AppTable
         columns={columns}
         rows={filtered}
-        emptyMessage="No warehouses found."
+        emptyMessage={apiListEmptyMessage(apiStore.loading, apiStore.initialized, 'warehouses', { totalCount: metrics.warehouses.length, filteredCount: filtered.length })}
         renderActions={(wh) => (
           <>
             <TableIconAction variant="edit" onClick={() => openEdit(wh)} />

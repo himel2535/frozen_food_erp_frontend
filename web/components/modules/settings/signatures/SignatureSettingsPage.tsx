@@ -27,6 +27,8 @@ import {
   updateCompanySignature,
 } from '@/lib/services/settings-service';
 import { useAppStore } from '@/lib/state/app-store';
+import { isModuleApiMode } from '@/lib/config/data-source';
+import { saveSettingsDoc } from '@/lib/services/settings-api-service';
 
 export function SignatureSettingsPage() {
   const router = useRouter();
@@ -123,7 +125,15 @@ export function SignatureSettingsPage() {
     setForm((prev) => ({ ...prev, [key]: value }));
   };
 
-  const handleSubmit = (e: FormEvent) => {
+  const persistSignatures = async () => {
+    if (isModuleApiMode('companySettings')) {
+      await saveSettingsDoc('companySignatures', { signatures: getCompanySignatures(appState) });
+    } else {
+      saveAppState();
+    }
+  };
+
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     const input = formToSignatureInput(form);
     const result = editingId
@@ -138,7 +148,7 @@ export function SignatureSettingsPage() {
       return;
     }
 
-    saveAppState();
+    await persistSignatures();
     bump((n) => n + 1);
     toast.success(labels.saved, { module: 'Signatures' });
     closeForm();
@@ -163,12 +173,12 @@ export function SignatureSettingsPage() {
       return;
     }
 
-    saveAppState();
+    await persistSignatures();
     bump((n) => n + 1);
     toast.success(labels.deleted, { module: 'Signatures' });
   };
 
-  const handleSetDefault = (id: string) => {
+  const handleSetDefault = async (id: string) => {
     const result = setDefaultCompanySignature(appState, id);
     if (!result.ok) {
       toast.error('Operation failed', {
@@ -177,7 +187,7 @@ export function SignatureSettingsPage() {
       });
       return;
     }
-    saveAppState();
+    await persistSignatures();
     bump((n) => n + 1);
     toast.success(labels.saved, { module: 'Signatures' });
   };

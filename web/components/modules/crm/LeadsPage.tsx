@@ -21,6 +21,12 @@ import {
   LEAD_STAGE_LABELS,
   updateLead,
 } from '@/lib/services/crm-service';
+import { isModuleApiMode } from '@/lib/config/data-source';
+import { createCustomerViaApi } from '@/lib/services/customers-api-service';
+import type { CustomerFormPayload } from '@/components/modules/crm/CustomerForm';
+import { useApiResourceStore } from '@/hooks/use-api-resource-store';
+import { mapApiLeadRow, mapLeadToApi, resolveApiRowId } from '@/lib/services/entity-api-mappers';
+import { ApiModeBanner } from '@/components/shared/ApiModeBanner';
 import { AppTable, type AppTableColumn } from '@/components/shared/AppTable';
 import { TableIconAction } from '@/components/shared/TableIconAction';
 import { StatusBadge } from '@/components/shared/StatusBadge';
@@ -86,11 +92,46 @@ function leadRecordToFormValues(lead: Record<string, unknown>, ownerIdFallback: 
   };
 }
 
+function buildCustomerPayloadFromLead(lead: Record<string, unknown>): CustomerFormPayload {
+  return {
+    company: String(lead.company ?? lead.name ?? ''),
+    name: String(lead.name ?? ''),
+    contactName: String(lead.name ?? ''),
+    companyType: 'Prospect Converted',
+    phone: String(lead.phone ?? ''),
+    alternativePhone: String(lead.alternativePhone ?? ''),
+    email: String(lead.email ?? ''),
+    status: 'active',
+    imageUrl: '',
+    taxVatNumber: '',
+    tinNumber: '',
+    tradeLicenseNumber: '',
+    businessRegistrationNo: '',
+    openingBalance: 0,
+    creditLimit: '10000',
+    paymentTerms: 'Net 30',
+    pricingTier: 'Standard',
+    ownerId: String(lead.assignedRepId ?? ''),
+    ownerName: String(lead.assignedRepName ?? ''),
+    billingAddress: String(lead.location ?? ''),
+    billingArea: '',
+    billingCity: '',
+    billingRegion: '',
+    shippingAddress: String(lead.location ?? ''),
+    shippingArea: '',
+    shippingCity: '',
+    shippingRegion: '',
+    notes: String(lead.notes ?? ''),
+  };
+}
+
 export function LeadsPage() {
   const t = useAppStore((s) => s.t);
   const { formatMoney, formatCount } = useLocaleFormat();
   const appState = useAppStore((s) => s.appState);
   const saveAppState = useAppStore((s) => s.saveAppState);
+  const apiMode = isModuleApiMode('leads');
+  const apiStore = useApiResourceStore('leads', mapApiLeadRow);
   const [view, setView] = useState<'main' | 'form'>('main');
   const [search, setSearch] = useState('');
   const [stageFilter, setStageFilter] = useState('all');
@@ -110,9 +151,37 @@ export function LeadsPage() {
 
   const owners = useMemo(() => getOwnerOptions(appState), [appState]);
   const currentUser = useMemo(() => getUserContext(appState), [appState]);
-  const allLeads = useMemo(() => getEnrichedLeadList(appState), [appState]);
-  const metrics = useMemo(() => getLeadMetrics(appState), [appState]);
-  const pipelineCounts = useMemo(() => getLeadPipelineCounts(appState), [appState]);
+  const allLeads = useMemo(() => {
+    if (apiMode) return apiStore.rows;
+    return getEnrichedLeadList(appState);
+  }, [apiMode, apiStore.rows, appState]);
+  const metrics = useMemo(() => {
+    if (apiMode) {
+      const open = allLeads.filter((l) => !['won', 'lost'].includes(String(l.status)));
+      return {
+        newThisWeek: allLeads.length,
+        followUpToday: 0,
+        overdueFollowUps: 0,
+        unassigned: open.filter((l) => !l.assignedRepId).length,
+        pipelineValue: open.reduce((s, l) => s + Number(l.expectedValue ?? 0), 0),
+        conversionRate: 0,
+        totalLeads: allLeads.length,
+        newUncontacted: allLeads.filter((l) => l.status === 'new').length,
+      };
+    }
+    return getLeadMetrics(appState);
+  }, [apiMode, allLeads, appState]);
+  const pipelineCounts = useMemo(() => {
+    if (apiMode) {
+      const counts: Record<string, number> = {};
+      allLeads.forEach((l) => {
+        const st = String(l.status ?? 'new');
+        counts[st] = (counts[st] ?? 0) + 1;
+      });
+      return counts;
+    }
+    return getLeadPipelineCounts(appState);
+  }, [apiMode, allLeads, appState]);
 
   const filtered = useMemo(() => {
     let data = allLeads;
@@ -244,7 +313,21 @@ export function LeadsPage() {
     setView('form');
   };
 
-  const handleSave = (payload: LeadFormPayload) => {
+  const handleSave = async (payload: LeadFormPayload) => {
+    if (apiMode) {
+      const body = mapLeadToApi(payload as unknown as Record<string, unknown>, editingId ?? undefined);
+      const editRow = editingId ? allLeads.find((l) => String(l.id) === editingId) : null;
+      const result = editingId && editRow
+        ? await apiStore.update(resolveApiRowId(editRow), body)
+        : await apiStore.create(body);
+      if (!result.ok) {
+        toast.error('Operation failed', { module: 'Leads', description: 'error' in result ? String(result.error) : 'Save failed' });
+        return;
+      }
+      setView('main');
+      resetForm();
+      return;
+    }
     if (editingId) {
       updateLead(appState, editingId, payload);
     } else {
@@ -393,6 +476,10 @@ export function LeadsPage() {
 
   return (
     <>
+      {apiMode && <ApiModeBanner module="leads" />}
+      {apiMode && apiStore.loading && (
+        <div className="p-4 text-center text-sm text-slate-500">Loading leads…</div>
+      )}
       <ModuleKpiSection
         gridClassName="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2"
         items={[
@@ -452,8 +539,8 @@ export function LeadsPage() {
         }
       />
 
-      <div className="grid grid-cols-1 xl:grid-cols-[1fr_380px] gap-3 items-stretch flex-1 min-h-0">
-        <div className="flex flex-col gap-3 min-h-0">
+      <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_380px] gap-3 items-stretch flex-1 min-h-0 min-w-0 overflow-hidden">
+        <div className="flex flex-col gap-3 min-h-0 min-w-0 overflow-hidden">
           <div className="flex items-center gap-2 px-1">
             <input
               type="checkbox"
@@ -506,23 +593,74 @@ export function LeadsPage() {
           </div>
         </div>
 
+        <div className="min-w-0 max-w-full overflow-hidden">
         <LeadDetailPanel
           lead={selectedLead}
           activities={selectedActivities as Array<Record<string, unknown>>}
           detailTab={detailTab}
           onDetailTabChange={setDetailTab}
           onEdit={() => selectedLead && openEdit(selectedLead)}
-          onConvert={() => {
+          onConvert={async () => {
             if (!selectedLead) return;
+            if (apiMode) {
+              const customersApi = isModuleApiMode('customers');
+              let customerId = '';
+              if (customersApi) {
+                const created = await createCustomerViaApi(buildCustomerPayloadFromLead(selectedLead));
+                if (!created.ok) {
+                  toast.error('Operation failed', { module: 'Leads', description: 'error' in created ? String(created.error) : 'Could not create customer' });
+                  return;
+                }
+                customerId = created.id;
+              } else {
+                const r = convertLeadToCustomer(appState, String(selectedLead.id), {});
+                if (!r.ok) {
+                  toast.error('Operation failed', { module: 'Leads', description: 'error' in r ? String(r.error) : 'Conversion failed' });
+                  return;
+                }
+                customerId = String(r.customerId ?? '');
+                saveAppState();
+              }
+              const body = {
+                ...mapLeadToApi({
+                  ...selectedLead,
+                  status: 'won',
+                  conversionStatus: 'converted',
+                }, String(selectedLead.id)),
+                meta: { convertedCustomerId: customerId },
+              };
+              const updated = await apiStore.update(resolveApiRowId(selectedLead), body);
+              if (!updated.ok) {
+                toast.error('Operation failed', { module: 'Leads', description: 'error' in updated ? String(updated.error) : 'Could not update lead' });
+                return;
+              }
+              toast.success('Done', { module: t('crm.leads_title'), description: t('crm.converted_success') });
+              return;
+            }
             const r = convertLeadToCustomer(appState, String(selectedLead.id), {});
-            if (r.ok) { saveAppState(); toast.success('Done', { module: t('crm.leads_title'), description: t('crm.converted_success') }); }
+            if (!r.ok) {
+              toast.error('Operation failed', { module: 'Leads', description: 'error' in r ? String(r.error) : 'Conversion failed' });
+              return;
+            }
+            saveAppState();
+            toast.success('Done', { module: t('crm.leads_title'), description: t('crm.converted_success') });
           }}
-          onMarkLost={() => {
+          onMarkLost={async () => {
             if (!selectedLead) return;
+            if (apiMode) {
+              const body = mapLeadToApi({ ...selectedLead, status: 'lost' }, String(selectedLead.id));
+              const result = await apiStore.update(resolveApiRowId(selectedLead), body);
+              if (!result.ok) {
+                toast.error('Operation failed', { module: 'Leads', description: 'error' in result ? String(result.error) : 'Update failed' });
+                return;
+              }
+              return;
+            }
             updateLead(appState, String(selectedLead.id), { status: 'lost' });
             saveAppState();
           }}
         />
+        </div>
       </div>
 
       <Footer />

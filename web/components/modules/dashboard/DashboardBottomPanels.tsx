@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useMemo } from 'react';
 import { Icon } from '@iconify/react';
 import { useAppStore } from '@/lib/state/app-store';
+import { useDashboardAppState } from '@/hooks/use-dashboard-api-data';
 import type { AppState } from '@/lib/state/types';
 import { useLocaleFormat } from '@/hooks/useLocaleFormat';
 import { listSystemAuditLogRecords } from '@/lib/services/audit-log-service';
@@ -28,7 +29,7 @@ function moduleInitial(module: string) {
 }
 
 export function DashboardBottomPanels() {
-  const appState = useAppStore((s) => s.appState);
+  const appState = useDashboardAppState();
   const t = useAppStore((s) => s.t);
   const { formatNumber, formatMoney } = useLocaleFormat();
 

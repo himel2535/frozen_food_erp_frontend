@@ -264,6 +264,7 @@ export const CONFIGS: Record<string, DedicatedModuleConfig> = {
       { key: 'requester', label: 'Requester' },
       { key: 'module', label: 'Module' },
       { key: 'status', label: 'Status' },
+      { key: 'createdAt', label: 'Requested' },
     ],
     fields: [
       { key: 'item', label: 'Item', type: 'text', required: true },

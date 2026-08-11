@@ -12,6 +12,16 @@ import { StatusBadge } from '@/components/shared/StatusBadge';
 import { TableIconAction } from '@/components/shared/TableIconAction';
 import { InventoryListLayout, FilterBar, FilterSelect } from '@/components/modules/inventory/shared/inventory-ui';
 import { useAppStore } from '@/lib/state/app-store';
+import { isModuleApiMode } from '@/lib/config/data-source';
+import { useApiResourceStore } from '@/hooks/use-api-resource-store';
+import { useInventoryLookups, resolveWarehouseName } from '@/hooks/use-inventory-lookups';
+import { ApiModeBanner } from '@/components/shared/ApiModeBanner';
+import { apiListEmptyMessage } from '@/lib/services/api-list-ui';
+import {
+  mapApiStockInRow,
+  mapStockInPayloadToApi,
+} from '@/lib/services/inventory-api-mappers';
+import { approveStockInApi } from '@/lib/services/inventory-api-actions';
 import {
   listStockInRecords,
   getStockInMetrics,
@@ -26,6 +36,9 @@ import {
 export function StockInPage() {
   const appState = useAppStore((s) => s.appState);
   const saveAppState = useAppStore((s) => s.saveAppState);
+  const apiMode = isModuleApiMode('stockIn');
+  const apiStore = useApiResourceStore('stockIn', mapApiStockInRow);
+  const lookups = useInventoryLookups();
   const [view, setView] = useState<'main' | 'form'>('main');
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
@@ -36,9 +49,26 @@ export function StockInPage() {
     sourceType: 'Purchase', refDocId: '', supplier: '', status: 'Pending', batchNumber: '', expiryDate: '', notes: '',
   });
 
-  const records = useMemo(() => listStockInRecords(appState), [appState]);
-  const metrics = useMemo(() => getStockInMetrics(appState), [appState]);
-  const products = useMemo(() => listInventory(appState), [appState]);
+  const records = useMemo(
+    () => (apiMode ? apiStore.rows : listStockInRecords(appState)),
+    [apiMode, apiStore.rows, appState],
+  );
+  const metrics = useMemo(() => {
+    const list = records;
+    const totalQty = list.reduce((s, i) => s + Number(i.qty ?? 0), 0);
+    const totalVal = list.reduce((s, i) => s + Number(i.qty ?? 0) * Number(i.unitCost ?? 0), 0);
+    const pending = list.filter((i) => String(i.status) === 'Pending').length;
+    return { totalRuns: list.length, totalQty, totalVal, pending };
+  }, [records]);
+  const products = useMemo(
+    () => (apiMode ? lookups.products : listInventory(appState)),
+    [apiMode, lookups.products, appState],
+  );
+  const warehouses = useMemo(
+    () => (apiMode ? lookups.warehouses : appState.inventoryWarehouses ?? []),
+    [apiMode, lookups.warehouses, appState.inventoryWarehouses],
+  );
+  const whName = (id: string) => (apiMode ? resolveWarehouseName(lookups.warehouses, id) : getWarehouseName(appState, id));
 
   const filtered = useMemo(() => {
     let data = records;
@@ -46,7 +76,7 @@ export function StockInPage() {
     if (warehouseFilter !== 'all') data = data.filter((r) => String(r.warehouseId) === warehouseFilter);
     if (search) {
       const q = search.toLowerCase();
-      data = data.filter((r) => `${r.id} ${r.refDocId} ${r.supplier}`.toLowerCase().includes(q));
+      data = data.filter((r) => `${r.legacyId ?? ''} ${r.id} ${r.refDocId} ${r.supplier}`.toLowerCase().includes(q));
     }
     return sortInventoryRowsNewestFirst(data);
   }, [records, search, statusFilter, warehouseFilter]);
@@ -54,6 +84,12 @@ export function StockInPage() {
   const totalValue = Number(form.qty || 0) * Number(form.unitCost || 0);
 
   const productName = (id: unknown) => products.find((p) => String(p.id) === String(id))?.name ?? String(id);
+
+  const resetFilters = () => {
+    setSearch('');
+    setStatusFilter('all');
+    setWarehouseFilter('all');
+  };
 
   const resetForm = () => {
     setForm({
@@ -63,8 +99,29 @@ export function StockInPage() {
     setShowAdvanced(false);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (apiMode) {
+      const product = products.find((p) => String(p.id) === form.productId);
+      const body = mapStockInPayloadToApi(
+        { ...form, qty: Number(form.qty || 0), unitCost: Number(form.unitCost || 0) },
+        product ? String(product.name) : undefined,
+      );
+      const result = await apiStore.create(body);
+      if (!result.ok) {
+        toast.error('Operation failed', { module: 'Inventory', description: 'error' in result ? String(result.error) : 'Save failed' });
+        return;
+      }
+      if (form.status === 'Approved') {
+        await approveStockInApi(result.id);
+        await apiStore.reload();
+        await lookups.reload();
+      }
+      resetFilters();
+      setView('main');
+      resetForm();
+      return;
+    }
     const result = createStockIn(appState, {
       ...form, qty: Number(form.qty || 0), unitCost: Number(form.unitCost || 0),
     });
@@ -74,16 +131,26 @@ export function StockInPage() {
     resetForm();
   };
 
-  const handleApprove = (id: string) => {
+  const handleApprove = async (id: string) => {
+    if (apiMode) {
+      const result = await approveStockInApi(id);
+      if (!result.ok) {
+        toast.error('Operation failed', { module: 'Inventory', description: result.error });
+        return;
+      }
+      await apiStore.reload();
+      await lookups.reload();
+      return;
+    }
     const result = approveStockIn(appState, id);
     if (!result.ok) { toast.error('Operation failed', { module: 'Inventory', description: 'error' in result ? String(result.error) : 'Approve failed' }); return; }
     saveAppState();
   };
 
   const columns = useMemo<AppTableColumn<Record<string, unknown>>[]>(() => [
-    { key: 'id', label: 'ID', render: (row) => <span className="font-mono text-slate-600">{String(row.id)}</span> },
+    { key: 'id', label: 'ID', render: (row) => <span className="font-mono text-slate-600">{String(row.legacyId ?? row.id)}</span> },
     { key: 'product', label: 'Product', render: (row) => <span className="font-bold text-slate-800">{String(productName(row.productId))}</span> },
-    { key: 'warehouse', label: 'Warehouse', render: (row) => getWarehouseName(appState, String(row.warehouseId)) },
+    { key: 'warehouse', label: 'Warehouse', render: (row) => whName(String(row.warehouseId)) },
     { key: 'qty', label: 'Qty', render: (row) => Number(row.qty ?? 0) },
     { key: 'unitCost', label: 'Unit Cost', render: (row) => formatMoney(Number(row.unitCost ?? 0)) },
     {
@@ -95,10 +162,11 @@ export function StockInPage() {
     { key: 'refDocId', label: 'Ref Doc', render: (row) => String(row.refDocId ?? '—') },
     { key: 'date', label: 'Date', render: (row) => String(row.date ?? '—') },
     { key: 'status', label: 'Status', render: (row) => <StatusBadge status={String(row.status ?? 'Pending')} /> },
-  ], [appState, products]);
+  ], [products, whName]);
 
   return (
     <>
+    {apiMode && <ApiModeBanner module="stockIn" error={apiStore.error} />}
     <InventoryListLayout
       title="Stock In"
       subtitle="Record and verify incoming inventory runs."
@@ -117,14 +185,14 @@ export function StockInPage() {
           searchPlaceholder="Search ref, supplier..."
         >
           <FilterSelect label="Status" value={statusFilter} onChange={setStatusFilter}><option value="all">All</option><option value="Pending">Pending</option><option value="Approved">Approved</option></FilterSelect>
-          <FilterSelect label="Warehouse" value={warehouseFilter} onChange={setWarehouseFilter}><option value="all">All Warehouses</option>{appState.inventoryWarehouses?.map((w) => <option key={String(w.id)} value={String(w.id)}>{String(w.name)}</option>)}</FilterSelect>
+          <FilterSelect label="Warehouse" value={warehouseFilter} onChange={setWarehouseFilter}><option value="all">All Warehouses</option>{warehouses.map((w) => <option key={String(w.id)} value={String(w.id)}>{String(w.name)}</option>)}</FilterSelect>
         </FilterBar>
       }
     >
       <AppTable
         columns={columns}
         rows={filtered}
-        emptyMessage="No stock-in records found."
+        emptyMessage={apiListEmptyMessage(apiStore.loading, apiStore.initialized, 'stock-in records', { totalCount: records.length, filteredCount: filtered.length })}
         renderActions={(row) => (
           String(row.status) === 'Pending' ? (
             <TableIconAction variant="approve" onClick={() => handleApprove(String(row.id))} />
@@ -142,8 +210,8 @@ export function StockInPage() {
       size="lg"
     >
       <div className={FORM_GRID_CLS}>
-        <div><label className={FORM_LABEL_CLS}>Product *</label><ProductSelect state={appState} value={form.productId} onChange={(v) => setForm({ ...form, productId: v })} required /></div>
-        <div><label className={FORM_LABEL_CLS}>Warehouse *</label><WarehouseSelect state={appState} value={form.warehouseId} onChange={(v) => setForm({ ...form, warehouseId: v })} required /></div>
+        <div><label className={FORM_LABEL_CLS}>Product *</label><ProductSelect state={appState} items={apiMode ? products : undefined} value={form.productId} onChange={(v) => setForm({ ...form, productId: v })} required /></div>
+        <div><label className={FORM_LABEL_CLS}>Warehouse *</label><WarehouseSelect state={appState} items={apiMode ? warehouses : undefined} value={form.warehouseId} onChange={(v) => setForm({ ...form, warehouseId: v })} required /></div>
         <div><label className={FORM_LABEL_CLS}>Quantity *</label><input required type="number" min={1} className={FORM_INPUT_CLS} value={form.qty} onChange={(e) => setForm({ ...form, qty: e.target.value })} /></div>
         <div><label className={FORM_LABEL_CLS}>Unit Cost *</label><input required type="number" min={0} step="0.01" className={FORM_INPUT_CLS} value={form.unitCost} onChange={(e) => setForm({ ...form, unitCost: e.target.value })} /></div>
         <div><label className={FORM_LABEL_CLS}>Date</label><DateInput className={`${FORM_INPUT_CLS} cursor-pointer`} value={form.date} onChange={(v) => setForm({ ...form, date: v })} /></div>

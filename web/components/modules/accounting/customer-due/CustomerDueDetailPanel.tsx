@@ -62,12 +62,14 @@ function promiseStatusLabel(status?: 'waiting' | 'missed' | 'received') {
 
 export function CustomerDueDetailPanel({
   customer,
+  payments = [],
   detailTab,
   onDetailTabChange,
   onReceive,
   onClose,
 }: {
   customer: CustomerReceivable | null;
+  payments?: Array<{ id?: string; amount?: number; date?: string; method?: string; reference?: string }>;
   detailTab: CustomerDueDetailTab;
   onDetailTabChange: (tab: CustomerDueDetailTab) => void;
   onClose?: () => void;
@@ -321,11 +323,28 @@ export function CustomerDueDetailPanel({
         )}
 
         {detailTab === 'payments' && (
-          <p className="text-xs text-slate-500 py-6 text-center">
-            {customer.lastPaymentAmount > 0
-              ? `Last payment ${formatDueMoney(customer.lastPaymentAmount)} on ${formatDueDate(customer.lastPaymentDate)}`
-              : 'No payment history yet.'}
-          </p>
+          <div className="space-y-2">
+            {payments.length === 0 ? (
+              <p className="text-xs text-slate-500 py-6 text-center">No payment history yet.</p>
+            ) : (
+              payments.map((payment) => (
+                <div key={String(payment.id)} className="rounded-lg border border-slate-200 p-3">
+                  <div className="flex items-start justify-between gap-2">
+                    <div>
+                      <p className="font-bold text-emerald-700 text-sm">{formatDueMoney(Number(payment.amount ?? 0))}</p>
+                      <p className="text-[11px] text-slate-500">{formatDueDate(String(payment.date ?? ''))}</p>
+                    </div>
+                    <span className="rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[10px] font-bold text-emerald-700">
+                      {String(payment.method ?? 'Cash')}
+                    </span>
+                  </div>
+                  {payment.reference ? (
+                    <p className="text-[11px] text-slate-500 mt-1">Ref: {String(payment.reference)}</p>
+                  ) : null}
+                </div>
+              ))
+            )}
+          </div>
         )}
       </div>
 

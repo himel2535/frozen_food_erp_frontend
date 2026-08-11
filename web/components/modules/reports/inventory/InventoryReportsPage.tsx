@@ -4,6 +4,8 @@ import { useMemo, useState } from 'react';
 import { Download, Filter, Printer } from 'lucide-react';
 import { Footer } from '@/components/layout/Footer';
 import { useRegisterModuleActions } from '@/components/layout/ModuleActionsContext';
+import { useInventoryReportApiRows } from '@/hooks/use-report-api-data';
+import { ApiModeBanner } from '@/components/shared/ApiModeBanner';
 import { useAppStore } from '@/lib/state/app-store';
 import { toast } from '@/lib/ui/feedback';
 import { DateInput } from '@/components/shared/DateInput';
@@ -35,6 +37,7 @@ import { exportInventoryReportCsv } from '@/lib/services/report-export';
 
 export function InventoryReportsPage() {
   const appState = useAppStore((s) => s.appState);
+  const apiReport = useInventoryReportApiRows();
   const t = useAppStore((s) => s.t);
   const { printSection, printTarget } = useReportPrint<InventoryPrintSectionId>();
 
@@ -45,8 +48,10 @@ export function InventoryReportsPage() {
   const [warehouseFilter, setWarehouseFilter] = useState('All');
 
   const allRows = useMemo(
-    () => listInventoryReportRows(Array.isArray(appState.reportInventory) ? appState.reportInventory : []),
-    [appState.reportInventory],
+    () => listInventoryReportRows(
+      apiReport.initialized ? apiReport.rows : (Array.isArray(appState.reportInventory) ? appState.reportInventory : []),
+    ),
+    [apiReport.initialized, apiReport.rows, appState.reportInventory],
   );
 
   const categories = useMemo(() => uniqueCategories(allRows), [allRows]);
@@ -127,6 +132,7 @@ export function InventoryReportsPage() {
 
   return (
     <>
+        {apiReport.error ? <ApiModeBanner module="products" error={apiReport.error} /> : null}
         <InventoryReportMetrics items={kpis} />
 
         <ModuleFilterBar

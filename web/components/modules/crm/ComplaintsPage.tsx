@@ -36,7 +36,6 @@ import {
 } from '@/components/modules/crm/complaints/complaint-display-utils';
 import { useLocaleFormat } from '@/hooks/useLocaleFormat';
 import { useAppStore } from '@/lib/state/app-store';
-import { getCustomerList } from '@/lib/services/crm-service';
 import {
   COMPLAINT_CATEGORIES,
   COMPLAINT_PRIORITIES,
@@ -50,6 +49,11 @@ import {
   type ComplaintRecord,
   updateComplaintStatus,
 } from '@/lib/services/complaints-service';
+import { isModuleApiMode } from '@/lib/config/data-source';
+import { useApiResourceStore } from '@/hooks/use-api-resource-store';
+import { mapApiComplaintRow, mapComplaintToApi, resolveApiRowId } from '@/lib/services/entity-api-mappers';
+import { ApiModeBanner } from '@/components/shared/ApiModeBanner';
+import { useCustomersOptions } from '@/hooks/use-form-options';
 import { MODULE_FILTER_INPUT } from '@/lib/ui/module-chrome-styles';
 import { confirmAction, toast } from '@/lib/ui/feedback';
 import { translateStatus } from '@/lib/i18n/resolve-label';
@@ -61,6 +65,8 @@ export function ComplaintsPage() {
   const appState = useAppStore((s) => s.appState);
   const saveAppState = useAppStore((s) => s.saveAppState);
   const { formatCount } = useLocaleFormat();
+  const apiMode = isModuleApiMode('complaints');
+  const apiStore = useApiResourceStore('complaints', mapApiComplaintRow);
 
   const [view, setView] = useState<'main' | 'form'>('main');
   const [layout, setLayout] = useState<'table' | 'kanban'>('table');
@@ -72,18 +78,54 @@ export function ComplaintsPage() {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [menuOpenId, setMenuOpenId] = useState<string | null>(null);
 
-  const allRows = useMemo(() => getComplaintList(appState), [appState]);
-  const metrics = useMemo(() => getComplaintMetrics(appState), [appState]);
-  const statusSummary = useMemo(() => getComplaintStatusSummary(appState), [appState]);
-  const categorySlices = useMemo(() => getComplaintCategoryBreakdown(appState), [appState]);
-  const customers = useMemo(
-    () => getCustomerList(appState).map((c) => ({
-      id: String(c.id),
-      name: String(c.company ?? c.name ?? c.id),
-      phone: String(c.phone ?? ''),
-    })),
-    [appState],
-  );
+  const allRows = useMemo(() => {
+    if (apiMode) return apiStore.rows as ComplaintRecord[];
+    return getComplaintList(appState);
+  }, [apiMode, apiStore.rows, appState]);
+  const metrics = useMemo(() => {
+    if (apiMode) {
+      return {
+        total: allRows.length,
+        open: allRows.filter((r) => r.status === 'open').length,
+        inProgress: allRows.filter((r) => r.status === 'in-progress').length,
+        resolved: allRows.filter((r) => r.status === 'resolved').length,
+        overdue: 0,
+        thisMonth: allRows.length,
+      };
+    }
+    return getComplaintMetrics(appState);
+  }, [apiMode, allRows, appState]);
+  const statusSummary = useMemo(() => {
+    if (apiMode) {
+      return {
+        open: metrics.open,
+        inProgress: metrics.inProgress,
+        resolved: metrics.resolved,
+        overdue: metrics.overdue,
+        total: metrics.total,
+      };
+    }
+    return getComplaintStatusSummary(appState);
+  }, [apiMode, metrics, appState]);
+  const categorySlices = useMemo(() => {
+    if (apiMode) {
+      const counts = new Map<string, number>();
+      allRows.forEach((r) => {
+        const cat = String(r.category ?? 'other');
+        counts.set(cat, (counts.get(cat) ?? 0) + 1);
+      });
+      const total = allRows.length || 1;
+      return COMPLAINT_CATEGORIES.map((cat) => ({
+        key: cat.value,
+        label: cat.label,
+        count: counts.get(cat.value) ?? 0,
+        pct: Math.round(((counts.get(cat.value) ?? 0) / total) * 1000) / 10,
+        color: '#64748b',
+      })).filter((s) => s.count > 0);
+    }
+    return getComplaintCategoryBreakdown(appState);
+  }, [apiMode, allRows, appState]);
+  const customers = useCustomersOptions();
 
   const pct = (n: number) => (metrics.total > 0 ? `${Math.round((n / metrics.total) * 1000) / 10}%` : '0%');
 
@@ -117,13 +159,13 @@ export function ComplaintsPage() {
     });
   }, [paged]);
 
-  const handleCreate = (values: ComplaintFormValues) => {
+  const handleCreate = async (values: ComplaintFormValues) => {
     if (!values.subject.trim()) {
       toast.error('Subject is required', { module: 'Complaints' });
       return;
     }
     const customerId = values.customerId && values.customerId !== 'walk-in' ? values.customerId : undefined;
-    createComplaint(appState, {
+    const payload = {
       customerId,
       customerName: values.customerName || 'Walk-in Customer',
       customerPhone: values.customerPhone,
@@ -134,13 +176,36 @@ export function ComplaintsPage() {
       sku: values.sku.trim() || undefined,
       slaDueAt: values.slaDueAt ? new Date(values.slaDueAt).toISOString() : undefined,
       evidenceImageUrl: values.evidenceImageUrl.trim() || undefined,
-    });
+    };
+    if (apiMode) {
+      const result = await apiStore.create(mapComplaintToApi(payload as unknown as Record<string, unknown>));
+      if (!result.ok) {
+        toast.error('Operation failed', { module: 'Complaints', description: 'error' in result ? String(result.error) : 'Create failed' });
+        return;
+      }
+      setView('main');
+      toast.success('Complaint logged successfully', { module: 'Complaints' });
+      return;
+    }
+    createComplaint(appState, payload);
     saveAppState();
     setView('main');
     toast.success('Complaint logged successfully', { module: 'Complaints' });
   };
 
-  const setStatus = (id: string, status: string) => {
+  const setStatus = async (id: string, status: string) => {
+    if (apiMode) {
+      const row = allRows.find((r) => String(r.id) === id);
+      if (!row) return;
+      const result = await apiStore.update(resolveApiRowId(row), mapComplaintToApi({ ...row, status }, String(row.id)));
+      if (!result.ok) {
+        toast.error('Operation failed', { module: 'Complaints', description: 'error' in result ? String(result.error) : 'Update failed' });
+        return;
+      }
+      setMenuOpenId(null);
+      toast.success(`Status updated to ${translateStatus(t, status)}`, { module: 'Complaints' });
+      return;
+    }
     updateComplaintStatus(appState, id, status);
     saveAppState();
     setMenuOpenId(null);
@@ -156,6 +221,18 @@ export function ComplaintsPage() {
       module: 'Complaints',
     });
     if (!ok) return;
+    if (apiMode) {
+      const row = allRows.find((r) => String(r.id) === id);
+      if (!row) return;
+      const result = await apiStore.remove(resolveApiRowId(row));
+      if (!result.ok) {
+        toast.error('Operation failed', { module: 'Complaints', description: 'error' in result ? String(result.error) : 'Delete failed' });
+        return;
+      }
+      setMenuOpenId(null);
+      toast.success('Complaint deleted', { module: 'Complaints' });
+      return;
+    }
     deleteComplaint(appState, id);
     saveAppState();
     setMenuOpenId(null);
@@ -275,6 +352,10 @@ export function ComplaintsPage() {
 
   return (
     <>
+      {apiMode && <ApiModeBanner module="complaints" />}
+      {apiMode && apiStore.loading && (
+        <div className="p-4 text-center text-sm text-slate-500">Loading complaints…</div>
+      )}
       <ModuleKpiSection
         gridClassName="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-5 gap-2"
         items={[

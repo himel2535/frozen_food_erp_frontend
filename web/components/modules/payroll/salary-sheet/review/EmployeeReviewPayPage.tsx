@@ -21,14 +21,19 @@ import {
 import { RP_BTN_OUTLINE } from '@/components/modules/payroll/salary-sheet/review/review-pay-styles';
 import { buildReviewUrl, defaultPeriod, type SheetFilterState } from '@/components/modules/payroll/salary-sheet/salary-sheet-types';
 import { useAppStore } from '@/lib/state/app-store';
+import { isModuleApiMode } from '@/lib/config/data-source';
+import { useApiResourceStore } from '@/hooks/use-api-resource-store';
+import { mapGenericApiRow, mapGenericPayloadToApi } from '@/lib/services/generic-api-mapper';
+import { ApiModeBanner } from '@/components/shared/ApiModeBanner';
 import { listEmployees } from '@/lib/services/hrm-service';
-import { getSalaryStructureById } from '@/lib/services/payroll-service';
+import { enrichSalaryStructureRecord } from '@/lib/services/payroll-service';
 import {
   approveAndPay,
   computeSheetRow,
   getOrCreateSheetEntry,
   getSheetEntryByEmployee,
   listSheetEmployees,
+  normalizeSheetEntry,
 } from '@/lib/services/salary-sheet-service';
 
 export function EmployeeReviewPayPage({ employeeId }: { employeeId: string }) {
@@ -36,6 +41,11 @@ export function EmployeeReviewPayPage({ employeeId }: { employeeId: string }) {
   const searchParams = useSearchParams();
   const appState = useAppStore((s) => s.appState);
   const saveAppState = useAppStore((s) => s.saveAppState);
+  const apiMode = isModuleApiMode('salarySheet');
+  const apiStore = useApiResourceStore('salarySheet', mapGenericApiRow);
+  const structureStore = useApiResourceStore('salaryStructures', (doc) =>
+    enrichSalaryStructureRecord(mapGenericApiRow(doc)),
+  );
   const [, bump] = useState(0);
 
   useChromeSuppressed(true);
@@ -49,13 +59,22 @@ export function EmployeeReviewPayPage({ employeeId }: { employeeId: string }) {
 
   const listUrl = `/payroll/salary-sheet?period=${filters.period}`;
 
+  const sheetState = useMemo(() => {
+    if (!apiMode) return appState;
+    const salaryStructures = structureStore.initialized
+      ? structureStore.rows.map((row) => enrichSalaryStructureRecord(row))
+      : (appState.salaryStructures ?? []);
+    const salarySheetEntries = apiStore.initialized ? apiStore.rows : [];
+    return { ...appState, salaryStructures, salarySheetEntries } as typeof appState;
+  }, [apiMode, apiStore.initialized, apiStore.rows, structureStore.initialized, structureStore.rows, appState]);
+
   const employee = useMemo(
-    () => listEmployees(appState).find((e) => String(e.id) === employeeId) ?? null,
-    [appState, employeeId],
+    () => listEmployees(sheetState).find((e) => String(e.id) === employeeId) ?? null,
+    [sheetState, employeeId],
   );
 
   const orderedIds = useMemo(() => {
-    let list = listSheetEmployees(appState);
+    let list = listSheetEmployees(sheetState);
     if (filters.department !== 'all') list = list.filter((e) => String(e.department) === filters.department);
     if (filters.designation !== 'all') list = list.filter((e) => String(e.designation) === filters.designation);
     if (filters.search.trim()) {
@@ -66,21 +85,23 @@ export function EmployeeReviewPayPage({ employeeId }: { employeeId: string }) {
       );
     }
     return list.map((e) => String(e.id));
-  }, [appState, filters]);
+  }, [sheetState, filters]);
 
   const entry = useMemo(() => {
-    getOrCreateSheetEntry(appState, filters.period, employeeId);
-    return getSheetEntryByEmployee(appState, filters.period, employeeId);
-  }, [appState, employeeId, filters.period]);
+    getOrCreateSheetEntry(sheetState, filters.period, employeeId);
+    return getSheetEntryByEmployee(sheetState, filters.period, employeeId);
+  }, [sheetState, employeeId, filters.period]);
 
-  const structure = useMemo(
-    () => (entry ? getSalaryStructureById(appState, String(entry.structureId)) : null),
-    [appState, entry],
-  );
+  const { entry: normalizedEntry, structure } = useMemo(() => {
+    if (!entry || !employee) {
+      return { entry: null, structure: {} as Record<string, unknown> };
+    }
+    return normalizeSheetEntry(sheetState, entry, employee as Record<string, unknown>);
+  }, [sheetState, entry, employee]);
 
   const computed = useMemo(
-    () => (entry && structure ? computeSheetRow(entry, structure) : null),
-    [entry, structure],
+    () => (normalizedEntry && structure ? computeSheetRow(normalizedEntry, structure, employee) : null),
+    [normalizedEntry, structure, employee],
   );
 
   const idx = orderedIds.indexOf(employeeId);
@@ -88,9 +109,10 @@ export function EmployeeReviewPayPage({ employeeId }: { employeeId: string }) {
   const nextId = idx >= 0 && idx < orderedIds.length - 1 ? orderedIds[idx + 1] : null;
   const reviewUrl = (id: string) => buildReviewUrl(id, filters);
 
-  if (!employee || !entry || !structure || !computed) {
+  if (!employee || !normalizedEntry || !structure || !computed) {
     return (
       <>
+        {apiStore.error ? <ApiModeBanner module="salarySheet" error={apiStore.error} /> : null}
         <ChildPageShell
           title="Employee salary sheet not found"
           subtitle="This employee may not be on the salary sheet for the selected period."
@@ -104,11 +126,30 @@ export function EmployeeReviewPayPage({ employeeId }: { employeeId: string }) {
     );
   }
 
-  const locked = String(entry.status) === 'paid';
-  const payments = Array.isArray(entry.payments) ? entry.payments as Array<Record<string, unknown>> : [];
+  const locked = String(normalizedEntry.status) === 'paid';
+  const payments = Array.isArray(normalizedEntry.payments) ? normalizedEntry.payments as Array<Record<string, unknown>> : [];
 
-  const handleApprove = (payment: { amount: number; method: string; date: string; note: string }) => {
-    const result = approveAndPay(appState, String(entry.id), payment);
+  const handleApprove = async (payment: { amount: number; method: string; date: string; note: string }) => {
+    if (apiMode) {
+      const pseudo = { ...sheetState, salarySheetEntries: apiStore.rows.map((r) => ({ ...r })) } as typeof appState;
+      const result = approveAndPay(pseudo, String(normalizedEntry.id), payment);
+      if (!result.ok) {
+        toast.error('Operation failed', { module: 'Salary Sheet', description: String(result.error ?? 'Payment failed') });
+        return;
+      }
+      const updated = getSheetEntryByEmployee(pseudo, filters.period, employeeId);
+      if (updated) {
+        const sync = await apiStore.update(String(normalizedEntry.id), mapGenericPayloadToApi(updated as unknown as Record<string, unknown>));
+        if (!sync.ok) {
+          toast.error('Operation failed', { module: 'Salary Sheet', description: 'error' in sync ? String(sync.error) : 'Sync failed' });
+          return;
+        }
+      }
+      bump((n) => n + 1);
+      router.refresh();
+      return;
+    }
+    const result = approveAndPay(appState, String(normalizedEntry.id), payment);
     if (!result.ok) {
       toast.error('Operation failed', { module: 'Salary Sheet', description: String(result.error ?? 'Payment failed') });
       return;
@@ -138,7 +179,7 @@ export function EmployeeReviewPayPage({ employeeId }: { employeeId: string }) {
         <EmployeeReviewFacts employee={employee} structure={structure} />
 
         <div className="grid grid-cols-1 xl:grid-cols-3 gap-3 items-start">
-          <SalaryBreakdownCard computed={computed} otHours={Number(entry.otHours ?? 0)} />
+          <SalaryBreakdownCard computed={computed} otHours={Number(normalizedEntry.otHours ?? 0)} />
           <SalaryPaymentFormCard
             netPayable={computed.netPayable}
             dueAmount={computed.dueAmount}
@@ -147,14 +188,14 @@ export function EmployeeReviewPayPage({ employeeId }: { employeeId: string }) {
           />
           <SalaryPaymentSummaryCard
             netPayable={computed.netPayable}
-            payAmount={Number(entry.paidAmount ?? 0)}
+            payAmount={Number(normalizedEntry.paidAmount ?? 0)}
             dueAmount={computed.dueAmount}
             locked={locked}
             payments={payments}
           />
         </div>
 
-        <EmployeeReviewSummary entry={entry} computed={computed} />
+        <EmployeeReviewSummary entry={normalizedEntry} computed={computed} />
 
         {nextId ? (
           <div className="flex justify-end pt-1">

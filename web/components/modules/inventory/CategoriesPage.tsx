@@ -13,11 +13,21 @@ import { TableIconAction } from '@/components/shared/TableIconAction';
 import { InventoryListLayout, FilterBar, FilterSelect, SELECT_CLS } from '@/components/modules/inventory/shared/inventory-ui';
 import { useAppStore } from '@/lib/state/app-store';
 import type { PortField } from '@/lib/modules/port-types';
+import { isModuleApiMode } from '@/lib/config/data-source';
+import { useApiResourceStore } from '@/hooks/use-api-resource-store';
+import { useInventoryLookups } from '@/hooks/use-inventory-lookups';
+import { ApiModeBanner } from '@/components/shared/ApiModeBanner';
+import { apiListEmptyMessage } from '@/lib/services/api-list-ui';
+import {
+  mapApiCategoryRow,
+  mapCategoryPayloadToApi,
+} from '@/lib/services/inventory-api-mappers';
 import {
   getCategoryMetrics,
   createCategory,
   updateCategory,
   deleteCategory,
+  computeTotalStock,
   formatMoney,
   PRODUCT_TYPES,
   sortInventoryRowsNewestFirst,
@@ -37,9 +47,36 @@ const CATEGORY_ADVANCED_FIELDS: PortField[] = [
   { key: 'stockPolicy', label: 'Stock Policy', type: 'select', options: ['FIFO', 'FEFO', 'LIFO'], advanced: true },
 ];
 
+function buildCategoryMetrics(
+  categoryRows: Record<string, unknown>[],
+  productRows: Record<string, unknown>[],
+): {
+  categories: Record<string, unknown>[];
+  activeCategories: number;
+  emptyCategories: number;
+  topCategory: Record<string, unknown> | null;
+} {
+  const viewModels: Record<string, unknown>[] = categoryRows.map((cat) => {
+    const linked = productRows.filter((p) => String(p.category) === String(cat.name));
+    const productCount = linked.length;
+    const totalStockValue = linked.reduce((s, p) => s + computeTotalStock(p) * Number(p.cost ?? 0), 0);
+    const parent = categoryRows.find((c) => String(c.id) === String(cat.parentId));
+    return { ...cat, parentCategoryName: parent ? String(parent.name) : '—', productCount, totalStockValue };
+  });
+  const activeCategories = viewModels.filter((c) => String(c.status) === 'Active').length;
+  const emptyCategories = viewModels.filter((c) => Number(c.productCount ?? 0) === 0).length;
+  const topCategory = viewModels.reduce<Record<string, unknown> | null>((top, c) => (
+    Number(c.totalStockValue ?? 0) > Number(top?.totalStockValue ?? 0) ? c : top
+  ), null);
+  return { categories: viewModels, activeCategories, emptyCategories, topCategory };
+}
+
 export function CategoriesPage() {
   const appState = useAppStore((s) => s.appState);
   const saveAppState = useAppStore((s) => s.saveAppState);
+  const apiMode = isModuleApiMode('categories');
+  const apiStore = useApiResourceStore('categories', mapApiCategoryRow);
+  const lookups = useInventoryLookups();
   const [view, setView] = useState<'main' | 'form'>('main');
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
@@ -51,7 +88,10 @@ export function CategoriesPage() {
     defaultTaxRate: '', defaultUnitType: '', stockPolicy: 'FIFO', imageUrl: '',
   });
 
-  const { categories, activeCategories, emptyCategories, topCategory } = useMemo(() => getCategoryMetrics(appState), [appState]);
+  const { categories, activeCategories, emptyCategories, topCategory } = useMemo(() => {
+    if (apiMode) return buildCategoryMetrics(apiStore.rows, lookups.products);
+    return getCategoryMetrics(appState);
+  }, [apiMode, apiStore.rows, lookups.products, appState]);
 
   const filtered = useMemo(() => {
     let data = categories;
@@ -63,6 +103,12 @@ export function CategoriesPage() {
     }
     return sortInventoryRowsNewestFirst(data);
   }, [categories, search, statusFilter, typeFilter]);
+
+  const resetFilters = () => {
+    setSearch('');
+    setStatusFilter('all');
+    setTypeFilter('all');
+  };
 
   const resetForm = () => {
     setForm({ name: '', code: '', type: 'Finished Goods', description: '', parentId: '', status: 'Active', defaultTaxRate: '', defaultUnitType: '', stockPolicy: 'FIFO', imageUrl: '' });
@@ -81,9 +127,21 @@ export function CategoriesPage() {
     setView('form');
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const payload = { ...form, defaultTaxRate: Number(form.defaultTaxRate || 0) };
+    if (apiMode) {
+      const body = mapCategoryPayloadToApi(payload);
+      const result = editingId ? await apiStore.update(editingId, body) : await apiStore.create(body);
+      if (!result.ok) {
+        toast.error('Operation failed', { module: 'Categories', description: 'error' in result ? String(result.error) : 'Save failed' });
+        return;
+      }
+      if (!editingId) resetFilters();
+      setView('main');
+      resetForm();
+      return;
+    }
     const result = editingId ? updateCategory(appState, editingId, payload) : createCategory(appState, payload);
     if (!result.ok) { toast.error('Operation failed', { module: 'Categories', description: 'error' in result ? String(result.error) : 'Save failed' }); return; }
     saveAppState();
@@ -93,6 +151,11 @@ export function CategoriesPage() {
 
   const handleDelete = async (id: string) => {
     const __ok = await confirmAction({ title: "Delete this category", message: "Delete this category?", confirmLabel: 'Delete', tone: 'danger', module: 'Categories' }); if (!__ok) return;
+    if (apiMode) {
+      const result = await apiStore.remove(id);
+      if (!result.ok) toast.error('Delete failed', { module: 'Categories', description: result.error });
+      return;
+    }
     deleteCategory(appState, id);
     saveAppState();
   };
@@ -134,6 +197,7 @@ export function CategoriesPage() {
 
   return (
     <>
+    {apiMode && <ApiModeBanner module="categories" error={apiStore.error} />}
     <InventoryListLayout
       title="Categories"
       subtitle="Organize products with hierarchical categories and stock policies."
@@ -159,7 +223,7 @@ export function CategoriesPage() {
       <AppTable
         columns={columns}
         rows={filtered}
-        emptyMessage="No categories found."
+        emptyMessage={apiListEmptyMessage(apiStore.loading, apiStore.initialized, 'categories', { totalCount: categories.length, filteredCount: filtered.length })}
         renderActions={(cat) => (
           <>
             <TableIconAction variant="edit" onClick={() => openEdit(cat)} />

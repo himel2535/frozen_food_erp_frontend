@@ -4,6 +4,8 @@ import { useMemo, useState } from 'react';
 import { Download, Filter, Printer } from 'lucide-react';
 import { Footer } from '@/components/layout/Footer';
 import { useRegisterModuleActions } from '@/components/layout/ModuleActionsContext';
+import { useFinancialReportApiRows } from '@/hooks/use-report-api-data';
+import { ApiModeBanner } from '@/components/shared/ApiModeBanner';
 import { useAppStore } from '@/lib/state/app-store';
 import { toast } from '@/lib/ui/feedback';
 import { DateInput } from '@/components/shared/DateInput';
@@ -39,6 +41,7 @@ import { exportFinancialReportCsv } from '@/lib/services/report-export';
 
 export function FinancialReportsPage() {
   const appState = useAppStore((s) => s.appState);
+  const apiReport = useFinancialReportApiRows();
   const t = useAppStore((s) => s.t);
   const { printSection, printTarget } = useReportPrint<FinancialPrintSectionId>();
 
@@ -48,8 +51,10 @@ export function FinancialReportsPage() {
   const [periodFilter, setPeriodFilter] = useState('This Month');
 
   const allRows = useMemo(
-    () => listFinancialReportRows(Array.isArray(appState.reportFinancial) ? appState.reportFinancial : []),
-    [appState.reportFinancial],
+    () => listFinancialReportRows(
+      apiReport.initialized ? apiReport.rows : (Array.isArray(appState.reportFinancial) ? appState.reportFinancial : []),
+    ),
+    [apiReport.initialized, apiReport.rows, appState.reportFinancial],
   );
 
   const filters = useMemo(
@@ -125,6 +130,7 @@ export function FinancialReportsPage() {
 
   return (
     <>
+        {apiReport.error ? <ApiModeBanner module="journals" error={apiReport.error} /> : null}
         <FinancialReportMetrics items={kpis} />
 
         <ModuleFilterBar

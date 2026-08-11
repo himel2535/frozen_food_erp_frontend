@@ -9,6 +9,8 @@ import { Download, Filter, Printer } from 'lucide-react';
 import { Footer } from '@/components/layout/Footer';
 import { useRegisterModuleActions } from '@/components/layout/ModuleActionsContext';
 
+import { useSalesReportApiRows } from '@/hooks/use-report-api-data';
+import { ApiModeBanner } from '@/components/shared/ApiModeBanner';
 import { useAppStore } from '@/lib/state/app-store';
 
 import { toast } from '@/lib/ui/feedback';
@@ -63,6 +65,7 @@ const STATUS_OPTIONS = ['All', 'Paid', 'Unpaid', 'Partial', 'Cancelled'] as cons
 export function SalesReportsPage() {
 
   const appState = useAppStore((s) => s.appState);
+  const apiReport = useSalesReportApiRows();
 
   const t = useAppStore((s) => s.t);
 
@@ -83,11 +86,10 @@ export function SalesReportsPage() {
 
 
   const allRows = useMemo(
-
-    () => listSalesReportRows(Array.isArray(appState.reportSales) ? appState.reportSales : []),
-
-    [appState.reportSales],
-
+    () => listSalesReportRows(
+      apiReport.initialized ? apiReport.rows : (Array.isArray(appState.reportSales) ? appState.reportSales : []),
+    ),
+    [apiReport.initialized, apiReport.rows, appState.reportSales],
   );
 
 
@@ -223,7 +225,7 @@ export function SalesReportsPage() {
   return (
 
     <>
-
+        {apiReport.error ? <ApiModeBanner module="invoices" error={apiReport.error} /> : null}
         <SalesReportMetrics items={kpis} />
 
 

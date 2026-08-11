@@ -42,6 +42,11 @@ import {
   exportInvoicesCsv,
 } from '@/components/modules/sales/invoice-list/invoice-list-utils';
 import { getDefaultSignature, getCompanySignatures } from '@/lib/services/settings-service';
+import { isModuleApiMode } from '@/lib/config/data-source';
+import { useApiResourceStore } from '@/hooks/use-api-resource-store';
+import { useCustomersApiStore } from '@/hooks/use-customers-module';
+import { ApiModeBanner } from '@/components/shared/ApiModeBanner';
+import { mapApiInvoiceRow, mapInvoiceRecordToApi, resolveApiRowId } from '@/lib/services/entity-api-mappers';
 
 const STATUS_TABS = [
   { id: 'all', label: 'All' },
@@ -116,49 +121,92 @@ export function InvoicesPage() {
   const searchParams = useSearchParams();
   const appState = useAppStore((s) => s.appState);
   const saveAppState = useAppStore((s) => s.saveAppState);
+  const apiMode = isModuleApiMode('invoices');
+  const customersApiMode = isModuleApiMode('customers');
+  const apiStore = useApiResourceStore('invoices', mapApiInvoiceRow);
+  const customersApiStore = useCustomersApiStore();
   const t = useAppStore((s) => s.t);
   const { formatMoney } = useLocaleFormat();
   const [view, setView] = useState<'main' | 'form'>('main');
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [editingMongoId, setEditingMongoId] = useState<string | null>(null);
   const [formKey, setFormKey] = useState(0);
   const [formValues, setFormValues] = useState<InvoiceFormValues>(EMPTY_INVOICE_FORM);
   const [printPayload, setPrintPayload] = useState<{ id: string; data: InvoicePayload } | null>(null);
 
   const customers = useMemo(
-    () => getCustomerList(appState).map((c) => ({
-      id: String(c.id),
-      name: String(c.name ?? ''),
-      company: String(c.company ?? ''),
-    })),
-    [appState],
+    () => {
+      if (customersApiMode) {
+        return customersApiStore.rows.map((c) => ({
+          id: String(c.id),
+          name: String(c.name ?? ''),
+          company: String(c.company ?? ''),
+        }));
+      }
+      return getCustomerList(appState).map((c) => ({
+        id: String(c.id),
+        name: String(c.name ?? ''),
+        company: String(c.company ?? ''),
+      }));
+    },
+    [customersApiMode, customersApiStore.rows, appState],
   );
 
+  const allInvoiceRows = useMemo(() => {
+    if (apiMode) return apiStore.rows;
+    return listInvoices(appState);
+  }, [apiMode, apiStore.rows, appState]);
+
   const rows = useMemo(() => {
-    let data = listInvoices(appState);
+    let data = allInvoiceRows;
     if (search) {
       const q = search.toLowerCase();
       data = data.filter((row) =>
-        `${row.id} ${resolveInvoiceCustomerLabel(appState, row)}`.toLowerCase().includes(q),
+        `${row.id} ${apiMode ? row.customerName : resolveInvoiceCustomerLabel(appState, row)}`.toLowerCase().includes(q),
       );
     }
     if (statusFilter !== 'all') {
       data = data.filter((row) => String(row.status).toLowerCase() === statusFilter);
     }
     return data;
-  }, [appState, search, statusFilter]);
+  }, [allInvoiceRows, appState, search, statusFilter, apiMode]);
 
-  const dashboardSummary = useMemo(() => getSalesDashboardSummary(appState), [appState]);
+  const dashboardSummary = useMemo(() => {
+    if (apiMode) {
+      const invoices = allInvoiceRows;
+      const totalDue = invoices.reduce((s, r) => s + Number(r.due ?? 0), 0);
+      const overdueReceivables = invoices
+        .filter((r) => String(r.status).toLowerCase() === 'overdue')
+        .reduce((s, r) => s + Number(r.due ?? 0), 0);
+      const totalAmount = invoices.reduce((s, r) => s + Number(r.amount ?? r.total ?? 0), 0);
+      const collected = invoices.reduce((s, r) => s + Number(r.paid ?? 0), 0);
+      return {
+        monthlySales: totalAmount,
+        collectedThisMonth: collected,
+        openReceivables: totalDue,
+        overdueReceivables,
+        averageInvoiceValue: invoices.length ? totalAmount / invoices.length : 0,
+        collectionRate: totalAmount > 0 ? (collected / totalAmount) * 100 : 0,
+        aging: { current: totalDue, days1_30: 0, days31_60: 0, days61_90: 0, over90: overdueReceivables },
+      };
+    }
+    return getSalesDashboardSummary(appState);
+  }, [apiMode, allInvoiceRows, appState]);
 
   const invoicePreviewNo = useMemo(
-    () => (editingId ? editingId : previewInvoiceNumber(appState, formValues.issueDate)),
-    [appState, editingId, formValues.issueDate],
+    () => (editingId ? editingId : apiMode ? `INV-${Date.now()}` : previewInvoiceNumber(appState, formValues.issueDate)),
+    [appState, editingId, formValues.issueDate, apiMode],
   );
 
   const columns = useMemo<AppTableColumn<Record<string, unknown>>[]>(() => [
     { key: 'id', label: 'Invoice #', render: (row) => <span className="font-bold text-slate-900">{String(row.id)}</span> },
-    { key: 'customer', label: 'Customer', render: (row) => resolveInvoiceCustomerLabel(appState, row) },
+    {
+      key: 'customer',
+      label: 'Customer',
+      render: (row) => (apiMode ? String(row.customerName ?? row.customer ?? '—') : resolveInvoiceCustomerLabel(appState, row)),
+    },
     { key: 'date', label: 'Date', render: (row) => String(row.issueDate ?? row.date ?? '—') },
     {
       key: 'amount',
@@ -171,6 +219,7 @@ export function InvoicesPage() {
   const resetForm = () => {
     setFormValues({ ...EMPTY_INVOICE_FORM, items: [createEmptyLineItem()] });
     setEditingId(null);
+    setEditingMongoId(null);
     setFormKey((k) => k + 1);
   };
 
@@ -211,6 +260,7 @@ export function InvoicesPage() {
 
   const openEdit = (row: Record<string, unknown>) => {
     setEditingId(String(row.id));
+    setEditingMongoId(apiMode ? resolveApiRowId(row) : null);
     setFormValues(recordToFormValues(row));
     setFormKey((k) => k + 1);
     setView('form');
@@ -222,6 +272,15 @@ export function InvoicesPage() {
     const customerName = customer
       ? `${customer.name}${customer.company ? ` (${customer.company})` : ''}`
       : '';
+    if (apiMode || customersApiMode) {
+      setFormValues((prev) => ({
+        ...prev,
+        customerId,
+        customerName,
+        dueDate: prev.dueDate || issueDate,
+      }));
+      return;
+    }
     const defaults = getCustomerBillingDefaults(appState, customerId, issueDate);
     setFormValues((prev) => ({
       ...prev,
@@ -233,12 +292,25 @@ export function InvoicesPage() {
     }));
   };
 
-  const persistInvoice = (payload: InvoicePayload, action: InvoiceSaveAction) => {
+  const persistInvoice = async (payload: InvoicePayload, action: InvoiceSaveAction) => {
     const record = payloadToRecord(payload, editingId ?? undefined);
     if (action === 'sent') {
       record.status = 'sent';
     } else if (!editingId) {
       record.status = 'draft';
+    }
+
+    if (apiMode) {
+      if (!editingId) record.id = payload.invoiceNo;
+      const body = mapInvoiceRecordToApi(record, editingId ?? undefined);
+      const result = editingId
+        ? await apiStore.update(editingMongoId ?? editingId, body)
+        : await apiStore.create(body);
+      if (!result.ok) {
+        toast.error('Operation failed', { module: 'Invoices', description: 'error' in result ? String(result.error) : 'Save failed' });
+        return null;
+      }
+      return editingId ?? ('id' in result ? result.id : payload.invoiceNo);
     }
 
     const result = editingId
@@ -264,8 +336,8 @@ export function InvoicesPage() {
     return savedId;
   };
 
-  const handleSave = (payload: InvoicePayload, action: InvoiceSaveAction) => {
-    const savedId = persistInvoice(payload, action);
+  const handleSave = async (payload: InvoicePayload, action: InvoiceSaveAction) => {
+    const savedId = await persistInvoice(payload, action);
     if (!savedId) return;
     setView('main');
     resetForm();
@@ -279,7 +351,9 @@ export function InvoicesPage() {
   };
 
   const handleExport = () => {
-    const csv = exportInvoicesCsv(rows, (row) => resolveInvoiceCustomerLabel(appState, row));
+    const csv = exportInvoicesCsv(rows, (row) => (
+      apiMode ? String(row.customerName ?? row.customer ?? '') : resolveInvoiceCustomerLabel(appState, row)
+    ));
     const blob = new Blob([csv], { type: 'text/csv' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -289,8 +363,13 @@ export function InvoicesPage() {
     URL.revokeObjectURL(url);
   };
 
-  const handleDelete = async (id: string) => {
+  const handleDelete = async (row: Record<string, unknown>) => {
+    const id = String(row.id);
     const __ok = await confirmAction({ title: "Delete this invoice", message: "Delete this invoice?", confirmLabel: 'Delete', tone: 'danger', module: 'Invoices' }); if (!__ok) return;
+    if (apiMode) {
+      await apiStore.remove(resolveApiRowId(row));
+      return;
+    }
     deleteInvoice(appState, id);
     saveAppState();
   };
@@ -349,6 +428,8 @@ export function InvoicesPage() {
 
   return (
     <>
+        {apiMode ? <ApiModeBanner module="invoices" error={apiStore.error} /> : null}
+
         <InvoiceDashboardMetrics summary={dashboardSummary} />
         <InvoiceAgingSnapshot aging={dashboardSummary.aging} />
 
@@ -362,7 +443,7 @@ export function InvoicesPage() {
         <AppTable
           columns={columns}
           rows={rows}
-          emptyMessage="No invoices found."
+          emptyMessage={apiStore.loading ? 'Loading invoices…' : 'No invoices found.'}
           renderActions={(row) => (
             <>
               <TableIconAction variant="edit" onClick={() => openEdit(row)} />
@@ -370,7 +451,7 @@ export function InvoicesPage() {
                 variant="view"
                 onClick={() => setPrintPayload(buildPrintPayloadFromRow(appState, row))}
               />
-              <TableIconAction variant="delete" onClick={() => handleDelete(String(row.id))} />
+              <TableIconAction variant="delete" onClick={() => handleDelete(row)} />
             </>
           )}
         />

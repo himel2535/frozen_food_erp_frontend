@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useMemo, useState } from 'react';
 import { Icon } from '@iconify/react';
 import { useAppStore } from '@/lib/state/app-store';
+import { useDashboardAppState } from '@/hooks/use-dashboard-api-data';
 import {
   getDashboardProjectRows,
   projectHealthClass,
@@ -13,7 +14,7 @@ import {
 const PREVIEW_COUNT = 2;
 
 export function DashboardProjectProgress() {
-  const appState = useAppStore((s) => s.appState);
+  const appState = useDashboardAppState();
   const t = useAppStore((s) => s.t);
   const [expanded, setExpanded] = useState(false);
 

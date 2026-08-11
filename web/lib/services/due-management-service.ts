@@ -174,7 +174,7 @@ export function receiveDuePayment(
     ...rows[idx],
     paid,
     due,
-    status: due <= 0 ? 'partial' : paid > 0 ? 'partial' : entry.status,
+    status: due <= 0 ? 'upcoming' : paid > 0 ? 'partial' : entry.status,
   };
   updateInState(state, 'dueEntries', entryId, updated);
   return { ok: true };
