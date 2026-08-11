@@ -20,6 +20,7 @@ import {
   getWarehouseName,
   listInventory,
   formatMoney,
+  sortInventoryRowsNewestFirst,
 } from '@/lib/services/inventory-service';
 
 export function StockInPage() {
@@ -47,7 +48,7 @@ export function StockInPage() {
       const q = search.toLowerCase();
       data = data.filter((r) => `${r.id} ${r.refDocId} ${r.supplier}`.toLowerCase().includes(q));
     }
-    return data;
+    return sortInventoryRowsNewestFirst(data);
   }, [records, search, statusFilter, warehouseFilter]);
 
   const totalValue = Number(form.qty || 0) * Number(form.unitCost || 0);

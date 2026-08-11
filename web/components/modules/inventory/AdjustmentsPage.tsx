@@ -20,6 +20,7 @@ import {
   getWarehouseName,
   listInventory,
   formatMoney,
+  sortInventoryRowsNewestFirst,
 } from '@/lib/services/inventory-service';
 
 export function AdjustmentsPage() {
@@ -48,7 +49,7 @@ export function AdjustmentsPage() {
       const q = search.toLowerCase();
       data = data.filter((r) => `${r.id} ${r.reason}`.toLowerCase().includes(q));
     }
-    return data;
+    return sortInventoryRowsNewestFirst(data);
   }, [records, search, statusFilter, typeFilter]);
 
   const netPrefix = metrics.netValue > 0 ? '+' : '';

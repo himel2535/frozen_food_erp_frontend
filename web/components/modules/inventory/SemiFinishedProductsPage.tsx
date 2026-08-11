@@ -37,6 +37,7 @@ import {
   listSemiFinishedUnits,
   listWarehouses,
   previewSemiFinishedCode,
+  sortInventoryRowsNewestFirst,
   updateSemiFinishedProduct,
 } from '@/lib/services/inventory-service';
 import {
@@ -152,7 +153,7 @@ export function SemiFinishedProductsPage() {
       );
     }
 
-    return [...data].sort((a, b) => String(a.name).localeCompare(String(b.name)));
+    return sortInventoryRowsNewestFirst(data);
   }, [allProducts, search, categoryFilter, stockStatusFilter, unitFilter, locationFilter, stockTab]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
@@ -335,6 +336,7 @@ export function SemiFinishedProductsPage() {
       });
     }
     saveAppState();
+    if (!editingId) setPage(1);
     setView('main');
     resetForm();
   };

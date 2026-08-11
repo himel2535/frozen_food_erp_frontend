@@ -13,6 +13,7 @@ import { FilterTabs } from '@/components/shared/FilterTabs';
 import { AppTable } from '@/components/shared/AppTable';
 import { TableIconAction } from '@/components/shared/TableIconAction';
 import { useAppStore } from '@/lib/state/app-store';
+import { sortInventoryRowsNewestFirst } from '@/lib/services/inventory-service';
 import type { PortField } from '@/lib/modules/port-types';
 
 export interface InventoryMasterColumn {
@@ -55,7 +56,7 @@ export function InventoryMasterModule({ config }: { config: InventoryMasterConfi
     if (statusFilter !== 'all') {
       data = data.filter((row) => String(row.status ?? '').toLowerCase() === statusFilter.toLowerCase());
     }
-    return data;
+    return sortInventoryRowsNewestFirst(data);
   }, [appState, config, search, statusFilter]);
 
   const kpis = useMemo(() => (config.kpi ? config.kpi(rows) : []), [config, rows]);

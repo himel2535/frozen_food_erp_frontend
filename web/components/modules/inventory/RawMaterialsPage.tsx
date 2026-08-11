@@ -31,6 +31,7 @@ import {
   listRawMaterials,
   listWarehouses,
   rawMaterialStockStatusClass,
+  sortInventoryRowsNewestFirst,
   updateRawMaterial,
 } from '@/lib/services/inventory-service';
 
@@ -134,7 +135,7 @@ export function RawMaterialsPage() {
       );
     }
 
-    return [...data].sort((a, b) => String(a.name).localeCompare(String(b.name)));
+    return sortInventoryRowsNewestFirst(data);
   }, [allMaterials, search, categoryFilter, warehouseFilter, statusFilter, stockLevelFilter, stockTab]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
@@ -283,6 +284,7 @@ export function RawMaterialsPage() {
       return;
     }
     saveAppState();
+    if (!editingId) setPage(1);
     setView('main');
     resetForm();
   };

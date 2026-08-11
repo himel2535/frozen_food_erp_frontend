@@ -26,12 +26,15 @@ export function createInState(
   state: AppState,
   stateKey: keyof AppState | string,
   payload: Row,
-  idPrefix = 'REC'
+  idPrefix = 'REC',
+  options?: { prepend?: boolean },
 ): { ok: true; id: string } | { ok: false; error: string } {
   const rows = listFromState(state, stateKey);
   const id = String(payload.id ?? nextId(idPrefix, rows));
   const record = { ...payload, id, createdAt: payload.createdAt ?? new Date().toISOString() };
-  (state as Record<string, unknown>)[stateKey as string] = [...rows, record];
+  (state as Record<string, unknown>)[stateKey as string] = options?.prepend
+    ? [record, ...rows]
+    : [...rows, record];
   logStateMutation(state, String(stateKey), 'CREATE', id, rowSummary(record, id));
   return { ok: true, id };
 }

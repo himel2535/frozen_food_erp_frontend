@@ -16,6 +16,7 @@ import {
   createUnit,
   updateUnit,
   deleteUnit,
+  sortInventoryRowsNewestFirst,
 } from '@/lib/services/inventory-service';
 
 const UNIT_FIELDS: PortField[] = [
@@ -49,7 +50,7 @@ export function UnitsPage() {
       const q = search.toLowerCase();
       data = data.filter((u) => `${u.name} ${u.code} ${u.symbol}`.toLowerCase().includes(q));
     }
-    return data;
+    return sortInventoryRowsNewestFirst(data);
   }, [units, search, statusFilter]);
 
   const resetForm = () => {

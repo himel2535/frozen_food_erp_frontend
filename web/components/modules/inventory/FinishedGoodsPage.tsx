@@ -37,6 +37,7 @@ import {
   listInventory,
   listWarehouses,
   previewFinishedGoodCode,
+  sortInventoryRowsNewestFirst,
   updateFinishedGood,
 } from '@/lib/services/inventory-service';
 import {
@@ -169,7 +170,7 @@ export function FinishedGoodsPage() {
       );
     }
 
-    return [...data].sort((a, b) => String(a.name).localeCompare(String(b.name)));
+    return sortInventoryRowsNewestFirst(data);
   }, [allProducts, search, categoryFilter, warehouseFilter, stockStatusFilter, unitFilter, stockTab]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
@@ -399,6 +400,7 @@ export function FinishedGoodsPage() {
       });
     }
     saveAppState();
+    if (!editingId) setPage(1);
     setView('main');
     resetForm();
   };

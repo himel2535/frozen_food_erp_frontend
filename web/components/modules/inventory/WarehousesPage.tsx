@@ -19,6 +19,7 @@ import {
   updateWarehouse,
   deleteWarehouse,
   formatMoney,
+  sortInventoryRowsNewestFirst,
 } from '@/lib/services/inventory-service';
 
 const WAREHOUSE_FIELDS: PortField[] = [
@@ -55,7 +56,7 @@ export function WarehousesPage() {
       const q = search.toLowerCase();
       data = data.filter((w) => `${w.name} ${w.location} ${w.manager}`.toLowerCase().includes(q));
     }
-    return data;
+    return sortInventoryRowsNewestFirst(data);
   }, [metrics.warehouses, search, statusFilter]);
 
   const resetForm = () => {

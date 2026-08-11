@@ -20,6 +20,7 @@ import {
   deleteCategory,
   formatMoney,
   PRODUCT_TYPES,
+  sortInventoryRowsNewestFirst,
 } from '@/lib/services/inventory-service';
 
 const CATEGORY_BASIC_FIELDS: PortField[] = [
@@ -60,7 +61,7 @@ export function CategoriesPage() {
       const q = search.toLowerCase();
       data = data.filter((c) => `${c.name} ${c.code}`.toLowerCase().includes(q));
     }
-    return data;
+    return sortInventoryRowsNewestFirst(data);
   }, [categories, search, statusFilter, typeFilter]);
 
   const resetForm = () => {

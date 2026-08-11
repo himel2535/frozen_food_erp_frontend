@@ -20,6 +20,7 @@ import {
   getWarehouseName,
   listInventory,
   formatMoney,
+  sortInventoryRowsNewestFirst,
 } from '@/lib/services/inventory-service';
 
 const REASON_CODES = ['Manufacturing', 'Order Fulfillment', 'Damage', 'Expiry', 'Sample', 'Internal Use'];
@@ -50,7 +51,7 @@ export function StockOutPage() {
       const q = search.toLowerCase();
       data = data.filter((r) => `${r.id} ${r.refDocId} ${r.reasonCode}`.toLowerCase().includes(q));
     }
-    return data;
+    return sortInventoryRowsNewestFirst(data);
   }, [records, search, statusFilter, warehouseFilter]);
 
   const resetForm = () => {

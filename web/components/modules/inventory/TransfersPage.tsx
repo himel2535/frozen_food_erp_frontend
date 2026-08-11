@@ -19,6 +19,7 @@ import {
   completeTransfer,
   getWarehouseName,
   listInventory,
+  sortInventoryRowsNewestFirst,
 } from '@/lib/services/inventory-service';
 
 export function TransfersPage() {
@@ -44,7 +45,7 @@ export function TransfersPage() {
       const q = search.toLowerCase();
       data = data.filter((r) => String(r.id).toLowerCase().includes(q));
     }
-    return data;
+    return sortInventoryRowsNewestFirst(data);
   }, [records, search, statusFilter]);
 
   const resetForm = () => {

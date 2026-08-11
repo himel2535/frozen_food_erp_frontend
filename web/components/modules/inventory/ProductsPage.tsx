@@ -38,6 +38,7 @@ import {
   previewProductSku,
   formatMoney,
   PRODUCT_TYPES,
+  sortInventoryRowsNewestFirst,
 } from '@/lib/services/inventory-service';
 
 function buildEmptyFormValues(
@@ -106,7 +107,7 @@ export function ProductsPage() {
     }
     if (categoryFilter !== 'all') data = data.filter((p) => String(p.category) === categoryFilter);
     if (typeFilter !== 'all') data = data.filter((p) => String(p.productType) === typeFilter);
-    return data;
+    return sortInventoryRowsNewestFirst(data);
   }, [allProducts, search, categoryFilter, typeFilter]);
 
   const metrics = useMemo(() => getProductMetrics(appState, allProducts), [appState, allProducts]);
@@ -205,10 +206,12 @@ export function ProductsPage() {
     saveAppState();
 
     if (action === 'save-and-add') {
+      if (!editingId) setPage(1);
       resetForm();
       return;
     }
 
+    if (!editingId) setPage(1);
     setView('main');
     resetForm();
   };
