@@ -41,6 +41,8 @@ export type CollectionActivity = {
   sideMeta?: string;
   sideAction?: { label: string; variant: 'outline' | 'primary' };
   sideHint?: string;
+  attachmentName?: string;
+  attachmentUrl?: string;
 };
 
 export type CollectionOverlay = {

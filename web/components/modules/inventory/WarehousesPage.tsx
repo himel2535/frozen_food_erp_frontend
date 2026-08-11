@@ -3,8 +3,11 @@
 import { toast, confirmAction } from '@/lib/ui/feedback';
 
 import { useMemo, useState } from 'react';
+import { Warehouse } from 'lucide-react';
 import { AppFormFields, AppFormModal } from '@/components/shared/AppForm';
 import { AppTable, type AppTableColumn } from '@/components/shared/AppTable';
+import { ImageUploadField } from '@/components/shared/ImageUploadField';
+import { InventoryItemThumb } from '@/components/shared/InventoryItemThumb';
 import { StatusBadge } from '@/components/shared/StatusBadge';
 import { TableIconAction } from '@/components/shared/TableIconAction';
 import { InventoryListLayout, FilterBar, FilterSelect } from '@/components/modules/inventory/shared/inventory-ui';
@@ -40,7 +43,7 @@ export function WarehousesPage() {
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [form, setForm] = useState({
     name: '', location: '', capacity: '', type: 'Main Warehouse', manager: '', contact: '', status: 'Active',
-    allowedProductTypes: '', storageRules: '',
+    allowedProductTypes: '', storageRules: '', imageUrl: '',
   });
 
   const metrics = useMemo(() => getWarehouseMetrics(appState), [appState]);
@@ -56,7 +59,7 @@ export function WarehousesPage() {
   }, [metrics.warehouses, search, statusFilter]);
 
   const resetForm = () => {
-    setForm({ name: '', location: '', capacity: '', type: 'Main Warehouse', manager: '', contact: '', status: 'Active', allowedProductTypes: '', storageRules: '' });
+    setForm({ name: '', location: '', capacity: '', type: 'Main Warehouse', manager: '', contact: '', status: 'Active', allowedProductTypes: '', storageRules: '', imageUrl: '' });
     setEditingId(null);
     setShowAdvanced(false);
   };
@@ -66,6 +69,7 @@ export function WarehousesPage() {
       name: String(row.name ?? ''), location: String(row.location ?? ''), capacity: String(row.capacity ?? ''),
       type: String(row.type ?? 'Main Warehouse'), manager: String(row.manager ?? ''), contact: String(row.contact ?? ''),
       status: String(row.status ?? 'Active'), allowedProductTypes: String(row.allowedProductTypes ?? ''), storageRules: String(row.storageRules ?? ''),
+      imageUrl: String(row.imageUrl ?? ''),
     });
     setEditingId(String(row.id));
     setView('form');
@@ -88,7 +92,24 @@ export function WarehousesPage() {
   };
 
   const columns = useMemo<AppTableColumn<Record<string, unknown>>[]>(() => [
-    { key: 'name', label: 'Warehouse', render: (wh) => <span className="font-bold text-slate-800">{String(wh.name)}</span> },
+    {
+      key: 'name',
+      label: 'Warehouse',
+      render: (wh) => (
+        <div className="flex items-center gap-2.5 min-w-0">
+          <InventoryItemThumb
+            imageUrl={String(wh.imageUrl ?? '')}
+            alt={String(wh.name ?? '')}
+            fallback={(
+              <span className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0 bg-slate-100 text-slate-500">
+                <Warehouse className="w-4 h-4" />
+              </span>
+            )}
+          />
+          <span className="font-bold text-slate-800 truncate">{String(wh.name)}</span>
+        </div>
+      ),
+    },
     { key: 'location', label: 'Location', render: (wh) => String(wh.location ?? '—') },
     { key: 'type', label: 'Type', render: (wh) => String(wh.type ?? '—') },
     { key: 'manager', label: 'Manager', render: (wh) => String(wh.manager ?? '—') },
@@ -145,6 +166,13 @@ export function WarehousesPage() {
       submitLabel="Save Warehouse"
       size="md"
     >
+      <div className="mb-5">
+        <ImageUploadField
+          label="Warehouse Photo"
+          value={form.imageUrl}
+          onChange={(url) => setForm({ ...form, imageUrl: url })}
+        />
+      </div>
       <AppFormFields
         fields={WAREHOUSE_FIELDS}
         values={form}

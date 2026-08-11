@@ -63,6 +63,7 @@ export async function createAdminUser(payload: {
   name: string;
   email: string;
   password: string;
+  imageUrl?: string;
   allowedSections: SectionId[];
   roleId?: string;
   isMainAdmin?: boolean;
@@ -70,6 +71,7 @@ export async function createAdminUser(payload: {
   const name = String(payload.name ?? '').trim();
   const email = String(payload.email ?? '').trim().toLowerCase();
   const password = String(payload.password ?? '');
+  const imageUrl = String(payload.imageUrl ?? '').trim();
   const roleId = payload.roleId ? String(payload.roleId).trim() : undefined;
 
   if (!name) throw new Error('Name is required');
@@ -92,6 +94,7 @@ export async function createAdminUser(payload: {
     uid,
     email,
     name,
+    imageUrl: imageUrl || undefined,
     isMainAdmin: Boolean(payload.isMainAdmin),
     allowedSections: payload.isMainAdmin ? ['*'] : allowedSections,
     roleId: payload.isMainAdmin ? undefined : roleId,
@@ -108,6 +111,7 @@ export async function createAdminUser(payload: {
 export async function updateAdminUser(payload: {
   uid: string;
   name?: string;
+  imageUrl?: string;
   allowedSections?: SectionId[];
   roleId?: string | null;
   status?: 'active' | 'disabled';
@@ -130,6 +134,9 @@ export async function updateAdminUser(payload: {
 
   if (typeof payload.name === 'string' && payload.name.trim()) {
     updates.name = payload.name.trim();
+  }
+  if (typeof payload.imageUrl === 'string') {
+    updates.imageUrl = payload.imageUrl.trim();
   }
   if (payload.allowedSections) {
     updates.allowedSections =

@@ -58,6 +58,7 @@ function buildDefaultForm(
     promiseAmount: '',
     expectedPaymentDate: '',
     attachmentName: '',
+    attachmentUrl: '',
   };
 }
 
@@ -287,7 +288,8 @@ export function FollowUpAddForm({
 
           <FileUploadZone
             fileName={form.attachmentName}
-            onFileSelect={(name) => update({ attachmentName: name })}
+            previewUrl={form.attachmentUrl || undefined}
+            onFileSelect={({ name, url }) => update({ attachmentName: name, attachmentUrl: url })}
           />
         </FollowUpFormSection>
 

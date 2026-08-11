@@ -16,6 +16,7 @@ import { BulkActionBar } from '@/components/shared/BulkActionBar';
 import { AppTable, type AppTableColumn } from '@/components/shared/AppTable';
 import { StatusBadge } from '@/components/shared/StatusBadge';
 import { TableIconAction } from '@/components/shared/TableIconAction';
+import { InventoryItemThumb } from '@/components/shared/InventoryItemThumb';
 import {
   CustomerForm,
   EMPTY_CUSTOMER_FORM,
@@ -94,6 +95,7 @@ function buildFormValuesFromProfile(
     mobile: String(primary?.phone ?? ''),
     status: String(customer.status ?? 'active'),
     email: String(primary?.email ?? ''),
+    imageUrl: String(customer.imageUrl ?? ''),
     billingAddress,
     billingArea,
     billingCity,
@@ -304,9 +306,16 @@ function CustomersPageContent() {
       label: t('crm.customers_title'),
       render: (row) => (
         <div className="flex items-center gap-3 min-w-[200px]">
-          <div className={`w-9 h-9 rounded-full flex items-center justify-center text-[10px] font-bold shrink-0 ${avatarClass(String(row.name))}`}>
-            {initials(String(row.name))}
-          </div>
+          <InventoryItemThumb
+            imageUrl={String(row.imageUrl ?? '')}
+            alt={String(row.name ?? '')}
+            className="w-9 h-9 rounded-full border border-slate-200 object-cover shrink-0"
+            fallback={
+              <div className={`w-9 h-9 rounded-full flex items-center justify-center text-[10px] font-bold shrink-0 ${avatarClass(String(row.name))}`}>
+                {initials(String(row.name))}
+              </div>
+            }
+          />
           <div>
             <div className="font-bold text-slate-900">{String(row.name)}</div>
             <div className="text-slate-500">{String(row.company)}</div>

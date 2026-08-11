@@ -50,6 +50,7 @@ export function normalizeAuthUser(uid: string, raw: Record<string, unknown>): Au
     uid,
     email: String(raw.email ?? ''),
     name: String(raw.name ?? ''),
+    imageUrl: raw.imageUrl ? String(raw.imageUrl) : undefined,
     isMainAdmin: Boolean(raw.isMainAdmin),
     allowedSections: normalizeUserSections(raw.allowedSections),
     roleId: raw.roleId ? String(raw.roleId) : undefined,

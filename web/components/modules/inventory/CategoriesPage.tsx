@@ -3,8 +3,11 @@
 import { toast, confirmAction } from '@/lib/ui/feedback';
 
 import { useMemo, useState } from 'react';
+import { Folder } from 'lucide-react';
 import { AppFormFields, AppFormModal, FORM_GRID_CLS, FORM_LABEL_CLS } from '@/components/shared/AppForm';
 import { AppTable, type AppTableColumn } from '@/components/shared/AppTable';
+import { ImageUploadField } from '@/components/shared/ImageUploadField';
+import { InventoryItemThumb } from '@/components/shared/InventoryItemThumb';
 import { StatusBadge } from '@/components/shared/StatusBadge';
 import { TableIconAction } from '@/components/shared/TableIconAction';
 import { InventoryListLayout, FilterBar, FilterSelect, SELECT_CLS } from '@/components/modules/inventory/shared/inventory-ui';
@@ -44,7 +47,7 @@ export function CategoriesPage() {
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [form, setForm] = useState({
     name: '', code: '', type: 'Finished Goods', description: '', parentId: '', status: 'Active',
-    defaultTaxRate: '', defaultUnitType: '', stockPolicy: 'FIFO',
+    defaultTaxRate: '', defaultUnitType: '', stockPolicy: 'FIFO', imageUrl: '',
   });
 
   const { categories, activeCategories, emptyCategories, topCategory } = useMemo(() => getCategoryMetrics(appState), [appState]);
@@ -61,7 +64,7 @@ export function CategoriesPage() {
   }, [categories, search, statusFilter, typeFilter]);
 
   const resetForm = () => {
-    setForm({ name: '', code: '', type: 'Finished Goods', description: '', parentId: '', status: 'Active', defaultTaxRate: '', defaultUnitType: '', stockPolicy: 'FIFO' });
+    setForm({ name: '', code: '', type: 'Finished Goods', description: '', parentId: '', status: 'Active', defaultTaxRate: '', defaultUnitType: '', stockPolicy: 'FIFO', imageUrl: '' });
     setEditingId(null);
     setShowAdvanced(false);
   };
@@ -71,6 +74,7 @@ export function CategoriesPage() {
       name: String(row.name ?? ''), code: String(row.code ?? ''), type: String(row.type ?? 'Finished Goods'),
       description: String(row.description ?? ''), parentId: String(row.parentId ?? ''), status: String(row.status ?? 'Active'),
       defaultTaxRate: String(row.defaultTaxRate ?? ''), defaultUnitType: String(row.defaultUnitType ?? ''), stockPolicy: String(row.stockPolicy ?? 'FIFO'),
+      imageUrl: String(row.imageUrl ?? ''),
     });
     setEditingId(String(row.id));
     setView('form');
@@ -93,7 +97,24 @@ export function CategoriesPage() {
   };
 
   const columns = useMemo<AppTableColumn<Record<string, unknown>>[]>(() => [
-    { key: 'name', label: 'Category', render: (cat) => <span className="font-bold text-slate-800">{String(cat.name)}</span> },
+    {
+      key: 'name',
+      label: 'Category',
+      render: (cat) => (
+        <div className="flex items-center gap-2.5 min-w-0">
+          <InventoryItemThumb
+            imageUrl={String(cat.imageUrl ?? '')}
+            alt={String(cat.name ?? '')}
+            fallback={(
+              <span className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0 bg-slate-100 text-slate-500">
+                <Folder className="w-4 h-4" />
+              </span>
+            )}
+          />
+          <span className="font-bold text-slate-800 truncate">{String(cat.name)}</span>
+        </div>
+      ),
+    },
     { key: 'code', label: 'Code', render: (cat) => String(cat.code ?? '—') },
     { key: 'type', label: 'Type', render: (cat) => String(cat.type ?? '—') },
     { key: 'parent', label: 'Parent', render: (cat) => String(cat.parentCategoryName) },
@@ -155,6 +176,13 @@ export function CategoriesPage() {
       submitLabel="Save Category"
       size="md"
     >
+      <div className="mb-5">
+        <ImageUploadField
+          label="Category Photo"
+          value={form.imageUrl}
+          onChange={(url) => setForm({ ...form, imageUrl: url })}
+        />
+      </div>
       <AppFormFields
         fields={categoryFields}
         values={form}

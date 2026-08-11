@@ -262,6 +262,7 @@ export type ScheduleFollowUpPayload = {
   promiseAmount?: number;
   expectedPaymentDate?: string;
   attachmentName?: string;
+  attachmentUrl?: string;
 };
 
 type FollowUpRuntimeMeta = {
@@ -326,6 +327,8 @@ export function scheduleCustomerFollowUp(
     by: payload.assignedStaffName.trim() || receivable.assignedTo?.name || 'Staff',
     statusLabel: mapped.statusLabel,
     statusTone: mapped.statusTone,
+    ...(payload.attachmentName ? { attachmentName: payload.attachmentName } : {}),
+    ...(payload.attachmentUrl ? { attachmentUrl: payload.attachmentUrl } : {}),
     ...(payload.scheduleNext && payload.nextScheduledAt
       ? { sideMeta: `Next Follow-up: ${formatActionSchedule(payload.nextScheduledAt)}` }
       : {}),

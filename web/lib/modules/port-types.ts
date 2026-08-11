@@ -1,4 +1,4 @@
-export type FieldType = 'text' | 'email' | 'phone' | 'number' | 'date' | 'select' | 'textarea';
+export type FieldType = 'text' | 'email' | 'phone' | 'number' | 'date' | 'select' | 'textarea' | 'image';
 
 export interface PortField {
   key: string;

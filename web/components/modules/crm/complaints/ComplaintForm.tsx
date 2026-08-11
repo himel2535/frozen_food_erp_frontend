@@ -3,6 +3,7 @@
 import { useMemo, useState, type FormEvent } from 'react';
 import { Save } from 'lucide-react';
 import { FormHeader } from '@/components/layout/FormHeader';
+import { ImageUploadField } from '@/components/shared/ImageUploadField';
 import { MODULE_LIST_SHELL } from '@/lib/ui/module-layout';
 import {
   FORM_BTN_PRIMARY,
@@ -25,6 +26,7 @@ export type ComplaintFormValues = {
   priority: string;
   sku: string;
   description: string;
+  evidenceImageUrl: string;
   slaDueAt: string;
 };
 
@@ -37,6 +39,7 @@ export const EMPTY_COMPLAINT_FORM: ComplaintFormValues = {
   priority: 'medium',
   sku: '',
   description: '',
+  evidenceImageUrl: '',
   slaDueAt: '',
 };
 
@@ -177,6 +180,13 @@ export function ComplaintForm({
                 onChange={(e) => setValues({ ...values, description: e.target.value })}
                 className={FORM_TEXTAREA_CLS}
                 placeholder="Describe the complaint in detail..."
+              />
+            </div>
+            <div className="md:col-span-2">
+              <ImageUploadField
+                label="Evidence Image (Optional)"
+                value={values.evidenceImageUrl}
+                onChange={(evidenceImageUrl) => setValues({ ...values, evidenceImageUrl })}
               />
             </div>
           </div>

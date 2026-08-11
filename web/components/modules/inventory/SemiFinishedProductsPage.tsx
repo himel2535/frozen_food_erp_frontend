@@ -9,6 +9,8 @@ import { useChromeSuppressed, useRegisterModuleActions } from '@/components/layo
 import { AppFormFields, AppFormModal, FORM_GRID_CLS, FORM_LABEL_CLS } from '@/components/shared/AppForm';
 import { AppTable, type AppTableColumn } from '@/components/shared/AppTable';
 import { FilterTabs } from '@/components/shared/FilterTabs';
+import { ImageUploadField } from '@/components/shared/ImageUploadField';
+import { InventoryItemThumb } from '@/components/shared/InventoryItemThumb';
 import { ModuleKpiSection } from '@/components/shared/ModuleKpiSection';
 import { StatusBadge } from '@/components/shared/StatusBadge';
 import { TableIconAction } from '@/components/shared/TableIconAction';
@@ -111,6 +113,7 @@ export function SemiFinishedProductsPage() {
     location: '',
     notes: '',
     recipeId: '',
+    imageUrl: '',
   });
 
   const warehouses = useMemo(() => listWarehouses(appState), [appState]);
@@ -174,7 +177,11 @@ export function SemiFinishedProductsPage() {
         const category = String(row.category ?? 'Uncategorized');
         return (
           <div className="flex items-center gap-2.5 min-w-0 max-w-[220px]">
-            <ProductThumb category={category} />
+            <InventoryItemThumb
+              imageUrl={String(row.imageUrl ?? '')}
+              alt={String(row.name ?? '')}
+              fallback={<ProductThumb category={category} />}
+            />
             <div className="min-w-0">
               <div className="font-bold text-slate-800 truncate">{String(row.name)}</div>
             </div>
@@ -255,6 +262,7 @@ export function SemiFinishedProductsPage() {
       location: '',
       notes: '',
       recipeId: '',
+      imageUrl: '',
     });
     setEditingId(null);
     setShowAdvanced(false);
@@ -277,6 +285,7 @@ export function SemiFinishedProductsPage() {
       location: String(row.location ?? ''),
       notes: String(row.notes ?? ''),
       recipeId: String(row.recipeId ?? ''),
+      imageUrl: String(row.imageUrl ?? ''),
     });
     setEditingId(String(row.id));
     setView('form');
@@ -684,6 +693,13 @@ export function SemiFinishedProductsPage() {
         submitLabel="Save Product"
         size="lg"
       >
+        <div className="mb-5">
+          <ImageUploadField
+            label="Product Image"
+            value={form.imageUrl}
+            onChange={(url) => setForm({ ...form, imageUrl: url })}
+          />
+        </div>
         <AppFormFields
           fields={productFields}
           values={form}

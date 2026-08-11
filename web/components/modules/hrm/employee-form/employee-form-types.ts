@@ -20,6 +20,7 @@ export const EMPLOYEE_FORM_KEYS = [
   'phone',
   'email',
   'nid',
+  'imageUrl',
   'department',
   'designation',
   'joiningDate',

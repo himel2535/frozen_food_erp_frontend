@@ -60,6 +60,7 @@ function rowToPosProduct(row: Record<string, unknown>): PosProduct {
     category,
     imageEmoji: visuals.emoji,
     imageGradient: visuals.gradient,
+    imageUrl: String(row.imageUrl ?? ''),
   };
 }
 

@@ -35,6 +35,7 @@ export interface AuthUserRecord {
   uid: string;
   email: string;
   name: string;
+  imageUrl?: string;
   isMainAdmin?: boolean;
   allowedSections: Array<SectionId | '*'>;
   roleId?: string;
@@ -67,6 +68,7 @@ export interface CurrentUserProfile {
   lastPasswordChangeDays?: number;
   logins30Days?: number;
   sessionDetail?: string;
+  imageUrl?: string;
 }
 
 export interface CompanyProfile {
@@ -74,6 +76,7 @@ export interface CompanyProfile {
   legalName?: string;
   industry?: string;
   registrationNo?: string;
+  logoUrl?: string;
   phone?: string;
   email?: string;
   website?: string;

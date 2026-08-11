@@ -10,11 +10,11 @@ import {
   Printer,
   Send,
   Truck,
-  Upload,
   User,
   Warehouse,
 } from 'lucide-react';
 import { FormHeader } from '@/components/layout/FormHeader';
+import { ImageUploadField } from '@/components/shared/ImageUploadField';
 import { MODULE_LIST_SHELL } from '@/lib/ui/module-layout';
 import { IconInput, IconSelect, IconTextarea } from '@/components/modules/crm/customer-form/IconField';
 import { DcFormSectionCard } from '@/components/modules/sales/delivery-challan-form/DcFormSectionCard';
@@ -22,6 +22,7 @@ import { ChallanProductsTable } from '@/components/modules/sales/delivery-challa
 import {
   CHALLAN_STATUS_OPTIONS,
   DELIVERY_METHOD_OPTIONS,
+  listChallanCatalog,
 } from '@/components/modules/sales/delivery-challan-form/dc-form-options';
 import {
   validateDeliveryChallanForm,
@@ -146,6 +147,8 @@ export function DeliveryChallanForm({
       label: String(order.id),
     }));
   }, [appState, form.customerId, selectedCustomer?.name, selectedCustomer?.company]);
+
+  const productCatalog = useMemo(() => listChallanCatalog(appState), [appState]);
 
   return (
     <div className={MODULE_LIST_SHELL}>
@@ -329,6 +332,7 @@ export function DeliveryChallanForm({
           <DcFormSectionCard number={4} title="Products">
             <ChallanProductsTable
               items={form.items}
+              catalog={productCatalog}
               onChange={(items) => updateForm({ items })}
               error={errors.items}
             />
@@ -348,22 +352,14 @@ export function DeliveryChallanForm({
                     <option key={warehouse.id} value={warehouse.id}>{warehouse.name}</option>
                   ))}
                 </IconSelect>
-                <div>
-                  <label className={DC_LABEL_CLS}>Attachment (Optional)</label>
-                  <label className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-slate-200 bg-white text-xs font-semibold text-slate-700 cursor-pointer hover:bg-slate-50">
-                    <Upload className="w-4 h-4 text-slate-400" />
-                    Upload File
-                    <input
-                      type="file"
-                      accept=".pdf,.jpg,.jpeg,.png"
-                      className="hidden"
-                      onChange={(e) => updateForm({ attachmentName: e.target.files?.[0]?.name ?? '' })}
-                    />
-                  </label>
-                  <p className="mt-1 text-[10px] text-slate-500 font-medium">
-                    PDF, JPG, PNG — Max 5MB{form.attachmentName ? ` — ${form.attachmentName}` : ''}
-                  </p>
-                </div>
+                <ImageUploadField
+                  label="Attachment Image (Optional)"
+                  value={form.attachmentUrl}
+                  onChange={(url) => updateForm({
+                    attachmentUrl: url,
+                    attachmentName: url ? (url.split('/').pop()?.split('?')[0] || 'image') : '',
+                  })}
+                />
                 <IconTextarea
                   label="Notes"
                   icon={Package}

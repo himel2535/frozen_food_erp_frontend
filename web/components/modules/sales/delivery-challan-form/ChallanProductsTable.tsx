@@ -3,21 +3,25 @@
 import { Plus, Trash2 } from 'lucide-react';
 import type { DeliveryChallanLineItem } from '@/components/modules/sales/delivery-challan-form/dc-form-types';
 import { computeLineRemaining, summarizeChallanItems } from '@/components/modules/sales/delivery-challan-form/dc-form-types';
+import type { CatalogProduct } from '@/components/modules/sales/delivery-challan-form/dc-form-options';
 import { CHALLAN_PRODUCT_CATALOG } from '@/components/modules/sales/delivery-challan-form/dc-form-options';
 import { DC_TABLE_FOOTER_CLS } from '@/components/modules/sales/delivery-challan-form/dc-form-styles';
 import { useLocaleFormat } from '@/hooks/useLocaleFormat';
 
 export function ChallanProductsTable({
   items,
+  catalog = CHALLAN_PRODUCT_CATALOG,
   onChange,
   error,
 }: {
   items: DeliveryChallanLineItem[];
+  catalog?: CatalogProduct[];
   onChange: (items: DeliveryChallanLineItem[]) => void;
   error?: string;
 }) {
   const { formatCount } = useLocaleFormat();
   const { totalItems, totalDeliverQty } = summarizeChallanItems(items);
+  const productCatalog = catalog.length > 0 ? catalog : CHALLAN_PRODUCT_CATALOG;
 
   const updateItem = (id: string, patch: Partial<DeliveryChallanLineItem>) => {
     onChange(
@@ -35,20 +39,20 @@ export function ChallanProductsTable({
   };
 
   const addItem = () => {
-    const catalog = CHALLAN_PRODUCT_CATALOG[0];
+    const first = productCatalog[0];
     onChange([
       ...items,
       {
         id: `line-${Date.now()}`,
-        productId: catalog?.id ?? '',
-        productName: catalog?.name ?? '',
-        sku: catalog?.sku ?? '',
-        imageUrl: catalog?.imageUrl ?? '/images/logo-toys.png',
+        productId: first?.id ?? '',
+        productName: first?.name ?? '',
+        sku: first?.sku ?? '',
+        imageUrl: first?.imageUrl ?? '/images/logo-toys.png',
         orderedQty: 0,
         previouslyDelivered: 0,
         deliverNow: 0,
         remainingQty: 0,
-        unit: catalog?.unit ?? 'Pcs',
+        unit: first?.unit ?? 'Pcs',
       },
     ]);
   };
@@ -103,7 +107,7 @@ export function ChallanProductsTable({
                       <select
                         value={item.productId}
                         onChange={(e) => {
-                          const product = CHALLAN_PRODUCT_CATALOG.find((p) => p.id === e.target.value);
+                          const product = productCatalog.find((p) => p.id === e.target.value);
                           if (!product) return;
                           updateItem(item.id, {
                             productId: product.id,
@@ -115,7 +119,10 @@ export function ChallanProductsTable({
                         }}
                         className="flex-1 min-w-0 px-2 py-1.5 rounded-lg border border-slate-200 bg-white text-xs font-semibold cursor-pointer"
                       >
-                        {CHALLAN_PRODUCT_CATALOG.map((product) => (
+                        {!productCatalog.some((p) => p.id === item.productId) && item.productId ? (
+                          <option value={item.productId}>{item.productName || item.productId}</option>
+                        ) : null}
+                        {productCatalog.map((product) => (
                           <option key={product.id} value={product.id}>{product.name}</option>
                         ))}
                       </select>

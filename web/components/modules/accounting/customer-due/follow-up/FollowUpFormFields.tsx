@@ -1,12 +1,13 @@
 'use client';
 
-import { useRef } from 'react';
+import { useRef, useState } from 'react';
 import {
   AlertCircle,
   Banknote,
   CalendarClock,
   CheckCircle2,
   Clock,
+  Loader2,
   Mail,
   MapPin,
   MessageCircle,
@@ -17,7 +18,9 @@ import {
   XCircle,
 } from 'lucide-react';
 import type { CustomerReceivable } from '@/lib/services/customer-receivables-service';
+import { ImgBBUploadError, uploadImageToImgBB, validateImageFile } from '@/lib/services/imgbb-service';
 import { getCompanyInitials } from '@/lib/utils/communication-utils';
+import { toast } from '@/lib/ui/feedback';
 import { DUE_AVATAR_CLS } from '../customer-due-styles';
 import type { ContactMethod, FollowUpOutcome, StaffOption } from './follow-up-form-types';
 import {
@@ -221,36 +224,82 @@ export function ToggleSwitch({
 
 export function FileUploadZone({
   fileName,
+  previewUrl,
   onFileSelect,
 }: {
   fileName: string;
-  onFileSelect: (name: string) => void;
+  previewUrl?: string;
+  onFileSelect: (result: { name: string; url: string }) => void;
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
+  const [uploading, setUploading] = useState(false);
+
+  const handleFile = async (file: File | undefined) => {
+    if (!file || uploading) return;
+
+    const isPdf = file.type === 'application/pdf' || /\.pdf$/i.test(file.name);
+    const isImage = file.type.startsWith('image/') || /\.(jpe?g|png|webp)$/i.test(file.name);
+
+    if (isPdf) {
+      onFileSelect({ name: file.name, url: '' });
+      if (inputRef.current) inputRef.current.value = '';
+      return;
+    }
+
+    if (!isImage) {
+      toast.error('Unsupported file', { module: 'Customer Due', description: 'Use PNG, JPG, WebP, or PDF.' });
+      return;
+    }
+
+    const localError = validateImageFile(file);
+    if (localError) {
+      toast.error('Invalid image', { module: 'Customer Due', description: localError });
+      return;
+    }
+
+    setUploading(true);
+    try {
+      const result = await uploadImageToImgBB(file);
+      onFileSelect({ name: file.name, url: result.url });
+      toast.success('Image uploaded', { module: 'Customer Due', description: 'Attachment saved to ImgBB.' });
+    } catch (err) {
+      const message = err instanceof ImgBBUploadError ? err.message : 'Image upload failed.';
+      toast.error('Upload failed', { module: 'Customer Due', description: message });
+    } finally {
+      setUploading(false);
+      if (inputRef.current) inputRef.current.value = '';
+    }
+  };
 
   return (
     <div>
       <p className={`${FU_FORM_LABEL_CLS} mb-2`}>Attach Document / Screenshot</p>
       <button
         type="button"
-        className={`${FU_UPLOAD_ZONE_CLS} w-full`}
+        disabled={uploading}
+        className={`${FU_UPLOAD_ZONE_CLS} w-full disabled:opacity-60 disabled:cursor-not-allowed`}
         onClick={() => inputRef.current?.click()}
       >
-        <Upload className="w-8 h-8 text-slate-400 mx-auto mb-2" />
+        {uploading ? (
+          <Loader2 className="w-8 h-8 text-slate-400 mx-auto mb-2 animate-spin" />
+        ) : previewUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={previewUrl} alt="" className="w-16 h-16 object-cover rounded-lg mx-auto mb-2" />
+        ) : (
+          <Upload className="w-8 h-8 text-slate-400 mx-auto mb-2" />
+        )}
         <p className="text-xs font-bold text-slate-700">
-          {fileName || 'Click to upload or drag and drop'}
+          {uploading ? 'Uploading…' : fileName || 'Click to upload or drag and drop'}
         </p>
-        <p className="text-[10px] text-slate-400 mt-1">PNG, JPG, PDF (Max. 5MB)</p>
+        <p className="text-[10px] text-slate-400 mt-1">PNG, JPG, PDF (Max. 5MB) — images upload to ImgBB</p>
       </button>
       <input
         ref={inputRef}
         type="file"
-        accept=".png,.jpg,.jpeg,.pdf"
+        accept=".png,.jpg,.jpeg,.webp,.pdf,image/png,image/jpeg,image/webp,application/pdf"
         className="hidden"
-        onChange={(e) => {
-          const file = e.target.files?.[0];
-          if (file) onFileSelect(file.name);
-        }}
+        disabled={uploading}
+        onChange={(e) => void handleFile(e.target.files?.[0])}
       />
     </div>
   );

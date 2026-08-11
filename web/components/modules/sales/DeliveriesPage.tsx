@@ -66,6 +66,7 @@ function recordToFormValues(record: Record<string, unknown>, warehouseFallback: 
     driverPhone: String(record.driverPhone ?? ''),
     warehouseId: String(record.warehouseId ?? warehouseFallback),
     attachmentName: String(record.attachmentName ?? ''),
+    attachmentUrl: String(record.attachmentUrl ?? ''),
     notes: String(record.notes ?? ''),
     status: String(record.status ?? 'draft'),
     items,

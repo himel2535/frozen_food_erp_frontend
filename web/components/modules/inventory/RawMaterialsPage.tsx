@@ -9,6 +9,8 @@ import { useChromeSuppressed, useRegisterModuleActions } from '@/components/layo
 import { AppFormFields, AppFormModal, FORM_GRID_CLS, FORM_LABEL_CLS } from '@/components/shared/AppForm';
 import { AppTable, type AppTableColumn } from '@/components/shared/AppTable';
 import { FilterTabs } from '@/components/shared/FilterTabs';
+import { ImageUploadField } from '@/components/shared/ImageUploadField';
+import { InventoryItemThumb } from '@/components/shared/InventoryItemThumb';
 import { ModuleKpiSection } from '@/components/shared/ModuleKpiSection';
 import { StatusBadge } from '@/components/shared/StatusBadge';
 import { TableIconAction } from '@/components/shared/TableIconAction';
@@ -96,6 +98,7 @@ export function RawMaterialsPage() {
     warehouseId: '',
     location: '',
     notes: '',
+    imageUrl: '',
   });
 
   const warehouses = useMemo(() => listWarehouses(appState), [appState]);
@@ -156,7 +159,11 @@ export function RawMaterialsPage() {
         const category = String(rm.category ?? 'Uncategorized');
         return (
           <div className="flex items-center gap-2.5 min-w-0 max-w-[220px]">
-            <MaterialThumb category={category} />
+            <InventoryItemThumb
+              imageUrl={String(rm.imageUrl ?? '')}
+              alt={String(rm.name ?? '')}
+              fallback={<MaterialThumb category={category} />}
+            />
             <div className="min-w-0">
               <div className="font-bold text-slate-800 truncate">{String(rm.name)}</div>
               <div className="text-[10px] text-slate-400 font-semibold truncate">{String(rm.id ?? '—')}</div>
@@ -233,6 +240,7 @@ export function RawMaterialsPage() {
       warehouseId: warehouses[0]?.id ? String(warehouses[0].id) : '',
       location: '',
       notes: '',
+      imageUrl: '',
     });
     setEditingId(null);
     setShowAdvanced(false);
@@ -251,6 +259,7 @@ export function RawMaterialsPage() {
       warehouseId: String(row.warehouseId ?? warehouses[0]?.id ?? ''),
       location: String(row.location ?? ''),
       notes: String(row.notes ?? ''),
+      imageUrl: String(row.imageUrl ?? ''),
     });
     setEditingId(String(row.id));
     setView('form');
@@ -451,6 +460,13 @@ export function RawMaterialsPage() {
         submitLabel="Save Material"
         size="lg"
       >
+        <div className="mb-5">
+          <ImageUploadField
+            label="Material Image"
+            value={form.imageUrl}
+            onChange={(url) => setForm({ ...form, imageUrl: url })}
+          />
+        </div>
         <AppFormFields
           fields={materialFields}
           values={form}

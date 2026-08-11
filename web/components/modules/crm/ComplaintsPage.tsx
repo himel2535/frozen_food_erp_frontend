@@ -133,6 +133,7 @@ export function ComplaintsPage() {
       priority: values.priority,
       sku: values.sku.trim() || undefined,
       slaDueAt: values.slaDueAt ? new Date(values.slaDueAt).toISOString() : undefined,
+      evidenceImageUrl: values.evidenceImageUrl.trim() || undefined,
     });
     saveAppState();
     setView('main');

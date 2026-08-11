@@ -4,6 +4,7 @@ import type { ProfileFormState } from '@/components/modules/settings/profile/Pro
 
 export function profileToForm(profile: ProfileView, lang: Lang): ProfileFormState {
   return {
+    imageUrl: profile.imageUrl ?? '',
     name: profile.name ?? '',
     phone: profile.phone ?? '',
     email: profile.email ?? '',

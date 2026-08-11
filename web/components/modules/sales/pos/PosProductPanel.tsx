@@ -149,8 +149,12 @@ function ProductCard({
   if (viewMode === 'list') {
     return (
       <div className="flex items-center gap-3 premium-card premium-shadow p-3 bg-white/80">
-        <div className={`w-14 h-14 rounded-xl bg-gradient-to-br ${product.imageGradient} flex items-center justify-center text-2xl shrink-0`}>
-          {product.imageEmoji}
+        <div className={`w-14 h-14 rounded-xl bg-gradient-to-br ${product.imageGradient} flex items-center justify-center text-2xl shrink-0 overflow-hidden`}>
+          {product.imageUrl ? (
+            <img src={product.imageUrl} alt="" className="w-full h-full object-cover" />
+          ) : (
+            product.imageEmoji
+          )}
         </div>
         <div className="min-w-0 flex-1">
           <p className="text-xs font-bold text-slate-800 truncate">{product.name}</p>
@@ -176,8 +180,12 @@ function ProductCard({
 
   return (
     <div className="premium-card premium-shadow bg-white/85 p-3 flex flex-col">
-      <div className={`aspect-[4/3] rounded-xl bg-gradient-to-br ${product.imageGradient} flex items-center justify-center text-5xl mb-3`}>
-        {product.imageEmoji}
+      <div className={`aspect-[4/3] rounded-xl bg-gradient-to-br ${product.imageGradient} flex items-center justify-center text-5xl mb-3 overflow-hidden`}>
+        {product.imageUrl ? (
+          <img src={product.imageUrl} alt="" className="w-full h-full object-cover" />
+        ) : (
+          product.imageEmoji
+        )}
       </div>
       <p className="text-xs font-bold text-slate-800 leading-snug min-h-[2rem]">{product.name}</p>
       <p className="text-[10px] text-slate-400 mt-0.5">{product.sku}</p>

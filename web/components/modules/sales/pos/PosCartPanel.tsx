@@ -97,9 +97,13 @@ export function PosCartPanel({
             className="grid grid-cols-[2.5rem_minmax(0,1fr)_5.75rem_4.75rem] gap-x-2 items-center rounded-xl border border-slate-100/90 bg-white p-2 shadow-[0_1px_0_rgba(15,23,42,0.04)]"
           >
             <div
-              className={`w-10 h-10 rounded-lg bg-gradient-to-br ${item.imageGradient} flex items-center justify-center text-lg shrink-0`}
+              className={`w-10 h-10 rounded-lg bg-gradient-to-br ${item.imageGradient} flex items-center justify-center text-lg shrink-0 overflow-hidden`}
             >
-              {item.imageEmoji}
+              {item.imageUrl ? (
+                <img src={item.imageUrl} alt="" className="w-full h-full object-cover" />
+              ) : (
+                item.imageEmoji
+              )}
             </div>
 
             <div className="min-w-0 pr-1">

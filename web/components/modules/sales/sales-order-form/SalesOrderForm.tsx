@@ -85,6 +85,7 @@ export function SalesOrderForm({
       sku: p.sku,
       price: p.price,
       unit: 'pcs',
+      imageUrl: p.imageUrl,
     })),
     [appState],
   );

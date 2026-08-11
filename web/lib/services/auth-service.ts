@@ -255,6 +255,7 @@ export function authUserToCurrentProfile(authUser: AuthUserRecord): CurrentUserP
     email: authUser.email,
     role: authUser.isMainAdmin ? 'admin' : 'user',
     branch: 'Main',
+    imageUrl: authUser.imageUrl ?? '',
   };
 }
 

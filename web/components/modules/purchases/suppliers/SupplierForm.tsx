@@ -13,6 +13,7 @@ import {
   CF_SELECT_CLS,
   CF_TEXTAREA_CLS,
 } from '@/components/modules/crm/customer-form/customer-form-styles';
+import { ImageUploadField } from '@/components/shared/ImageUploadField';
 import { MODULE_LIST_SHELL } from '@/lib/ui/module-layout';
 
 export type SupplierFormValues = {
@@ -27,6 +28,7 @@ export type SupplierFormValues = {
   address: string;
   notes: string;
   rating: string;
+  imageUrl: string;
 };
 
 export const EMPTY_SUPPLIER_FORM: SupplierFormValues = {
@@ -41,6 +43,7 @@ export const EMPTY_SUPPLIER_FORM: SupplierFormValues = {
   address: '',
   notes: '',
   rating: '',
+  imageUrl: '',
 };
 
 const CATEGORY_OPTIONS = ['Raw Materials', 'Chemicals', 'Packaging', 'Components', 'Metals', 'Electronics', 'Hardware', 'General'];
@@ -97,6 +100,13 @@ export function SupplierForm({
             subtitle="Basic vendor information and payment terms."
           >
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-5">
+              <div className="sm:col-span-2">
+                <ImageUploadField
+                  label="Supplier Logo"
+                  value={values.imageUrl}
+                  onChange={(url) => update({ imageUrl: url })}
+                />
+              </div>
               <label className="block sm:col-span-2">
                 <span className={CF_LABEL_CLS}>Supplier Name *</span>
                 <input
@@ -272,6 +282,7 @@ export function supplierToFormValues(supplier: {
   address?: string;
   notes?: string;
   rating?: number;
+  imageUrl?: string;
 }): SupplierFormValues {
   return {
     name: supplier.name,
@@ -285,5 +296,6 @@ export function supplierToFormValues(supplier: {
     address: supplier.address ?? '',
     notes: supplier.notes ?? '',
     rating: supplier.rating != null ? String(supplier.rating) : '',
+    imageUrl: supplier.imageUrl ?? '',
   };
 }

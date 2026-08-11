@@ -9,6 +9,7 @@ import {
   ST_SECTION_HEADER_COMPACT,
   ST_TITLE,
 } from '@/components/modules/settings/settings-styles';
+import { ImageUploadField } from '@/components/shared/ImageUploadField';
 import {
   FORM_GRID_CLS,
   FORM_INPUT_CLS,
@@ -22,6 +23,7 @@ export type CompanyFormState = {
   legalName: string;
   industry: string;
   registrationNo: string;
+  logoUrl: string;
   phone: string;
   email: string;
   website: string;
@@ -333,6 +335,11 @@ function BrandingFields({
   return (
     <SectionCard icon={<MapPin className="w-4 h-4 text-violet-500" />} title={labels.brandingSection}>
       <div className="space-y-4">
+        <ImageUploadField
+          label="Company Logo"
+          value={form.logoUrl}
+          onChange={(url) => onChange('logoUrl', url)}
+        />
         <div>
           <label htmlFor="company-invoice-prefix" className={FORM_LABEL_CLS}>{labels.invoicePrefix}</label>
           <input id="company-invoice-prefix" type="text" value={form.invoicePrefix} onChange={(e) => onChange('invoicePrefix', e.target.value)} className={FORM_INPUT_CLS} />

@@ -18,6 +18,8 @@ import {
 import type { DeliveryChallanPayload } from '@/components/modules/sales/delivery-challan-form/dc-form-types';
 import { summarizeChallanItems } from '@/components/modules/sales/delivery-challan-form/dc-form-types';
 import { DC_COMPANY_INFO } from '@/components/modules/sales/delivery-challan-form/dc-company-info';
+import { useAppStore } from '@/lib/state/app-store';
+import { getCompanyProfile } from '@/lib/services/settings-service';
 import { CHALLAN_STATUS_OPTIONS } from '@/components/modules/sales/delivery-challan-form/dc-form-options';
 import {
   DC_PRINT_FOOTER,
@@ -68,6 +70,8 @@ export function DeliveryChallanPrint({
   data: DeliveryChallanPayload;
 }) {
   const { formatCount } = useLocaleFormat();
+  const appState = useAppStore((s) => s.appState);
+  const companyLogo = getCompanyProfile(appState).logoUrl || DC_COMPANY_INFO.logoUrl;
   const { totalItems, totalDeliverQty } = summarizeChallanItems(data.items);
   const activeItems = data.items.filter((item) => item.productName.trim());
   const statusLabel = CHALLAN_STATUS_OPTIONS.find((s) => s.value === data.status)?.label ?? data.status;
@@ -87,7 +91,7 @@ export function DeliveryChallanPrint({
         <div className="space-y-2 max-w-[55%]">
           <div className="flex items-start gap-2.5">
             <img
-              src={DC_COMPANY_INFO.logoUrl}
+              src={companyLogo}
               alt=""
               className="w-11 h-11 rounded-lg border border-slate-200 object-cover shrink-0"
             />

@@ -110,6 +110,7 @@ export function SuppliersPage() {
       address: values.address.trim() || undefined,
       notes: values.notes.trim() || undefined,
       rating: values.rating ? Number(values.rating) : undefined,
+      imageUrl: values.imageUrl.trim(),
       createdAt: new Date().toISOString().slice(0, 10),
     };
 

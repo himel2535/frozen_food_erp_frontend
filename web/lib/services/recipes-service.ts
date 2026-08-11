@@ -74,6 +74,7 @@ export type MaterialOption = {
   code: string;
   threshold?: number;
   supplierId?: string;
+  imageUrl?: string;
 };
 
 type Row = Record<string, unknown>;
@@ -893,6 +894,7 @@ export function listMaterialOptions(state: AppState): MaterialOption[] {
     code: String(r.id),
     threshold: Number(r.threshold ?? 0),
     supplierId: String(r.supplierId ?? ''),
+    imageUrl: String(r.imageUrl ?? ''),
   }));
 
   const fromInv = inventory.map((p) => ({
@@ -904,6 +906,7 @@ export function listMaterialOptions(state: AppState): MaterialOption[] {
     availability: Number(p.stock ?? 0),
     code: String(p.sku ?? p.id),
     threshold: Number(p.minStock ?? p.reorderLevel ?? 0),
+    imageUrl: String(p.imageUrl ?? ''),
   }));
 
   const seen = new Set<string>();

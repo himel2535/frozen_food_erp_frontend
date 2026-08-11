@@ -343,6 +343,7 @@ export const PORT_CONFIGS: Record<string, PortModuleConfig> = {
     { key: 'asset', label: 'Asset', type: 'text', required: true },
     { key: 'value', label: 'Value', type: 'number' },
     { key: 'status', label: 'Status', type: 'select', options: ['active', 'disposed', 'maintenance'] },
+    { key: 'imageUrl', label: 'Asset Photo', type: 'image' },
     { key: 'notes', label: 'Notes', type: 'textarea', advanced: true },
   ]),
 

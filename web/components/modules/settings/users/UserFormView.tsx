@@ -14,6 +14,7 @@ import {
   CF_SUB_PANEL_CLS,
 } from '@/components/modules/crm/customer-form/customer-form-styles';
 import { RoleSectionAccessGrid } from '@/components/modules/settings/roles/RoleSectionAccessGrid';
+import { ImageUploadField } from '@/components/shared/ImageUploadField';
 import { summarizeRoleSections } from '@/lib/services/access-control-service';
 import { MODULE_LIST_SHELL } from '@/lib/ui/module-layout';
 import type { RoleRecord, SectionId } from '@/lib/state/types';
@@ -25,6 +26,7 @@ export type UserFormState = {
   name: string;
   email: string;
   password: string;
+  imageUrl: string;
   status: 'active' | 'disabled';
   isMainAdmin: boolean;
   roleId: string;
@@ -98,6 +100,13 @@ export function UserFormView({
               title={t('settings.users_section_account_title')}
               subtitle={t('settings.users_section_account_subtitle')}
             >
+              <div>
+                <ImageUploadField
+                  label="Profile Photo"
+                  value={form.imageUrl}
+                  onChange={(url) => setForm((f) => ({ ...f, imageUrl: url }))}
+                />
+              </div>
               <div>
                 <label className={CF_LABEL_CLS}>{t('settings.users_name_label')} *</label>
                 <div className="relative flex items-center">

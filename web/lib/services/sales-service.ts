@@ -528,6 +528,7 @@ export function listInventoryProductOptions(state: AppState) {
       name: String(product.name ?? 'Product'),
       sku: String(product.sku ?? ''),
       price: Number(product.price ?? product.sellingPrice ?? product.rate ?? 0),
+      imageUrl: String(product.imageUrl ?? ''),
     };
   });
 }
@@ -688,6 +689,15 @@ export function posCheckout(
     taxRate?: number;
   },
 ) {
+  const now = new Date();
+  const isoDate = now.toISOString().slice(0, 10);
+  const isoAt = now.toISOString();
+  const displayDate = now.toLocaleString();
+  const subtotal = payload.subtotal ?? payload.total;
+  const discount = payload.discount ?? 0;
+  const tax = payload.tax ?? 0;
+  const taxRate = payload.taxRate ?? 0;
+
   const items = payload.cart.map((i) => ({
     productId: i.id,
     name: i.name,
@@ -699,16 +709,17 @@ export function posCheckout(
     customerId: payload.customerId,
     customer: payload.customer,
     total: payload.total,
-    subtotal: payload.subtotal ?? payload.total,
-    discount: payload.discount ?? 0,
-    tax: payload.tax ?? 0,
+    subtotal,
+    discount,
+    tax,
     note: payload.note ?? '',
     status: 'fulfilled',
     items,
     source: 'pos',
-    date: new Date().toISOString().slice(0, 10),
+    date: isoDate,
   });
   if (!result.ok) return result;
+
   const inventory = Array.isArray(state.inventory) ? state.inventory : [];
   payload.cart.forEach((item) => {
     const idx = inventory.findIndex((p) => String(p.id) === String(item.id) || String(p.sku) === String(item.sku));
@@ -717,23 +728,62 @@ export function posCheckout(
     }
   });
   state.inventory = inventory;
+
+  const invoiceItems: InvoiceLineItem[] = payload.cart.map((item, index) => ({
+    id: `pos-${result.id}-${index}`,
+    productId: String(item.id ?? ''),
+    description: String(item.name ?? item.sku ?? 'Item'),
+    qty: Number(item.qty ?? 0),
+    rate: Number(item.price ?? 0),
+    discountPct: 0,
+    taxLabel: 'No Tax',
+    amount: Number(item.qty ?? 0) * Number(item.price ?? 0),
+  }));
+
+  const invoiceResult = createInvoice(state, {
+    customerId: payload.customerId ?? '',
+    customerName: payload.customer,
+    customer: payload.customer,
+    issueDate: isoDate,
+    dueDate: isoDate,
+    status: 'paid',
+    source: 'pos',
+    salesOrderId: result.id,
+    paymentTerms: 'Due on Receipt',
+    terms: 'Due on Receipt',
+    notes: payload.note ?? `POS sale ${result.id}`,
+    items: invoiceItems,
+    docDiscountOverride: discount,
+    docTaxOverride: tax,
+  });
+
   createInState(
     state,
     'posReceipts',
     {
       receipt: result.id,
+      invoiceId: invoiceResult.ok ? invoiceResult.id : undefined,
+      salesOrderId: result.id,
       amount: payload.total,
-      subtotal: payload.subtotal ?? payload.total,
-      discount: payload.discount ?? 0,
-      tax: payload.tax ?? 0,
-      taxRate: payload.taxRate ?? 0,
+      total: payload.total,
+      subtotal,
+      discount,
+      tax,
+      taxRate,
       customer: payload.customer,
+      customerId: payload.customerId ?? '',
       items: payload.cart,
       note: payload.note ?? '',
-      date: new Date().toLocaleString(),
-      at: new Date().toISOString(),
+      date: isoDate,
+      displayDate,
+      at: isoAt,
+      createdAt: isoAt,
     },
     'POS',
   );
-  return result;
+
+  return {
+    ...result,
+    invoiceId: invoiceResult.ok ? invoiceResult.id : undefined,
+  };
 }

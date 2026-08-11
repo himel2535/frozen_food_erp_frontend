@@ -9,6 +9,7 @@ export interface PosProduct {
   category: PosCategoryId;
   imageEmoji: string;
   imageGradient: string;
+  imageUrl?: string;
   isDemo?: boolean;
 }
 
@@ -20,6 +21,7 @@ export interface PosCartItem {
   qty: number;
   imageEmoji: string;
   imageGradient: string;
+  imageUrl?: string;
 }
 
 export interface PosHeldSale {

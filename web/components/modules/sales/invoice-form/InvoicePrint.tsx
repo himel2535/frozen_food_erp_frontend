@@ -18,6 +18,8 @@ import { amountToWordsTaka } from '@/components/modules/sales/invoice-form/inv-a
 import type { InvoicePayload } from '@/components/modules/sales/invoice-form/inv-form-types';
 import { INVOICE_STATUS_OPTIONS } from '@/components/modules/sales/invoice-form/inv-form-options';
 import { INV_COMPANY_INFO } from '@/components/modules/sales/invoice-form/inv-company-info';
+import { useAppStore } from '@/lib/state/app-store';
+import { getCompanyProfile } from '@/lib/services/settings-service';
 import {
   INV_PRINT_BOTTOM_GRID,
   INV_PRINT_FOOTER_STRIP,
@@ -89,6 +91,8 @@ export function InvoicePrint({
   data: InvoicePayload;
 }) {
   const { formatMoney } = useLocaleFormat();
+  const appState = useAppStore((s) => s.appState);
+  const companyLogo = getCompanyProfile(appState).logoUrl || INV_COMPANY_INFO.logoUrl;
   const money = (n: number) => formatMoney(n, { decimals: 2 });
   const activeItems = data.items.filter((item) => item.description.trim() || item.productId);
   const total = data.totals.total;
@@ -104,7 +108,7 @@ export function InvoicePrint({
       <div className="flex items-start justify-between gap-4 mb-4 pb-3 border-b border-slate-200">
         <div className="flex items-start gap-2.5">
           <img
-            src={INV_COMPANY_INFO.logoUrl}
+            src={companyLogo}
             alt=""
             className="w-12 h-12 rounded-lg border border-slate-200 object-cover shrink-0"
           />

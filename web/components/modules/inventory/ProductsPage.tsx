@@ -12,7 +12,9 @@ import { ModuleKpiSection } from '@/components/shared/ModuleKpiSection';
 import { AppTable, type AppTableColumn } from '@/components/shared/AppTable';
 import { StatusBadge } from '@/components/shared/StatusBadge';
 import { TableIconAction } from '@/components/shared/TableIconAction';
+import { InventoryItemThumb } from '@/components/shared/InventoryItemThumb';
 import { useAppStore } from '@/lib/state/app-store';
+import { Package } from 'lucide-react';
 import { INVENTORY_STANDARD_KPI_ICONS as KPI_ICON } from '@/lib/ui/kpi-icons';
 import { ProductForm } from '@/components/modules/inventory/product-form/ProductForm';
 import type { ProductFormPayload, ProductFormValues } from '@/components/modules/inventory/product-form/product-form-types';
@@ -51,6 +53,7 @@ function buildEmptyFormValues(
     uom: units[0]?.code ? String(units[0].code) : '',
     barcode: '',
     productTypeId: 'finished',
+    imageUrl: '',
     cost: '',
     price: '',
     taxLabel: 'No Tax',
@@ -115,10 +118,21 @@ export function ProductsPage() {
       key: 'details',
       label: 'Product Details',
       render: (row) => (
-        <>
-          <div className="font-bold text-slate-800">{String(row.name)}</div>
-          <div className="text-[10px] text-slate-500">{String(row.sku)} · {String(row.uom ?? 'pcs')} · {String(row.productType ?? '')}</div>
-        </>
+        <div className="flex items-center gap-2.5 min-w-0">
+          <InventoryItemThumb
+            imageUrl={String(row.imageUrl ?? '')}
+            alt={String(row.name ?? '')}
+            fallback={(
+              <span className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0 bg-slate-100 text-slate-500">
+                <Package className="w-4 h-4" />
+              </span>
+            )}
+          />
+          <div className="min-w-0">
+            <div className="font-bold text-slate-800 truncate">{String(row.name)}</div>
+            <div className="text-[10px] text-slate-500">{String(row.sku)} · {String(row.uom ?? 'pcs')} · {String(row.productType ?? '')}</div>
+          </div>
+        </div>
       ),
     },
     {

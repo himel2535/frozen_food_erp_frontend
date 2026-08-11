@@ -2,6 +2,7 @@
 
 import { Bell, Briefcase, Settings, User } from 'lucide-react';
 import { AdvancedDetailsToggle } from '@/components/shared/AdvancedDetailsToggle';
+import { ImageUploadField } from '@/components/shared/ImageUploadField';
 import {
   ST_CARD_COMPACT,
   ST_FORM_GRID,
@@ -19,6 +20,7 @@ import {
 } from '@/lib/ui/form-styles';
 
 export type ProfileFormState = {
+  imageUrl: string;
   name: string;
   phone: string;
   email: string;
@@ -119,6 +121,13 @@ export function ProfileSettingsForm({
       <div className={ST_FORM_GRID}>
         <SectionCard icon={<User className="w-4 h-4 text-blue-500" />} title={labels.personalSection}>
           <div className={FORM_GRID_CLS}>
+            <div className="md:col-span-2">
+              <ImageUploadField
+                label="Profile Photo"
+                value={form.imageUrl}
+                onChange={(url) => onChange('imageUrl', url)}
+              />
+            </div>
             <div>
               <label htmlFor="profile-name" className={FORM_LABEL_CLS}>{labels.fullName}</label>
               <input

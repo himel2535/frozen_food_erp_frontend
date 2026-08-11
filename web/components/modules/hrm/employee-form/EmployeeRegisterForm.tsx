@@ -25,6 +25,7 @@ import {
   PAYMENT_METHOD_INFO,
   PAYMENT_METHOD_OPTIONS,
 } from '@/components/modules/hrm/employee-form/employee-form-types';
+import { ImageUploadField } from '@/components/shared/ImageUploadField';
 import type { AppState } from '@/lib/state/types';
 import { listDepartments, listDesignations, listEmployees } from '@/lib/services/hrm-service';
 import { formatMoney, getSalaryStructureById, listSalaryStructures } from '@/lib/services/payroll-service';
@@ -83,6 +84,13 @@ export function EmployeeRegisterForm({
       <div className="flex flex-col gap-3 min-w-0">
         <FormSectionCard number={1} title="Personal Information" subtitle="Basic employee details">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="sm:col-span-2">
+              <ImageUploadField
+                label="Employee Photo"
+                value={form.imageUrl ?? ''}
+                onChange={(url) => setField('imageUrl', url)}
+              />
+            </div>
             <IconInput
               label="Full Name"
               icon={User}

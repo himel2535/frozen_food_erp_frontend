@@ -18,7 +18,7 @@ export function PurchaseRmProductsTable({
   onChange,
 }: {
   items: PurchaseRmLineItem[];
-  productOptions: Array<{ id: string; name: string; category?: string; unit?: string; standardCost?: number; availability?: number; code?: string }>;
+  productOptions: Array<{ id: string; name: string; category?: string; unit?: string; standardCost?: number; availability?: number; code?: string; imageUrl?: string }>;
   onChange: (items: PurchaseRmLineItem[]) => void;
 }) {
   const [search, setSearch] = useState('');

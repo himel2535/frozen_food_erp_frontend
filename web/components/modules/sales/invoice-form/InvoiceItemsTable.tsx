@@ -22,7 +22,7 @@ export function InvoiceItemsTable({
   error,
 }: {
   items: InvoiceLineItem[];
-  productOptions: Array<{ id: string; name: string; sku?: string; price?: number }>;
+  productOptions: Array<{ id: string; name: string; sku?: string; price?: number; imageUrl?: string }>;
   onChange: (items: InvoiceLineItem[]) => void;
   onAddItem?: () => void;
   error?: string;
@@ -119,8 +119,11 @@ export function InvoiceItemsTable({
                             key={p.id}
                             type="button"
                             onClick={() => pickProduct(item.id, p.id)}
-                            className="px-2 py-0.5 rounded-lg bg-blue-50 text-[10px] font-semibold text-blue-700 hover:bg-blue-100 cursor-pointer"
+                            className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-blue-50 text-[10px] font-semibold text-blue-700 hover:bg-blue-100 cursor-pointer"
                           >
+                            {p.imageUrl ? (
+                              <img src={p.imageUrl} alt="" className="w-4 h-4 rounded object-cover shrink-0" />
+                            ) : null}
                             {p.name}
                           </button>
                         ))}

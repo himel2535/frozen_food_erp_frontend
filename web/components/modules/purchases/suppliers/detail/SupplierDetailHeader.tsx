@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { ChevronDown, Mail, MapPin, Phone, User } from 'lucide-react';
 import { toast } from '@/lib/ui/feedback';
 import type { SupplierDetailProfile } from '@/lib/services/suppliers-service';
+import { InventoryItemThumb } from '@/components/shared/InventoryItemThumb';
 import { formatDetailDate, SD_BTN_GREEN, SD_BTN_OUTLINE, SD_BTN_PRIMARY, SD_CARD, supplierDetailInitials } from './supplier-detail-styles';
 import { SUPPLIER_STATUS_BADGE, SUPPLIER_STATUS_DOT } from '../suppliers-styles';
 
@@ -91,9 +92,16 @@ export function SupplierDetailHeader({
   return (
     <div className={`${SD_CARD} flex flex-col lg:flex-row lg:items-start gap-5`}>
       <div className="flex items-start gap-4 flex-1 min-w-0">
-        <span className="inline-flex h-16 w-16 md:h-20 md:w-20 items-center justify-center rounded-2xl bg-violet-500 text-white text-xl font-extrabold shrink-0 shadow-md">
-          {supplierDetailInitials(supplier.name)}
-        </span>
+        <InventoryItemThumb
+          imageUrl={supplier.imageUrl}
+          alt={supplier.name}
+          className="h-16 w-16 md:h-20 md:w-20 rounded-2xl border border-slate-200 object-cover shrink-0 shadow-md"
+          fallback={(
+            <span className="inline-flex h-16 w-16 md:h-20 md:w-20 items-center justify-center rounded-2xl bg-violet-500 text-white text-xl font-extrabold shrink-0 shadow-md">
+              {supplierDetailInitials(supplier.name)}
+            </span>
+          )}
+        />
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">
             <h1 className="text-xl md:text-2xl font-extrabold text-slate-900">{supplier.name}</h1>

@@ -1,3 +1,6 @@
+import type { AppState } from '@/lib/state/types';
+import { listInventory } from '@/lib/services/inventory-service';
+
 export const DELIVERY_METHOD_OPTIONS = [
   'By Our Transport',
   'Customer Pickup',
@@ -57,6 +60,24 @@ export const CHALLAN_PRODUCT_CATALOG: CatalogProduct[] = [
   },
 ];
 
-export function findCatalogProduct(productId: string): CatalogProduct | undefined {
-  return CHALLAN_PRODUCT_CATALOG.find((p) => p.id === productId || p.sku === productId);
+export function listChallanCatalog(state: AppState): CatalogProduct[] {
+  const fromInventory = listInventory(state, { excludeRaw: true })
+    .filter((row) => !row.discontinued)
+    .map((row) => ({
+      id: String(row.id ?? row.sku ?? ''),
+      name: String(row.name ?? 'Product'),
+      sku: String(row.sku ?? ''),
+      unit: String(row.uom ?? row.unit ?? 'Pcs'),
+      imageUrl: String(row.imageUrl ?? '') || '/images/logo-toys.png',
+    }))
+    .filter((p) => p.id);
+
+  return fromInventory.length > 0 ? fromInventory : CHALLAN_PRODUCT_CATALOG;
+}
+
+export function findCatalogProduct(
+  productId: string,
+  catalog: CatalogProduct[] = CHALLAN_PRODUCT_CATALOG,
+): CatalogProduct | undefined {
+  return catalog.find((p) => p.id === productId || p.sku === productId);
 }

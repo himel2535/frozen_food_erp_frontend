@@ -120,6 +120,7 @@ export function CustomerDueFollowUpPage({ customerId }: { customerId: string }) 
       promiseAmount: promiseAmount > 0 ? promiseAmount : undefined,
       expectedPaymentDate: values.expectedPaymentDate || undefined,
       attachmentName: values.attachmentName || undefined,
+      attachmentUrl: values.attachmentUrl || undefined,
     });
 
     if (!result.ok) {

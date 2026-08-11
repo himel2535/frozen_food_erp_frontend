@@ -122,6 +122,7 @@ export function ProfileSettingsPage() {
     }
 
     updateProfile(appState, {
+      imageUrl: form.imageUrl.trim(),
       name: form.name.trim(),
       phone: form.phone.trim(),
       email: form.email.trim(),

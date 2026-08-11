@@ -36,6 +36,7 @@ import {
   getShippingAddressErrors,
   type CustomerFormFieldError,
 } from '@/components/modules/crm/customer-form/customer-form-validation';
+import { ImageUploadField } from '@/components/shared/ImageUploadField';
 
 export type CustomerFormValues = {
   companyName: string;
@@ -45,6 +46,7 @@ export type CustomerFormValues = {
   mobile: string;
   status: string;
   email: string;
+  imageUrl: string;
   billingAddress: string;
   billingArea: string;
   billingCity: string;
@@ -75,6 +77,7 @@ export type CustomerFormPayload = {
   alternativePhone: string;
   email: string;
   status: string;
+  imageUrl: string;
   taxVatNumber: string;
   tinNumber: string;
   tradeLicenseNumber: string;
@@ -104,6 +107,7 @@ export const EMPTY_CUSTOMER_FORM: CustomerFormValues = {
   mobile: '',
   status: 'active',
   email: '',
+  imageUrl: '',
   billingAddress: '',
   billingArea: '',
   billingCity: '',
@@ -170,6 +174,7 @@ function toPayload(form: CustomerFormValues, ownerName: string): CustomerFormPay
     alternativePhone: form.altPhone,
     email: form.email,
     status: form.status,
+    imageUrl: form.imageUrl,
     taxVatNumber: form.binVat,
     tinNumber: form.tin,
     tradeLicenseNumber: form.tradeLicense,
@@ -365,6 +370,13 @@ export function CustomerForm({
                 onChange={(e) => updateForm({ email: e.target.value })}
                 placeholder="email@example.com"
               />
+              <div className="sm:col-span-2 lg:col-span-3 xl:col-span-4">
+                <ImageUploadField
+                  label="Customer Photo"
+                  value={form.imageUrl}
+                  onChange={(url) => updateForm({ imageUrl: url })}
+                />
+              </div>
             </div>
           </FormSectionCard>
 

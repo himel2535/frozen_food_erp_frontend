@@ -26,6 +26,7 @@ export const DEFAULT_CURRENT_USER: CurrentUserProfile = {
   lastPasswordChangeDays: 45,
   logins30Days: 28,
   sessionDetail: 'Chrome on Windows',
+  imageUrl: '',
 };
 
 export const DEFAULT_COMPANY_PROFILE: CompanyProfile = {
@@ -33,6 +34,7 @@ export const DEFAULT_COMPANY_PROFILE: CompanyProfile = {
   legalName: 'Toys Factory Manufacturing Ltd.',
   industry: 'Toy Manufacturing',
   registrationNo: 'TRAD/DSCC/2020/10482',
+  logoUrl: '/images/logo-toys.png',
   phone: '+880 2-55001234',
   email: 'info@toysfactory.com',
   website: 'www.toysfactory.com',

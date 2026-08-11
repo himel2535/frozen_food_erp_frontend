@@ -3,6 +3,7 @@
 import { useMemo } from 'react';
 import { CheckCircle2 } from 'lucide-react';
 import { AppTable, type AppTableColumn } from '@/components/shared/AppTable';
+import { InventoryItemThumb } from '@/components/shared/InventoryItemThumb';
 import { TableIconAction } from '@/components/shared/TableIconAction';
 import {
   formatDueDate,
@@ -55,9 +56,16 @@ export function SuppliersTable({
       label: 'Supplier',
       render: (row) => (
         <div className="flex items-center gap-2.5 min-w-0">
-          <span className={`${SUPPLIER_AVATAR_CLS} ${supplierAvatarColor(row.name)}`}>
-            {getPartyInitials(row.name).slice(0, 1)}
-          </span>
+          <InventoryItemThumb
+            imageUrl={row.imageUrl}
+            alt={row.name}
+            className="w-9 h-9 rounded-full border border-slate-200 object-cover shrink-0"
+            fallback={(
+              <span className={`${SUPPLIER_AVATAR_CLS} ${supplierAvatarColor(row.name)}`}>
+                {getPartyInitials(row.name).slice(0, 1)}
+              </span>
+            )}
+          />
           <div className="min-w-0">
             <div className="font-bold text-slate-900 truncate">{row.name}</div>
             <div className="text-[11px] text-slate-500 truncate">{row.code} • {row.category}</div>

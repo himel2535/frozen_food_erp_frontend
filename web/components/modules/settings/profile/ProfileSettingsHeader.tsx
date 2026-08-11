@@ -1,6 +1,7 @@
 'use client';
 
 import { Briefcase, Building2, Globe, Mail, Pencil, Phone, Shield } from 'lucide-react';
+import { InventoryItemThumb } from '@/components/shared/InventoryItemThumb';
 import { StatusBadge } from '@/components/shared/StatusBadge';
 import {
   ST_ACCENT_BAR,
@@ -28,11 +29,18 @@ export function ProfileSettingsHeader({ profile, subtitle, editLabel, onEdit }: 
       <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-3 pt-1">
         <div className="flex items-start gap-4 flex-1 min-w-0">
           <div className="relative shrink-0">
-            <div
-              className={`w-16 h-16 md:w-20 md:h-20 rounded-full flex items-center justify-center text-lg md:text-xl font-extrabold ring-4 ring-white shadow-md ${employeeAvatarClass(name)}`}
-            >
-              {employeeInitials(name)}
-            </div>
+            <InventoryItemThumb
+              imageUrl={profile.imageUrl}
+              alt={name}
+              className="w-16 h-16 md:w-20 md:h-20 rounded-full border border-slate-200 object-cover shrink-0 ring-4 ring-white shadow-md"
+              fallback={
+                <div
+                  className={`w-16 h-16 md:w-20 md:h-20 rounded-full flex items-center justify-center text-lg md:text-xl font-extrabold ring-4 ring-white shadow-md ${employeeAvatarClass(name)}`}
+                >
+                  {employeeInitials(name)}
+                </div>
+              }
+            />
             {online ? (
               <span className="absolute bottom-1 right-1 w-4 h-4 rounded-full bg-emerald-500 border-2 border-white shadow-sm" title="Online" />
             ) : null}

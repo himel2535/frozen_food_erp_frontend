@@ -44,6 +44,7 @@ export async function GET(request: Request) {
       uid,
       email: String(value.email ?? ''),
       name: String(value.name ?? ''),
+      imageUrl: value.imageUrl ? String(value.imageUrl) : undefined,
       isMainAdmin: Boolean(value.isMainAdmin),
       allowedSections: normalizeSections(value.allowedSections),
       roleId: value.roleId ? String(value.roleId) : undefined,
@@ -71,6 +72,7 @@ export async function POST(request: Request) {
       name?: string;
       email?: string;
       password?: string;
+      imageUrl?: string;
       allowedSections?: string[];
       roleId?: string;
       isMainAdmin?: boolean;
@@ -79,6 +81,7 @@ export async function POST(request: Request) {
     const name = String(body.name ?? '').trim();
     const email = String(body.email ?? '').trim().toLowerCase();
     const password = String(body.password ?? '');
+    const imageUrl = String(body.imageUrl ?? '').trim();
     const roleId = body.roleId ? String(body.roleId).trim() : undefined;
 
     let allowedSections = normalizeSections(body.allowedSections);
@@ -109,6 +112,7 @@ export async function POST(request: Request) {
       uid: created.uid,
       email,
       name,
+      imageUrl: imageUrl || undefined,
       isMainAdmin: Boolean(body.isMainAdmin),
       allowedSections: body.isMainAdmin ? ['*'] : allowedSections,
       roleId: body.isMainAdmin ? undefined : roleId,
@@ -136,6 +140,7 @@ export async function PATCH(request: Request) {
     const body = (await request.json()) as {
       uid?: string;
       name?: string;
+      imageUrl?: string;
       allowedSections?: string[];
       roleId?: string | null;
       status?: 'active' | 'disabled';
@@ -158,6 +163,9 @@ export async function PATCH(request: Request) {
 
     if (typeof body.name === 'string' && body.name.trim()) {
       updates.name = body.name.trim();
+    }
+    if (typeof body.imageUrl === 'string') {
+      updates.imageUrl = body.imageUrl.trim();
     }
     if (body.allowedSections) {
       updates.allowedSections = body.isMainAdmin || existing.isMainAdmin

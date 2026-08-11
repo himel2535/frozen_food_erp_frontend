@@ -1,6 +1,7 @@
 'use client';
 
 import { Briefcase, Building2, Calendar, Mail, Phone, User } from 'lucide-react';
+import { InventoryItemThumb } from '@/components/shared/InventoryItemThumb';
 import { StatusBadge } from '@/components/shared/StatusBadge';
 import {
   ED_ACCENT_BAR,
@@ -21,6 +22,7 @@ type EmployeeDetailHeaderProps = {
 
 export function EmployeeDetailHeader({ employee, departmentInfo }: EmployeeDetailHeaderProps) {
   const name = String(employee.name ?? 'Employee');
+  const imageUrl = String(employee.imageUrl ?? '');
   const department = String(employee.department ?? '—');
   const designation = String(employee.designation ?? '—');
   const manager = String(employee.manager ?? '—');
@@ -30,11 +32,18 @@ export function EmployeeDetailHeader({ employee, departmentInfo }: EmployeeDetai
         <div className={ED_ACCENT_BAR} />
         <div className="flex flex-col lg:flex-row lg:items-start gap-5 pt-1">
           <div className="flex items-start gap-4 flex-1 min-w-0">
-            <div
-              className={`w-16 h-16 md:w-20 md:h-20 rounded-full flex items-center justify-center text-lg md:text-xl font-extrabold shrink-0 ring-4 ring-white shadow-md ${employeeAvatarClass(name)}`}
-            >
-              {employeeInitials(name)}
-            </div>
+            <InventoryItemThumb
+              imageUrl={imageUrl}
+              alt={name}
+              className="w-16 h-16 md:w-20 md:h-20 rounded-full object-cover shrink-0 ring-4 ring-white shadow-md"
+              fallback={
+                <div
+                  className={`w-16 h-16 md:w-20 md:h-20 rounded-full flex items-center justify-center text-lg md:text-xl font-extrabold shrink-0 ring-4 ring-white shadow-md ${employeeAvatarClass(name)}`}
+                >
+                  {employeeInitials(name)}
+                </div>
+              }
+            />
             <div className="min-w-0 flex-1">
               <div className="flex flex-wrap items-center gap-2">
                 <h1 className="text-2xl md:text-3xl font-extrabold text-slate-900 tracking-tight">{name}</h1>

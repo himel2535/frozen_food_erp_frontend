@@ -65,6 +65,7 @@ export function createEmptyLineItem(material?: {
   standardCost?: number;
   availability?: number;
   code?: string;
+  imageUrl?: string;
 }): PurchaseRmLineItem {
   return {
     id: `line-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
@@ -72,7 +73,7 @@ export function createEmptyLineItem(material?: {
     productName: material?.name ?? '',
     sku: material?.code ?? material?.id ?? '',
     category: material?.category ?? '',
-    imageUrl: '/images/logo-toys.png',
+    imageUrl: material?.imageUrl || '/images/logo-toys.png',
     currentStock: Number(material?.availability ?? 0),
     unit: material?.unit ?? 'pcs',
     qty: 0,

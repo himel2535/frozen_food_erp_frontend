@@ -6,6 +6,7 @@ import { Footer } from '@/components/layout/Footer';
 import { FormHeader } from '@/components/layout/FormHeader';
 import { AdvancedDetailsToggle } from '@/components/shared/AdvancedDetailsToggle';
 import { DateInput } from '@/components/shared/DateInput';
+import { ImageUploadField } from '@/components/shared/ImageUploadField';
 import type { PortField } from '@/lib/modules/port-types';
 import { MODULE_FORM_SHELL } from '@/lib/ui/module-layout';
 import {
@@ -288,6 +289,16 @@ export function AppFormFieldInput({
     );
   }
 
+  if (field.type === 'image') {
+    return (
+      <ImageUploadField
+        label={field.label}
+        value={value}
+        onChange={onChange}
+      />
+    );
+  }
+
   const inputType =
     field.type === 'number'
       ? 'number'
@@ -336,11 +347,13 @@ export function AppFormFields({
   const gridCls = columns === 1 ? 'grid grid-cols-1 gap-y-5 text-xs font-semibold text-slate-700' : FORM_GRID_CLS;
 
   const renderField = (field: PortField) => (
-    <div key={field.key} className={field.type === 'textarea' ? 'md:col-span-2' : ''}>
-      <label className={FORM_LABEL_CLS}>
-        {field.label}
-        {field.required ? <span className="text-rose-500 normal-case"> *</span> : null}
-      </label>
+    <div key={field.key} className={field.type === 'textarea' || field.type === 'image' ? 'md:col-span-2' : ''}>
+      {field.type !== 'image' ? (
+        <label className={FORM_LABEL_CLS}>
+          {field.label}
+          {field.required ? <span className="text-rose-500 normal-case"> *</span> : null}
+        </label>
+      ) : null}
       <AppFormFieldInput
         field={field}
         value={values[field.key] ?? ''}

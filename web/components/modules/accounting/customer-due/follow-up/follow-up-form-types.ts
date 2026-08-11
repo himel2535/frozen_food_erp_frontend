@@ -27,6 +27,7 @@ export type FollowUpFormValues = {
   promiseAmount: string;
   expectedPaymentDate: string;
   attachmentName: string;
+  attachmentUrl: string;
 };
 
 export type StaffOption = {

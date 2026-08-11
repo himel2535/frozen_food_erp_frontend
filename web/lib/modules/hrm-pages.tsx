@@ -4,6 +4,7 @@ import { useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { Users } from 'lucide-react';
 import { DedicatedModule } from '@/components/modules/shared/DedicatedModule';
+import { InventoryItemThumb } from '@/components/shared/InventoryItemThumb';
 import { TableIconAction } from '@/components/shared/TableIconAction';
 import { useLegacyParityConfig } from '@/hooks/use-legacy-parity-config';
 import { useLocaleFormat } from '@/hooks/useLocaleFormat';
@@ -53,9 +54,16 @@ export function EmployeesPage() {
         const name = String(row.name ?? '—');
         return (
           <span className="inline-flex items-center gap-2">
-            <span className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold shrink-0 ${employeeAvatarClass(name)}`}>
-              {employeeInitials(name)}
-            </span>
+            <InventoryItemThumb
+              imageUrl={String(row.imageUrl ?? '')}
+              alt={name}
+              className="w-8 h-8 rounded-full border border-slate-200 object-cover shrink-0"
+              fallback={
+                <span className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold shrink-0 ${employeeAvatarClass(name)}`}>
+                  {employeeInitials(name)}
+                </span>
+              }
+            />
             <span className="font-semibold text-slate-800">{name}</span>
           </span>
         );
