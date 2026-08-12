@@ -7,6 +7,8 @@ import type { DashboardSummary } from '@/lib/services/api-resource-service';
 export const DASHBOARD_CHART_MODULES: readonly ApiModule[] = [
   'salesOrders',
   'invoices',
+  'products',
+  'pos',
   'projects',
 ] as const;
 

@@ -4,7 +4,6 @@ import dynamic from 'next/dynamic';
 import { useMemo, useEffect } from 'react';
 import { loadIcons } from '@iconify/react';
 import { Icon } from '@iconify/react';
-import { Footer } from '@/components/layout/Footer';
 import {
   DashboardLoadingSkeleton,
   DashboardSalesTrendChartSkeleton,
@@ -44,20 +43,11 @@ const DashboardProjectProgress = dynamic(
 
 const KPI_CARDS: { key: string; labelKey: string; icon: string; alert?: boolean }[] = [
   { key: 'month-revenue', labelKey: 'dashboard.total_revenue', icon: 'flat-color-icons:currency-exchange' },
-  { key: 'sales-summary', labelKey: 'dashboard.sales_summary', icon: 'fluent-color:data-trending-24' },
-  { key: 'pending-sales', labelKey: 'dashboard.pending_sales', icon: 'flat-color-icons:shipped' },
   { key: 'customer-due', labelKey: 'dashboard.customer_due', icon: 'fluent-color:person-24' },
   { key: 'low-stock', labelKey: 'dashboard.low_stock', icon: 'fluent-color:alert-badge-24', alert: true },
-  { key: 'pending-production', labelKey: 'dashboard.pending_production', icon: 'fluent-color:clock-24' },
-  { key: 'production-summary', labelKey: 'dashboard.production_summary', icon: 'flat-color-icons:factory' },
+  { key: 'pending-sales', labelKey: 'dashboard.pending_sales', icon: 'flat-color-icons:shipped' },
   { key: 'open-leads', labelKey: 'dashboard.open_leads', icon: 'fluent-color:people-interwoven-24' },
-  { key: 'total-inventory', labelKey: 'dashboard.total_inventory', icon: 'flat-color-icons:shop' },
-  { key: 'pending-purchase', labelKey: 'dashboard.pending_purchase', icon: 'fluent-color:document-add-24' },
-  { key: 'purchase-summary', labelKey: 'dashboard.purchase_summary', icon: 'fluent-color:notebook-24' },
-  { key: 'rm-stock', labelKey: 'dashboard.rm_stock', icon: 'flat-color-icons:tree-structure' },
-  { key: 'fg-stock', labelKey: 'dashboard.fg_stock', icon: 'flat-color-icons:filing-cabinet' },
-  { key: 'sf-stock', labelKey: 'dashboard.sf_stock', icon: 'fluent-color:puzzle-piece-24' },
-  { key: 'supplier-due', labelKey: 'dashboard.supplier_due', icon: 'fluent-color:building-store-24' },
+  { key: 'pending-production', labelKey: 'dashboard.pending_production', icon: 'fluent-color:clock-24' },
 ];
 
 type DashboardViewProps = {
@@ -160,38 +150,38 @@ export function DashboardView({ serverPayload = null }: DashboardViewProps) {
 
   return (
     <DashboardStateProvider value={dashboardState}>
-      <div className="space-y-2 flex flex-col">
-      <section className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2">
+      <div className="flex flex-col flex-1 min-h-0 gap-1">
+      <section className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-1 shrink-0">
         {KPI_CARDS.map((card) => {
           const data = metricValues[card.key];
           return (
             <div
               key={card.key}
-              className="premium-card premium-shadow p-3.5 flex items-center justify-between gap-3 transition-[border-color,box-shadow] hover:border-slate-300 hover:shadow-md min-h-[80px]"
+              className="premium-card premium-shadow p-2.5 flex items-center justify-between gap-2 transition-[border-color,box-shadow] hover:border-slate-300 hover:shadow-md min-h-[68px]"
               data-metric={card.key}
             >
               <div className="flex flex-col justify-center gap-0.5 min-w-0 flex-1 my-auto">
-                <span className="text-xs font-bold text-slate-500 tracking-wide leading-tight">{t(card.labelKey)}</span>
-                <span className="text-base md:text-lg font-extrabold tracking-tight text-slate-900 leading-tight mt-0.5 tabular-nums">{data?.value ?? '—'}</span>
+                <span className="text-[11px] font-bold text-slate-500 tracking-wide leading-tight">{t(card.labelKey)}</span>
+                <span className="text-sm md:text-base font-extrabold tracking-tight text-slate-900 leading-tight mt-0.5 tabular-nums">{data?.value ?? '—'}</span>
                 {card.alert && data?.sub ? (
                   <span
-                    className={`text-[11px] font-bold block ${lowStockCount > 0 ? 'text-rose-600' : 'text-emerald-600'}`}
+                    className={`text-[10px] font-bold block ${lowStockCount > 0 ? 'text-rose-600' : 'text-emerald-600'}`}
                   >
                     {data.sub}
                   </span>
                 ) : data?.sub ? (
-                  <span className="text-[11px] text-slate-500 font-medium block truncate">{data.sub}</span>
+                  <span className="text-[10px] text-slate-500 font-medium block truncate">{data.sub}</span>
                 ) : null}
               </div>
               <div className="kpi-card-icon-wrap shrink-0 my-auto self-center">
-                <Icon icon={card.icon} width={38} height={38} className="kpi-card-icon shrink-0" />
+                <Icon icon={card.icon} width={32} height={32} className="kpi-card-icon shrink-0" />
               </div>
             </div>
           );
         })}
       </section>
 
-      <section className="grid grid-cols-1 lg:grid-cols-4 gap-2 items-stretch">
+      <section className="grid grid-cols-1 lg:grid-cols-4 gap-1 flex-1 min-h-0 items-stretch">
         <SalesTrendChart />
         <RevenueAnalyticsChart />
         <DashboardBusinessAlerts />
@@ -200,8 +190,6 @@ export function DashboardView({ serverPayload = null }: DashboardViewProps) {
       <DashboardBottomPanels />
 
       <DashboardProjectProgress />
-
-      <Footer />
       </div>
     </DashboardStateProvider>
   );

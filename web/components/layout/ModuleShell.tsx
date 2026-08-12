@@ -11,6 +11,7 @@ import {
 import { isHeaderlessModulePath } from '@/lib/navigation/page-meta';
 import {
   MODULE_LIST_SHELL,
+  MODULE_DASHBOARD_SHELL,
   MODULE_SCROLL_ID,
   MODULE_SETTINGS_OVERVIEW_SHELL,
   MODULE_SHELL_SUPPRESSED,
@@ -39,12 +40,15 @@ export function ModuleShell({ children }: { children: React.ReactNode }) {
   const chromeSuppressed = getChromeSuppressedSnapshot();
   const isSettingsOverview = isHeaderlessModulePath(pathname);
   const path = pathname.split('?')[0].split('#')[0].replace(/\/$/, '') || '/dashboard';
-  const showModuleHeader = !chromeSuppressed && path !== '/dashboard' && !isSettingsOverview;
+  const isDashboard = path === '/dashboard';
+  const showModuleHeader = !chromeSuppressed && !isDashboard && !isSettingsOverview;
   const shellClass = chromeSuppressed
     ? MODULE_SHELL_SUPPRESSED
-    : isSettingsOverview
-      ? MODULE_SETTINGS_OVERVIEW_SHELL
-      : MODULE_LIST_SHELL;
+    : isDashboard
+      ? MODULE_DASHBOARD_SHELL
+      : isSettingsOverview
+        ? MODULE_SETTINGS_OVERVIEW_SHELL
+        : MODULE_LIST_SHELL;
 
   return (
     <div id={MODULE_SCROLL_ID} className={shellClass}>

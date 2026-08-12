@@ -1,4 +1,5 @@
 import type { AppState } from '@/lib/state/types';
+import { computeTotalStock, listInventory } from '@/lib/services/inventory-service';
 
 export type SalesTrendRange = 'day' | 'week' | 'month' | 'quarter' | 'year';
 
@@ -272,26 +273,56 @@ export type TopProductRow = {
   revenue: number;
 };
 
-export function getTopProducts(state: AppState, limit = 3): TopProductRow[] {
-  const orders = Array.isArray(state.salesOrders) ? state.salesOrders : [];
-  const map = new Map<string, TopProductRow>();
+function accumulateLineItem(map: Map<string, TopProductRow>, item: Record<string, unknown>) {
+  const name = String(item.name ?? item.productName ?? item.description ?? '').trim();
+  if (!name) return;
+  const existing = map.get(name) ?? { name, category: String(item.category ?? '—'), sold: 0, revenue: 0 };
+  const qty = Number(item.qty ?? item.quantity ?? 0);
+  const price = Number(item.price ?? item.unitPrice ?? item.rate ?? 0);
+  existing.sold += qty;
+  existing.revenue += qty * price;
+  map.set(name, existing);
+}
 
-  for (const order of orders) {
-    const items = Array.isArray(order.items) ? order.items : [];
+function accumulateFromDocuments(map: Map<string, TopProductRow>, docs: Record<string, unknown>[]) {
+  for (const doc of docs) {
+    const items = Array.isArray(doc.items) ? doc.items : [];
     for (const item of items) {
-      const name = String(item.name ?? item.productName ?? 'Product');
-      const existing = map.get(name) ?? { name, category: String(item.category ?? '—'), sold: 0, revenue: 0 };
-      const qty = Number(item.qty ?? item.quantity ?? 0);
-      const price = Number(item.price ?? item.unitPrice ?? 0);
-      existing.sold += qty;
-      existing.revenue += qty * price;
-      map.set(name, existing);
+      if (item && typeof item === 'object') {
+        accumulateLineItem(map, item as Record<string, unknown>);
+      }
     }
   }
+}
 
-  return Array.from(map.values())
-    .sort((a, b) => b.revenue - a.revenue)
+function topProductsFromInventory(state: AppState, limit: number, exclude: Set<string>): TopProductRow[] {
+  return listInventory(state, { excludeRaw: true })
+    .map((product) => ({
+      name: String(product.name ?? 'Product'),
+      category: String(product.category ?? '—'),
+      sold: computeTotalStock(product),
+      revenue: computeTotalStock(product) * Number(product.price ?? 0),
+    }))
+    .filter((row) => row.name && !exclude.has(row.name) && (row.sold > 0 || row.revenue > 0))
+    .sort((a, b) => b.revenue - a.revenue || b.sold - a.sold)
     .slice(0, limit);
+}
+
+export function getTopProducts(state: AppState, limit = 3): TopProductRow[] {
+  const map = new Map<string, TopProductRow>();
+  accumulateFromDocuments(map, Array.isArray(state.salesOrders) ? state.salesOrders : []);
+  accumulateFromDocuments(map, Array.isArray(state.invoices) ? state.invoices : []);
+  accumulateFromDocuments(map, Array.isArray(state.posReceipts) ? state.posReceipts : []);
+
+  const ranked = Array.from(map.values())
+    .filter((row) => row.sold > 0 || row.revenue > 0)
+    .sort((a, b) => b.revenue - a.revenue || b.sold - a.sold);
+
+  if (ranked.length >= limit) return ranked.slice(0, limit);
+
+  const seen = new Set(ranked.map((row) => row.name));
+  const inventoryFallback = topProductsFromInventory(state, limit - ranked.length, seen);
+  return [...ranked, ...inventoryFallback].slice(0, limit);
 }
 
 export function formatRelativeTime(iso: string): string {

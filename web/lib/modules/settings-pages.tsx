@@ -39,6 +39,7 @@ export function SettingsAuditLogsPage() {
       hideAdd: true,
       hideInlineForm: true,
       hideDefaultRowActions: () => true,
+      listPageSize: 25,
       searchKeys: ['user', 'type', 'module', 'desc'],
       kpiGridClassName: 'grid grid-cols-1 sm:grid-cols-3 gap-2',
       kpi: getAuditLogKpis,

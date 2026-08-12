@@ -1,7 +1,7 @@
 import { SkeletonBlock } from '@/components/shared/SkeletonBlock';
 import { SkeletonText } from '@/components/skeletons/SkeletonText';
 
-export const DASHBOARD_KPI_COUNT = 15;
+export const DASHBOARD_KPI_COUNT = 6;
 
 const CHART_BAR_HEIGHTS = [42, 68, 55, 82, 61, 74, 48, 70, 58, 65, 52, 78];
 
@@ -70,7 +70,7 @@ function DashboardSubKpiRowSkeleton({ tint = 'default' }: { tint?: 'blue' | 'vio
 
 function DashboardChartBarsSkeleton() {
   return (
-    <div className="h-52 flex gap-2 shrink-0">
+    <div className="flex-1 min-h-[9.5rem] flex gap-2 shrink-0">
       <div className="flex flex-col justify-between pb-6 shrink-0 w-10">
         {Array.from({ length: 5 }).map((_, index) => (
           <SkeletonText key={`y-${index}`} className="h-2 w-8 ml-auto" />
@@ -104,7 +104,7 @@ function DashboardChartBarsSkeleton() {
 
 export function DashboardKpiGridSkeleton() {
   return (
-    <section className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2">
+    <section className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-1.5">
       {Array.from({ length: DASHBOARD_KPI_COUNT }).map((_, index) => (
         <DashboardKpiCardSkeleton key={`dashboard-kpi-${index}`} />
       ))}
@@ -114,12 +114,11 @@ export function DashboardKpiGridSkeleton() {
 
 export function DashboardSalesTrendChartSkeleton() {
   return (
-    <div className="premium-card p-4 premium-shadow lg:col-span-2 flex flex-col h-full min-h-[280px]">
+    <div className="premium-card p-3 premium-shadow lg:col-span-2 flex flex-col h-full min-h-0">
       <DashboardChartHeaderSkeleton />
       <DashboardSubKpiRowSkeleton tint="blue" />
-      <div className="flex-1 flex flex-col justify-end min-h-0">
+      <div className="flex-1 min-h-[9.5rem]">
         <DashboardChartBarsSkeleton />
-        <SkeletonText className="h-2.5 w-48 max-w-full mx-auto mt-2" />
       </div>
     </div>
   );
@@ -127,12 +126,11 @@ export function DashboardSalesTrendChartSkeleton() {
 
 export function DashboardRevenueChartSkeleton() {
   return (
-    <div className="premium-card p-4 premium-shadow lg:col-span-1 flex flex-col h-full min-h-[280px]">
+    <div className="premium-card p-3 premium-shadow lg:col-span-1 flex flex-col h-full min-h-0">
       <DashboardChartHeaderSkeleton />
       <DashboardSubKpiRowSkeleton tint="violet" />
-      <div className="flex-1 flex flex-col justify-end min-h-0">
+      <div className="flex-1 min-h-[9.5rem]">
         <DashboardChartBarsSkeleton />
-        <SkeletonText className="h-2.5 w-44 max-w-full mx-auto mt-2" />
       </div>
     </div>
   );
@@ -140,7 +138,7 @@ export function DashboardRevenueChartSkeleton() {
 
 export function DashboardBusinessAlertsSkeleton() {
   return (
-    <div className="premium-card p-4 premium-shadow flex flex-col justify-between min-h-[280px] h-full">
+    <div className="premium-card p-3 premium-shadow flex flex-col h-full min-h-0">
       <DashboardPanelHeaderSkeleton />
       <div className="flex-1 flex flex-col gap-2.5 overflow-hidden">
         {Array.from({ length: 6 }).map((_, index) => (
@@ -240,7 +238,7 @@ export function DashboardActivityFeedSkeleton() {
 
 export function DashboardBottomPanelsSkeleton() {
   return (
-    <section className="grid grid-cols-1 lg:grid-cols-4 gap-2 items-stretch">
+    <section className="grid grid-cols-1 lg:grid-cols-4 gap-1 flex-1 min-h-0 items-stretch">
       <DashboardTopProductsSkeleton />
       <DashboardRecentInvoicesSkeleton />
       <DashboardActivityFeedSkeleton />
@@ -282,7 +280,7 @@ export function DashboardProjectProgressSkeleton() {
 
 export function DashboardChartsRowSkeleton() {
   return (
-    <section className="grid grid-cols-1 lg:grid-cols-4 gap-2 items-stretch">
+    <section className="grid grid-cols-1 lg:grid-cols-4 gap-1 flex-1 min-h-0 items-stretch">
       <DashboardSalesTrendChartSkeleton />
       <DashboardRevenueChartSkeleton />
       <DashboardBusinessAlertsSkeleton />
@@ -293,7 +291,7 @@ export function DashboardChartsRowSkeleton() {
 /** Full dashboard route shell — matches DashboardView layout exactly. */
 export function DashboardLoadingSkeleton({ label = 'Loading dashboard' }: { label?: string }) {
   return (
-    <div className="space-y-2 flex flex-col" aria-busy="true" aria-label={label}>
+    <div className="flex flex-col flex-1 min-h-0 gap-1" aria-busy="true" aria-label={label}>
       <DashboardKpiGridSkeleton />
       <DashboardChartsRowSkeleton />
       <DashboardBottomPanelsSkeleton />

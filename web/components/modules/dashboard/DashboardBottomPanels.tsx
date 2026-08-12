@@ -46,9 +46,9 @@ export function DashboardBottomPanels() {
   );
 
   return (
-    <section className="grid grid-cols-1 lg:grid-cols-4 gap-2 items-stretch">
-      <div className="premium-card p-4 premium-shadow lg:col-span-2 flex flex-col h-full">
-        <div className="flex items-center justify-between mb-4 border-b border-slate-100 pb-3">
+    <section className="grid grid-cols-1 lg:grid-cols-4 gap-1 items-stretch shrink-0">
+      <div className="premium-card p-2.5 premium-shadow lg:col-span-2 flex flex-col">
+        <div className="flex items-center justify-between mb-1.5 border-b border-slate-100 pb-1.5">
           <div className="flex items-center gap-2">
             <Icon icon="fluent-color:ribbon-24" width={22} height={22} className="shrink-0" />
             <h3 className="text-sm font-bold text-slate-900 tracking-tight">{t('dashboard.top_products')}</h3>
@@ -60,10 +60,10 @@ export function DashboardBottomPanels() {
             {t('dashboard.view_all')}
           </Link>
         </div>
-        <div className="flex-1 flex flex-col justify-between gap-4 min-h-[9.75rem]">
+        <div className="flex flex-col gap-1">
           {topProducts.length ? (
             topProducts.map((product, idx) => (
-              <div key={product.name} className="flex items-center justify-between text-xs min-h-[2.75rem]">
+              <div key={product.name} className="flex items-center justify-between text-xs min-h-[2rem] py-0.5">
                 <div className="flex items-center gap-2.5 min-w-0">
                   <div className="h-6 w-6 rounded-md bg-slate-100 border border-slate-200 flex items-center justify-center shrink-0">
                     <Icon icon="fluent-color:box-24" width={16} height={16} />
@@ -84,13 +84,13 @@ export function DashboardBottomPanels() {
               </div>
             ))
           ) : (
-            <p className="text-xs font-medium text-slate-400 text-center py-4">{t('common.no_data')}</p>
+            <p className="text-xs font-medium text-slate-400 text-center py-2">{t('common.no_data')}</p>
           )}
         </div>
       </div>
 
-      <div className="premium-card p-4 premium-shadow lg:col-span-1 flex flex-col h-full">
-        <div className="flex items-center justify-between mb-4 border-b border-slate-100 pb-3">
+      <div className="premium-card p-2.5 premium-shadow lg:col-span-1 flex flex-col">
+        <div className="flex items-center justify-between mb-1.5 border-b border-slate-100 pb-1.5">
           <div className="flex items-center gap-2">
             <Icon icon="fluent-color:receipt-24" width={22} height={22} className="shrink-0" />
             <h3 className="text-sm font-bold text-slate-900 tracking-tight">{t('dashboard.recent_invoices')}</h3>
@@ -102,12 +102,12 @@ export function DashboardBottomPanels() {
             {t('dashboard.view_all')}
           </Link>
         </div>
-        <div className="flex-1 flex flex-col justify-between gap-4 min-h-[9.75rem]">
+        <div className="flex flex-col gap-1">
           {recentInvoices.map((inv) => {
             const status = String(inv.status ?? 'pending').toLowerCase();
             const paid = status === 'paid';
             return (
-              <div key={String(inv.id)} className="flex items-center justify-between text-xs min-h-[2.75rem]">
+              <div key={String(inv.id)} className="flex items-center justify-between text-xs min-h-[2rem] py-0.5">
                 <div className="flex flex-col">
                   <span className="font-bold text-slate-800 hover:text-blue-600 cursor-pointer">
                     {String(inv.id)}
@@ -132,8 +132,8 @@ export function DashboardBottomPanels() {
         </div>
       </div>
 
-      <div className="premium-card p-4 premium-shadow flex flex-col h-full">
-        <div className="flex items-center justify-between mb-4 border-b border-slate-100 pb-3">
+      <div className="premium-card p-2.5 premium-shadow flex flex-col">
+        <div className="flex items-center justify-between mb-1.5 border-b border-slate-100 pb-1.5">
           <div className="flex items-center gap-2">
             <Icon icon="fluent-color:history-24" width={22} height={22} className="shrink-0" />
             <h3 className="text-sm font-bold text-slate-900 tracking-tight">{t('dashboard.activity_feed')}</h3>
@@ -145,10 +145,10 @@ export function DashboardBottomPanels() {
             {t('dashboard.view_all')}
           </Link>
         </div>
-        <div className="flex-1 flex flex-col justify-between gap-4 min-h-[9.75rem]">
+        <div className="flex flex-col gap-1">
           {activityItems.length ? (
             activityItems.map((log) => (
-              <div key={log.id} className="flex items-center gap-3 min-h-[2.75rem]">
+              <div key={log.id} className="flex items-center gap-2 min-h-[2rem] py-0.5">
                 <div
                   className={`h-6 w-6 rounded-full flex items-center justify-center shrink-0 text-[10px] font-bold ${moduleBadgeClass(log.module)}`}
                 >
@@ -163,7 +163,7 @@ export function DashboardBottomPanels() {
               </div>
             ))
           ) : (
-            <p className="text-xs font-medium text-slate-400 text-center py-6">{t('common.no_data')}</p>
+            <p className="text-xs font-medium text-slate-400 text-center py-2">{t('common.no_data')}</p>
           )}
         </div>
       </div>

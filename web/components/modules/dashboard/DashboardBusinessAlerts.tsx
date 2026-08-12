@@ -38,8 +38,8 @@ export function DashboardBusinessAlerts() {
   }, [appState]);
 
   return (
-    <div className="premium-card p-4 premium-shadow flex flex-col justify-between min-h-[280px] h-full">
-      <div className="flex items-center justify-between mb-4 border-b border-slate-100 pb-2">
+    <div className="premium-card p-3 premium-shadow flex flex-col h-full min-h-0">
+      <div className="flex items-center justify-between mb-1.5 border-b border-slate-100 pb-1.5 shrink-0">
         <div className="flex items-center gap-2 my-auto">
           <Icon icon="fluent-color:alert-24" width={22} height={22} className="shrink-0 my-auto" />
           <h3 className="text-sm font-bold text-slate-900 tracking-tight my-auto">{t('dashboard.business_alerts')}</h3>
@@ -49,7 +49,7 @@ export function DashboardBusinessAlerts() {
         </Link>
       </div>
 
-      <div className="flex-1 flex flex-col gap-2.5 overflow-y-auto">
+      <div className="flex flex-col gap-1 overflow-hidden">
         {summaries.length ? (
           summaries.map((item) => (
             <Link

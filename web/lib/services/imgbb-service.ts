@@ -37,13 +37,14 @@ function fileToBase64(file: File): Promise<string> {
   });
 }
 
+
 export async function uploadImageToImgBB(file: File): Promise<ImgBBUploadResult> {
   const validationError = validateImageFile(file);
   if (validationError) throw new ImgBBUploadError(validationError);
 
   const apiKey = process.env.NEXT_PUBLIC_IMGBB_API_KEY?.trim();
   if (!apiKey) {
-    throw new ImgBBUploadError('ImgBB API key is missing. Set NEXT_PUBLIC_IMGBB_API_KEY in .env.local.');
+    throw new ImgBBUploadError('ImgBB API key is missing. Set NEXT_PUBLIC_IMGBB_API_KEY in web/.env.local and restart the dev server.');
   }
 
   const base64 = await fileToBase64(file);

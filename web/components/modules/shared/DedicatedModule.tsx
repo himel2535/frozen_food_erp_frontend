@@ -2,7 +2,7 @@
 
 import { toast, confirmAction } from '@/lib/ui/feedback';
 
-import { useMemo, useState, useCallback, type ReactNode } from 'react';
+import { useMemo, useState, useCallback, useEffect, type ReactNode } from 'react';
 import { Footer } from '@/components/layout/Footer';
 import { AppFormFields, AppFormModal } from '@/components/shared/AppForm';
 import { ListToolbar, ModuleToolbarActions } from '@/components/shared/ListToolbar';
@@ -58,6 +58,8 @@ export interface DedicatedModuleConfig extends PortModuleConfig {
   formModalTitle?: (editingId: string | null) => string;
   formModalSubtitle?: (editingId: string | null) => string;
   formSubmitLabel?: (editingId: string | null) => string;
+  /** Client-side list pagination (local-state modules). */
+  listPageSize?: number;
 }
 
 export function DedicatedModule({
@@ -455,14 +457,27 @@ function DedicatedModuleView({ config, configId }: { config: DedicatedModuleConf
   const [search, setSearch] = useState('');
   const [filterValues, setFilterValues] = useState<Record<string, string>>({});
   const [statusFilter, setStatusFilter] = useState('all');
+  const [page, setPage] = useState(1);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [form, setForm] = useState<Record<string, string>>({});
+
+  const listPageSize = config.listPageSize ?? 0;
 
   const rows = useMemo(
     () => filterModuleRows(config.adapter.list(appState), config, search, filterValues, statusFilter),
     [appState, config, search, filterValues, statusFilter],
   );
+
+  useEffect(() => {
+    setPage(1);
+  }, [search, filterValues, statusFilter]);
+
+  const displayRows = useMemo(() => {
+    if (!listPageSize || listPageSize <= 0) return rows;
+    const start = (page - 1) * listPageSize;
+    return rows.slice(start, start + listPageSize);
+  }, [rows, page, listPageSize]);
 
   const moduleTitle = resolveModuleText(t, configId, config, 'title');
   const moduleSubtitle = resolveModuleText(t, configId, config, 'subtitle');
@@ -619,7 +634,7 @@ function DedicatedModuleView({ config, configId }: { config: DedicatedModuleConf
             return String(row[col.key] ?? '—');
           },
         }))}
-        rows={rows}
+        rows={displayRows}
         emptyMessage={t('common.no_records_yet')}
         onRowClick={config.onRowClick}
         rowClassName={config.rowClassName}
@@ -661,6 +676,14 @@ function DedicatedModuleView({ config, configId }: { config: DedicatedModuleConf
           </>
         )}
       />
+      {listPageSize > 0 && (
+        <ListPagination
+          page={page}
+          pageSize={listPageSize}
+          total={rows.length}
+          onPageChange={setPage}
+        />
+      )}
       <Footer />
     {!config.hideInlineForm && (
     <AppFormModal

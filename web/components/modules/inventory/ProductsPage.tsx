@@ -237,7 +237,7 @@ export function ProductsPage() {
 
   useRegisterModuleActions(
     view === 'main' ? (
-      <ModuleToolbarActions onAdd={openCreate} addLabel="+ Add Product SKU" />
+      <ModuleToolbarActions onAdd={openCreate} addLabel="Add Product SKU" />
     ) : null,
     [view, openCreate],
   );

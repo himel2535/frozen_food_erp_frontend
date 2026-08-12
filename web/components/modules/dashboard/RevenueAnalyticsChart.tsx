@@ -21,14 +21,6 @@ const RANGE_LABEL_KEYS: Record<SalesTrendRange, string> = {
   year: 'dashboard.filter_year',
 };
 
-const RANGE_HINT_KEYS: Record<SalesTrendRange, string> = {
-  day: 'dashboard.revenue_day_hint',
-  week: 'dashboard.revenue_week_hint',
-  month: 'dashboard.revenue_month_hint',
-  quarter: 'dashboard.revenue_quarter_hint',
-  year: 'dashboard.revenue_year_hint',
-};
-
 export function RevenueAnalyticsChart() {
   const appState = useDashboardAppState();
   const t = useAppStore((s) => s.t);
@@ -59,14 +51,13 @@ export function RevenueAnalyticsChart() {
   }, [maxValue]);
 
   return (
-    <div className="premium-card p-4 premium-shadow lg:col-span-1 flex flex-col h-full">
-      <div className="flex items-start justify-between gap-3 mb-3">
+    <div className="premium-card p-3 premium-shadow lg:col-span-1 flex flex-col h-full min-h-0">
+      <div className="flex items-start justify-between gap-2 mb-2">
         <div className="min-w-0">
           <div className="flex items-center gap-2">
-            <Icon icon="fluent-color:chart-multiple-24" width={26} height={26} className="shrink-0" />
+            <Icon icon="fluent-color:chart-multiple-24" width={22} height={22} className="shrink-0" />
             <h3 className="text-sm font-bold text-slate-900 tracking-tight">{t('dashboard.revenue_analytics')}</h3>
           </div>
-          <p className="text-[10px] text-slate-500 font-medium mt-0.5">{t(RANGE_HINT_KEYS[range])}</p>
         </div>
         <select
           value={range}
@@ -74,7 +65,7 @@ export function RevenueAnalyticsChart() {
             setRange(e.target.value as SalesTrendRange);
             setHoverIdx(null);
           }}
-          className="bg-slate-50 border border-slate-200 text-[10px] font-semibold text-slate-600 rounded-lg px-2.5 py-1.5 cursor-pointer shrink-0"
+          className="bg-slate-50 border border-slate-200 text-[10px] font-semibold text-slate-600 rounded-lg px-2 py-1 cursor-pointer shrink-0"
         >
           {RANGE_OPTIONS.map((option) => (
             <option key={option} value={option}>
@@ -84,18 +75,18 @@ export function RevenueAnalyticsChart() {
         </select>
       </div>
 
-      <div className="grid grid-cols-3 gap-2 mb-4">
-        <div className="rounded-xl bg-violet-50/80 border border-violet-100 px-3 py-2 min-w-0">
+      <div className="grid grid-cols-3 gap-1.5 mb-2">
+        <div className="rounded-lg bg-violet-50/80 border border-violet-100 px-2 py-1.5 min-w-0">
           <p className="text-[9px] font-bold text-violet-600 uppercase tracking-wide truncate">{t('dashboard.revenue_total')}</p>
-          <p className="text-sm font-extrabold text-slate-900 tabular-nums mt-0.5 truncate">{formatMoney(total)}</p>
+          <p className="text-xs font-extrabold text-slate-900 tabular-nums mt-0.5 truncate">{formatMoney(total)}</p>
         </div>
-        <div className="rounded-xl bg-slate-50 border border-slate-100 px-3 py-2 min-w-0">
+        <div className="rounded-lg bg-slate-50 border border-slate-100 px-2 py-1.5 min-w-0">
           <p className="text-[9px] font-bold text-slate-500 uppercase tracking-wide truncate">{t('dashboard.revenue_avg')}</p>
-          <p className="text-sm font-extrabold text-slate-900 tabular-nums mt-0.5 truncate">{formatMoney(average)}</p>
+          <p className="text-xs font-extrabold text-slate-900 tabular-nums mt-0.5 truncate">{formatMoney(average)}</p>
         </div>
-        <div className="rounded-xl bg-emerald-50/80 border border-emerald-100 px-3 py-2 min-w-0">
+        <div className="rounded-lg bg-emerald-50/80 border border-emerald-100 px-2 py-1.5 min-w-0">
           <p className="text-[9px] font-bold text-emerald-600 uppercase tracking-wide truncate">{t('dashboard.sales_trend_peak')}</p>
-          <p className="text-sm font-extrabold text-slate-900 tabular-nums mt-0.5 truncate">
+          <p className="text-xs font-extrabold text-slate-900 tabular-nums mt-0.5 truncate">
             {activePoint && activePoint.value > 0
               ? `${activePoint.label} · ${formatCompactMoney(activePoint.value)}`
               : '—'}
@@ -103,8 +94,7 @@ export function RevenueAnalyticsChart() {
         </div>
       </div>
 
-      <div className="flex-1 flex flex-col justify-end min-h-0">
-      <div className="h-52 flex gap-2 shrink-0">
+      <div className="flex-1 min-h-[9.5rem] flex gap-2">
         <div className="flex flex-col justify-between text-[9px] font-bold text-slate-400 pb-6 shrink-0 w-10 text-right">
           {yTicks.map((tick) => (
             <span key={tick} className="tabular-nums leading-none">
@@ -163,15 +153,6 @@ export function RevenueAnalyticsChart() {
             ))}
           </div>
         </div>
-      </div>
-
-      {activePoint ? (
-        <p className="text-[10px] text-slate-400 font-medium mt-2 text-center truncate shrink-0">
-          {activePoint.label}
-          {' · '}
-          {t('dashboard.revenue_period_amount', { amount: formatMoney(activePoint.value) })}
-        </p>
-      ) : null}
       </div>
     </div>
   );
