@@ -6,6 +6,7 @@ import { useRegisterModuleActions } from '@/components/layout/ModuleActionsConte
 import { AppFormModal } from '@/components/shared/AppForm';
 import { ModuleKpiSection } from '@/components/shared/ModuleKpiSection';
 import type { KpiCardItem } from '@/components/shared/KpiCards';
+import { shouldShowModuleKpis } from '@/lib/ui/kpi-loading';
 import { ModuleFilterBar } from '@/components/shared/ModuleFilterBar';
 import { MODULE_FILTER_ACTION_BTN, MODULE_FILTER_INPUT } from '@/lib/ui/module-chrome-styles';
 import {
@@ -27,6 +28,8 @@ export function InventoryListLayout({
   onAdd,
   kpis,
   kpiGridClassName,
+  kpiCount,
+  bootLoading = false,
   filters,
   children,
   pagination,
@@ -37,6 +40,8 @@ export function InventoryListLayout({
   onAdd: () => void;
   kpis: KpiCardItem[];
   kpiGridClassName?: string;
+  kpiCount?: number;
+  bootLoading?: boolean;
   filters?: React.ReactNode;
   children: React.ReactNode;
   pagination?: React.ReactNode;
@@ -48,8 +53,13 @@ export function InventoryListLayout({
 
   return (
     <>
-      {kpis.length > 0 && (
-        <ModuleKpiSection items={kpis} gridClassName={kpiGridClassName} />
+      {shouldShowModuleKpis(bootLoading, kpis.length) && (
+        <ModuleKpiSection
+          items={kpis}
+          gridClassName={kpiGridClassName}
+          kpiCount={kpiCount ?? kpis.length}
+          loading={bootLoading}
+        />
       )}
       {filters}
       {children}

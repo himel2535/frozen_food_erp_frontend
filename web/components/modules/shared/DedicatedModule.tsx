@@ -25,7 +25,8 @@ import { DEDICATED_MODULE_I18N, resolveLabel, type TranslateFn } from '@/lib/i18
 import type { PortModuleConfig } from '@/lib/modules/port-types';
 import type { AppState } from '@/lib/state/types';
 import { getLegacyApiModule } from '@/lib/config/extended-api-modules';
-import { isModuleApiMode, type ApiModule } from '@/lib/config/data-source';
+import { isModuleApiMode } from '@/lib/config/data-source';
+import { isKpiBootLoading, pickApiListRows, shouldShowModuleKpis } from '@/lib/ui/kpi-loading';
 import { mapGenericApiRow, mapGenericPayloadToApi } from '@/lib/services/generic-api-mapper';
 import { ApiModeBanner } from '@/components/shared/ApiModeBanner';
 import { apiListEmptyMessage } from '@/lib/services/api-list-ui';
@@ -155,8 +156,11 @@ function DedicatedModuleApiView({
   const [form, setForm] = useState<Record<string, string>>({});
 
   const allRows = useMemo(
-    () => (config.transformRows ? config.transformRows(apiStore.rows) : apiStore.rows),
-    [apiStore.rows, config],
+    () => {
+      const apiRows = config.transformRows ? config.transformRows(apiStore.rows) : apiStore.rows;
+      return pickApiListRows(true, apiStore.initialized, apiRows, []);
+    },
+    [apiStore.rows, apiStore.initialized, config],
   );
   const rows = useMemo(
     () => filterModuleRows(allRows, config, search, filterValues, statusFilter),
@@ -288,13 +292,17 @@ function DedicatedModuleApiView({
     filteredCount: rows.length,
   });
 
+  const bootLoading = isKpiBootLoading(true, apiStore.initialized);
+
   return (
     <>
       <ApiModeBanner module={apiModule} error={apiStore.error} />
-      {kpis.length > 0 && (
+      {shouldShowModuleKpis(bootLoading, kpis.length) && (
         <ModuleKpiSection
           items={kpis}
-          gridClassName={config.kpiGridClassName ?? getKpiGridClassName(kpis.length)}
+          loading={bootLoading}
+          kpiCount={kpis.length || 4}
+          gridClassName={config.kpiGridClassName ?? getKpiGridClassName(kpis.length || 4)}
         />
       )}
       <ListToolbar
@@ -329,6 +337,7 @@ function DedicatedModuleApiView({
           },
         }))}
         rows={rows}
+        loading={bootLoading}
         emptyMessage={emptyMessage}
         onRowClick={config.onRowClick}
         rowClassName={config.rowClassName}

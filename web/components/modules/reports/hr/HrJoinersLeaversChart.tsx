@@ -1,9 +1,11 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import { Icon } from '@iconify/react';
 import { useAppStore } from '@/lib/state/app-store';
 import { ReportSectionHeader } from '@/components/modules/reports/shared/ReportSectionHeader';
+import { animateBarRect } from '@/components/modules/reports/shared/chart-motion';
+import { buildMotionKey } from '@/components/modules/reports/shared/useReportChartIntro';
 import { HR_CARD } from '@/components/modules/reports/hr/hr-report-styles';
 import type { HrJoinersLeaversPoint } from '@/components/modules/reports/hr/hr-report-utils';
 
@@ -18,9 +20,14 @@ export function HrJoinersLeaversChart({
   const boxRef = useRef<HTMLDivElement>(null);
   const joinedGroupRef = useRef<SVGGElement>(null);
   const leftGroupRef = useRef<SVGGElement>(null);
+  const animatedKeyRef = useRef('');
+  const motionKey = useMemo(
+    () => buildMotionKey(data.flatMap((point) => [point.label, point.joined, point.left])),
+    [data],
+  );
 
   useEffect(() => {
-    function draw() {
+    function draw(animate: boolean) {
       const box = boxRef.current;
       const joinedGroup = joinedGroupRef.current;
       const leftGroup = leftGroupRef.current;
@@ -39,33 +46,50 @@ export function HrJoinersLeaversChart({
       data.forEach((point, idx) => {
         const cx = idx * groupWidth + groupWidth / 2;
 
-        const joinedHeight = (point.joined / max) * (h - 16);
-        const leftHeight = (point.left / max) * (h - 16);
+        const joinedHeight = point.joined > 0
+          ? Math.max(6, (point.joined / max) * (h - 16))
+          : 0;
+        const leftHeight = point.left > 0
+          ? Math.max(6, (point.left / max) * (h - 16))
+          : 0;
 
-        const joinedRect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
-        joinedRect.setAttribute('x', String(cx - barWidth - gap / 2));
-        joinedRect.setAttribute('y', String(h - joinedHeight));
-        joinedRect.setAttribute('width', String(barWidth));
-        joinedRect.setAttribute('height', String(joinedHeight));
-        joinedRect.setAttribute('rx', '3');
-        joinedRect.setAttribute('fill', '#10b981');
-        joinedGroup.appendChild(joinedRect);
+        if (joinedHeight > 0) {
+          const joinedRect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+          joinedRect.setAttribute('x', String(cx - barWidth - gap / 2));
+          joinedRect.setAttribute('y', String(h - joinedHeight));
+          joinedRect.setAttribute('width', String(barWidth));
+          joinedRect.setAttribute('height', String(joinedHeight));
+          joinedRect.setAttribute('rx', '3');
+          joinedRect.setAttribute('fill', 'url(#hr-joined-gradient)');
+          joinedGroup.appendChild(joinedRect);
+          if (animate) animateBarRect(joinedRect, joinedHeight, h, 700, idx * 55);
+        }
 
-        const leftRect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
-        leftRect.setAttribute('x', String(cx + gap / 2));
-        leftRect.setAttribute('y', String(h - leftHeight));
-        leftRect.setAttribute('width', String(barWidth));
-        leftRect.setAttribute('height', String(leftHeight));
-        leftRect.setAttribute('rx', '3');
-        leftRect.setAttribute('fill', '#ef4444');
-        leftGroup.appendChild(leftRect);
+        if (leftHeight > 0) {
+          const leftRect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+          leftRect.setAttribute('x', String(cx + gap / 2));
+          leftRect.setAttribute('y', String(h - leftHeight));
+          leftRect.setAttribute('width', String(barWidth));
+          leftRect.setAttribute('height', String(leftHeight));
+          leftRect.setAttribute('rx', '3');
+          leftRect.setAttribute('fill', 'url(#hr-left-gradient)');
+          leftGroup.appendChild(leftRect);
+          if (animate) animateBarRect(leftRect, leftHeight, h, 700, idx * 55 + 30);
+        }
       });
     }
 
-    draw();
-    window.addEventListener('resize', draw);
-    return () => window.removeEventListener('resize', draw);
-  }, [data]);
+    if (animatedKeyRef.current !== motionKey) {
+      animatedKeyRef.current = motionKey;
+      draw(true);
+    } else {
+      draw(false);
+    }
+
+    const onResize = () => draw(false);
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, [data, motionKey]);
 
   return (
     <section className="space-y-2">
@@ -89,6 +113,16 @@ export function HrJoinersLeaversChart({
 
         <div ref={boxRef} className="h-56 w-full relative">
           <svg className="w-full h-full" preserveAspectRatio="none">
+            <defs>
+              <linearGradient id="hr-joined-gradient" x1="0" y1="1" x2="0" y2="0">
+                <stop offset="0%" stopColor="#059669" />
+                <stop offset="100%" stopColor="#34d399" />
+              </linearGradient>
+              <linearGradient id="hr-left-gradient" x1="0" y1="1" x2="0" y2="0">
+                <stop offset="0%" stopColor="#dc2626" />
+                <stop offset="100%" stopColor="#fb7185" />
+              </linearGradient>
+            </defs>
             <g ref={joinedGroupRef} />
             <g ref={leftGroupRef} />
           </svg>

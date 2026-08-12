@@ -11,52 +11,67 @@ import {
   type ApiModule,
 } from '@/lib/config/data-source';
 import { fetchResourceList } from '@/lib/services/api-resource-service';
+import { setApiListCache } from '@/lib/services/api-list-cache';
 import { applyApiDataToAppState } from '@/lib/services/api-app-state-mapper';
 import { onApiMutation } from '@/lib/services/api-sync-events';
 
 const USE_API = isMongoDbBackend();
 const BACKGROUND_MODULES = getApiBackgroundModules();
-const BACKGROUND_CHUNK = 6;
+const BACKGROUND_CHUNK = 4;
 
-async function fetchModules(mods: ApiModule[]) {
-  const entries = await Promise.all(
-    mods.map(async (mod) => [mod, await fetchResourceList(API_RESOURCE_PATHS[mod])] as const),
+async function fetchModulesSafe(mods: ApiModule[]) {
+  const results = await Promise.allSettled(
+    mods.map(async (mod) => {
+      const path = API_RESOURCE_PATHS[mod];
+      const docs = await fetchResourceList(path);
+      setApiListCache(path, docs);
+      return [mod, docs] as const;
+    }),
   );
-  return Object.fromEntries(entries) as Partial<Record<ApiModule, Record<string, unknown>[]>>;
+
+  const partial: Partial<Record<ApiModule, Record<string, unknown>[]>> = {};
+  for (const result of results) {
+    if (result.status !== 'fulfilled') continue;
+    const [mod, docs] = result.value;
+    partial[mod] = docs;
+  }
+  return partial;
 }
 
 function mergeApiSnapshot(partial: Partial<Record<ApiModule, Record<string, unknown>[]>>) {
+  if (Object.keys(partial).length === 0) return;
   const { replaceAppState, appState } = useAppStore.getState();
   replaceAppState(applyApiDataToAppState(appState, partial));
 }
 
-/** Keeps Zustand appState in sync with MongoDB — boot modules first, rest in background. */
+/** Keeps Zustand appState in sync with MongoDB — never blocks the UI. */
 export function ApiStateHydrator() {
   const setApiDataReady = useAppStore((s) => s.setApiDataReady);
   const bootDoneRef = useRef(false);
 
   useEffect(() => {
     if (!USE_API) return;
+    setApiDataReady(true);
+
     let cancelled = false;
 
     void (async () => {
       try {
-        const boot = await fetchModules([...API_BOOT_MODULES]);
+        const boot = await fetchModulesSafe([...API_BOOT_MODULES]);
         if (cancelled) return;
         mergeApiSnapshot(boot);
         bootDoneRef.current = true;
-        setApiDataReady(true);
 
         for (let i = 0; i < BACKGROUND_MODULES.length; i += BACKGROUND_CHUNK) {
           if (cancelled) return;
           const chunk = BACKGROUND_MODULES.slice(i, i + BACKGROUND_CHUNK);
-          const partial = await fetchModules(chunk);
+          const partial = await fetchModulesSafe(chunk);
           if (cancelled) return;
           mergeApiSnapshot(partial);
         }
       } catch {
         if (!cancelled && !bootDoneRef.current) {
-          setApiDataReady(true);
+          bootDoneRef.current = true;
         }
       }
     })();
@@ -71,9 +86,7 @@ export function ApiStateHydrator() {
         ? modules.filter((mod) => MONGODB_READY_MODULES.includes(mod))
         : [...API_BOOT_MODULES]) as ApiModule[];
       if (!targets.length) return;
-      void fetchModules(targets).then((partial) => {
-        if (Object.keys(partial).length > 0) mergeApiSnapshot(partial);
-      });
+      void fetchModulesSafe(targets).then((partial) => mergeApiSnapshot(partial));
     });
   }, []);
 

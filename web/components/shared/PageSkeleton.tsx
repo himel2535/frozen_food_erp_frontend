@@ -1,10 +1,14 @@
 import { MODULE_FILTER_BAR, MODULE_FILTER_BAR_STACKED, MODULE_KPI_SECTION } from '@/lib/ui/module-chrome-styles';
 import { MODULE_LIST_SHELL } from '@/lib/ui/module-layout';
 import { SkeletonBlock } from '@/components/shared/SkeletonBlock';
+import { ModuleTableSkeleton } from '@/components/shared/ModuleTableSkeleton';
+import { ModuleKpiSkeleton } from '@/components/shared/ModuleKpiSkeleton';
+import { getKpiGridClassName } from '@/lib/ui/kpi-grid';
 
 export type PageSkeletonVariant =
   | 'dashboard'
   | 'module-list'
+  | 'module-route'
   | 'sidebar'
   | 'chart'
   | 'form'
@@ -63,27 +67,17 @@ function SkeletonSearchCard() {
 
 export function SkeletonKpiGrid({
   count = DEFAULT_KPI_COUNT,
-  className = 'grid grid-cols-1 sm:grid-cols-2 gap-2',
-  cardClassName = 'premium-card premium-shadow p-3.5 flex items-center justify-between gap-3 min-h-[72px]',
+  className,
 }: {
   count?: number;
   className?: string;
   cardClassName?: string;
 }) {
   return (
-    <div className={MODULE_KPI_SECTION}>
-      <section className={className}>
-      {Array.from({ length: count }).map((_, index) => (
-        <div key={`kpi-${index}`} className={cardClassName}>
-          <div className="flex flex-col gap-2 flex-1 min-w-0">
-            <SkeletonBlock className="h-3 w-20 rounded-md" />
-            <SkeletonBlock className="h-6 w-24 rounded-md" />
-          </div>
-          <SkeletonBlock className="h-10 w-10 rounded-xl shrink-0" />
-        </div>
-      ))}
-      </section>
-    </div>
+    <ModuleKpiSkeleton
+      count={count}
+      gridClassName={className ?? getKpiGridClassName(count)}
+    />
   );
 }
 
@@ -96,40 +90,7 @@ export function SkeletonChartPanel({ className = '' }: { className?: string }) {
 }
 
 function SkeletonModuleTable() {
-  return (
-    <div className="app-table flex-1 min-h-[280px]">
-      <div className="app-table-scroll">
-        <table className="app-table-element">
-          <thead>
-            <tr>
-              {Array.from({ length: TABLE_COLUMNS }).map((_, index) => (
-                <th key={`head-${index}`} className="app-table-th app-table-align-left">
-                  <SkeletonBlock className="h-3.5 w-16 rounded-md" />
-                </th>
-              ))}
-              <th className="app-table-th app-table-th-actions app-table-align-center">
-                <SkeletonBlock className="h-3.5 w-12 mx-auto rounded-md" />
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            {Array.from({ length: TABLE_ROWS }).map((_, rowIndex) => (
-              <tr key={`row-${rowIndex}`} className="app-table-tr">
-                {Array.from({ length: TABLE_COLUMNS }).map((_, colIndex) => (
-                  <td key={`cell-${rowIndex}-${colIndex}`} className="app-table-td app-table-align-left">
-                    <div className="app-table-skeleton app-skeleton" />
-                  </td>
-                ))}
-                <td className="app-table-td app-table-td-actions app-table-align-center">
-                  <div className="app-table-skeleton app-skeleton w-16 mx-auto" />
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </div>
-  );
+  return <ModuleTableSkeleton columns={TABLE_COLUMNS} rows={TABLE_ROWS} />;
 }
 
 function SkeletonDashboard({ label }: { label: string }) {
@@ -155,6 +116,16 @@ function SkeletonModuleList({ label }: { label: string }) {
       <SkeletonModuleHeader />
       <SkeletonKpiGrid />
       <SkeletonSearchCard />
+      <SkeletonModuleTable />
+    </div>
+  );
+}
+
+/** Inside ModuleShell — KPI + table only; filter chrome is page-local and renders immediately. */
+function SkeletonModuleRoute({ label }: { label: string }) {
+  return (
+    <div className="flex-1 min-h-[360px] space-y-1 flex flex-col" aria-busy="true" aria-label={label}>
+      <ModuleKpiSkeleton count={4} gridClassName={getKpiGridClassName(4)} />
       <SkeletonModuleTable />
     </div>
   );
@@ -238,6 +209,8 @@ export function PageSkeleton({
       return <SkeletonDashboard label={label} />;
     case 'module-list':
       return <SkeletonModuleList label={label} />;
+    case 'module-route':
+      return <SkeletonModuleRoute label={label} />;
     case 'sidebar':
       return (
         <SkeletonSidebar collapsed={collapsed} count={count ?? DEFAULT_SIDEBAR_COUNT} />

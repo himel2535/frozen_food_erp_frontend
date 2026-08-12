@@ -10,6 +10,8 @@ import {
   createResource,
   deleteResource,
   fetchResourceList,
+  isCachedResourceList,
+  readCachedResourceList,
   updateResource,
 } from '@/lib/services/api-resource-service';
 import { notifyApiMutation, onApiMutation } from '@/lib/services/api-sync-events';
@@ -23,16 +25,28 @@ export function useApiResourceStore(
   const mapRowRef = useRef(mapRow);
   mapRowRef.current = mapRow;
 
-  const [rows, setRows] = useState<Record<string, unknown>[]>([]);
-  const [loading, setLoading] = useState(enabled);
-  const [initialized, setInitialized] = useState(false);
+  const [rows, setRows] = useState<Record<string, unknown>[]>(() => {
+    if (!enabled) return [];
+    const docs = readCachedResourceList(path);
+    return docs ? docs.map((doc) => mapRow(doc)) : [];
+  });
+  const [loading, setLoading] = useState(() => {
+    if (!enabled) return false;
+    return !isCachedResourceList(path);
+  });
+  const [initialized, setInitialized] = useState(() => {
+    if (!enabled) return true;
+    return isCachedResourceList(path);
+  });
   const [error, setError] = useState<string | null>(null);
   const fetchGenRef = useRef(0);
 
-  const reload = useCallback(async () => {
+  const reload = useCallback(async (opts?: { silent?: boolean }) => {
     if (!enabled) return;
     const generation = ++fetchGenRef.current;
-    setLoading(true);
+    if (!opts?.silent) {
+      setLoading(true);
+    }
     setError(null);
     try {
       const docs = await fetchResourceList(path);
@@ -51,8 +65,9 @@ export function useApiResourceStore(
 
   useEffect(() => {
     if (!enabled) return;
-    void reload();
-  }, [enabled, reload]);
+    const hasCache = isCachedResourceList(path);
+    void reload(hasCache ? { silent: true } : undefined);
+  }, [enabled, path, reload]);
 
   useEffect(() => {
     if (!enabled) return;

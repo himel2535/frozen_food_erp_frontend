@@ -37,19 +37,25 @@ function normalizePath(pathname: string): string {
   return path || '/dashboard';
 }
 
-/** Settings overview pages with in-page headers — hide the shared module title bar. */
+/** Pages with FormHeader / detail chrome — hide the shared ModulePageHeader. */
 export const HEADERLESS_MODULE_PATHS = new Set([
   '/settings/profile',
   '/settings/company',
   '/settings/signatures',
+  '/settings/alert-settings',
   '/sales/pos',
 ]);
 
 export function isHeaderlessModulePath(pathname: string): boolean {
   const path = normalizePath(pathname);
   if (HEADERLESS_MODULE_PATHS.has(path)) return true;
-  if (path === '/projects/new') return true;
   if (/^\/projects\/[^/]+\/setup$/.test(path)) return true;
+  if (path.endsWith('/new') || path.endsWith('/edit')) return true;
+  if (/^\/crm\/customers\/[^/]+$/.test(path)) return true;
+  if (/^\/hrm\/employees\/[^/]+$/.test(path)) return true;
+  if (/^\/purchases\/suppliers\/[^/]+$/.test(path)) return true;
+  if (/^\/payroll\/salary-sheet\/[^/]+\/review$/.test(path)) return true;
+  if (/^\/accounting\/receivables\/[^/]+\/follow-up$/.test(path)) return true;
   return false;
 }
 

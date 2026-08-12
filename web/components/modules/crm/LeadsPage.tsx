@@ -27,6 +27,7 @@ import type { CustomerFormPayload } from '@/components/modules/crm/CustomerForm'
 import { useApiResourceStore } from '@/hooks/use-api-resource-store';
 import { mapApiLeadRow, mapLeadToApi, resolveApiRowId } from '@/lib/services/entity-api-mappers';
 import { ApiModeBanner } from '@/components/shared/ApiModeBanner';
+import { isModuleBootLoading, pickApiListRows } from '@/lib/ui/kpi-loading';
 import { AppTable, type AppTableColumn } from '@/components/shared/AppTable';
 import { TableIconAction } from '@/components/shared/TableIconAction';
 import { StatusBadge } from '@/components/shared/StatusBadge';
@@ -132,6 +133,7 @@ export function LeadsPage() {
   const saveAppState = useAppStore((s) => s.saveAppState);
   const apiMode = isModuleApiMode('leads');
   const apiStore = useApiResourceStore('leads', mapApiLeadRow);
+  const bootLoading = isModuleBootLoading(apiMode, apiStore.initialized);
   const [view, setView] = useState<'main' | 'form'>('main');
   const [search, setSearch] = useState('');
   const [stageFilter, setStageFilter] = useState('all');
@@ -152,9 +154,9 @@ export function LeadsPage() {
   const owners = useMemo(() => getOwnerOptions(appState), [appState]);
   const currentUser = useMemo(() => getUserContext(appState), [appState]);
   const allLeads = useMemo(() => {
-    if (apiMode) return apiStore.rows;
-    return getEnrichedLeadList(appState);
-  }, [apiMode, apiStore.rows, appState]);
+    const local = getEnrichedLeadList(appState);
+    return pickApiListRows(apiMode, apiStore.initialized, apiStore.rows, local);
+  }, [apiMode, apiStore.initialized, apiStore.rows, appState]);
   const metrics = useMemo(() => {
     if (apiMode) {
       const open = allLeads.filter((l) => !['won', 'lost'].includes(String(l.status)));
@@ -477,11 +479,10 @@ export function LeadsPage() {
   return (
     <>
       {apiMode && <ApiModeBanner module="leads" />}
-      {apiMode && apiStore.loading && (
-        <div className="p-4 text-center text-sm text-slate-500">Loading leads…</div>
-      )}
       <ModuleKpiSection
         gridClassName="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2"
+        kpiCount={5}
+        loading={bootLoading}
         items={[
           { key: 'leads', label: t('crm.kpi_new_leads'), value: formatCount(Number(metrics.newThisWeek)), sub: t('crm.kpi_this_week') },
           { key: 'pending', label: t('crm.kpi_follow_up_today'), value: formatCount(Number(metrics.followUpToday)), sub: t('crm.kpi_leads_to_contact') },
@@ -554,6 +555,7 @@ export function LeadsPage() {
             className="flex-1"
             columns={columns}
             rows={paged}
+            loading={bootLoading}
             emptyMessage={t('crm.no_leads')}
             rowClassName={(row) => (String(row.id) === selectedId ? 'bg-blue-50/80' : '')}
             onRowClick={(row) => setSelectedId(String(row.id))}

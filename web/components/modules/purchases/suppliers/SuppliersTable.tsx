@@ -31,6 +31,7 @@ function StatusBadge({ supplier }: { supplier: EnrichedSupplier }) {
 
 export function SuppliersTable({
   rows,
+  loading = false,
   page,
   pageSize,
   onPageChange,
@@ -39,6 +40,7 @@ export function SuppliersTable({
   onDeactivate,
 }: {
   rows: EnrichedSupplier[];
+  loading?: boolean;
   page: number;
   pageSize: number;
   onPageChange: (page: number) => void;
@@ -144,6 +146,7 @@ export function SuppliersTable({
       <AppTable
         columns={columns}
         rows={pagedRows}
+        loading={loading}
         emptyMessage="No suppliers found."
         renderActions={(row) => (
           <div className="flex items-center justify-end gap-1">

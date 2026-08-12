@@ -5,7 +5,7 @@ import { ModuleKpiSection } from '@/components/shared/ModuleKpiSection';
 import type { KpiCardItem } from '@/components/shared/KpiCards';
 import { formatDueMoney, type SupplierListMetrics } from '@/lib/services/suppliers-service';
 
-export function SuppliersMetrics({ metrics }: { metrics: SupplierListMetrics }) {
+export function SuppliersMetrics({ metrics, loading = false }: { metrics: SupplierListMetrics; loading?: boolean }) {
   const items: KpiCardItem[] = [
     {
       key: 'total-suppliers',
@@ -38,5 +38,5 @@ export function SuppliersMetrics({ metrics }: { metrics: SupplierListMetrics }) 
     },
   ];
 
-  return <ModuleKpiSection items={items} gridClassName="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-2" />;
+  return <ModuleKpiSection items={items} gridClassName="grid grid-cols-2 md:grid-cols-4 gap-2" loading={loading} kpiCount={4} />;
 }

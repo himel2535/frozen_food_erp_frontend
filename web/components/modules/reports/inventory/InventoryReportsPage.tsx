@@ -7,6 +7,8 @@ import { useRegisterModuleActions } from '@/components/layout/ModuleActionsConte
 import { useInventoryReportApiRows } from '@/hooks/use-report-api-data';
 import { ApiModeBanner } from '@/components/shared/ApiModeBanner';
 import { useAppStore } from '@/lib/state/app-store';
+import { isMongoDbBackend } from '@/lib/config/data-source';
+import { isKpiBootLoading, pickApiReportRows } from '@/lib/ui/kpi-loading';
 import { toast } from '@/lib/ui/feedback';
 import { DateInput } from '@/components/shared/DateInput';
 import { InventoryReportMetrics } from '@/components/modules/reports/inventory/InventoryReportMetrics';
@@ -19,6 +21,11 @@ import { InventoryPrintFrame } from '@/components/modules/reports/inventory/Inve
 import { useReportPrint } from '@/components/modules/reports/shared/useReportPrint';
 import { ModuleFilterBar } from '@/components/shared/ModuleFilterBar';
 import { MODULE_FILTER_ACTION_BTN, MODULE_PRINT_BTN } from '@/lib/ui/module-chrome-styles';
+import {
+  ReportDonutSkeleton,
+  ReportPanelSkeleton,
+  ReportTableSkeleton,
+} from '@/components/modules/reports/shared/ReportSectionSkeleton';
 import { IR_ANALYTICS_ROW, IR_FILTER_INPUT, type InventoryPrintSectionId } from '@/components/modules/reports/inventory/inventory-report-styles';
 import {
   buildCategoryBreakdown,
@@ -37,7 +44,9 @@ import { exportInventoryReportCsv } from '@/lib/services/report-export';
 
 export function InventoryReportsPage() {
   const appState = useAppStore((s) => s.appState);
+  const apiMode = isMongoDbBackend();
   const apiReport = useInventoryReportApiRows();
+  const kpiLoading = isKpiBootLoading(apiMode, apiReport.initialized);
   const t = useAppStore((s) => s.t);
   const { printSection, printTarget } = useReportPrint<InventoryPrintSectionId>();
 
@@ -49,9 +58,14 @@ export function InventoryReportsPage() {
 
   const allRows = useMemo(
     () => listInventoryReportRows(
-      apiReport.initialized ? apiReport.rows : (Array.isArray(appState.reportInventory) ? appState.reportInventory : []),
+      pickApiReportRows(
+        apiMode,
+        apiReport.initialized,
+        apiReport.rows,
+        Array.isArray(appState.reportInventory) ? appState.reportInventory : [],
+      ),
     ),
-    [apiReport.initialized, apiReport.rows, appState.reportInventory],
+    [apiMode, apiReport.initialized, apiReport.rows, appState.reportInventory],
   );
 
   const categories = useMemo(() => uniqueCategories(allRows), [allRows]);
@@ -133,7 +147,7 @@ export function InventoryReportsPage() {
   return (
     <>
         {apiReport.error ? <ApiModeBanner module="products" error={apiReport.error} /> : null}
-        <InventoryReportMetrics items={kpis} />
+        <InventoryReportMetrics items={kpis} loading={kpiLoading} />
 
         <ModuleFilterBar
           search={search}
@@ -164,14 +178,32 @@ export function InventoryReportsPage() {
         />
 
         <div className={IR_ANALYTICS_ROW}>
-          <InventoryCategoryDonut slices={categorySlices} totalAmount={totalValue} onPrint={() => printSection('category')} />
-          <InventoryWarehouseDonut slices={warehouseSlices} totalAmount={totalValue} onPrint={() => printSection('warehouse')} />
-          <InventoryStockMovement movement={movement} onPrint={() => printSection('movement')} />
+          {kpiLoading ? (
+            <>
+              <ReportDonutSkeleton />
+              <ReportDonutSkeleton />
+              <ReportPanelSkeleton lines={4} />
+            </>
+          ) : (
+            <>
+              <InventoryCategoryDonut slices={categorySlices} totalAmount={totalValue} onPrint={() => printSection('category')} />
+              <InventoryWarehouseDonut slices={warehouseSlices} totalAmount={totalValue} onPrint={() => printSection('warehouse')} />
+              <InventoryStockMovement movement={movement} onPrint={() => printSection('movement')} />
+            </>
+          )}
         </div>
 
-        <InventoryDetailsTable rows={filteredRows} onPrint={() => printSection('details')} />
-
-        <InventoryLowStockAlerts rows={lowStockRows} onPrint={() => printSection('alerts')} />
+        {kpiLoading ? (
+          <>
+            <ReportTableSkeleton columns={6} />
+            <ReportPanelSkeleton lines={4} />
+          </>
+        ) : (
+          <>
+            <InventoryDetailsTable rows={filteredRows} onPrint={() => printSection('details')} />
+            <InventoryLowStockAlerts rows={lowStockRows} onPrint={() => printSection('alerts')} />
+          </>
+        )}
 
         <Footer />
 

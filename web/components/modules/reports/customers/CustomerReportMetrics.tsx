@@ -3,6 +3,6 @@
 import { ModuleKpiSection } from '@/components/shared/ModuleKpiSection';
 import type { KpiCardItem } from '@/components/shared/KpiCards';
 
-export function CustomerReportMetrics({ items }: { items: KpiCardItem[] }) {
-  return <ModuleKpiSection items={items} />;
+export function CustomerReportMetrics({ items, loading = false }: { items: KpiCardItem[]; loading?: boolean }) {
+  return <ModuleKpiSection items={items} loading={loading} />;
 }

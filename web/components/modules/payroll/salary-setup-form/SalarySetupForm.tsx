@@ -1,8 +1,6 @@
 'use client';
 
 import { useMemo, useRef, useState, type FormEvent } from 'react';
-import Link from 'next/link';
-import { ChevronRight } from 'lucide-react';
 import { FormHeader } from '@/components/layout/FormHeader';
 import { FormSectionCard } from '@/components/modules/crm/customer-form/FormSectionCard';
 import { AssignedEmployeesCard } from '@/components/modules/payroll/salary-setup-form/AssignedEmployeesCard';
@@ -16,7 +14,6 @@ import {
   STATUS_OPTIONS,
 } from '@/components/modules/payroll/salary-setup-form/salary-setup-form-options';
 import {
-  SS_BREADCRUMB_CLS,
   SS_BTN_GHOST,
   SS_BTN_PRIMARY,
   SS_CARD_CLS,
@@ -91,14 +88,6 @@ export function SalarySetupForm({
   return (
     <div className={MODULE_LIST_SHELL}>
       <form ref={formRef} onSubmit={handleSubmit} noValidate className="w-full flex flex-col min-h-full pb-4">
-        <nav className={`${SS_BREADCRUMB_CLS} mb-2 flex items-center gap-1 flex-wrap`}>
-          <Link href="/payroll/structures" className="hover:text-blue-600 cursor-pointer">Payroll</Link>
-          <ChevronRight className="w-3.5 h-3.5" />
-          <Link href="/payroll/structures" className="hover:text-blue-600 cursor-pointer">Salary Setup</Link>
-          <ChevronRight className="w-3.5 h-3.5" />
-          <span className="text-slate-700">{pageTitle}</span>
-        </nav>
-
         <div className="pt-1 md:pt-2 mb-2 flex flex-col lg:flex-row lg:items-start lg:justify-between gap-2">
           <FormHeader
             compact

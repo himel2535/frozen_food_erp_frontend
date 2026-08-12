@@ -17,6 +17,7 @@ import { isModuleApiMode } from '@/lib/config/data-source';
 import { useApiResourceStore } from '@/hooks/use-api-resource-store';
 import { useInventoryLookups } from '@/hooks/use-inventory-lookups';
 import { ApiModeBanner } from '@/components/shared/ApiModeBanner';
+import { isModuleBootLoading } from '@/lib/ui/kpi-loading';
 import { apiListEmptyMessage } from '@/lib/services/api-list-ui';
 import {
   mapApiCategoryRow,
@@ -76,6 +77,7 @@ export function CategoriesPage() {
   const saveAppState = useAppStore((s) => s.saveAppState);
   const apiMode = isModuleApiMode('categories');
   const apiStore = useApiResourceStore('categories', mapApiCategoryRow);
+  const bootLoading = isModuleBootLoading(apiMode, apiStore.initialized);
   const lookups = useInventoryLookups();
   const [view, setView] = useState<'main' | 'form'>('main');
   const [search, setSearch] = useState('');
@@ -209,6 +211,7 @@ export function CategoriesPage() {
         { key: 'empty', label: 'Empty Categories', value: String(emptyCategories), sub: 'currently have no linked products' },
         { key: 'top', label: 'Top Category Value', value: topCategory ? formatMoney(Number(topCategory.totalStockValue ?? 0)) : '$0.00', sub: topCategory ? String(topCategory.name) : '—' },
       ]}
+      bootLoading={bootLoading}
       filters={
         <FilterBar
           search={search}
@@ -223,6 +226,7 @@ export function CategoriesPage() {
       <AppTable
         columns={columns}
         rows={filtered}
+        loading={bootLoading}
         emptyMessage={apiListEmptyMessage(apiStore.loading, apiStore.initialized, 'categories', { totalCount: categories.length, filteredCount: filtered.length })}
         renderActions={(cat) => (
           <>

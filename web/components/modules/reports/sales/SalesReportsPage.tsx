@@ -11,6 +11,8 @@ import { useRegisterModuleActions } from '@/components/layout/ModuleActionsConte
 
 import { useSalesReportApiRows } from '@/hooks/use-report-api-data';
 import { ApiModeBanner } from '@/components/shared/ApiModeBanner';
+import { isMongoDbBackend } from '@/lib/config/data-source';
+import { isKpiBootLoading, pickApiReportRows } from '@/lib/ui/kpi-loading';
 import { useAppStore } from '@/lib/state/app-store';
 
 import { toast } from '@/lib/ui/feedback';
@@ -33,6 +35,12 @@ import { useReportPrint } from '@/components/modules/reports/shared/useReportPri
 
 import { ModuleFilterBar } from '@/components/shared/ModuleFilterBar';
 import { MODULE_FILTER_ACTION_BTN, MODULE_PRINT_BTN } from '@/lib/ui/module-chrome-styles';
+import {
+  ReportDonutSkeleton,
+  ReportLineChartSkeleton,
+  ReportTableSkeleton,
+  ReportTopListSkeleton,
+} from '@/components/modules/reports/shared/ReportSectionSkeleton';
 
 import {
 
@@ -65,7 +73,9 @@ const STATUS_OPTIONS = ['All', 'Paid', 'Unpaid', 'Partial', 'Cancelled'] as cons
 export function SalesReportsPage() {
 
   const appState = useAppStore((s) => s.appState);
+  const apiMode = isMongoDbBackend();
   const apiReport = useSalesReportApiRows();
+  const kpiLoading = isKpiBootLoading(apiMode, apiReport.initialized);
 
   const t = useAppStore((s) => s.t);
 
@@ -87,9 +97,14 @@ export function SalesReportsPage() {
 
   const allRows = useMemo(
     () => listSalesReportRows(
-      apiReport.initialized ? apiReport.rows : (Array.isArray(appState.reportSales) ? appState.reportSales : []),
+      pickApiReportRows(
+        apiMode,
+        apiReport.initialized,
+        apiReport.rows,
+        Array.isArray(appState.reportSales) ? appState.reportSales : [],
+      ),
     ),
-    [apiReport.initialized, apiReport.rows, appState.reportSales],
+    [apiMode, apiReport.initialized, apiReport.rows, appState.reportSales],
   );
 
 
@@ -226,7 +241,7 @@ export function SalesReportsPage() {
 
     <>
         {apiReport.error ? <ApiModeBanner module="invoices" error={apiReport.error} /> : null}
-        <SalesReportMetrics items={kpis} />
+        <SalesReportMetrics items={kpis} loading={kpiLoading} />
 
 
 
@@ -282,26 +297,30 @@ export function SalesReportsPage() {
 
 
         <div className={SR_CHARTS_ROW}>
-
-          <SalesRevenueChart data={chartData} onPrint={() => printSection('revenue')} />
-
-          <SalesStatusDonut summary={statusSummary} onPrint={() => printSection('status')} />
-
-          <SalesTopCustomers customers={topCustomers} onPrint={() => printSection('customers')} />
-
+          {kpiLoading ? (
+            <>
+              <ReportLineChartSkeleton />
+              <ReportDonutSkeleton />
+              <ReportTopListSkeleton />
+            </>
+          ) : (
+            <>
+              <SalesRevenueChart data={chartData} onPrint={() => printSection('revenue')} />
+              <SalesStatusDonut summary={statusSummary} onPrint={() => printSection('status')} />
+              <SalesTopCustomers customers={topCustomers} onPrint={() => printSection('customers')} />
+            </>
+          )}
         </div>
 
-
-
-        <SalesTransactionsTable
-
-          rows={filteredRows}
-
-          onPrint={() => printSection('transactions')}
-
-          printLabel={t('reports.print_section')}
-
-        />
+        {kpiLoading ? (
+          <ReportTableSkeleton columns={7} />
+        ) : (
+          <SalesTransactionsTable
+            rows={filteredRows}
+            onPrint={() => printSection('transactions')}
+            printLabel={t('reports.print_section')}
+          />
+        )}
 
 
 

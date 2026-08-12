@@ -21,7 +21,13 @@ const METRICS = [
   { key: 'averageInvoiceValue', label: 'Avg Invoice Value', icon: 'flat-color-icons:currency-exchange', valueClass: 'text-slate-900' },
 ] as const;
 
-export function InvoiceDashboardMetrics({ summary }: { summary: DashboardSummary }) {
+export function InvoiceDashboardMetrics({
+  summary,
+  loading = false,
+}: {
+  summary: DashboardSummary;
+  loading?: boolean;
+}) {
   const { formatMoney, formatPercent } = useLocaleFormat();
   const values: Record<string, string> = {
     monthlySales: formatMoney(summary.monthlySales, { decimals: 2 }),
@@ -46,7 +52,11 @@ export function InvoiceDashboardMetrics({ summary }: { summary: DashboardSummary
             <div className="min-w-0 flex-1">
               <span className="text-xs font-bold text-slate-500 tracking-wide leading-tight block">{item.label}</span>
               <div className={`text-lg font-extrabold tracking-tight mt-0.5 ${item.valueClass}`}>
-                {values[item.key]}
+                {loading ? (
+                  <span className="app-skeleton inline-block h-6 w-16 rounded" aria-hidden="true" />
+                ) : (
+                  values[item.key]
+                )}
               </div>
             </div>
             <Icon icon={item.icon} width={40} height={40} className="shrink-0" />

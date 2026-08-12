@@ -1,4 +1,5 @@
-/** Avoid route-level suspense flashes inside inventory navigation. */
+import { ModuleRouteSkeleton } from '@/components/shared/ModuleListSkeleton';
+
 export default function InventoryLoading() {
-  return null;
+  return <ModuleRouteSkeleton />;
 }

@@ -181,7 +181,7 @@ export function buildStatusBreakdown(rows: CustomerReportRow[]): CustomerBreakdo
   return [
     { key: 'active', label: 'Active', amount: active, pct: total > 0 ? (active / total) * 100 : 0 },
     { key: 'overdue', label: 'Overdue', amount: overdue, pct: total > 0 ? (overdue / total) * 100 : 0 },
-  ].filter((s) => s.amount > 0);
+  ];
 }
 
 export function buildRecentActivity(

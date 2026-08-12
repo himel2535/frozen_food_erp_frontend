@@ -17,20 +17,27 @@ import { employeeAvatarClass, employeeInitials, getEmployeeMetrics } from '@/lib
 import { formatMoney } from '@/lib/services/payroll-service';
 import { mapApiEmployeeRow } from '@/lib/services/entity-api-mappers';
 import { confirmAction, toast } from '@/lib/ui/feedback';
+import { isModuleBootLoading, pickApiListRows } from '@/lib/ui/kpi-loading';
 import { CF_BTN_PRIMARY } from '@/components/modules/crm/customer-form/customer-form-styles';
 
 export function EmployeesApiPage() {
   const router = useRouter();
   const apiStore = useApiResourceStore('employees', mapApiEmployeeRow);
+  const bootLoading = isModuleBootLoading(true, apiStore.initialized);
   const [search, setSearch] = useState('');
 
+  const sourceRows = useMemo(
+    () => pickApiListRows(true, apiStore.initialized, apiStore.rows, []),
+    [apiStore.initialized, apiStore.rows],
+  );
+
   const rows = useMemo(() => {
-    if (!search) return apiStore.rows;
+    if (!search) return sourceRows;
     const q = search.toLowerCase();
-    return apiStore.rows.filter((row) =>
+    return sourceRows.filter((row) =>
       [row.name, row.email, row.department, row.phone].some((v) => String(v ?? '').toLowerCase().includes(q)),
     );
-  }, [apiStore.rows, search]);
+  }, [sourceRows, search]);
 
   const kpis = useMemo(() => {
     const m = getEmployeeMetrics(rows);
@@ -83,11 +90,12 @@ export function EmployeesApiPage() {
   return (
     <>
       <ApiModeBanner module="employees" error={apiStore.error} />
-      <ModuleKpiSection items={kpis} gridClassName="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2" />
+      <ModuleKpiSection items={kpis} loading={bootLoading} gridClassName="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2" kpiCount={5} />
       <ModuleFilterBar search={search} onSearchChange={setSearch} searchPlaceholder="Search employees..." />
       <AppTable
         columns={columns}
         rows={rows}
+        loading={bootLoading}
         emptyMessage={apiStore.loading ? 'Loading employees…' : 'No employees found.'}
         rowClassName="cursor-pointer hover:bg-slate-50/80"
         onRowClick={(row) => router.push(`/hrm/employees/${String(row.id)}`)}

@@ -53,6 +53,7 @@ const STATUS_OPTIONS = ['active', 'inactive', 'credit-hold'];
 const CF_INPUT_PLAIN = CF_INPUT_CLS.replace('pl-10', 'pl-4');
 const CF_SELECT_PLAIN = CF_SELECT_CLS.replace('pl-10', 'pl-4');
 const CF_TEXTAREA_PLAIN = CF_TEXTAREA_CLS.replace('pl-10', 'pl-4');
+const SF_FIELD_GRID_CLS = 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-x-3 gap-y-3';
 
 export function SupplierForm({
   mode,
@@ -73,7 +74,7 @@ export function SupplierForm({
   return (
     <div className={MODULE_LIST_SHELL}>
       <form
-        className="w-full max-w-3xl mx-auto flex flex-col pb-4"
+        className="w-full flex flex-col min-h-full pb-4"
         onSubmit={(e) => {
           e.preventDefault();
           onSave(values);
@@ -93,21 +94,21 @@ export function SupplierForm({
           />
         </div>
 
-        <div className="space-y-5">
+        <div className="flex flex-col gap-3 flex-1">
           <FormSectionCard
             number={1}
             title="Supplier Details"
             subtitle="Basic vendor information and payment terms."
           >
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-5">
-              <div className="sm:col-span-2">
+            <div className={SF_FIELD_GRID_CLS}>
+              <div className="sm:col-span-2 lg:col-span-3 xl:col-span-4">
                 <ImageUploadField
                   label="Supplier Logo"
                   value={values.imageUrl}
                   onChange={(url) => update({ imageUrl: url })}
                 />
               </div>
-              <label className="block sm:col-span-2">
+              <label className="block sm:col-span-2 lg:col-span-2 xl:col-span-2">
                 <span className={CF_LABEL_CLS}>Supplier Name *</span>
                 <input
                   type="text"
@@ -196,7 +197,7 @@ export function SupplierForm({
               title="Advanced Details"
               subtitle="Optional contact, delivery, and internal notes."
             >
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-5">
+              <div className={SF_FIELD_GRID_CLS}>
                 <label className="block">
                   <span className={CF_LABEL_CLS}>Email</span>
                   <input
@@ -227,7 +228,7 @@ export function SupplierForm({
                     className={CF_INPUT_PLAIN}
                   />
                 </label>
-                <label className="block sm:col-span-2">
+                <label className="block sm:col-span-2 lg:col-span-3 xl:col-span-4">
                   <span className={CF_LABEL_CLS}>Address</span>
                   <textarea
                     value={values.address}
@@ -236,7 +237,7 @@ export function SupplierForm({
                     className={CF_TEXTAREA_PLAIN}
                   />
                 </label>
-                <label className="block sm:col-span-2">
+                <label className="block sm:col-span-2 lg:col-span-3 xl:col-span-4">
                   <span className={CF_LABEL_CLS}>Notes</span>
                   <textarea
                     value={values.notes}

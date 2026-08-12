@@ -43,6 +43,7 @@ import {
 } from '@/components/modules/sales/invoice-list/invoice-list-utils';
 import { getDefaultSignature, getCompanySignatures } from '@/lib/services/settings-service';
 import { isModuleApiMode } from '@/lib/config/data-source';
+import { isKpiBootLoading, pickApiListRows } from '@/lib/ui/kpi-loading';
 import { useApiResourceStore } from '@/hooks/use-api-resource-store';
 import { useCustomersApiStore } from '@/hooks/use-customers-module';
 import { ApiModeBanner } from '@/components/shared/ApiModeBanner';
@@ -136,6 +137,8 @@ export function InvoicesPage() {
   const [formValues, setFormValues] = useState<InvoiceFormValues>(EMPTY_INVOICE_FORM);
   const [printPayload, setPrintPayload] = useState<{ id: string; data: InvoicePayload } | null>(null);
 
+  const kpiLoading = isKpiBootLoading(apiMode, apiStore.initialized);
+
   const customers = useMemo(
     () => {
       if (customersApiMode) {
@@ -155,9 +158,9 @@ export function InvoicesPage() {
   );
 
   const allInvoiceRows = useMemo(() => {
-    if (apiMode) return apiStore.rows;
-    return listInvoices(appState);
-  }, [apiMode, apiStore.rows, appState]);
+    const local = listInvoices(appState);
+    return pickApiListRows(apiMode, apiStore.initialized, apiStore.rows, local);
+  }, [apiMode, apiStore.initialized, apiStore.rows, appState]);
 
   const rows = useMemo(() => {
     let data = allInvoiceRows;
@@ -430,7 +433,7 @@ export function InvoicesPage() {
     <>
         {apiMode ? <ApiModeBanner module="invoices" error={apiStore.error} /> : null}
 
-        <InvoiceDashboardMetrics summary={dashboardSummary} />
+        <InvoiceDashboardMetrics summary={dashboardSummary} loading={kpiLoading} />
         <InvoiceAgingSnapshot aging={dashboardSummary.aging} />
 
         <ModuleFilterBar
@@ -443,6 +446,7 @@ export function InvoicesPage() {
         <AppTable
           columns={columns}
           rows={rows}
+          loading={kpiLoading}
           emptyMessage={apiStore.loading ? 'Loading invoices…' : 'No invoices found.'}
           renderActions={(row) => (
             <>

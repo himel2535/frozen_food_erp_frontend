@@ -14,6 +14,7 @@ import { isModuleApiMode } from '@/lib/config/data-source';
 import { useApiResourceStore } from '@/hooks/use-api-resource-store';
 import { useInventoryLookups } from '@/hooks/use-inventory-lookups';
 import { ApiModeBanner } from '@/components/shared/ApiModeBanner';
+import { isModuleBootLoading } from '@/lib/ui/kpi-loading';
 import { apiListEmptyMessage } from '@/lib/services/api-list-ui';
 import {
   mapApiUnitRow,
@@ -43,6 +44,7 @@ export function UnitsPage() {
   const saveAppState = useAppStore((s) => s.saveAppState);
   const apiMode = isModuleApiMode('units');
   const apiStore = useApiResourceStore('units', mapApiUnitRow);
+  const bootLoading = isModuleBootLoading(apiMode, apiStore.initialized);
   const lookups = useInventoryLookups();
   const [view, setView] = useState<'main' | 'form'>('main');
   const [search, setSearch] = useState('');
@@ -157,6 +159,7 @@ export function UnitsPage() {
         { key: 'used', label: 'In Use by Products', value: String(usedUnits) },
         { key: 'unused', label: 'Unused Units', value: String(Math.max(0, total - usedUnits)) },
       ]}
+      bootLoading={bootLoading}
       filters={
         <FilterBar
           search={search}
@@ -170,6 +173,7 @@ export function UnitsPage() {
       <AppTable
         columns={columns}
         rows={filtered}
+        loading={bootLoading}
         emptyMessage={apiListEmptyMessage(apiStore.loading, apiStore.initialized, 'units', { totalCount: units.length, filteredCount: filtered.length })}
         renderActions={(unit) => (
           <>

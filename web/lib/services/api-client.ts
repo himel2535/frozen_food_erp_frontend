@@ -43,7 +43,23 @@ export async function apiRequest<T>(
     headers,
     ...(method === 'GET' ? { cache: 'no-store' as RequestCache } : {}),
   };
-  const res = await fetch(url, fetchOptions);
+
+  const controller = new AbortController();
+  const timeoutMs = 15000;
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+
+  let res: Response;
+  try {
+    res = await fetch(url, { ...fetchOptions, signal: controller.signal });
+  } catch (err) {
+    clearTimeout(timeoutId);
+    if (err instanceof Error && err.name === 'AbortError') {
+      throw new ApiError(408, 'Request timed out — server is slow or unreachable');
+    }
+    throw err;
+  } finally {
+    clearTimeout(timeoutId);
+  }
   let body: ApiEnvelope<T> | null = null;
   try {
     body = (await res.json()) as ApiEnvelope<T>;

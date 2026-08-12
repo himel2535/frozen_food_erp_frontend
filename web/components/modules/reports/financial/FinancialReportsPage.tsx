@@ -7,6 +7,8 @@ import { useRegisterModuleActions } from '@/components/layout/ModuleActionsConte
 import { useFinancialReportApiRows } from '@/hooks/use-report-api-data';
 import { ApiModeBanner } from '@/components/shared/ApiModeBanner';
 import { useAppStore } from '@/lib/state/app-store';
+import { isMongoDbBackend } from '@/lib/config/data-source';
+import { isKpiBootLoading, pickApiReportRows } from '@/lib/ui/kpi-loading';
 import { toast } from '@/lib/ui/feedback';
 import { DateInput } from '@/components/shared/DateInput';
 import { FinancialReportMetrics } from '@/components/modules/reports/financial/FinancialReportMetrics';
@@ -19,6 +21,12 @@ import { FinancialPrintFrame } from '@/components/modules/reports/financial/Fina
 import { useReportPrint } from '@/components/modules/reports/shared/useReportPrint';
 import { ModuleFilterBar } from '@/components/shared/ModuleFilterBar';
 import { MODULE_FILTER_ACTION_BTN, MODULE_PRINT_BTN } from '@/lib/ui/module-chrome-styles';
+import {
+  ReportDonutSkeleton,
+  ReportLineChartSkeleton,
+  ReportPanelSkeleton,
+  ReportTableSkeleton,
+} from '@/components/modules/reports/shared/ReportSectionSkeleton';
 import {
   FR_BOTTOM_ROW,
   FR_FILTER_INPUT,
@@ -41,7 +49,9 @@ import { exportFinancialReportCsv } from '@/lib/services/report-export';
 
 export function FinancialReportsPage() {
   const appState = useAppStore((s) => s.appState);
+  const apiMode = isMongoDbBackend();
   const apiReport = useFinancialReportApiRows();
+  const kpiLoading = isKpiBootLoading(apiMode, apiReport.initialized);
   const t = useAppStore((s) => s.t);
   const { printSection, printTarget } = useReportPrint<FinancialPrintSectionId>();
 
@@ -52,9 +62,14 @@ export function FinancialReportsPage() {
 
   const allRows = useMemo(
     () => listFinancialReportRows(
-      apiReport.initialized ? apiReport.rows : (Array.isArray(appState.reportFinancial) ? appState.reportFinancial : []),
+      pickApiReportRows(
+        apiMode,
+        apiReport.initialized,
+        apiReport.rows,
+        Array.isArray(appState.reportFinancial) ? appState.reportFinancial : [],
+      ),
     ),
-    [apiReport.initialized, apiReport.rows, appState.reportFinancial],
+    [apiMode, apiReport.initialized, apiReport.rows, appState.reportFinancial],
   );
 
   const filters = useMemo(
@@ -131,7 +146,7 @@ export function FinancialReportsPage() {
   return (
     <>
         {apiReport.error ? <ApiModeBanner module="journals" error={apiReport.error} /> : null}
-        <FinancialReportMetrics items={kpis} />
+        <FinancialReportMetrics items={kpis} loading={kpiLoading} />
 
         <ModuleFilterBar
           search={search}
@@ -155,21 +170,40 @@ export function FinancialReportsPage() {
         />
 
         <div className={FR_MIDDLE_ROW}>
-          <FinancialSummaryTable rows={filteredRows} onPrint={() => printSection('summary')} />
-          <FinancialTrendChart data={trendData} onPrint={() => printSection('trend')} />
+          {kpiLoading ? (
+            <>
+              <ReportTableSkeleton columns={4} />
+              <ReportLineChartSkeleton />
+            </>
+          ) : (
+            <>
+              <FinancialSummaryTable rows={filteredRows} onPrint={() => printSection('summary')} />
+              <FinancialTrendChart data={trendData} onPrint={() => printSection('trend')} />
+            </>
+          )}
         </div>
 
         <div className={FR_BOTTOM_ROW}>
-          <FinancialExpenseDonut
-            title={t('reports.financial_expense_chart')}
-            slices={expenseSlices}
-            totalAmount={totalExpenses}
-            onPrint={() => printSection('expenseChart')}
-            printLabel={t('reports.print_section')}
-            totalLabel={t('reports.financial_total_label')}
-          />
-          <FinancialCashFlowOverview cashFlow={cashFlow} onPrint={() => printSection('cashFlow')} />
-          <FinancialCategorySummary rows={categorySummary} onPrint={() => printSection('categorySummary')} />
+          {kpiLoading ? (
+            <>
+              <ReportDonutSkeleton />
+              <ReportPanelSkeleton lines={5} />
+              <ReportPanelSkeleton lines={5} />
+            </>
+          ) : (
+            <>
+              <FinancialExpenseDonut
+                title={t('reports.financial_expense_chart')}
+                slices={expenseSlices}
+                totalAmount={totalExpenses}
+                onPrint={() => printSection('expenseChart')}
+                printLabel={t('reports.print_section')}
+                totalLabel={t('reports.financial_total_label')}
+              />
+              <FinancialCashFlowOverview cashFlow={cashFlow} onPrint={() => printSection('cashFlow')} />
+              <FinancialCategorySummary rows={categorySummary} onPrint={() => printSection('categorySummary')} />
+            </>
+          )}
         </div>
 
         <Footer />

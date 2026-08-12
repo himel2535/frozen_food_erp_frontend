@@ -16,6 +16,7 @@ import { isModuleApiMode } from '@/lib/config/data-source';
 import { useApiResourceStore } from '@/hooks/use-api-resource-store';
 import { useInventoryLookups, resolveWarehouseName } from '@/hooks/use-inventory-lookups';
 import { ApiModeBanner } from '@/components/shared/ApiModeBanner';
+import { isModuleBootLoading, pickApiListRows } from '@/lib/ui/kpi-loading';
 import { apiListEmptyMessage } from '@/lib/services/api-list-ui';
 import {
   mapApiStockInRow,
@@ -38,6 +39,7 @@ export function StockInPage() {
   const saveAppState = useAppStore((s) => s.saveAppState);
   const apiMode = isModuleApiMode('stockIn');
   const apiStore = useApiResourceStore('stockIn', mapApiStockInRow);
+  const bootLoading = isModuleBootLoading(apiMode, apiStore.initialized);
   const lookups = useInventoryLookups();
   const [view, setView] = useState<'main' | 'form'>('main');
   const [search, setSearch] = useState('');
@@ -50,8 +52,8 @@ export function StockInPage() {
   });
 
   const records = useMemo(
-    () => (apiMode ? apiStore.rows : listStockInRecords(appState)),
-    [apiMode, apiStore.rows, appState],
+    () => pickApiListRows(apiMode, apiStore.initialized, apiStore.rows, listStockInRecords(appState)),
+    [apiMode, apiStore.initialized, apiStore.rows, appState],
   );
   const metrics = useMemo(() => {
     const list = records;
@@ -178,6 +180,7 @@ export function StockInPage() {
         { key: 'val', label: 'Total Stock-In Value', value: formatMoney(metrics.totalVal) },
         { key: 'pending', label: 'Pending Verification', value: `${metrics.pending} pending`, alert: metrics.pending > 0 },
       ]}
+      bootLoading={bootLoading}
       filters={
         <FilterBar
           search={search}
@@ -192,6 +195,7 @@ export function StockInPage() {
       <AppTable
         columns={columns}
         rows={filtered}
+        loading={bootLoading}
         emptyMessage={apiListEmptyMessage(apiStore.loading, apiStore.initialized, 'stock-in records', { totalCount: records.length, filteredCount: filtered.length })}
         renderActions={(row) => (
           String(row.status) === 'Pending' ? (

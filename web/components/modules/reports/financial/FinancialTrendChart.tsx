@@ -1,9 +1,11 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import { Icon } from '@iconify/react';
 import { useAppStore } from '@/lib/state/app-store';
 import { ReportSectionHeader } from '@/components/modules/reports/shared/ReportSectionHeader';
+import { animateAreaFill, animateLinePath } from '@/components/modules/reports/shared/chart-motion';
+import { buildMotionKey } from '@/components/modules/reports/shared/useReportChartIntro';
 import { FR_CARD } from '@/components/modules/reports/financial/financial-report-styles';
 import type { FinancialTrendPoint } from '@/components/modules/reports/financial/financial-report-utils';
 
@@ -20,9 +22,14 @@ export function FinancialTrendChart({
   const expensesPathRef = useRef<SVGPathElement>(null);
   const netPathRef = useRef<SVGPathElement>(null);
   const revenueAreaRef = useRef<SVGPathElement>(null);
+  const animatedKeyRef = useRef('');
+  const motionKey = useMemo(
+    () => buildMotionKey(data.flatMap((point) => [point.label, point.revenue, point.expenses, point.netProfit])),
+    [data],
+  );
 
   useEffect(() => {
-    function draw() {
+    function draw(animate: boolean) {
       const box = boxRef.current;
       const revenuePath = revenuePathRef.current;
       const expensesPath = expensesPathRef.current;
@@ -58,12 +65,23 @@ export function FinancialTrendChart({
       expensesPath.setAttribute('d', pathFrom(expensesPts));
       netPath.setAttribute('d', pathFrom(netPts));
       revenueArea.setAttribute('d', `${revenueLine} L ${w} ${h} L 0 ${h} Z`);
+
+      if (animate && animatedKeyRef.current !== motionKey) {
+        animatedKeyRef.current = motionKey;
+        requestAnimationFrame(() => {
+          animateLinePath(expensesPath, 850, 60);
+          animateLinePath(netPath, 850, 140);
+          animateLinePath(revenuePath, 950, 220);
+          animateAreaFill(revenueArea, 750, 380);
+        });
+      }
     }
 
-    draw();
-    window.addEventListener('resize', draw);
-    return () => window.removeEventListener('resize', draw);
-  }, [data]);
+    draw(true);
+    const onResize = () => draw(false);
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, [data, motionKey]);
 
   return (
     <section className="space-y-2">

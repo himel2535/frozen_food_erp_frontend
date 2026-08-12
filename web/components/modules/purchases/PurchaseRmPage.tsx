@@ -20,6 +20,7 @@ import { useAppStore } from '@/lib/state/app-store';
 import { useApiResourceStore } from '@/hooks/use-api-resource-store';
 import { mapGenericApiRow, mapGenericPayloadToApi } from '@/lib/services/generic-api-mapper';
 import { ApiModeBanner } from '@/components/shared/ApiModeBanner';
+import { isModuleBootLoading } from '@/lib/ui/kpi-loading';
 import { isModuleApiMode } from '@/lib/config/data-source';
 import type { AppState } from '@/lib/state/types';
 import { syncInventoryQuantityDeltas } from '@/lib/services/inventory-api-sync';
@@ -129,6 +130,7 @@ export function PurchaseRmPage() {
   const saveAppState = useAppStore((s) => s.saveAppState);
   const apiMode = isModuleApiMode('purchaseRm');
   const apiStore = useApiResourceStore('purchaseRm', mapGenericApiRow);
+  const bootLoading = isModuleBootLoading(apiMode, apiStore.initialized);
   const focusPoId = searchParams.get('focus');
   const fromApproval = searchParams.get('from') === 'approval';
   const [view, setView] = useState<'main' | 'form'>('main');
@@ -577,7 +579,7 @@ export function PurchaseRmPage() {
   return (
     <>
       {apiStore.error ? <ApiModeBanner module="purchaseRm" error={apiStore.error} /> : null}
-      <ModuleKpiSection items={kpis} />
+      <ModuleKpiSection items={kpis} loading={bootLoading} />
 
       <ModuleFilterBar>
         <div className="flex flex-col gap-3 min-w-0">
@@ -657,6 +659,7 @@ export function PurchaseRmPage() {
           <AppTable
             columns={rmOrderColumns}
             rows={rows as Record<string, unknown>[]}
+            loading={bootLoading}
             emptyMessage="No RM orders found."
             onRowClick={(row) => setSelectedPoId(String(row.id))}
             rowClassName={(row) => {

@@ -24,12 +24,14 @@ import { PO_CARD_CLS } from './purchase-orders-styles';
 
 export function PurchaseOrdersTable({
   rows,
+  loading = false,
   selectedPoId,
   appState,
   onSelect,
   onSave,
 }: {
   rows: Record<string, unknown>[];
+  loading?: boolean;
   selectedPoId: string | null;
   appState: AppState;
   onSelect: (id: string) => void;
@@ -145,6 +147,7 @@ export function PurchaseOrdersTable({
       <AppTable
         columns={columns}
         rows={rows}
+        loading={loading}
         rowKey={(row) => String(row.id)}
         emptyMessage="No purchase orders found."
         onRowClick={(row) => onSelect(String(row.id))}

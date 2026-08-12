@@ -13,6 +13,7 @@ import { ModuleFilterBar } from '@/components/shared/ModuleFilterBar';
 import { MODULE_FILTER_INPUT, MODULE_PRINT_BTN, MODULE_SECONDARY_BTN } from '@/lib/ui/module-chrome-styles';
 import { FilterTabs } from '@/components/shared/FilterTabs';
 import { BulkActionBar } from '@/components/shared/BulkActionBar';
+import { ModuleRouteSkeleton } from '@/components/shared/ModuleListSkeleton';
 import { AppTable, type AppTableColumn } from '@/components/shared/AppTable';
 import { StatusBadge } from '@/components/shared/StatusBadge';
 import { TableIconAction } from '@/components/shared/TableIconAction';
@@ -37,6 +38,8 @@ import {
   exportCustomersCsv,
 } from '@/lib/services/crm-service';
 import { isModuleApiMode } from '@/lib/config/data-source';
+import { isKpiBootLoading, pickApiListRows } from '@/lib/ui/kpi-loading';
+import { getKpiGridClassName } from '@/lib/ui/kpi-grid';
 import { ApiModeBanner } from '@/components/shared/ApiModeBanner';
 import { useCustomersApiStore } from '@/hooks/use-customers-module';
 import {
@@ -128,7 +131,7 @@ function buildFormValuesFromProfile(
 
 export function CustomersPage() {
   return (
-    <Suspense fallback={<div className="flex-1 p-6 text-xs text-slate-500">Loading customers…</div>}>
+    <Suspense fallback={<ModuleRouteSkeleton />}>
       <CustomersPageContent />
     </Suspense>
   );
@@ -143,6 +146,7 @@ function CustomersPageContent() {
   const saveAppState = useAppStore((s) => s.saveAppState);
   const apiMode = isModuleApiMode('customers');
   const apiStore = useCustomersApiStore();
+  const bootLoading = isKpiBootLoading(apiMode, apiStore.initialized);
   const [view, setView] = useState<'main' | 'form'>('main');
   const [search, setSearch] = useState('');
   const [statusTab, setStatusTab] = useState('all');
@@ -183,9 +187,9 @@ function CustomersPageContent() {
   }, [searchParams, appState, owners, router, apiMode]);
 
   const sourceCustomers = useMemo(() => {
-    if (apiMode) return apiStore.rows;
-    return getCustomerList(appState) as Array<Record<string, unknown>>;
-  }, [apiMode, apiStore.rows, appState]);
+    const local = getCustomerList(appState) as Array<Record<string, unknown>>;
+    return pickApiListRows(apiMode, apiStore.initialized, apiStore.rows, local);
+  }, [apiMode, apiStore.initialized, apiStore.rows, appState]);
 
   const customers = useMemo(() => {
     let rows = [...sourceCustomers];
@@ -461,7 +465,7 @@ function CustomersPageContent() {
     <>
       {apiMode ? <ApiModeBanner module="customers" error={apiStore.error} /> : null}
 
-      <ModuleKpiSection items={kpis} />
+      <ModuleKpiSection items={kpis} loading={bootLoading} gridClassName={getKpiGridClassName(4)} kpiCount={4} />
 
       <ModuleFilterBar
         search={search}
@@ -496,6 +500,7 @@ function CustomersPageContent() {
         className="min-w-[900px]"
         columns={customerColumns}
         rows={customers}
+        loading={bootLoading}
         emptyMessage={apiStore.loading ? 'Loading customers…' : t('crm.no_customers')}
         renderActions={(row) => (
           <>

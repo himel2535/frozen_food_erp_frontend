@@ -189,7 +189,7 @@ export function buildPayablesStatusBreakdown(rows: SupplierReportRow[]): Supplie
   return [
     { key: 'clear', label: 'Paid / Clear', amount: clear, pct: total > 0 ? (clear / total) * 100 : 0 },
     { key: 'outstanding', label: 'Outstanding', amount: outstanding, pct: total > 0 ? (outstanding / total) * 100 : 0 },
-  ].filter((s) => s.amount > 0);
+  ];
 }
 
 export function buildRecentPurchaseActivity(

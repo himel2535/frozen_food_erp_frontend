@@ -7,6 +7,8 @@ import { useRegisterModuleActions } from '@/components/layout/ModuleActionsConte
 import { useSupplierReportApiRows } from '@/hooks/use-report-api-data';
 import { ApiModeBanner } from '@/components/shared/ApiModeBanner';
 import { useAppStore } from '@/lib/state/app-store';
+import { isMongoDbBackend } from '@/lib/config/data-source';
+import { isKpiBootLoading, pickApiReportRows } from '@/lib/ui/kpi-loading';
 import { toast } from '@/lib/ui/feedback';
 import { DateInput } from '@/components/shared/DateInput';
 import { formatCurrency } from '@/lib/services/domain-service';
@@ -19,6 +21,11 @@ import { SupplierPrintFrame } from '@/components/modules/reports/suppliers/Suppl
 import { useReportPrint } from '@/components/modules/reports/shared/useReportPrint';
 import { ModuleFilterBar } from '@/components/shared/ModuleFilterBar';
 import { MODULE_FILTER_ACTION_BTN, MODULE_PRINT_BTN } from '@/lib/ui/module-chrome-styles';
+import {
+  ReportDonutSkeleton,
+  ReportPanelSkeleton,
+  ReportTableSkeleton,
+} from '@/components/modules/reports/shared/ReportSectionSkeleton';
 import {
   SR_ANALYTICS_ROW,
   SR_BOTTOM_ROW,
@@ -42,7 +49,9 @@ import { exportSupplierReportCsv } from '@/lib/services/report-export';
 
 export function SupplierReportsPage() {
   const appState = useAppStore((s) => s.appState);
+  const apiMode = isMongoDbBackend();
   const apiReport = useSupplierReportApiRows();
+  const kpiLoading = isKpiBootLoading(apiMode, apiReport.initialized);
   const t = useAppStore((s) => s.t);
   const { printSection, printTarget } = useReportPrint<SupplierPrintSectionId>();
 
@@ -53,9 +62,14 @@ export function SupplierReportsPage() {
 
   const allRows = useMemo(
     () => listSupplierReportRows(
-      apiReport.initialized ? apiReport.rows : (Array.isArray(appState.reportSuppliers) ? appState.reportSuppliers : []),
+      pickApiReportRows(
+        apiMode,
+        apiReport.initialized,
+        apiReport.rows,
+        Array.isArray(appState.reportSuppliers) ? appState.reportSuppliers : [],
+      ),
     ),
-    [apiReport.initialized, apiReport.rows, appState.reportSuppliers],
+    [apiMode, apiReport.initialized, apiReport.rows, appState.reportSuppliers],
   );
 
   const filters = useMemo(
@@ -144,7 +158,7 @@ export function SupplierReportsPage() {
   return (
     <>
         {apiReport.error ? <ApiModeBanner module="suppliers" error={apiReport.error} /> : null}
-        <SupplierReportMetrics items={kpis} />
+        <SupplierReportMetrics items={kpis} loading={kpiLoading} />
 
         <ModuleFilterBar
           search={search}
@@ -168,48 +182,69 @@ export function SupplierReportsPage() {
         />
 
         <div className={SR_ANALYTICS_ROW}>
-          <SupplierBreakdownDonut
-            title={t('reports.suppliers_purchases_chart')}
-            icon="flat-color-icons:shop"
-            slices={purchasesSlices}
-            totalAmount={totalPurchases}
-            colorMap={SR_SUPPLIER_SLICE}
-            onPrint={() => printSection('purchasesChart')}
-            printLabel={t('reports.print_section')}
-            totalLabel={t('reports.suppliers_total_label')}
-            prefix="sr-purchases"
-          />
-          <SupplierBreakdownDonut
-            title={t('reports.suppliers_payables_chart')}
-            icon="flat-color-icons:currency-exchange"
-            slices={payablesSlices}
-            totalAmount={totalPayables}
-            colorMap={SR_SUPPLIER_SLICE}
-            onPrint={() => printSection('payablesChart')}
-            printLabel={t('reports.print_section')}
-            totalLabel={t('reports.suppliers_total_label')}
-            prefix="sr-payables"
-          />
-          <SupplierBreakdownDonut
-            title={t('reports.suppliers_payables_status_chart')}
-            icon="fluent-color:payment-24"
-            slices={payablesStatusSlices}
-            totalAmount={totalSuppliers}
-            colorMap={SR_PAYABLES_STATUS_SLICE}
-            onPrint={() => printSection('payablesStatusChart')}
-            printLabel={t('reports.print_section')}
-            totalLabel={t('reports.suppliers_total_label')}
-            formatCenter={() => formatCurrency(totalPayables)}
-            prefix="sr-status"
-          />
+          {kpiLoading ? (
+            <>
+              <ReportDonutSkeleton />
+              <ReportDonutSkeleton />
+              <ReportDonutSkeleton />
+            </>
+          ) : (
+            <>
+              <SupplierBreakdownDonut
+                title={t('reports.suppliers_purchases_chart')}
+                icon="flat-color-icons:shop"
+                slices={purchasesSlices}
+                totalAmount={totalPurchases}
+                colorMap={SR_SUPPLIER_SLICE}
+                onPrint={() => printSection('purchasesChart')}
+                printLabel={t('reports.print_section')}
+                totalLabel={t('reports.suppliers_total_label')}
+                prefix="sr-purchases"
+              />
+              <SupplierBreakdownDonut
+                title={t('reports.suppliers_payables_chart')}
+                icon="flat-color-icons:currency-exchange"
+                slices={payablesSlices}
+                totalAmount={totalPayables}
+                colorMap={SR_SUPPLIER_SLICE}
+                onPrint={() => printSection('payablesChart')}
+                printLabel={t('reports.print_section')}
+                totalLabel={t('reports.suppliers_total_label')}
+                prefix="sr-payables"
+              />
+              <SupplierBreakdownDonut
+                title={t('reports.suppliers_payables_status_chart')}
+                icon="fluent-color:payment-24"
+                slices={payablesStatusSlices}
+                totalAmount={totalSuppliers}
+                colorMap={SR_PAYABLES_STATUS_SLICE}
+                onPrint={() => printSection('payablesStatusChart')}
+                printLabel={t('reports.print_section')}
+                totalLabel={t('reports.suppliers_total_label')}
+                formatCenter={() => formatCurrency(totalPayables)}
+                prefix="sr-status"
+              />
+            </>
+          )}
         </div>
 
-        <SupplierSummaryTable rows={filteredRows} onPrint={() => printSection('summary')} />
-
-        <div className={SR_BOTTOM_ROW}>
-          <SupplierRecentActivity rows={recentActivity} onPrint={() => printSection('activity')} />
-          <SupplierReportSummary items={kpis} />
-        </div>
+        {kpiLoading ? (
+          <>
+            <ReportTableSkeleton columns={5} />
+            <div className={SR_BOTTOM_ROW}>
+              <ReportPanelSkeleton lines={5} />
+              <ReportPanelSkeleton lines={4} />
+            </div>
+          </>
+        ) : (
+          <>
+            <SupplierSummaryTable rows={filteredRows} onPrint={() => printSection('summary')} />
+            <div className={SR_BOTTOM_ROW}>
+              <SupplierRecentActivity rows={recentActivity} onPrint={() => printSection('activity')} />
+              <SupplierReportSummary items={kpis} />
+            </div>
+          </>
+        )}
 
         <Footer />
 

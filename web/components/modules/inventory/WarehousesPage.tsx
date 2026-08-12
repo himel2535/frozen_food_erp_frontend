@@ -17,6 +17,7 @@ import { isModuleApiMode } from '@/lib/config/data-source';
 import { useApiResourceStore } from '@/hooks/use-api-resource-store';
 import { useInventoryLookups } from '@/hooks/use-inventory-lookups';
 import { ApiModeBanner } from '@/components/shared/ApiModeBanner';
+import { isModuleBootLoading } from '@/lib/ui/kpi-loading';
 import { apiListEmptyMessage } from '@/lib/services/api-list-ui';
 import {
   mapApiWarehouseRow,
@@ -49,6 +50,7 @@ export function WarehousesPage() {
   const saveAppState = useAppStore((s) => s.saveAppState);
   const apiMode = isModuleApiMode('warehouses');
   const apiStore = useApiResourceStore('warehouses', mapApiWarehouseRow);
+  const bootLoading = isModuleBootLoading(apiMode, apiStore.initialized);
   const lookups = useInventoryLookups();
   const [view, setView] = useState<'main' | 'form'>('main');
   const [search, setSearch] = useState('');
@@ -192,6 +194,7 @@ export function WarehousesPage() {
         { key: 'util', label: 'Current Stock Utilization', value: `${metrics.utilizationPercent.toFixed(1)}%`, sub: `${metrics.totalCurrentStock.toLocaleString()} units stored` },
         { key: 'value', label: 'Total Stock Value', value: formatMoney(metrics.totalStockValue), sub: 'across all warehouses' },
       ]}
+      bootLoading={bootLoading}
       filters={
         <FilterBar
           search={search}
@@ -205,6 +208,7 @@ export function WarehousesPage() {
       <AppTable
         columns={columns}
         rows={filtered}
+        loading={bootLoading}
         emptyMessage={apiListEmptyMessage(apiStore.loading, apiStore.initialized, 'warehouses', { totalCount: metrics.warehouses.length, filteredCount: filtered.length })}
         renderActions={(wh) => (
           <>

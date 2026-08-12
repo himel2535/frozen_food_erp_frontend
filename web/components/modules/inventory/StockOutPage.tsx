@@ -16,6 +16,7 @@ import { isModuleApiMode } from '@/lib/config/data-source';
 import { useApiResourceStore } from '@/hooks/use-api-resource-store';
 import { useInventoryLookups, resolveWarehouseName } from '@/hooks/use-inventory-lookups';
 import { ApiModeBanner } from '@/components/shared/ApiModeBanner';
+import { isModuleBootLoading, pickApiListRows } from '@/lib/ui/kpi-loading';
 import { apiListEmptyMessage } from '@/lib/services/api-list-ui';
 import {
   mapApiStockOutRow,
@@ -40,6 +41,7 @@ export function StockOutPage() {
   const saveAppState = useAppStore((s) => s.saveAppState);
   const apiMode = isModuleApiMode('stockOut');
   const apiStore = useApiResourceStore('stockOut', mapApiStockOutRow);
+  const bootLoading = isModuleBootLoading(apiMode, apiStore.initialized);
   const lookups = useInventoryLookups();
   const [view, setView] = useState<'main' | 'form'>('main');
   const [search, setSearch] = useState('');
@@ -52,8 +54,8 @@ export function StockOutPage() {
   });
 
   const records = useMemo(
-    () => (apiMode ? apiStore.rows : listStockOutRecords(appState)),
-    [apiMode, apiStore.rows, appState],
+    () => pickApiListRows(apiMode, apiStore.initialized, apiStore.rows, listStockOutRecords(appState)),
+    [apiMode, apiStore.initialized, apiStore.rows, appState],
   );
   const metrics = useMemo(() => {
     if (!apiMode) return getStockOutMetrics(appState);
@@ -192,6 +194,7 @@ export function StockOutPage() {
         { key: 'pending', label: 'Pending Stock-Out', value: String(metrics.pendingQty), alert: metrics.pendingQty > 0 },
         { key: 'lost', label: 'Lost/Damaged Value', value: formatMoney(metrics.lostValue), alert: metrics.lostValue > 0 },
       ]}
+      bootLoading={bootLoading}
       filters={
         <FilterBar
           search={search}
@@ -206,6 +209,7 @@ export function StockOutPage() {
       <AppTable
         columns={columns}
         rows={filtered}
+        loading={bootLoading}
         emptyMessage={apiListEmptyMessage(apiStore.loading, apiStore.initialized, 'stock-out records', { totalCount: records.length, filteredCount: filtered.length })}
         renderActions={(row) => (
           String(row.status) === 'Pending' ? (

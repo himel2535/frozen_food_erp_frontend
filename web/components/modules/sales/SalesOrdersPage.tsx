@@ -22,6 +22,8 @@ import {
   listSalesOrders,
 } from '@/lib/services/sales-service';
 import { isModuleApiMode } from '@/lib/config/data-source';
+import { isKpiBootLoading, pickApiListRows } from '@/lib/ui/kpi-loading';
+import { getKpiGridClassName } from '@/lib/ui/kpi-grid';
 import { useApiResourceStore } from '@/hooks/use-api-resource-store';
 import { ApiModeBanner } from '@/components/shared/ApiModeBanner';
 import { mapApiSalesOrderRow, resolveApiRowId } from '@/lib/services/entity-api-mappers';
@@ -66,6 +68,7 @@ export function SalesOrdersPage() {
   const saveAppState = useAppStore((s) => s.saveAppState);
   const apiMode = isModuleApiMode('salesOrders');
   const apiStore = useApiResourceStore('salesOrders', mapApiSalesOrderRow);
+  const bootLoading = isKpiBootLoading(apiMode, apiStore.initialized);
   const { formatMoney, formatCount } = useLocaleFormat();
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
@@ -79,9 +82,9 @@ export function SalesOrdersPage() {
   ], [t]);
 
   const allRows = useMemo(() => {
-    if (apiMode) return apiStore.rows;
-    return listSalesOrders(appState);
-  }, [apiMode, apiStore.rows, appState]);
+    const local = listSalesOrders(appState);
+    return pickApiListRows(apiMode, apiStore.initialized, apiStore.rows, local);
+  }, [apiMode, apiStore.initialized, apiStore.rows, appState]);
 
   const rows = useMemo(() => {
     let data = allRows;
@@ -165,7 +168,7 @@ export function SalesOrdersPage() {
     <>
       {apiMode ? <ApiModeBanner module="salesOrders" error={apiStore.error} /> : null}
 
-      <ModuleKpiSection items={kpis} />
+      <ModuleKpiSection items={kpis} loading={bootLoading} gridClassName={getKpiGridClassName(4)} kpiCount={4} />
 
       <ModuleFilterBar
         search={search}
@@ -178,6 +181,7 @@ export function SalesOrdersPage() {
         <AppTable
           columns={columns}
           rows={rows}
+          loading={bootLoading}
           rowKey={(row) => String(row.id)}
           emptyMessage={apiStore.loading ? 'Loading orders…' : t('sales.no_orders')}
           renderActions={(row) => (

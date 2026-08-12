@@ -22,6 +22,7 @@ import { fetchAdminRoles } from '@/lib/services/admin-roles-api';
 import { getSectionOptions } from '@/lib/navigation/section-access';
 import type { AuthUserRecord, RoleRecord, SectionId } from '@/lib/state/types';
 import { toast, confirmAction } from '@/lib/ui/feedback';
+import { getKpiGridClassName } from '@/lib/ui/kpi-grid';
 
 type View = 'list' | 'form';
 
@@ -47,6 +48,7 @@ export function UsersAdminPage() {
   const [view, setView] = useState<View>('list');
   const [rows, setRows] = useState<AuthUserRecord[]>([]);
   const [loading, setLoading] = useState(true);
+  const bootLoading = loading && rows.length === 0;
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState<FormState>(EMPTY_FORM);
   const [showAdvanced, setShowAdvanced] = useState(false);
@@ -311,11 +313,12 @@ export function UsersAdminPage() {
 
   return (
     <>
-      <ModuleKpiSection items={kpis} loading={loading && rows.length === 0} />
+      <ModuleKpiSection items={kpis} loading={bootLoading} gridClassName={getKpiGridClassName(4)} kpiCount={4} />
       <div className="premium-card overflow-hidden">
         <AppTable
           columns={columns}
           rows={rows}
+          loading={bootLoading}
           rowKey={(row) => row.uid}
           emptyMessage={loading ? 'Loading users...' : 'No users yet. Add the first user.'}
           renderActions={(row) => (

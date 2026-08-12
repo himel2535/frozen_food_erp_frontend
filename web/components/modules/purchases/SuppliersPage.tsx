@@ -26,6 +26,7 @@ import {
 } from './suppliers/SupplierForm';
 import { SUPPLIER_BTN_PRIMARY, SUPPLIER_CARD_CLS } from './suppliers/suppliers-styles';
 import { isModuleApiMode } from '@/lib/config/data-source';
+import { isKpiBootLoading, pickApiListRows } from '@/lib/ui/kpi-loading';
 import { useApiResourceStore } from '@/hooks/use-api-resource-store';
 import { ApiModeBanner } from '@/components/shared/ApiModeBanner';
 import { mapApiSupplierRow, mapSupplierFormToApi } from '@/lib/services/entity-api-mappers';
@@ -41,6 +42,7 @@ export function SuppliersPage() {
   const saveAppState = useAppStore((s) => s.saveAppState);
   const apiMode = isModuleApiMode('suppliers');
   const apiStore = useApiResourceStore('suppliers', mapApiSupplierRow);
+  const bootLoading = isKpiBootLoading(apiMode, apiStore.initialized);
   const [, bump] = useState(0);
 
   const [view, setView] = useState<PageView>('main');
@@ -54,9 +56,9 @@ export function SuppliersPage() {
   const [formValues, setFormValues] = useState<SupplierFormValues>(EMPTY_SUPPLIER_FORM);
 
   const allSuppliers = useMemo(() => {
-    if (apiMode) return apiStore.rows as EnrichedSupplier[];
-    return listEnrichedSuppliers(appState);
-  }, [apiMode, apiStore.rows, appState, bump]);
+    const local = listEnrichedSuppliers(appState);
+    return pickApiListRows(apiMode, apiStore.initialized, apiStore.rows, local) as EnrichedSupplier[];
+  }, [apiMode, apiStore.initialized, apiStore.rows, appState, bump]);
   const metrics = useMemo(() => {
     if (apiMode) {
       const activeCount = allSuppliers.filter((s) => s.recordStatus === 'active').length;
@@ -197,7 +199,7 @@ export function SuppliersPage() {
     <>
       {apiMode ? <ApiModeBanner module="suppliers" error={apiStore.error} /> : null}
 
-      <SuppliersMetrics metrics={metrics} />
+      <SuppliersMetrics metrics={metrics} loading={bootLoading} />
 
       <div className={SUPPLIER_CARD_CLS}>
         <SuppliersFilterBar
@@ -212,6 +214,7 @@ export function SuppliersPage() {
         />
         <SuppliersTable
           rows={filtered}
+          loading={bootLoading}
           page={page}
           pageSize={PAGE_SIZE}
           onPageChange={setPage}

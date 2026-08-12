@@ -7,6 +7,8 @@ import { useRegisterModuleActions } from '@/components/layout/ModuleActionsConte
 import { useCustomerReportApiRows } from '@/hooks/use-report-api-data';
 import { ApiModeBanner } from '@/components/shared/ApiModeBanner';
 import { useAppStore } from '@/lib/state/app-store';
+import { isMongoDbBackend } from '@/lib/config/data-source';
+import { isKpiBootLoading, pickApiReportRows } from '@/lib/ui/kpi-loading';
 import { toast } from '@/lib/ui/feedback';
 import { DateInput } from '@/components/shared/DateInput';
 import { CustomerReportMetrics } from '@/components/modules/reports/customers/CustomerReportMetrics';
@@ -17,6 +19,11 @@ import { CustomerPrintFrame } from '@/components/modules/reports/customers/Custo
 import { useReportPrint } from '@/components/modules/reports/shared/useReportPrint';
 import { ModuleFilterBar } from '@/components/shared/ModuleFilterBar';
 import { MODULE_FILTER_ACTION_BTN, MODULE_PRINT_BTN } from '@/lib/ui/module-chrome-styles';
+import {
+  ReportDonutSkeleton,
+  ReportPanelSkeleton,
+  ReportTableSkeleton,
+} from '@/components/modules/reports/shared/ReportSectionSkeleton';
 import {
   CR_ANALYTICS_ROW,
   CR_CUSTOMER_SLICE,
@@ -39,7 +46,9 @@ import { exportCustomerReportCsv } from '@/lib/services/report-export';
 
 export function CustomerReportsPage() {
   const appState = useAppStore((s) => s.appState);
+  const apiMode = isMongoDbBackend();
   const apiReport = useCustomerReportApiRows();
+  const kpiLoading = isKpiBootLoading(apiMode, apiReport.initialized);
   const t = useAppStore((s) => s.t);
   const { printSection, printTarget } = useReportPrint<CustomerPrintSectionId>();
 
@@ -50,9 +59,14 @@ export function CustomerReportsPage() {
 
   const allRows = useMemo(
     () => listCustomerReportRows(
-      apiReport.initialized ? apiReport.rows : (Array.isArray(appState.reportCustomers) ? appState.reportCustomers : []),
+      pickApiReportRows(
+        apiMode,
+        apiReport.initialized,
+        apiReport.rows,
+        Array.isArray(appState.reportCustomers) ? appState.reportCustomers : [],
+      ),
     ),
-    [apiReport.initialized, apiReport.rows, appState.reportCustomers],
+    [apiMode, apiReport.initialized, apiReport.rows, appState.reportCustomers],
   );
 
   const filters = useMemo(
@@ -141,7 +155,7 @@ export function CustomerReportsPage() {
   return (
     <>
         {apiReport.error ? <ApiModeBanner module="customers" error={apiReport.error} /> : null}
-        <CustomerReportMetrics items={kpis} />
+        <CustomerReportMetrics items={kpis} loading={kpiLoading} />
 
         <ModuleFilterBar
           search={search}
@@ -165,45 +179,63 @@ export function CustomerReportsPage() {
         />
 
         <div className={CR_ANALYTICS_ROW}>
-          <CustomerBreakdownDonut
-            title={t('reports.customers_sales_chart')}
-            icon="flat-color-icons:line-chart"
-            slices={salesSlices}
-            totalAmount={totalSales}
-            colorMap={CR_CUSTOMER_SLICE}
-            onPrint={() => printSection('salesChart')}
-            printLabel={t('reports.print_section')}
-            totalLabel={t('reports.customers_total_label')}
-            prefix="cr-sales"
-          />
-          <CustomerBreakdownDonut
-            title={t('reports.customers_outstanding_chart')}
-            icon="flat-color-icons:currency-exchange"
-            slices={outstandingSlices}
-            totalAmount={totalDue}
-            colorMap={CR_CUSTOMER_SLICE}
-            onPrint={() => printSection('outstandingChart')}
-            printLabel={t('reports.print_section')}
-            totalLabel={t('reports.customers_total_label')}
-            prefix="cr-due"
-          />
-          <CustomerBreakdownDonut
-            title={t('reports.customers_status_chart')}
-            icon="fluent-color:people-24"
-            slices={statusSlices}
-            totalAmount={totalCustomers}
-            colorMap={CR_STATUS_SLICE}
-            onPrint={() => printSection('statusChart')}
-            printLabel={t('reports.print_section')}
-            totalLabel={t('reports.customers_total_label')}
-            formatCenter={(n) => `${n}`}
-            prefix="cr-status"
-          />
+          {kpiLoading ? (
+            <>
+              <ReportDonutSkeleton />
+              <ReportDonutSkeleton />
+              <ReportDonutSkeleton />
+            </>
+          ) : (
+            <>
+              <CustomerBreakdownDonut
+                title={t('reports.customers_sales_chart')}
+                icon="flat-color-icons:line-chart"
+                slices={salesSlices}
+                totalAmount={totalSales}
+                colorMap={CR_CUSTOMER_SLICE}
+                onPrint={() => printSection('salesChart')}
+                printLabel={t('reports.print_section')}
+                totalLabel={t('reports.customers_total_label')}
+                prefix="cr-sales"
+              />
+              <CustomerBreakdownDonut
+                title={t('reports.customers_outstanding_chart')}
+                icon="flat-color-icons:currency-exchange"
+                slices={outstandingSlices}
+                totalAmount={totalDue}
+                colorMap={CR_CUSTOMER_SLICE}
+                onPrint={() => printSection('outstandingChart')}
+                printLabel={t('reports.print_section')}
+                totalLabel={t('reports.customers_total_label')}
+                prefix="cr-due"
+              />
+              <CustomerBreakdownDonut
+                title={t('reports.customers_status_chart')}
+                icon="fluent-color:people-24"
+                slices={statusSlices}
+                totalAmount={totalCustomers}
+                colorMap={CR_STATUS_SLICE}
+                onPrint={() => printSection('statusChart')}
+                printLabel={t('reports.print_section')}
+                totalLabel={t('reports.customers_total_label')}
+                formatCenter={(n) => `${n}`}
+                prefix="cr-status"
+              />
+            </>
+          )}
         </div>
 
-        <CustomerSummaryTable rows={filteredRows} onPrint={() => printSection('summary')} />
-
-        <CustomerRecentActivity rows={recentActivity} onPrint={() => printSection('activity')} />
+        {kpiLoading ? (
+          <>
+            <ReportTableSkeleton columns={5} />
+            <ReportPanelSkeleton lines={5} />
+          </>
+        ) : (
+          <>
+            <CustomerSummaryTable rows={filteredRows} onPrint={() => printSection('summary')} />
+            <CustomerRecentActivity rows={recentActivity} onPrint={() => printSection('activity')} />
+          </>
+        )}
 
         <Footer />
 

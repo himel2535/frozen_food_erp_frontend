@@ -16,6 +16,7 @@ import { isModuleApiMode } from '@/lib/config/data-source';
 import { useApiResourceStore } from '@/hooks/use-api-resource-store';
 import { useInventoryLookups, resolveWarehouseName } from '@/hooks/use-inventory-lookups';
 import { ApiModeBanner } from '@/components/shared/ApiModeBanner';
+import { isModuleBootLoading, pickApiListRows } from '@/lib/ui/kpi-loading';
 import { apiListEmptyMessage } from '@/lib/services/api-list-ui';
 import {
   mapApiStockAdjustmentRow,
@@ -38,6 +39,7 @@ export function AdjustmentsPage() {
   const saveAppState = useAppStore((s) => s.saveAppState);
   const apiMode = isModuleApiMode('stockAdjustments');
   const apiStore = useApiResourceStore('stockAdjustments', mapApiStockAdjustmentRow);
+  const bootLoading = isModuleBootLoading(apiMode, apiStore.initialized);
   const lookups = useInventoryLookups();
   const [view, setView] = useState<'main' | 'form'>('main');
   const [search, setSearch] = useState('');
@@ -50,8 +52,8 @@ export function AdjustmentsPage() {
   });
 
   const records = useMemo(
-    () => (apiMode ? apiStore.rows : listAdjustmentRecords(appState)),
-    [apiMode, apiStore.rows, appState],
+    () => pickApiListRows(apiMode, apiStore.initialized, apiStore.rows, listAdjustmentRecords(appState)),
+    [apiMode, apiStore.initialized, apiStore.rows, appState],
   );
   const metrics = useMemo(() => {
     if (!apiMode) return getAdjustmentMetrics(appState);
@@ -206,6 +208,7 @@ export function AdjustmentsPage() {
         { key: 'net', label: 'Net Value Impact', value: `${netPrefix}${formatMoney(Math.abs(metrics.netValue))}` },
         { key: 'pending', label: 'Pending Approval', value: String(metrics.pendingCount), alert: metrics.pendingCount > 0 },
       ]}
+      bootLoading={bootLoading}
       filters={
         <FilterBar
           search={search}
@@ -220,6 +223,7 @@ export function AdjustmentsPage() {
       <AppTable
         columns={columns}
         rows={filtered}
+        loading={bootLoading}
         emptyMessage={apiListEmptyMessage(apiStore.loading, apiStore.initialized, 'adjustment records', { totalCount: records.length, filteredCount: filtered.length })}
         renderActions={(row) => (
           String(row.status) === 'Pending' ? (

@@ -16,6 +16,7 @@ import { isModuleApiMode } from '@/lib/config/data-source';
 import { useApiResourceStore } from '@/hooks/use-api-resource-store';
 import { useInventoryLookups, resolveWarehouseName } from '@/hooks/use-inventory-lookups';
 import { ApiModeBanner } from '@/components/shared/ApiModeBanner';
+import { isModuleBootLoading, pickApiListRows } from '@/lib/ui/kpi-loading';
 import { apiListEmptyMessage } from '@/lib/services/api-list-ui';
 import {
   mapApiStockTransferRow,
@@ -37,6 +38,7 @@ export function TransfersPage() {
   const saveAppState = useAppStore((s) => s.saveAppState);
   const apiMode = isModuleApiMode('stockTransfers');
   const apiStore = useApiResourceStore('stockTransfers', mapApiStockTransferRow);
+  const bootLoading = isModuleBootLoading(apiMode, apiStore.initialized);
   const lookups = useInventoryLookups();
   const [view, setView] = useState<'main' | 'form'>('main');
   const [search, setSearch] = useState('');
@@ -47,8 +49,8 @@ export function TransfersPage() {
   });
 
   const records = useMemo(
-    () => (apiMode ? apiStore.rows : listTransferRecords(appState)),
-    [apiMode, apiStore.rows, appState],
+    () => pickApiListRows(apiMode, apiStore.initialized, apiStore.rows, listTransferRecords(appState)),
+    [apiMode, apiStore.initialized, apiStore.rows, appState],
   );
   const metrics = useMemo(() => {
     if (!apiMode) return getTransferMetrics(appState);
@@ -159,6 +161,7 @@ export function TransfersPage() {
         { key: 'completed', label: 'Completed', value: String(metrics.completed) },
         { key: 'qty', label: 'Total Qty Moved', value: String(metrics.totalQty) },
       ]}
+      bootLoading={bootLoading}
       filters={
         <FilterBar
           search={search}
@@ -172,6 +175,7 @@ export function TransfersPage() {
       <AppTable
         columns={columns}
         rows={filtered}
+        loading={bootLoading}
         emptyMessage={apiListEmptyMessage(apiStore.loading, apiStore.initialized, 'transfer records', { totalCount: records.length, filteredCount: filtered.length })}
         renderActions={(row) => (
           String(row.status) === 'Pending' ? (

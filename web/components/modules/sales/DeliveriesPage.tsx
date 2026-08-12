@@ -39,6 +39,8 @@ import { isModuleApiMode } from '@/lib/config/data-source';
 import { useApiResourceStore } from '@/hooks/use-api-resource-store';
 import { mapApiSalesDocRow, mapDeliveryToApi, resolveApiRowId } from '@/lib/services/entity-api-mappers';
 import { ApiModeBanner } from '@/components/shared/ApiModeBanner';
+import { isModuleBootLoading, pickApiListRows } from '@/lib/ui/kpi-loading';
+import { getKpiGridClassName } from '@/lib/ui/kpi-grid';
 import { useCustomersOptions } from '@/hooks/use-form-options';
 
 const statusTabsFor = (t: (key: string) => string) => [
@@ -84,6 +86,7 @@ export function DeliveriesPage() {
   const saveAppState = useAppStore((s) => s.saveAppState);
   const apiMode = isModuleApiMode('deliveries');
   const apiStore = useApiResourceStore('deliveries', mapApiSalesDocRow);
+  const bootLoading = isModuleBootLoading(apiMode, apiStore.initialized);
   const [view, setView] = useState<'main' | 'form'>('main');
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
@@ -104,8 +107,13 @@ export function DeliveriesPage() {
 
   const defaultWarehouseId = warehouses.find((w) => w.name.includes('Main'))?.id ?? warehouses[0]?.id ?? '';
 
+  const allDeliveryRows = useMemo(() => {
+    const local = listDeliveries(appState);
+    return pickApiListRows(apiMode, apiStore.initialized, apiStore.rows, local);
+  }, [apiMode, apiStore.initialized, apiStore.rows, appState]);
+
   const rows = useMemo(() => {
-    let data = apiMode ? apiStore.rows : listDeliveries(appState);
+    let data = allDeliveryRows;
     if (search) {
       const q = search.toLowerCase();
       data = data.filter((row) =>
@@ -116,10 +124,10 @@ export function DeliveriesPage() {
       data = data.filter((row) => String(row.status).toLowerCase() === statusFilter);
     }
     return data;
-  }, [apiMode, apiStore.rows, appState, search, statusFilter]);
+  }, [allDeliveryRows, search, statusFilter]);
 
   const kpis = useMemo(() => {
-    const allRows = apiMode ? apiStore.rows : listDeliveries(appState);
+    const allRows = allDeliveryRows;
     const open = allRows.filter((r) => !['delivered', 'cancelled'].includes(String(r.status).toLowerCase())).length;
     const delivered = allRows.filter((r) => String(r.status).toLowerCase() === 'delivered').length;
     const totalQty = allRows.reduce((s, r) => s + Number(r.totalDeliverQty ?? 0), 0);
@@ -129,7 +137,7 @@ export function DeliveriesPage() {
       { key: 'qty', label: t('sales.deliveries_kpi_qty'), value: `${formatNumber(totalQty)} ${t('sales.pcs_suffix')}` },
       { key: 'delivered', label: t('sales.deliveries_kpi_delivered'), value: formatCount(delivered) },
     ];
-  }, [apiMode, apiStore.rows, appState, t, formatNumber, formatCount]);
+  }, [allDeliveryRows, t, formatNumber, formatCount]);
 
   const challanPreviewId = useMemo(
     () => (editingId ? editingId : previewChallanNumber(appState, formValues.date)),
@@ -328,10 +336,7 @@ export function DeliveriesPage() {
   return (
     <>
         {apiMode && <ApiModeBanner module="deliveries" />}
-        {apiMode && apiStore.loading && (
-          <div className="p-4 text-center text-sm text-slate-500">Loading delivery challans…</div>
-        )}
-        <ModuleKpiSection items={kpis} />
+        <ModuleKpiSection items={kpis} loading={bootLoading} gridClassName={getKpiGridClassName(4)} kpiCount={4} />
 
         <ModuleFilterBar
           search={search}
@@ -343,6 +348,7 @@ export function DeliveriesPage() {
         <AppTable
           columns={columns}
           rows={rows}
+          loading={bootLoading}
           emptyMessage={t('sales.no_challans')}
           renderActions={(row) => (
             <>

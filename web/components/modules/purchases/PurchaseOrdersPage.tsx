@@ -15,6 +15,7 @@ import { API_RESOURCE_PATHS, isModuleApiMode } from '@/lib/config/data-source';
 import { useApiResourceStore } from '@/hooks/use-api-resource-store';
 import { mapGenericApiRow } from '@/lib/services/generic-api-mapper';
 import { ApiModeBanner } from '@/components/shared/ApiModeBanner';
+import { isModuleBootLoading, pickApiListRows } from '@/lib/ui/kpi-loading';
 import { fetchResourceList } from '@/lib/services/api-resource-service';
 import { mapApiSupplierRow } from '@/lib/services/entity-api-mappers';
 
@@ -49,6 +50,7 @@ export function PurchaseOrdersPage() {
   const router = useRouter();
   const apiMode = isModuleApiMode('purchaseOrders');
   const apiStore = useApiResourceStore('purchaseOrders', mapGenericApiRow);
+  const bootLoading = isModuleBootLoading(apiMode, apiStore.initialized);
 
   const appState = useAppStore((s) => s.appState);
 
@@ -73,8 +75,8 @@ export function PurchaseOrdersPage() {
 
 
   const allRows = useMemo(
-    () => (apiMode ? apiStore.rows : listPurchases(appState)),
-    [apiMode, apiStore.rows, appState],
+    () => pickApiListRows(apiMode, apiStore.initialized, apiStore.rows, listPurchases(appState)),
+    [apiMode, apiStore.initialized, apiStore.rows, appState],
   );
 
   const [apiSuppliers, setApiSuppliers] = useState<Record<string, unknown>[]>([]);
@@ -195,7 +197,7 @@ export function PurchaseOrdersPage() {
   return (
     <>
       {apiMode && <ApiModeBanner module="purchaseOrders" error={apiStore.error} />}
-      <PurchaseOrdersMetrics metrics={metrics} />
+      <PurchaseOrdersMetrics metrics={metrics} loading={bootLoading} />
 
 
 
@@ -240,6 +242,8 @@ export function PurchaseOrdersPage() {
         <PurchaseOrdersTable
 
           rows={rows}
+
+          loading={bootLoading}
 
           selectedPoId={selectedPoId}
 

@@ -23,6 +23,7 @@ import { isModuleApiMode } from '@/lib/config/data-source';
 import { useApiResourceStore } from '@/hooks/use-api-resource-store';
 import { useInventoryLookups, resolveWarehouseName } from '@/hooks/use-inventory-lookups';
 import { ApiModeBanner } from '@/components/shared/ApiModeBanner';
+import { isModuleBootLoading, pickApiListRows } from '@/lib/ui/kpi-loading';
 import { apiListEmptyMessage } from '@/lib/services/api-list-ui';
 import {
   mapApiRawMaterialRow,
@@ -87,6 +88,7 @@ export function RawMaterialsPage() {
   const saveAppState = useAppStore((s) => s.saveAppState);
   const apiMode = isModuleApiMode('rawMaterials');
   const apiStore = useApiResourceStore('rawMaterials', mapApiRawMaterialRow);
+  const bootLoading = isModuleBootLoading(apiMode, apiStore.initialized);
   const lookups = useInventoryLookups();
   const [view, setView] = useState<'main' | 'form'>('main');
   const [search, setSearch] = useState('');
@@ -126,8 +128,8 @@ export function RawMaterialsPage() {
     return listRawMaterialCategories(appState);
   }, [apiMode, apiStore.rows, appState]);
   const allMaterials = useMemo(
-    () => (apiMode ? apiStore.rows : listRawMaterials(appState)),
-    [apiMode, apiStore.rows, appState],
+    () => pickApiListRows(apiMode, apiStore.initialized, apiStore.rows, listRawMaterials(appState)),
+    [apiMode, apiStore.initialized, apiStore.rows, appState],
   );
   const metrics = useMemo(() => {
     if (apiMode) {
@@ -380,6 +382,8 @@ export function RawMaterialsPage() {
         {apiMode && <ApiModeBanner module="rawMaterials" error={apiStore.error} />}
         <ModuleKpiSection
           gridClassName="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2"
+          kpiCount={5}
+          loading={bootLoading}
           items={[
             { key: 'count', label: 'Total Materials', value: String(metrics.count), sub: 'All raw materials', iconify: KPI_ICON.count },
             { key: 'stock', label: 'Total Stock Qty', value: `${metrics.totalQuantity.toLocaleString()} units`, sub: 'Across all warehouses', iconify: KPI_ICON.stock },
@@ -449,6 +453,7 @@ export function RawMaterialsPage() {
           className="flex-1"
           columns={columns}
           rows={paged}
+          loading={bootLoading}
           emptyMessage={apiListEmptyMessage(apiStore.loading, apiStore.initialized, 'raw materials', { totalCount: allMaterials.length, filteredCount: filtered.length })}
           renderActions={(rm) => (
             <>

@@ -7,6 +7,8 @@ import { useRegisterModuleActions } from '@/components/layout/ModuleActionsConte
 import { useHrReportApiRows } from '@/hooks/use-report-api-data';
 import { ApiModeBanner } from '@/components/shared/ApiModeBanner';
 import { useAppStore } from '@/lib/state/app-store';
+import { isMongoDbBackend } from '@/lib/config/data-source';
+import { isKpiBootLoading, pickApiReportRows } from '@/lib/ui/kpi-loading';
 import { toast } from '@/lib/ui/feedback';
 import { DateInput } from '@/components/shared/DateInput';
 import { HrReportMetrics } from '@/components/modules/reports/hr/HrReportMetrics';
@@ -22,6 +24,13 @@ import { HrPrintFrame } from '@/components/modules/reports/hr/HrPrintFrame';
 import { useReportPrint } from '@/components/modules/reports/shared/useReportPrint';
 import { ModuleFilterBar } from '@/components/shared/ModuleFilterBar';
 import { MODULE_FILTER_ACTION_BTN, MODULE_PRINT_BTN } from '@/lib/ui/module-chrome-styles';
+import {
+  ReportBarChartSkeleton,
+  ReportDonutSkeleton,
+  ReportKeyMetricsSkeleton,
+  ReportPanelSkeleton,
+  ReportTableSkeleton,
+} from '@/components/modules/reports/shared/ReportSectionSkeleton';
 import {
   HR_BOTTOM_ROW,
   HR_CHARTS_ROW,
@@ -51,7 +60,9 @@ import { exportHrReportCsv } from '@/lib/services/report-export';
 
 export function HrReportsPage() {
   const appState = useAppStore((s) => s.appState);
+  const apiMode = isMongoDbBackend();
   const apiReport = useHrReportApiRows();
+  const kpiLoading = isKpiBootLoading(apiMode, apiReport.initialized);
   const t = useAppStore((s) => s.t);
   const { printSection, printTarget } = useReportPrint<HrPrintSectionId>();
 
@@ -62,30 +73,50 @@ export function HrReportsPage() {
 
   const allDepartments = useMemo(
     () => listHrDepartmentRows(
-      apiReport.initialized ? apiReport.rows.departments : (Array.isArray(appState.reportHRDepartments) ? appState.reportHRDepartments : []),
+      pickApiReportRows(
+        apiMode,
+        apiReport.initialized,
+        apiReport.rows.departments,
+        Array.isArray(appState.reportHRDepartments) ? appState.reportHRDepartments : [],
+      ),
     ),
-    [apiReport.initialized, apiReport.rows.departments, appState.reportHRDepartments],
+    [apiMode, apiReport.initialized, apiReport.rows.departments, appState.reportHRDepartments],
   );
 
   const allJoiners = useMemo(
     () => listHrJoinerRows(
-      apiReport.initialized ? apiReport.rows.joiners : (Array.isArray(appState.reportHRJoiners) ? appState.reportHRJoiners : []),
+      pickApiReportRows(
+        apiMode,
+        apiReport.initialized,
+        apiReport.rows.joiners,
+        Array.isArray(appState.reportHRJoiners) ? appState.reportHRJoiners : [],
+      ),
     ),
-    [apiReport.initialized, apiReport.rows.joiners, appState.reportHRJoiners],
+    [apiMode, apiReport.initialized, apiReport.rows.joiners, appState.reportHRJoiners],
   );
 
   const allLeavers = useMemo(
     () => listHrLeaverRows(
-      apiReport.initialized ? apiReport.rows.leavers : (Array.isArray(appState.reportHRLeavers) ? appState.reportHRLeavers : []),
+      pickApiReportRows(
+        apiMode,
+        apiReport.initialized,
+        apiReport.rows.leavers,
+        Array.isArray(appState.reportHRLeavers) ? appState.reportHRLeavers : [],
+      ),
     ),
-    [apiReport.initialized, apiReport.rows.leavers, appState.reportHRLeavers],
+    [apiMode, apiReport.initialized, apiReport.rows.leavers, appState.reportHRLeavers],
   );
 
   const allBirthdays = useMemo(
     () => listHrBirthdayRows(
-      apiReport.initialized ? apiReport.rows.birthdays : (Array.isArray(appState.reportHRBirthdays) ? appState.reportHRBirthdays : []),
+      pickApiReportRows(
+        apiMode,
+        apiReport.initialized,
+        apiReport.rows.birthdays,
+        Array.isArray(appState.reportHRBirthdays) ? appState.reportHRBirthdays : [],
+      ),
     ),
-    [apiReport.initialized, apiReport.rows.birthdays, appState.reportHRBirthdays],
+    [apiMode, apiReport.initialized, apiReport.rows.birthdays, appState.reportHRBirthdays],
   );
 
   const filters = useMemo(
@@ -180,7 +211,7 @@ export function HrReportsPage() {
   return (
     <>
         {apiReport.error ? <ApiModeBanner module="employees" error={apiReport.error} /> : null}
-        <HrReportMetrics items={kpis} />
+        <HrReportMetrics items={kpis} loading={kpiLoading} />
 
         <ModuleFilterBar
           search={search}
@@ -204,29 +235,55 @@ export function HrReportsPage() {
           }
         />
 
-        <HrKeyMetrics metrics={keyMetrics} onPrint={() => printSection('keyMetrics')} />
+        {kpiLoading ? (
+          <ReportKeyMetricsSkeleton />
+        ) : (
+          <HrKeyMetrics metrics={keyMetrics} onPrint={() => printSection('keyMetrics')} />
+        )}
 
         <div className={HR_CHARTS_ROW}>
-          <HrDepartmentDonut
-            slices={deptSlices}
-            totalHeadcount={totalHeadcount}
-            onPrint={() => printSection('deptChart')}
-          />
-          <HrGenderDonut
-            slices={genderSlices}
-            totalHeadcount={totalHeadcount}
-            onPrint={() => printSection('genderChart')}
-          />
-          <HrJoinersLeaversChart data={trendData} onPrint={() => printSection('joinersTrend')} />
+          {kpiLoading ? (
+            <>
+              <ReportDonutSkeleton />
+              <ReportDonutSkeleton />
+              <ReportBarChartSkeleton />
+            </>
+          ) : (
+            <>
+              <HrDepartmentDonut
+                slices={deptSlices}
+                totalHeadcount={totalHeadcount}
+                onPrint={() => printSection('deptChart')}
+              />
+              <HrGenderDonut
+                slices={genderSlices}
+                totalHeadcount={totalHeadcount}
+                onPrint={() => printSection('genderChart')}
+              />
+              <HrJoinersLeaversChart data={trendData} onPrint={() => printSection('joinersTrend')} />
+            </>
+          )}
         </div>
 
-        <HrDepartmentTable rows={filteredDepartments} onPrint={() => printSection('departments')} />
-
-        <div className={HR_BOTTOM_ROW}>
-          <HrRecentJoiners rows={filteredJoiners} onPrint={() => printSection('joiners')} />
-          <HrRecentLeavers rows={filteredLeavers} onPrint={() => printSection('leavers')} />
-          <HrUpcomingBirthdays rows={filteredBirthdays} onPrint={() => printSection('birthdays')} />
-        </div>
+        {kpiLoading ? (
+          <>
+            <ReportTableSkeleton columns={4} />
+            <div className={HR_BOTTOM_ROW}>
+              <ReportPanelSkeleton lines={5} />
+              <ReportPanelSkeleton lines={5} />
+              <ReportPanelSkeleton lines={5} />
+            </div>
+          </>
+        ) : (
+          <>
+            <HrDepartmentTable rows={filteredDepartments} onPrint={() => printSection('departments')} />
+            <div className={HR_BOTTOM_ROW}>
+              <HrRecentJoiners rows={filteredJoiners} onPrint={() => printSection('joiners')} />
+              <HrRecentLeavers rows={filteredLeavers} onPrint={() => printSection('leavers')} />
+              <HrUpcomingBirthdays rows={filteredBirthdays} onPrint={() => printSection('birthdays')} />
+            </div>
+          </>
+        )}
 
         <Footer />
 

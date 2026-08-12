@@ -3,14 +3,9 @@
 import { useCallback, useMemo, useState } from 'react';
 import Link from 'next/link';
 import {
-  AlertTriangle,
-  CheckCircle2,
-  Clock3,
   Download,
-  FolderOpen,
   LayoutGrid,
   List,
-  Megaphone,
   MoreHorizontal,
   Plus,
   SlidersHorizontal,
@@ -53,6 +48,7 @@ import { isModuleApiMode } from '@/lib/config/data-source';
 import { useApiResourceStore } from '@/hooks/use-api-resource-store';
 import { mapApiComplaintRow, mapComplaintToApi, resolveApiRowId } from '@/lib/services/entity-api-mappers';
 import { ApiModeBanner } from '@/components/shared/ApiModeBanner';
+import { isModuleBootLoading, pickApiListRows } from '@/lib/ui/kpi-loading';
 import { useCustomersOptions } from '@/hooks/use-form-options';
 import { MODULE_FILTER_INPUT } from '@/lib/ui/module-chrome-styles';
 import { confirmAction, toast } from '@/lib/ui/feedback';
@@ -67,6 +63,7 @@ export function ComplaintsPage() {
   const { formatCount } = useLocaleFormat();
   const apiMode = isModuleApiMode('complaints');
   const apiStore = useApiResourceStore('complaints', mapApiComplaintRow);
+  const bootLoading = isModuleBootLoading(apiMode, apiStore.initialized);
 
   const [view, setView] = useState<'main' | 'form'>('main');
   const [layout, setLayout] = useState<'table' | 'kanban'>('table');
@@ -79,9 +76,9 @@ export function ComplaintsPage() {
   const [menuOpenId, setMenuOpenId] = useState<string | null>(null);
 
   const allRows = useMemo(() => {
-    if (apiMode) return apiStore.rows as ComplaintRecord[];
-    return getComplaintList(appState);
-  }, [apiMode, apiStore.rows, appState]);
+    const local = getComplaintList(appState);
+    return pickApiListRows(apiMode, apiStore.initialized, apiStore.rows, local) as ComplaintRecord[];
+  }, [apiMode, apiStore.initialized, apiStore.rows, appState]);
   const metrics = useMemo(() => {
     if (apiMode) {
       return {
@@ -353,39 +350,38 @@ export function ComplaintsPage() {
   return (
     <>
       {apiMode && <ApiModeBanner module="complaints" />}
-      {apiMode && apiStore.loading && (
-        <div className="p-4 text-center text-sm text-slate-500">Loading complaints…</div>
-      )}
       <ModuleKpiSection
         gridClassName="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-5 gap-2"
+        kpiCount={5}
+        loading={bootLoading}
         items={[
           {
             key: 'total',
             label: 'Total Complaints',
             value: formatCount(metrics.total),
             sub: `+${metrics.thisMonth} this month`,
-            icon: <Megaphone className="w-8 h-8 text-blue-600" />,
+            iconify: 'flat-color-icons:feedback',
           },
           {
             key: 'open',
             label: 'Open',
             value: formatCount(metrics.open),
             sub: pct(metrics.open),
-            icon: <FolderOpen className="w-8 h-8 text-orange-500" />,
+            iconify: 'flat-color-icons:opened-folder',
           },
           {
             key: 'progress',
             label: 'In Progress',
             value: formatCount(metrics.inProgress),
             sub: pct(metrics.inProgress),
-            icon: <Clock3 className="w-8 h-8 text-amber-500" />,
+            iconify: 'flat-color-icons:process',
           },
           {
             key: 'resolved',
             label: 'Resolved',
             value: formatCount(metrics.resolved),
             sub: pct(metrics.resolved),
-            icon: <CheckCircle2 className="w-8 h-8 text-emerald-500" />,
+            iconify: 'flat-color-icons:approval',
           },
           {
             key: 'overdue',
@@ -393,7 +389,7 @@ export function ComplaintsPage() {
             value: formatCount(metrics.overdue),
             sub: pct(metrics.overdue),
             alert: metrics.overdue > 0,
-            icon: <AlertTriangle className="w-8 h-8 text-rose-500" />,
+            iconify: 'flat-color-icons:alarm-clock',
           },
         ]}
       />
@@ -464,6 +460,7 @@ export function ComplaintsPage() {
               <AppTable
                 columns={columns}
                 rows={paged}
+                loading={bootLoading}
                 rowKey={(row) => row.id}
                 emptyMessage={t('crm.select_complaint')}
                 renderActions={(row) => (

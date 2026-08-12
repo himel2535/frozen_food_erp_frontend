@@ -71,7 +71,7 @@ export const MONGODB_READY_MODULES: readonly ApiModule[] = [
   ...EXTENDED_API_MODULE_KEYS,
 ] as const;
 
-/** Loaded first — app becomes interactive before remaining modules hydrate. */
+/** Loaded first — warm cache for the most-used list pages. */
 export const API_BOOT_MODULES: readonly ApiModule[] = [
   'customers',
   'products',
@@ -79,22 +79,9 @@ export const API_BOOT_MODULES: readonly ApiModule[] = [
   'employees',
   'salesOrders',
   'invoices',
-  'leads',
-  'deals',
-  'quotations',
-  'deliveries',
-  'payments',
   'categories',
   'units',
   'warehouses',
-  'rawMaterials',
-  'semiFinishedProducts',
-  'finishedGoods',
-  'purchaseOrders',
-  'purchaseRm',
-  'recipes',
-  'projects',
-  'companySettings',
 ] as const;
 
 const BOOT_MODULE_SET = new Set<string>(API_BOOT_MODULES);

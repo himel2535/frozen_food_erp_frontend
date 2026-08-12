@@ -1,6 +1,7 @@
 'use client';
 
 import type { ReactNode } from 'react';
+import { ModuleTableSkeleton } from '@/components/shared/ModuleTableSkeleton';
 
 export type AppTableColumn<T = Record<string, unknown>> = {
   key: string;
@@ -126,6 +127,16 @@ export function AppTable<T extends object = Record<string, unknown>>({
   onRowClick,
   rowClassName,
 }: AppTableProps<T>) {
+  if (loading) {
+    return (
+      <ModuleTableSkeleton
+        columns={columns.length}
+        hasActions={Boolean(renderActions)}
+        className={className}
+      />
+    );
+  }
+
   const colSpan = columns.length + (renderActions ? 1 : 0);
 
   return (
@@ -157,29 +168,7 @@ export function AppTable<T extends object = Record<string, unknown>>({
             </tr>
           </thead>
           <tbody>
-            {loading ? (
-              Array.from({ length: 3 }).map((_, i) => (
-                <tr key={`loading-${i}`} className="app-table-tr">
-                  {columns.map((col) => {
-                    const align = resolveColumnAlign(col.key, col.label, col.align);
-                    return (
-                      <td key={col.key} data-align={align} className={`app-table-td ${alignClass(align)}`}>
-                        <div className={cellInnerClass(align)}>
-                          <div className="app-table-skeleton" />
-                        </div>
-                      </td>
-                    );
-                  })}
-                  {renderActions && (
-                    <td data-align="center" className="app-table-td app-table-td-actions app-table-align-center">
-                      <div className={cellInnerClass('center')}>
-                        <div className="app-table-skeleton w-16" />
-                      </div>
-                    </td>
-                  )}
-                </tr>
-              ))
-            ) : rows.length === 0 ? (
+            {rows.length === 0 ? (
               <tr className="app-table-tr">
                 <td colSpan={colSpan} className="app-table-empty">
                   {emptyMessage}

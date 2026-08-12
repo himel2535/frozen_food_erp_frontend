@@ -7,6 +7,8 @@ import { useRegisterModuleActions } from '@/components/layout/ModuleActionsConte
 import { usePurchaseReportApiRows } from '@/hooks/use-report-api-data';
 import { ApiModeBanner } from '@/components/shared/ApiModeBanner';
 import { useAppStore } from '@/lib/state/app-store';
+import { isMongoDbBackend } from '@/lib/config/data-source';
+import { isKpiBootLoading, pickApiReportRows } from '@/lib/ui/kpi-loading';
 import { toast } from '@/lib/ui/feedback';
 import { DateInput } from '@/components/shared/DateInput';
 import { PurchaseReportMetrics } from '@/components/modules/reports/purchases/PurchaseReportMetrics';
@@ -29,6 +31,12 @@ import { exportPurchaseReportCsv } from '@/lib/services/report-export';
 import { ReportPrintFrame } from '@/components/modules/reports/shared/ReportPrintFrame';
 import { ModuleFilterBar } from '@/components/shared/ModuleFilterBar';
 import { useReportPrint } from '@/components/modules/reports/shared/useReportPrint';
+import {
+  ReportDonutSkeleton,
+  ReportLineChartSkeleton,
+  ReportTableSkeleton,
+  ReportTopListSkeleton,
+} from '@/components/modules/reports/shared/ReportSectionSkeleton';
 import type { ReportPrintSectionId } from '@/components/modules/reports/shared/report-print-styles';
 import { MODULE_FILTER_ACTION_BTN, MODULE_PRINT_BTN } from '@/lib/ui/module-chrome-styles';
 
@@ -36,7 +44,9 @@ const STATUS_OPTIONS = ['All', 'Received', 'Sent', 'Draft', 'Cancelled'] as cons
 
 export function PurchaseReportsPage() {
   const appState = useAppStore((s) => s.appState);
+  const apiMode = isMongoDbBackend();
   const apiReport = usePurchaseReportApiRows();
+  const kpiLoading = isKpiBootLoading(apiMode, apiReport.initialized);
   const t = useAppStore((s) => s.t);
   const { printSection, printTarget } = useReportPrint<ReportPrintSectionId>();
 
@@ -48,9 +58,14 @@ export function PurchaseReportsPage() {
 
   const allRows = useMemo(
     () => listPurchaseReportRows(
-      apiReport.initialized ? apiReport.rows : (Array.isArray(appState.reportPurchases) ? appState.reportPurchases : []),
+      pickApiReportRows(
+        apiMode,
+        apiReport.initialized,
+        apiReport.rows,
+        Array.isArray(appState.reportPurchases) ? appState.reportPurchases : [],
+      ),
     ),
-    [apiReport.initialized, apiReport.rows, appState.reportPurchases],
+    [apiMode, apiReport.initialized, apiReport.rows, appState.reportPurchases],
   );
 
   const suppliers = useMemo(() => uniqueSuppliers(allRows), [allRows]);
@@ -128,7 +143,7 @@ export function PurchaseReportsPage() {
 
   return (
     <>
-        <PurchaseReportMetrics items={kpis} />
+        <PurchaseReportMetrics items={kpis} loading={kpiLoading} />
 
         <ModuleFilterBar
           search={search}
@@ -180,12 +195,26 @@ export function PurchaseReportsPage() {
         />
 
         <div className={PR_CHARTS_ROW}>
-          <PurchaseSpendChart data={chartData} onPrint={() => printSection('chart')} />
-          <PurchaseStatusDonut summary={statusSummary} onPrint={() => printSection('status')} />
-          <PurchaseTopSuppliers suppliers={topSuppliers} onPrint={() => printSection('suppliers')} />
+          {kpiLoading ? (
+            <>
+              <ReportLineChartSkeleton />
+              <ReportDonutSkeleton />
+              <ReportTopListSkeleton />
+            </>
+          ) : (
+            <>
+              <PurchaseSpendChart data={chartData} onPrint={() => printSection('chart')} />
+              <PurchaseStatusDonut summary={statusSummary} onPrint={() => printSection('status')} />
+              <PurchaseTopSuppliers suppliers={topSuppliers} onPrint={() => printSection('suppliers')} />
+            </>
+          )}
         </div>
 
-        <PurchaseOrdersTable rows={filteredRows} onPrint={() => printSection('orders')} />
+        {kpiLoading ? (
+          <ReportTableSkeleton columns={6} />
+        ) : (
+          <PurchaseOrdersTable rows={filteredRows} onPrint={() => printSection('orders')} />
+        )}
 
         <Footer />
 

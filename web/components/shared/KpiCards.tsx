@@ -3,8 +3,9 @@
 import { useLayoutEffect, useMemo } from 'react';
 import { loadIcons } from '@iconify/react';
 import { IconifyIcon } from '@/components/shared/IconifyIcon';
+import { KpiCardSkeleton } from '@/components/shared/KpiCardSkeleton';
 import { resolveKpiIconsForRow } from '@/lib/ui/kpi-icons';
-import { getKpiGridClassName } from '@/lib/ui/kpi-grid';
+import { resolveKpiGridClassName, resolveKpiSlotCount } from '@/lib/ui/module-kpi-layout';
 import { useLocaleFormat } from '@/hooks/useLocaleFormat';
 
 export interface KpiCardItem {
@@ -21,19 +22,23 @@ export function KpiCards({
   items,
   gridClassName,
   loading = false,
+  kpiCount,
 }: {
   items: KpiCardItem[];
   gridClassName?: string;
   loading?: boolean;
+  kpiCount?: number;
 }) {
   const { formatCount } = useLocaleFormat();
-  const grid = gridClassName ?? getKpiGridClassName(items.length);
+  const slotCount = resolveKpiSlotCount(loading, items.length, kpiCount);
+  const grid = resolveKpiGridClassName(slotCount, gridClassName);
   const iconIds = useMemo(() => resolveKpiIconsForRow(items), [items]);
 
   useLayoutEffect(() => {
+    if (loading) return;
     const toLoad = iconIds.filter(Boolean);
     if (toLoad.length > 0) loadIcons(toLoad);
-  }, [iconIds]);
+  }, [iconIds, loading]);
 
   const displayValue = (value: string) => {
     const raw = String(value ?? '').trim();
@@ -41,21 +46,29 @@ export function KpiCards({
     return value;
   };
 
+  if (loading) {
+    return (
+      <section className={grid} aria-busy="true">
+        {Array.from({ length: slotCount }).map((_, index) => (
+          <KpiCardSkeleton key={`boot-kpi-${index}`} />
+        ))}
+      </section>
+    );
+  }
+
   return (
-    <section className={grid} aria-busy={loading || undefined}>
+    <section className={grid}>
       {items.map((item, index) => (
         <div
           key={item.key}
           className="premium-card premium-shadow p-3.5 flex items-center justify-between gap-3 transition-[border-color,box-shadow] hover:border-slate-300 hover:shadow-md min-h-[72px]"
         >
           <div className="flex flex-col justify-center gap-0.5 min-w-0 flex-1">
-            <span className="text-xs font-bold text-slate-500 tracking-wide leading-tight">{item.label}</span>
+            <span className="text-xs font-bold text-slate-500 tracking-wide leading-tight">
+              {item.label}
+            </span>
             <span className="text-lg font-extrabold tracking-tight text-slate-900 leading-tight mt-0.5 min-h-[1.75rem] flex items-center tabular-nums">
-              {loading ? (
-                <span className="app-skeleton inline-block h-6 w-12 rounded" aria-hidden="true" />
-              ) : (
-                displayValue(item.value)
-              )}
+              {displayValue(item.value)}
             </span>
             {item.alert ? (
               <span className="text-[11px] text-rose-600 font-bold block min-h-[1rem]">Requires attention</span>
@@ -65,7 +78,7 @@ export function KpiCards({
               <span className="text-[11px] min-h-[1rem] block" aria-hidden />
             )}
           </div>
-          <div className="kpi-card-icon-wrap shrink-0" aria-hidden={loading || undefined}>
+          <div className="kpi-card-icon-wrap shrink-0">
             {item.icon ?? (
               <IconifyIcon
                 icon={iconIds[index] || 'flat-color-icons:statistics'}

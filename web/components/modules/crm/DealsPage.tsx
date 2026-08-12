@@ -46,6 +46,7 @@ import { isModuleApiMode } from '@/lib/config/data-source';
 import { useApiResourceStore } from '@/hooks/use-api-resource-store';
 import { mapApiDealRow, mapDealToApi, resolveApiRowId } from '@/lib/services/entity-api-mappers';
 import { ApiModeBanner } from '@/components/shared/ApiModeBanner';
+import { isModuleBootLoading, pickApiListRows } from '@/lib/ui/kpi-loading';
 import { MODULE_FILTER_INPUT } from '@/lib/ui/module-chrome-styles';
 
 const DEAL_FORM_FIELDS: PortField[] = [
@@ -69,6 +70,7 @@ export function DealsPage() {
   const saveAppState = useAppStore((s) => s.saveAppState);
   const apiMode = isModuleApiMode('deals');
   const apiStore = useApiResourceStore('deals', mapApiDealRow);
+  const bootLoading = isModuleBootLoading(apiMode, apiStore.initialized);
 
   const [view, setView] = useState<'main' | 'form'>('main');
   const [search, setSearch] = useState('');
@@ -95,9 +97,9 @@ export function DealsPage() {
   const owners = useMemo(() => getOwnerOptions(appState), [appState]);
 
   const allDeals = useMemo(() => {
-    if (apiMode) return apiStore.rows as DealRecord[];
-    return getEnrichedDealList(appState);
-  }, [apiMode, apiStore.rows, appState]);
+    const local = getEnrichedDealList(appState);
+    return pickApiListRows(apiMode, apiStore.initialized, apiStore.rows, local) as DealRecord[];
+  }, [apiMode, apiStore.initialized, apiStore.rows, appState]);
   const metrics = useMemo(() => getDealPipelineMetrics(appState, allDeals), [appState, allDeals]);
   const stageSlices = useMemo(() => getDealStageBreakdown(appState, allDeals), [appState, allDeals]);
   const sourceSlices = useMemo(() => getDealsBySource(appState, allDeals), [appState, allDeals]);
@@ -352,11 +354,10 @@ export function DealsPage() {
   return (
     <>
       {apiMode && <ApiModeBanner module="deals" />}
-      {apiMode && apiStore.loading && (
-        <div className="p-4 text-center text-sm text-slate-500">Loading deals…</div>
-      )}
       <ModuleKpiSection
         gridClassName="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-5 gap-2"
+        kpiCount={5}
+        loading={bootLoading}
         items={[
           {
             key: 'total',
@@ -458,6 +459,7 @@ export function DealsPage() {
         <AppTable
           columns={dealListColumns}
           rows={deals}
+          loading={bootLoading}
           emptyMessage={
             stageFilter !== 'all' && allDeals.length > 0
               ? `No deals in "${stageLabel(stageFilter)}". Select "All Stages" or create a deal in this stage.`

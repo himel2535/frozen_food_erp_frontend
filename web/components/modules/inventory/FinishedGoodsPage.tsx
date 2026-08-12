@@ -28,6 +28,7 @@ import { isModuleApiMode } from '@/lib/config/data-source';
 import { useApiResourceStore } from '@/hooks/use-api-resource-store';
 import { useInventoryLookups } from '@/hooks/use-inventory-lookups';
 import { ApiModeBanner } from '@/components/shared/ApiModeBanner';
+import { isModuleBootLoading, pickApiListRows } from '@/lib/ui/kpi-loading';
 import { apiListEmptyMessage } from '@/lib/services/api-list-ui';
 import {
   mapApiFinishedGoodRow,
@@ -110,6 +111,7 @@ export function FinishedGoodsPage() {
   const saveAppState = useAppStore((s) => s.saveAppState);
   const apiMode = isModuleApiMode('finishedGoods');
   const apiStore = useApiResourceStore('finishedGoods', mapApiFinishedGoodRow);
+  const bootLoading = isModuleBootLoading(apiMode, apiStore.initialized);
   const lookups = useInventoryLookups();
   const [view, setView] = useState<'main' | 'form' | 'detail' | 'summary' | 'capacity' | 'materials' | 'bom'>('main');
   const [detailId, setDetailId] = useState<string | null>(null);
@@ -163,8 +165,8 @@ export function FinishedGoodsPage() {
     return listFinishedGoodsUnits(appState);
   }, [apiMode, apiStore.rows, appState]);
   const allProducts = useMemo(
-    () => (apiMode ? apiStore.rows : listFinishedGoods(appState)),
-    [apiMode, apiStore.rows, appState],
+    () => pickApiListRows(apiMode, apiStore.initialized, apiStore.rows, listFinishedGoods(appState)),
+    [apiMode, apiStore.initialized, apiStore.rows, appState],
   );
   const metrics = useMemo(() => {
     if (apiMode) {
@@ -637,6 +639,8 @@ export function FinishedGoodsPage() {
         {apiMode && <ApiModeBanner module="finishedGoods" error={apiStore.error} />}
         <ModuleKpiSection
           gridClassName="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2"
+          kpiCount={5}
+          loading={bootLoading}
           items={[
             { key: 'count', label: 'Total Products', value: String(metrics.count), sub: 'All finished goods', iconify: KPI_ICON.count },
             { key: 'stock', label: 'Total Stock Qty', value: metrics.totalQuantity.toLocaleString(), sub: 'Across all warehouses', iconify: KPI_ICON.stock },
@@ -706,6 +710,7 @@ export function FinishedGoodsPage() {
           className="flex-1"
           columns={columns}
           rows={paged}
+          loading={bootLoading}
           emptyMessage={apiListEmptyMessage(apiStore.loading, apiStore.initialized, 'finished goods', { totalCount: allProducts.length, filteredCount: filtered.length })}
           renderActions={(row) => (
             <>

@@ -1,10 +1,12 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import { Icon } from '@iconify/react';
 import { useAppStore } from '@/lib/state/app-store';
 import { PR_CARD, PR_TITLE } from '@/components/modules/reports/purchases/purchase-report-styles';
 import { ReportSectionHeader } from '@/components/modules/reports/shared/ReportSectionHeader';
+import { animateAreaFill, animateLinePath } from '@/components/modules/reports/shared/chart-motion';
+import { buildMotionKey } from '@/components/modules/reports/shared/useReportChartIntro';
 import type { PurchaseChartPoint } from '@/components/modules/reports/purchases/purchase-report-utils';
 
 export function PurchaseSpendChart({
@@ -19,9 +21,14 @@ export function PurchaseSpendChart({
   const thisPathRef = useRef<SVGPathElement>(null);
   const lastPathRef = useRef<SVGPathElement>(null);
   const thisAreaRef = useRef<SVGPathElement>(null);
+  const animatedKeyRef = useRef('');
+  const motionKey = useMemo(
+    () => buildMotionKey(data.flatMap((point) => [point.label, point.thisMonth, point.lastMonth])),
+    [data],
+  );
 
   useEffect(() => {
-    function draw() {
+    function draw(animate: boolean) {
       const box = boxRef.current;
       const thisPath = thisPathRef.current;
       const lastPath = lastPathRef.current;
@@ -50,12 +57,22 @@ export function PurchaseSpendChart({
       thisPath.setAttribute('d', thisLine);
       lastPath.setAttribute('d', lastLine);
       thisArea.setAttribute('d', `${thisLine} L ${w} ${h} L 0 ${h} Z`);
+
+      if (animate && animatedKeyRef.current !== motionKey) {
+        animatedKeyRef.current = motionKey;
+        requestAnimationFrame(() => {
+          animateLinePath(lastPath, 900, 80);
+          animateLinePath(thisPath, 950, 160);
+          animateAreaFill(thisArea, 750, 320);
+        });
+      }
     }
 
-    draw();
-    window.addEventListener('resize', draw);
-    return () => window.removeEventListener('resize', draw);
-  }, [data]);
+    draw(true);
+    const onResize = () => draw(false);
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, [data, motionKey]);
 
   return (
     <div className={`${PR_CARD} lg:col-span-2 flex flex-col`}>

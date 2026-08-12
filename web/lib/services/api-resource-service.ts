@@ -1,4 +1,5 @@
 import { apiRequest } from '@/lib/services/api-client';
+import { getApiListCache, hasApiListCache, setApiListCache } from '@/lib/services/api-list-cache';
 
 export function apiDocId(doc: { id?: string; _id?: string; legacyId?: string }): string {
   return String(doc.id ?? doc._id ?? doc.legacyId ?? '');
@@ -17,26 +18,52 @@ export function sanitizeApiCreateBody(body: Record<string, unknown>): Record<str
 }
 
 const LIST_PAGE_SIZE = 100;
+const MAX_LIST_PAGES = 10;
 
 /** Fetch every page from a paginated CRUD list endpoint. */
 export async function fetchResourceList(path: string): Promise<Record<string, unknown>[]> {
-  const base = path.startsWith('/') ? path : `/${path}`;
-  let page = 1;
-  let totalPages = 1;
-  const all: Record<string, unknown>[] = [];
+  const base = normalizeListPath(path);
 
-  while (page <= totalPages) {
-    const { data, meta } = await apiRequest<Record<string, unknown>[]>(
+  const first = await apiRequest<Record<string, unknown>[]>(
+    `${base}?limit=${LIST_PAGE_SIZE}&page=1`,
+  );
+  const firstBatch = Array.isArray(first.data) ? first.data : [];
+  const totalPages = Math.min(
+    Math.max(1, Number(first.meta?.totalPages ?? 1)),
+    MAX_LIST_PAGES,
+  );
+
+  if (totalPages <= 1) {
+    setApiListCache(base, firstBatch);
+    return firstBatch;
+  }
+
+  const all = [...firstBatch];
+  for (let page = 2; page <= totalPages; page += 1) {
+    const { data } = await apiRequest<Record<string, unknown>[]>(
       `${base}?limit=${LIST_PAGE_SIZE}&page=${page}`,
     );
     const batch = Array.isArray(data) ? data : [];
     all.push(...batch);
-    totalPages = Math.max(1, Number(meta?.totalPages ?? 1));
     if (batch.length === 0) break;
-    page += 1;
   }
 
+  setApiListCache(base, all);
   return all;
+}
+
+function normalizeListPath(path: string): string {
+  return path.startsWith('/') ? path : `/${path}`;
+}
+
+/** Return cached rows when available (no network). */
+export function readCachedResourceList(path: string): Record<string, unknown>[] | null {
+  return getApiListCache(normalizeListPath(path));
+}
+
+/** True once this list endpoint has completed at least one fetch. */
+export function isCachedResourceList(path: string): boolean {
+  return hasApiListCache(normalizeListPath(path));
 }
 
 export async function fetchResourceById(path: string, id: string): Promise<Record<string, unknown> | null> {

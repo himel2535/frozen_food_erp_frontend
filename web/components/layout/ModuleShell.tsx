@@ -19,11 +19,15 @@ import {
 export function ModuleShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const topModuleRef = useRef('');
+  const prevPathRef = useRef(pathname);
 
   useSyncExternalStore(subscribeModuleChrome, getChromeSuppressedSnapshot, getChromeSuppressedSnapshot);
 
   useLayoutEffect(() => {
-    setModuleChromeSuppressed(false);
+    if (prevPathRef.current !== pathname) {
+      prevPathRef.current = pathname;
+      setModuleChromeSuppressed(false);
+    }
     const topModule = pathname.split('/').filter(Boolean)[0] ?? 'dashboard';
     const scrollable = document.getElementById(MODULE_SCROLL_ID);
     if (scrollable && topModuleRef.current !== topModule) {
@@ -34,6 +38,8 @@ export function ModuleShell({ children }: { children: React.ReactNode }) {
 
   const chromeSuppressed = getChromeSuppressedSnapshot();
   const isSettingsOverview = isHeaderlessModulePath(pathname);
+  const path = pathname.split('?')[0].split('#')[0].replace(/\/$/, '') || '/dashboard';
+  const showModuleHeader = !chromeSuppressed && path !== '/dashboard' && !isSettingsOverview;
   const shellClass = chromeSuppressed
     ? MODULE_SHELL_SUPPRESSED
     : isSettingsOverview
@@ -42,7 +48,9 @@ export function ModuleShell({ children }: { children: React.ReactNode }) {
 
   return (
     <div id={MODULE_SCROLL_ID} className={shellClass}>
-      <ModulePageHeader />
+      <div className={showModuleHeader ? 'module-page-header-anchor shrink-0' : undefined}>
+        <ModulePageHeader />
+      </div>
       {children}
     </div>
   );

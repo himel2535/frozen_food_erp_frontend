@@ -25,6 +25,7 @@ import type { ApiModule } from '@/lib/config/data-source';
 import { useApiResourceStore } from '@/hooks/use-api-resource-store';
 import { mapApiSalesDocRow, mapSalesDocToApi, resolveApiRowId, convertQuotationToOrderViaApi } from '@/lib/services/entity-api-mappers';
 import { ApiModeBanner } from '@/components/shared/ApiModeBanner';
+import { isModuleBootLoading, shouldShowModuleKpis } from '@/lib/ui/kpi-loading';
 
 export interface SalesDocColumn {
   key: string;
@@ -69,6 +70,7 @@ export function SalesDocumentModule({ config }: { config: SalesDocumentConfig })
   const t = useAppStore((s) => s.t);
   const { formatMoney } = useLocaleFormat();
   const apiStore = useApiResourceStore(config.apiModule, mapApiSalesDocRow);
+  const bootLoading = isModuleBootLoading(true, apiStore.initialized);
   const [view, setView] = useState<'main' | 'form' | 'detail'>('main');
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
@@ -269,10 +271,9 @@ export function SalesDocumentModule({ config }: { config: SalesDocumentConfig })
   return (
     <>
       <ApiModeBanner module={config.apiModule} error={apiStore.error} />
-      {apiStore.loading && (
-        <div className="p-4 text-center text-sm text-slate-500">Loading…</div>
+      {shouldShowModuleKpis(bootLoading, kpis.length) && (
+        <ModuleKpiSection items={kpis} loading={bootLoading} />
       )}
-      {kpis.length > 0 && <ModuleKpiSection items={kpis} />}
       <ListToolbar
         search={search}
         onSearchChange={setSearch}
@@ -286,6 +287,7 @@ export function SalesDocumentModule({ config }: { config: SalesDocumentConfig })
           render: (row) => (col.render ? col.render(row) : String(row[col.key] ?? '—')),
         }))}
         rows={rows}
+        loading={bootLoading}
         emptyMessage={t('common.no_records_yet')}
         renderActions={(row) => (
           <>

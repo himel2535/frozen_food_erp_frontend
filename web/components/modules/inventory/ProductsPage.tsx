@@ -26,6 +26,7 @@ import { isModuleApiMode } from '@/lib/config/data-source';
 import { useApiResourceStore } from '@/hooks/use-api-resource-store';
 import { useInventoryLookups } from '@/hooks/use-inventory-lookups';
 import { ApiModeBanner } from '@/components/shared/ApiModeBanner';
+import { isModuleBootLoading, pickApiListRows } from '@/lib/ui/kpi-loading';
 import { apiListEmptyMessage } from '@/lib/services/api-list-ui';
 import { mapApiProductRow, mapProductPayloadToApi } from '@/lib/services/entity-api-mappers';
 import {
@@ -89,6 +90,7 @@ export function ProductsPage() {
   const saveAppState = useAppStore((s) => s.saveAppState);
   const apiMode = isModuleApiMode('products');
   const apiStore = useApiResourceStore('products', mapApiProductRow);
+  const bootLoading = isModuleBootLoading(apiMode, apiStore.initialized);
   const lookups = useInventoryLookups();
   const [view, setView] = useState<'main' | 'form'>('main');
   const [search, setSearch] = useState('');
@@ -116,9 +118,9 @@ export function ProductsPage() {
   const warehouseIds = useMemo(() => warehouses.map((wh) => String(wh.id)), [warehouses]);
 
   const allProducts = useMemo(() => {
-    if (apiMode) return apiStore.rows;
-    return listInventory(appState, { excludeRaw: true });
-  }, [apiMode, apiStore.rows, appState]);
+    const local = listInventory(appState, { excludeRaw: true });
+    return pickApiListRows(apiMode, apiStore.initialized, apiStore.rows, local);
+  }, [apiMode, apiStore.initialized, apiStore.rows, appState]);
 
   const products = useMemo(() => {
     let data = allProducts;
@@ -310,6 +312,8 @@ export function ProductsPage() {
 
       <ModuleKpiSection
         gridClassName="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-2"
+        kpiCount={5}
+        loading={bootLoading}
         items={[
           { key: 'skus', label: 'Total SKUs Listed', value: String(metrics.totalSkus), iconify: KPI_ICON.skus },
           { key: 'stock', label: 'Total Stock Qty', value: `${metrics.totalStock.toLocaleString()} units`, iconify: KPI_ICON.stock },
@@ -340,6 +344,7 @@ export function ProductsPage() {
       <AppTable
         columns={columns}
         rows={paged}
+        loading={bootLoading}
         emptyMessage={apiListEmptyMessage(apiStore.loading, apiStore.initialized, 'products', { totalCount: allProducts.length, filteredCount: products.length })}
         renderActions={(row) => (
           <>

@@ -7,7 +7,7 @@ import { formatMoney, type getPurchaseOrderMetrics } from '@/lib/services/purcha
 
 type Metrics = ReturnType<typeof getPurchaseOrderMetrics>;
 
-export function PurchaseOrdersMetrics({ metrics }: { metrics: Metrics }) {
+export function PurchaseOrdersMetrics({ metrics, loading = false }: { metrics: Metrics; loading?: boolean }) {
   const items: KpiCardItem[] = [
     {
       key: 'spend',
@@ -56,6 +56,7 @@ export function PurchaseOrdersMetrics({ metrics }: { metrics: Metrics }) {
   return (
     <ModuleKpiSection
       items={items}
+      loading={loading}
       gridClassName="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6 gap-2"
     />
   );

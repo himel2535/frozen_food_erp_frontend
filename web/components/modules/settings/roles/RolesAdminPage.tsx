@@ -23,6 +23,7 @@ import { createAdminUser } from '@/lib/services/admin-users-api';
 import { getSectionOptions } from '@/lib/navigation/section-access';
 import type { RoleRecord, SectionId } from '@/lib/state/types';
 import { toast, confirmAction } from '@/lib/ui/feedback';
+import { getKpiGridClassName } from '@/lib/ui/kpi-grid';
 
 type View = 'list' | 'form';
 
@@ -50,6 +51,7 @@ export function RolesAdminPage() {
   const [view, setView] = useState<View>('list');
   const [rows, setRows] = useState<RoleRow[]>([]);
   const [loading, setLoading] = useState(true);
+  const bootLoading = loading && rows.length === 0;
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState<FormState>(EMPTY_FORM);
   const [showAdvanced, setShowAdvanced] = useState(false);
@@ -327,11 +329,12 @@ export function RolesAdminPage() {
 
   return (
     <>
-      <ModuleKpiSection items={kpis} loading={loading && rows.length === 0} />
+      <ModuleKpiSection items={kpis} loading={bootLoading} gridClassName={getKpiGridClassName(4)} kpiCount={4} />
       <div className="premium-card overflow-hidden">
         <AppTable
           columns={columns}
           rows={rows}
+          loading={bootLoading}
           rowKey={(row) => row.id}
           emptyMessage={loading ? t('settings.roles_loading') : t('settings.roles_empty')}
           renderActions={(row) => (

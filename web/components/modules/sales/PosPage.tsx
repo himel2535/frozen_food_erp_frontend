@@ -17,6 +17,7 @@ import { loadIcons } from '@iconify/react';
 import { Footer } from '@/components/layout/Footer';
 import { PageHeader } from '@/components/shared/PageHeader';
 import { PosCartPanel } from '@/components/modules/sales/pos/PosCartPanel';
+import { PosPageSkeleton } from '@/components/modules/sales/pos/PosPageSkeleton';
 import { PosProductPanel } from '@/components/modules/sales/pos/PosProductPanel';
 import { PosReceiptView } from '@/components/modules/sales/pos/PosReceiptView';
 import type { PosCartItem, PosCategoryId, PosProduct } from '@/components/modules/sales/pos/pos-types';
@@ -526,6 +527,9 @@ export function PosPage() {
     return () => window.removeEventListener('keydown', onKeyDown);
   }, [completeSale, posView]);
 
+  const isPosBootLoading =
+    productsStore.enabled && productsStore.loading && !productsStore.initialized;
+
   if (posView === 'receipt' && lastCompletedReceipt) {
     return (
       <>
@@ -547,6 +551,16 @@ export function PosPage() {
           onPrint={() => reprintReceiptData(lastCompletedReceipt)}
           onNewSale={startNewSale}
         />
+        <Footer />
+      </>
+    );
+  }
+
+  if (isPosBootLoading) {
+    return (
+      <>
+        <ApiModeBanner module="pos" error={apiStore.error || productsStore.error} />
+        <PosPageSkeleton label={t('sales.pos_title')} />
         <Footer />
       </>
     );
@@ -575,10 +589,6 @@ export function PosPage() {
           </>
         }
       />
-
-      {(productsStore.loading || apiStore.loading) && (
-        <div className="mb-2 text-center text-xs text-slate-500">Loading products & sales…</div>
-      )}
 
       {showHoldPanel ? (
         <div className="mb-3 premium-card premium-shadow p-3 shrink-0">
