@@ -9,7 +9,7 @@ import { TableIconAction } from '@/components/shared/TableIconAction';
 import { useLegacyParityConfig } from '@/hooks/use-legacy-parity-config';
 import { useLocaleFormat } from '@/hooks/useLocaleFormat';
 import { employeeAvatarClass, employeeInitials } from '@/lib/services/hrm-service';
-import { formatMoney } from '@/lib/services/payroll-service';
+import { formatMoney, enrichSalaryStructureRecord } from '@/lib/services/payroll-service';
 import { isModuleApiMode } from '@/lib/config/data-source';
 import { EmployeesApiPage } from '@/components/modules/hrm/EmployeesApiPage';
 
@@ -111,6 +111,8 @@ export function PayrollStructuresPage() {
     addLabel: 'Add Structure',
     kpiGridClassName: 'grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2',
     hideInlineForm: true,
+    transformRows: (rows: Record<string, unknown>[]) =>
+      rows.map((row) => enrichSalaryStructureRecord(row)),
     onAdd: () => router.push('/payroll/structures/new'),
     onRowClick: (row: Record<string, unknown>) => {
       router.push(`/payroll/structures/${row.id}/edit`);
