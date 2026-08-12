@@ -25,3 +25,7 @@ export function useModuleInitialRows(module: ApiModule): Record<string, unknown>
   const ctx = useContext(ModuleInitialDataContext);
   return ctx?.[module];
 }
+
+export function useModuleInitialSnapshot(): ModuleInitialRows | null {
+  return useContext(ModuleInitialDataContext);
+}

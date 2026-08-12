@@ -106,10 +106,10 @@ export function buildReceivableAppState(
   if (!apiMode || !invoicesReady) return base;
 
   const next = { ...base } as AppState;
+  ensureCrmState(next);
   next.invoices = invoiceRows as AppState['invoices'];
 
   if (paymentsReady) {
-    ensureCrmState(next);
     const existing = (next.crmData?.paymentsById ?? {}) as Record<string, Record<string, unknown>>;
     const paymentsById: Record<string, Record<string, unknown>> = { ...existing };
     for (const row of paymentRows) {
@@ -117,7 +117,7 @@ export function buildReceivableAppState(
       if (!id) continue;
       paymentsById[id] = {
         id,
-        customerId: row.customerId,
+        customerId: row.customerId ?? row.customer,
         invoiceId: row.invoiceId ?? null,
         amount: Number(row.amount ?? 0),
         date: String(row.date ?? ''),
@@ -129,6 +129,7 @@ export function buildReceivableAppState(
     next.crmData = { ...next.crmData!, paymentsById };
   }
 
+  syncInvoiceBalances(next);
   return next;
 }
 

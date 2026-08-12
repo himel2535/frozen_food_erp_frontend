@@ -5,34 +5,41 @@ import { useMemo, useEffect } from 'react';
 import { loadIcons } from '@iconify/react';
 import { Icon } from '@iconify/react';
 import { Footer } from '@/components/layout/Footer';
-import { PageSkeleton } from '@/components/shared/PageSkeleton';
+import {
+  DashboardLoadingSkeleton,
+  DashboardSalesTrendChartSkeleton,
+  DashboardRevenueChartSkeleton,
+  DashboardBusinessAlertsSkeleton,
+  DashboardBottomPanelsSkeleton,
+  DashboardProjectProgressSkeleton,
+} from '@/components/skeletons/DashboardLoadingSkeleton';
 import { useLocaleFormat } from '@/hooks/useLocaleFormat';
-import { pageSkeletonLoader } from '@/components/shared/PageSkeleton';
 import { emptyDashboardShell, useDashboardReady, DashboardStateProvider } from '@/hooks/use-dashboard-api-data';
 import { useAppStore } from '@/lib/state/app-store';
 import { applyApiDataToAppState } from '@/lib/services/api-app-state-mapper';
 import { getDashboardMetrics } from '@/lib/services/dashboard-metrics';
-import type { ApiModuleSnapshot } from '@/lib/server/fetch-modules';
+import { buildDashboardMetricValues, summaryLowStock } from '@/lib/services/dashboard-summary-metrics';
+import type { DashboardServerPayload } from '@/lib/server/dashboard-snapshot';
 
 const SalesTrendChart = dynamic(
   () => import('@/components/modules/dashboard/SalesTrendChart').then((m) => m.SalesTrendChart),
-  { ssr: false, loading: pageSkeletonLoader('chart', { chartClassName: 'lg:col-span-2' }) },
+  { ssr: false, loading: () => <DashboardSalesTrendChartSkeleton /> },
 );
 const RevenueAnalyticsChart = dynamic(
   () => import('@/components/modules/dashboard/RevenueAnalyticsChart').then((m) => m.RevenueAnalyticsChart),
-  { ssr: false, loading: pageSkeletonLoader('chart') },
+  { ssr: false, loading: () => <DashboardRevenueChartSkeleton /> },
 );
 const DashboardBusinessAlerts = dynamic(
   () => import('@/components/modules/dashboard/DashboardBusinessAlerts').then((m) => m.DashboardBusinessAlerts),
-  { ssr: false, loading: pageSkeletonLoader('generic', { count: 3, className: 'min-h-[280px]' }) },
+  { ssr: false, loading: () => <DashboardBusinessAlertsSkeleton /> },
 );
 const DashboardBottomPanels = dynamic(
   () => import('@/components/modules/dashboard/DashboardBottomPanels').then((m) => m.DashboardBottomPanels),
-  { ssr: false, loading: pageSkeletonLoader('generic', { count: 3, className: 'lg:col-span-4 min-h-[220px]' }) },
+  { ssr: false, loading: () => <DashboardBottomPanelsSkeleton /> },
 );
 const DashboardProjectProgress = dynamic(
   () => import('@/components/modules/dashboard/DashboardProjectProgress').then((m) => m.DashboardProjectProgress),
-  { ssr: false, loading: pageSkeletonLoader('generic', { count: 2, className: 'min-h-[160px]' }) },
+  { ssr: false, loading: () => <DashboardProjectProgressSkeleton /> },
 );
 
 const KPI_CARDS: { key: string; labelKey: string; icon: string; alert?: boolean }[] = [
@@ -54,10 +61,12 @@ const KPI_CARDS: { key: string; labelKey: string; icon: string; alert?: boolean 
 ];
 
 type DashboardViewProps = {
-  serverSnapshot?: ApiModuleSnapshot | null;
+  serverPayload?: DashboardServerPayload | null;
 };
 
-export function DashboardView({ serverSnapshot = null }: DashboardViewProps) {
+export function DashboardView({ serverPayload = null }: DashboardViewProps) {
+  const serverSnapshot = serverPayload?.modules ?? null;
+  const serverSummary = serverPayload?.summary ?? null;
   const baseState = useAppStore((s) => s.appState);
   const ready = useDashboardReady();
   const t = useAppStore((s) => s.t);
@@ -71,7 +80,7 @@ export function DashboardView({ serverSnapshot = null }: DashboardViewProps) {
     return emptyDashboardShell(baseState);
   }, [ready, baseState, serverSnapshot]);
 
-  const hasInitialData = ready || Boolean(serverSnapshot && Object.keys(serverSnapshot).length > 0);
+  const hasInitialData = ready || Boolean(serverSummary) || Boolean(serverSnapshot && Object.keys(serverSnapshot).length > 0);
 
   useEffect(() => {
     document.body.classList.add('dashboard-page');
@@ -84,8 +93,11 @@ export function DashboardView({ serverSnapshot = null }: DashboardViewProps) {
     [dashboardState],
   );
 
-  const metricValues = useMemo<Record<string, { value: string; sub?: string }>>(
-    () => ({
+  const metricValues = useMemo<Record<string, { value: string; sub?: string }>>(() => {
+    if (serverSummary && !ready) {
+      return buildDashboardMetricValues(serverSummary, t, formatMoney);
+    }
+    return {
       'production-summary': {
         value: t('dashboard.metric_completed', { n: metrics.productionSummary.completed }),
         sub: t('dashboard.metric_pcs_produced', { n: metrics.productionSummary.qty }),
@@ -137,12 +149,13 @@ export function DashboardView({ serverSnapshot = null }: DashboardViewProps) {
         value: formatMoney(metrics.monthRevenue),
         sub: t('dashboard.metric_month_orders', { n: metrics.monthSalesCount }),
       },
-    }),
-    [t, formatMoney, metrics],
-  );
+    };
+  }, [t, formatMoney, metrics, serverSummary, ready]);
+
+  const lowStockCount = serverSummary && !ready ? summaryLowStock(serverSummary) : metrics.lowStock;
 
   if (!hasInitialData) {
-    return <PageSkeleton variant="dashboard" label="Loading dashboard" />;
+    return <DashboardLoadingSkeleton />;
   }
 
   return (
@@ -162,7 +175,7 @@ export function DashboardView({ serverSnapshot = null }: DashboardViewProps) {
                 <span className="text-base md:text-lg font-extrabold tracking-tight text-slate-900 leading-tight mt-0.5 tabular-nums">{data?.value ?? '—'}</span>
                 {card.alert && data?.sub ? (
                   <span
-                    className={`text-[11px] font-bold block ${metrics.lowStock > 0 ? 'text-rose-600' : 'text-emerald-600'}`}
+                    className={`text-[11px] font-bold block ${lowStockCount > 0 ? 'text-rose-600' : 'text-emerald-600'}`}
                   >
                     {data.sub}
                   </span>

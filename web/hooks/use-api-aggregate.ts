@@ -2,7 +2,9 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { API_RESOURCE_PATHS, type ApiModule } from '@/lib/config/data-source';
-import { fetchResourceList } from '@/lib/services/api-resource-service';
+import { fetchResourceList, isCachedResourceList } from '@/lib/services/api-resource-service';
+import { setApiListCache } from '@/lib/services/api-list-cache';
+import { useModuleInitialSnapshot } from '@/components/providers/ModuleInitialDataProvider';
 
 type AggregateResult = {
   loading: boolean;
@@ -13,19 +15,59 @@ type AggregateResult = {
   data: Partial<Record<ApiModule, Record<string, unknown>[]>>;
 };
 
-export function useApiAggregate(modules: ApiModule[]): AggregateResult {
+function seedFromSnapshot(
+  modules: readonly ApiModule[],
+  snapshot: Partial<Record<ApiModule, Record<string, unknown>[]>> | null,
+) {
+  if (!snapshot) return { data: {} as Partial<Record<ApiModule, Record<string, unknown>[]>>, ready: false };
+  const data: Partial<Record<ApiModule, Record<string, unknown>[]>> = {};
+  for (const mod of modules) {
+    if (!(mod in snapshot)) return { data: {}, ready: false };
+    data[mod] = snapshot[mod] ?? [];
+  }
+  return { data, ready: true };
+}
+
+function seedAggregateCache(data: Partial<Record<ApiModule, Record<string, unknown>[]>>) {
+  for (const [mod, rows] of Object.entries(data) as [ApiModule, Record<string, unknown>[]][]) {
+    setApiListCache(API_RESOURCE_PATHS[mod], rows);
+  }
+}
+
+function modulesHaveCache(modules: readonly ApiModule[]) {
+  return modules.some((mod) => isCachedResourceList(API_RESOURCE_PATHS[mod]));
+}
+
+export function useApiAggregate(modules: readonly ApiModule[]): AggregateResult {
   const modulesKey = modules.join(',');
+  const modulesRef = useRef(modules);
+  modulesRef.current = modules;
+
   const moduleSet = useMemo(() => new Set(modules), [modulesKey]);
-  const [data, setData] = useState<Partial<Record<ApiModule, Record<string, unknown>[]>>>({});
-  const [loading, setLoading] = useState(true);
-  const [initialized, setInitialized] = useState(false);
+  const serverSnapshot = useModuleInitialSnapshot();
+  const serverSnapshotRef = useRef(serverSnapshot);
+  serverSnapshotRef.current = serverSnapshot;
+
+  const initialSeed = useMemo(
+    () => seedFromSnapshot(modules, serverSnapshot),
+    [modules, modulesKey, serverSnapshot],
+  );
+  const initialCached = useMemo(() => modulesHaveCache(modules), [modulesKey]);
+
+  const [data, setData] = useState<Partial<Record<ApiModule, Record<string, unknown>[]>>>(
+    () => (initialSeed.ready ? initialSeed.data : {}),
+  );
+  const [loading, setLoading] = useState(() => !initialSeed.ready && !initialCached);
+  const [initialized, setInitialized] = useState(() => initialSeed.ready || initialCached);
   const [error, setError] = useState<string | null>(null);
   const genRef = useRef(0);
+  const bootstrappedKeyRef = useRef<string | null>(null);
 
   const reloadModules = useCallback(async (mods?: ApiModule[]) => {
+    const activeModules = modulesRef.current;
     const targets = mods?.length
       ? mods.filter((mod) => moduleSet.has(mod))
-      : modules;
+      : activeModules;
     if (!targets.length) return;
 
     const gen = ++genRef.current;
@@ -46,15 +88,32 @@ export function useApiAggregate(modules: ApiModule[]): AggregateResult {
         setInitialized(true);
       }
     }
-  }, [moduleSet, modules, modulesKey]);
+  }, [moduleSet, modulesKey]);
 
   const reload = useCallback(async () => {
-    await reloadModules(modules);
-  }, [reloadModules, modules]);
+    await reloadModules();
+  }, [reloadModules]);
 
   useEffect(() => {
+    if (bootstrappedKeyRef.current === modulesKey) return;
+    bootstrappedKeyRef.current = modulesKey;
+
+    const seed = seedFromSnapshot(modulesRef.current, serverSnapshotRef.current);
+    if (seed.ready) {
+      setData(seed.data);
+      seedAggregateCache(seed.data);
+      setLoading(false);
+      setInitialized(true);
+      return;
+    }
+
+    if (modulesHaveCache(modulesRef.current)) {
+      void reloadModules();
+      return;
+    }
+
     void reload();
-  }, [reload]);
+  }, [modulesKey, reload, reloadModules]);
 
   return { loading, initialized, error, reload, reloadModules, data };
 }

@@ -1,5 +1,18 @@
 import { apiRequest } from '@/lib/services/api-client';
-import { getApiListCache, hasApiListCache, setApiListCache } from '@/lib/services/api-list-cache';
+import {
+  buildListQueryString,
+  DEFAULT_LIST_PAGE_SIZE,
+  LOOKUP_LIST_PAGE_SIZE,
+  MAX_FULL_LIST_PAGES,
+  parseApiPaginationMeta,
+  type ApiListQuery,
+  type ApiPaginationMeta,
+} from '@/lib/services/api-pagination-types';
+import {
+  getApiListCache,
+  hasApiListCache,
+  setApiListCache,
+} from '@/lib/services/api-list-cache';
 
 export function apiDocId(doc: { id?: string; _id?: string; legacyId?: string }): string {
   return String(doc.id ?? doc._id ?? doc.legacyId ?? '');
@@ -17,53 +30,75 @@ export function sanitizeApiCreateBody(body: Record<string, unknown>): Record<str
   return next;
 }
 
-const LIST_PAGE_SIZE = 100;
-const MAX_LIST_PAGES = 10;
+function normalizeListPath(path: string): string {
+  return path.startsWith('/') ? path : `/${path}`;
+}
 
-/** Fetch every page from a paginated CRUD list endpoint. */
-export async function fetchResourceList(path: string): Promise<Record<string, unknown>[]> {
+export type ApiPageResult = {
+  rows: Record<string, unknown>[];
+  meta: ApiPaginationMeta;
+};
+
+/** Single-page list fetch — preferred for tables and route prefetch. */
+export async function fetchResourcePage(
+  path: string,
+  query: ApiListQuery = {},
+): Promise<ApiPageResult> {
   const base = normalizeListPath(path);
+  const qs = buildListQueryString({
+    page: query.page ?? 1,
+    limit: query.limit ?? DEFAULT_LIST_PAGE_SIZE,
+    search: query.search,
+    status: query.status,
+  });
+  const { data, meta } = await apiRequest<Record<string, unknown>[]>(`${base}?${qs}`);
+  const rows = Array.isArray(data) ? data : [];
+  const parsed = parseApiPaginationMeta(meta);
+  setApiListCache(base, rows, query);
+  return { rows, meta: parsed };
+}
 
-  const first = await apiRequest<Record<string, unknown>[]>(
-    `${base}?limit=${LIST_PAGE_SIZE}&page=1`,
-  );
-  const firstBatch = Array.isArray(first.data) ? first.data : [];
-  const totalPages = Math.min(
-    Math.max(1, Number(first.meta?.totalPages ?? 1)),
-    MAX_LIST_PAGES,
-  );
+const LIST_PAGE_SIZE = LOOKUP_LIST_PAGE_SIZE;
 
-  if (totalPages <= 1) {
-    setApiListCache(base, firstBatch);
-    return firstBatch;
+/**
+ * Fetch all pages — use only for small lookups, exports, or cross-module joins.
+ * List pages should use fetchResourcePage instead.
+ */
+export async function fetchResourceList(
+  path: string,
+  options?: { maxPages?: number },
+): Promise<Record<string, unknown>[]> {
+  const base = normalizeListPath(path);
+  const maxPages = options?.maxPages ?? MAX_FULL_LIST_PAGES;
+
+  const first = await fetchResourcePage(path, { page: 1, limit: LIST_PAGE_SIZE });
+  if (first.meta.totalPages <= 1) {
+    return first.rows;
   }
 
-  const all = [...firstBatch];
+  const all = [...first.rows];
+  const totalPages = Math.min(first.meta.totalPages, maxPages);
   for (let page = 2; page <= totalPages; page += 1) {
-    const { data } = await apiRequest<Record<string, unknown>[]>(
-      `${base}?limit=${LIST_PAGE_SIZE}&page=${page}`,
-    );
-    const batch = Array.isArray(data) ? data : [];
-    all.push(...batch);
-    if (batch.length === 0) break;
+    const next = await fetchResourcePage(path, { page, limit: LIST_PAGE_SIZE });
+    all.push(...next.rows);
+    if (next.rows.length === 0) break;
   }
 
   setApiListCache(base, all);
   return all;
 }
 
-function normalizeListPath(path: string): string {
-  return path.startsWith('/') ? path : `/${path}`;
-}
-
 /** Return cached rows when available (no network). */
-export function readCachedResourceList(path: string): Record<string, unknown>[] | null {
-  return getApiListCache(normalizeListPath(path));
+export function readCachedResourceList(
+  path: string,
+  query?: ApiListQuery,
+): Record<string, unknown>[] | null {
+  return getApiListCache(normalizeListPath(path), query);
 }
 
 /** True once this list endpoint has completed at least one fetch. */
-export function isCachedResourceList(path: string): boolean {
-  return hasApiListCache(normalizeListPath(path));
+export function isCachedResourceList(path: string, query?: ApiListQuery): boolean {
+  return hasApiListCache(normalizeListPath(path), query);
 }
 
 export async function fetchResourceById(path: string, id: string): Promise<Record<string, unknown> | null> {
@@ -117,5 +152,38 @@ export async function deleteResource(
     return { ok: true };
   } catch (err) {
     return { ok: false, error: err instanceof Error ? err.message : 'Delete failed' };
+  }
+}
+
+export type DashboardSummary = {
+  salesSummary: { count: number; total: number };
+  purchaseSummary: { count: number; total: number };
+  monthRevenue: number;
+  monthSalesCount: number;
+  pendingSales: number;
+  openLeadsCount: number;
+  openLeadsValue: number;
+  customerDue: number;
+  customerDueCount: number;
+  supplierDue: number;
+  supplierDueCount: number;
+  pendingProduction: number;
+  pendingProductionQty: number;
+  productionCompleted: number;
+  productionQty: number;
+  pendingPurchase: number;
+  lowStock: number;
+  rmStockValue: number;
+  sfStockValue: number;
+  fgStockValue: number;
+  totalInventoryValue: number;
+};
+
+export async function fetchDashboardSummary(): Promise<DashboardSummary | null> {
+  try {
+    const { data } = await apiRequest<DashboardSummary>('/dashboard/summary');
+    return data ?? null;
+  } catch {
+    return null;
   }
 }

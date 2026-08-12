@@ -1,45 +1,59 @@
 import { serverApiRequest } from '@/lib/server/api-fetch';
-
-const LIST_PAGE_SIZE = 100;
-const MAX_LIST_PAGES = 10;
+import {
+  buildListQueryString,
+  DEFAULT_LIST_PAGE_SIZE,
+  parseApiPaginationMeta,
+  type ApiListQuery,
+} from '@/lib/services/api-pagination-types';
+import type { DashboardSummary } from '@/lib/services/api-resource-service';
 
 function normalizeListPath(path: string): string {
   return path.startsWith('/') ? path : `/${path}`;
 }
 
-/** Paginated list fetch for Server Components — uses Next.js revalidate caching. */
+/** Single-page list fetch for Server Components — uses Next.js revalidate caching. */
+export async function fetchServerResourcePage(
+  path: string,
+  query: ApiListQuery = {},
+  revalidateSeconds = 30,
+): Promise<{ rows: Record<string, unknown>[]; meta: ReturnType<typeof parseApiPaginationMeta> }> {
+  const base = normalizeListPath(path);
+  const qs = buildListQueryString({
+    page: query.page ?? 1,
+    limit: query.limit ?? DEFAULT_LIST_PAGE_SIZE,
+    search: query.search,
+    status: query.status,
+  });
+
+  const result = await serverApiRequest<Record<string, unknown>[]>(
+    `${base}?${qs}`,
+    revalidateSeconds,
+  );
+  if (!result) {
+    return {
+      rows: [],
+      meta: parseApiPaginationMeta(),
+    };
+  }
+
+  const rows = Array.isArray(result.data) ? result.data : [];
+  return {
+    rows,
+    meta: parseApiPaginationMeta(result.meta),
+  };
+}
+
+/** Route prefetch — first page only (fast SSR). */
 export async function fetchServerResourceList(
   path: string,
   revalidateSeconds = 30,
+  limit = DEFAULT_LIST_PAGE_SIZE,
 ): Promise<Record<string, unknown>[]> {
-  const base = normalizeListPath(path);
+  const { rows } = await fetchServerResourcePage(path, { page: 1, limit }, revalidateSeconds);
+  return rows;
+}
 
-  const first = await serverApiRequest<Record<string, unknown>[]>(
-    `${base}?limit=${LIST_PAGE_SIZE}&page=1`,
-    revalidateSeconds,
-  );
-  if (!first) return [];
-
-  const firstBatch = Array.isArray(first.data) ? first.data : [];
-  const totalPages = Math.min(
-    Math.max(1, Number(first.meta?.totalPages ?? 1)),
-    MAX_LIST_PAGES,
-  );
-
-  if (totalPages <= 1) {
-    return firstBatch;
-  }
-
-  const all = [...firstBatch];
-  for (let page = 2; page <= totalPages; page += 1) {
-    const next = await serverApiRequest<Record<string, unknown>[]>(
-      `${base}?limit=${LIST_PAGE_SIZE}&page=${page}`,
-      revalidateSeconds,
-    );
-    const batch = Array.isArray(next?.data) ? next.data : [];
-    all.push(...batch);
-    if (batch.length === 0) break;
-  }
-
-  return all;
+export async function fetchServerDashboardSummary(revalidateSeconds = 30): Promise<DashboardSummary | null> {
+  const result = await serverApiRequest<DashboardSummary>('/dashboard/summary', revalidateSeconds);
+  return result?.data ?? null;
 }

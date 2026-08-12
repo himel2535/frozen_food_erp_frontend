@@ -68,6 +68,9 @@ function loadInitialState(): AppState {
       if (typeof parsed?.sidebarCollapsed === 'boolean') {
         base.sidebarCollapsed = parsed.sidebarCollapsed;
       }
+      if (parsed?.systemAuditLogsById && typeof parsed.systemAuditLogsById === 'object') {
+        base.systemAuditLogsById = parsed.systemAuditLogsById;
+      }
       return base;
     }
     return hydrateAppState(parsed);
@@ -106,6 +109,7 @@ interface AppStore {
   startAuthListener: () => void;
   applyAuthSession: (authUser: AuthUserRecord | null) => void;
   saveAppState: (options?: { immediate?: boolean }) => void;
+  recordAuditEvent: (payload: Parameters<typeof logSystemAudit>[1]) => void;
   replaceAppState: (next: Partial<AppState>) => void;
   setApiDataReady: (ready: boolean) => void;
   setLoggedIn: (value: boolean) => void;
@@ -131,6 +135,7 @@ function flushPersistedAppState(
         JSON.stringify({
           lang: appState.lang,
           sidebarCollapsed: appState.sidebarCollapsed,
+          systemAuditLogsById: appState.systemAuditLogsById ?? {},
         }),
       );
     } catch (error) {
@@ -311,6 +316,18 @@ export const useAppStore = create<AppStore>((set, get) => ({
     saveDebounceTimer = setTimeout(flush, SAVE_DEBOUNCE_MS);
   },
 
+  recordAuditEvent: (payload) => {
+    const state = get().appState;
+    logSystemAudit(state, payload);
+    set({
+      appState: {
+        ...state,
+        systemAuditLogsById: { ...(state.systemAuditLogsById ?? {}) },
+      },
+    });
+    get().saveAppState({ immediate: true });
+  },
+
   replaceAppState: (next) => {
     const current = get().appState;
     const hydrated = hydrateAppState({ ...current, ...next });
@@ -347,7 +364,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
       // still clear local session
     }
     if (prevUser) {
-      logSystemAudit(get().appState, {
+      get().recordAuditEvent({
         action: 'LOGOUT',
         module: 'Auth',
         description: `Signed out (${prevUser.email})`,

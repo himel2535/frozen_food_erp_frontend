@@ -1,7 +1,13 @@
-/** In-memory list cache — seeded by ApiStateHydrator, reused by page hooks (avoids refetch on every navigation). */
+/** In-memory list cache — keyed by path + pagination query for fast route revisits. */
+
+import {
+  buildListQueryString,
+  type ApiListQuery,
+} from '@/lib/services/api-pagination-types';
 
 type CacheEntry = {
   docs: Record<string, unknown>[];
+  meta?: { total: number; page: number; limit: number; totalPages: number };
   fetchedAt: number;
 };
 
@@ -12,21 +18,43 @@ function normalizePath(path: string): string {
   return base.split('?')[0];
 }
 
-export function getApiListCache(path: string): Record<string, unknown>[] | null {
-  const entry = cache.get(normalizePath(path));
+function cacheKey(path: string, query?: ApiListQuery): string {
+  const base = normalizePath(path);
+  if (!query) return `${base}?page=1&limit=25`;
+  return `${base}?${buildListQueryString(query)}`;
+}
+
+export function getApiListCache(path: string, query?: ApiListQuery): Record<string, unknown>[] | null {
+  const entry = cache.get(cacheKey(path, query));
   return entry ? entry.docs : null;
 }
 
-/** True once a list has been fetched at least once (including empty results). */
-export function hasApiListCache(path: string): boolean {
-  return cache.has(normalizePath(path));
+export function getApiListCacheMeta(path: string, query?: ApiListQuery) {
+  const entry = cache.get(cacheKey(path, query));
+  return entry?.meta ?? null;
 }
 
-export function setApiListCache(path: string, docs: Record<string, unknown>[]) {
-  cache.set(normalizePath(path), { docs, fetchedAt: Date.now() });
+/** True once a list has been fetched at least once (including empty results). */
+export function hasApiListCache(path: string, query?: ApiListQuery): boolean {
+  return cache.has(cacheKey(path, query));
+}
+
+export function setApiListCache(
+  path: string,
+  docs: Record<string, unknown>[],
+  query?: ApiListQuery,
+  meta?: CacheEntry['meta'],
+) {
+  cache.set(cacheKey(path, query), { docs, meta, fetchedAt: Date.now() });
 }
 
 export function invalidateApiListCache(path?: string) {
-  if (path) cache.delete(normalizePath(path));
-  else cache.clear();
+  if (!path) {
+    cache.clear();
+    return;
+  }
+  const base = normalizePath(path);
+  for (const key of cache.keys()) {
+    if (key.startsWith(`${base}?`)) cache.delete(key);
+  }
 }

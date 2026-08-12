@@ -3,6 +3,7 @@ import { ModuleTableSkeleton } from '@/components/shared/ModuleTableSkeleton';
 import { getModuleKpiLayout } from '@/lib/ui/module-kpi-layout';
 import { DashboardLoadingSkeleton } from '@/components/skeletons/DashboardLoadingSkeleton';
 import { LeadsLoadingSkeleton } from '@/components/skeletons/LeadsLoadingSkeleton';
+import { getReportRouteLoadingSkeleton } from '@/components/skeletons/reports/ReportRouteLoadingSkeletons';
 
 type StaticRouteLoadingProps = {
   route: string;
@@ -16,6 +17,9 @@ export function StaticRouteLoading({ route }: StaticRouteLoadingProps) {
   if (route === '/crm/leads') {
     return <LeadsLoadingSkeleton />;
   }
+
+  const reportSkeleton = getReportRouteLoadingSkeleton(route);
+  if (reportSkeleton) return reportSkeleton;
 
   const layout = getModuleKpiLayout(route);
 

@@ -5,27 +5,24 @@ import { useAppStore } from '@/lib/state/app-store';
 import {
   API_BOOT_MODULES,
   API_RESOURCE_PATHS,
-  getApiBackgroundModules,
   isMongoDbBackend,
-  MONGODB_READY_MODULES,
   type ApiModule,
 } from '@/lib/config/data-source';
-import { fetchResourceList } from '@/lib/services/api-resource-service';
+import { fetchResourcePage } from '@/lib/services/api-resource-service';
 import { setApiListCache } from '@/lib/services/api-list-cache';
 import { applyApiDataToAppState } from '@/lib/services/api-app-state-mapper';
 import { onApiMutation } from '@/lib/services/api-sync-events';
+import { DEFAULT_LIST_PAGE_SIZE } from '@/lib/services/api-pagination-types';
 
 const USE_API = isMongoDbBackend();
-const BACKGROUND_MODULES = getApiBackgroundModules();
-const BACKGROUND_CHUNK = 4;
 
-async function fetchModulesSafe(mods: ApiModule[]) {
+async function fetchModulesPageSafe(mods: ApiModule[]) {
   const results = await Promise.allSettled(
     mods.map(async (mod) => {
       const path = API_RESOURCE_PATHS[mod];
-      const docs = await fetchResourceList(path);
-      setApiListCache(path, docs);
-      return [mod, docs] as const;
+      const { rows, meta } = await fetchResourcePage(path, { page: 1, limit: DEFAULT_LIST_PAGE_SIZE });
+      setApiListCache(path, rows, { page: 1, limit: DEFAULT_LIST_PAGE_SIZE }, meta);
+      return [mod, rows] as const;
     }),
   );
 
@@ -44,7 +41,7 @@ function mergeApiSnapshot(partial: Partial<Record<ApiModule, Record<string, unkn
   replaceAppState(applyApiDataToAppState(appState, partial));
 }
 
-/** Keeps Zustand appState in sync with MongoDB — never blocks the UI. */
+/** Seeds Zustand with first-page API data — no full-list background sweep. */
 export function ApiStateHydrator() {
   const setApiDataReady = useAppStore((s) => s.setApiDataReady);
   const bootDoneRef = useRef(false);
@@ -57,18 +54,10 @@ export function ApiStateHydrator() {
 
     void (async () => {
       try {
-        const boot = await fetchModulesSafe([...API_BOOT_MODULES]);
+        const boot = await fetchModulesPageSafe([...API_BOOT_MODULES]);
         if (cancelled) return;
         mergeApiSnapshot(boot);
         bootDoneRef.current = true;
-
-        for (let i = 0; i < BACKGROUND_MODULES.length; i += BACKGROUND_CHUNK) {
-          if (cancelled) return;
-          const chunk = BACKGROUND_MODULES.slice(i, i + BACKGROUND_CHUNK);
-          const partial = await fetchModulesSafe(chunk);
-          if (cancelled) return;
-          mergeApiSnapshot(partial);
-        }
       } catch {
         if (!cancelled && !bootDoneRef.current) {
           bootDoneRef.current = true;
@@ -83,10 +72,10 @@ export function ApiStateHydrator() {
     if (!USE_API) return;
     return onApiMutation((modules) => {
       const targets = (modules?.length
-        ? modules.filter((mod) => MONGODB_READY_MODULES.includes(mod))
+        ? modules.filter((mod) => API_BOOT_MODULES.includes(mod as ApiModule))
         : [...API_BOOT_MODULES]) as ApiModule[];
       if (!targets.length) return;
-      void fetchModulesSafe(targets).then((partial) => mergeApiSnapshot(partial));
+      void fetchModulesPageSafe(targets).then((partial) => mergeApiSnapshot(partial));
     });
   }, []);
 

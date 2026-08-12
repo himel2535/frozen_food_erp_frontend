@@ -8,7 +8,6 @@ import { BengaliFontLoader } from '@/components/shared/BengaliFontLoader';
 import { ToysLoader } from '@/components/shared/ToysLoader';
 import { useAppStore } from '@/lib/state/app-store';
 import { mapAuthError, signIn } from '@/lib/services/auth-service';
-import { logSystemAudit } from '@/lib/services/audit-log-service';
 import { getFirstAllowedHref } from '@/lib/services/access-control-service';
 import { toast } from '@/lib/ui/feedback';
 
@@ -23,7 +22,6 @@ export default function LoginPage() {
   const authReady = useAppStore((s) => s.authReady);
   const toggleLanguage = useAppStore((s) => s.toggleLanguage);
   const applyAuthSession = useAppStore((s) => s.applyAuthSession);
-  const saveAppState = useAppStore((s) => s.saveAppState);
   const [email, setEmail] = useState('admin@toysfactory.com');
   const [password, setPassword] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -41,14 +39,13 @@ export default function LoginPage() {
     try {
       const session = await signIn(email, password);
       applyAuthSession(session.authUser);
-      logSystemAudit(useAppStore.getState().appState, {
+      useAppStore.getState().recordAuditEvent({
         action: 'LOGIN',
         module: 'Auth',
         description: `Successful login (${session.authUser.email})`,
         actorId: session.authUser.uid,
         actorName: session.authUser.name,
       });
-      saveAppState();
       toast.success(t('login.success_signin'), { description: session.authUser.name });
       router.push(getFirstAllowedHref(session.authUser));
     } catch (err) {

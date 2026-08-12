@@ -1,21 +1,24 @@
 import type { ApiModule } from '@/lib/config/data-source';
 import { fetchModulesSnapshot, type ApiModuleSnapshot } from '@/lib/server/fetch-modules';
+import { fetchServerDashboardSummary } from '@/lib/server/fetch-resource-list';
+import type { DashboardSummary } from '@/lib/services/api-resource-service';
 
-/** Modules required to compute dashboard KPI cards and charts on first paint. */
-export const DASHBOARD_API_MODULES: readonly ApiModule[] = [
-  'customers',
-  'suppliers',
+/** Lightweight modules for charts/panels — not full dashboard bulk load. */
+export const DASHBOARD_CHART_MODULES: readonly ApiModule[] = [
   'salesOrders',
   'invoices',
-  'leads',
-  'rawMaterials',
-  'semiFinishedProducts',
-  'finishedGoods',
-  'productionOrders',
-  'purchaseOrders',
   'projects',
 ] as const;
 
-export async function fetchDashboardSnapshot(revalidateSeconds = 30): Promise<ApiModuleSnapshot> {
-  return fetchModulesSnapshot(DASHBOARD_API_MODULES, revalidateSeconds);
+export type DashboardServerPayload = {
+  summary: DashboardSummary | null;
+  modules: ApiModuleSnapshot;
+};
+
+export async function fetchDashboardSnapshot(revalidateSeconds = 30): Promise<DashboardServerPayload> {
+  const [summary, modules] = await Promise.all([
+    fetchServerDashboardSummary(revalidateSeconds),
+    fetchModulesSnapshot(DASHBOARD_CHART_MODULES, revalidateSeconds),
+  ]);
+  return { summary, modules };
 }

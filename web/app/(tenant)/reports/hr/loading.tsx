@@ -1,5 +1,5 @@
-import { StaticRouteLoading } from '@/components/skeletons/StaticRouteLoading';
+import { HrReportLoadingSkeleton } from '@/components/skeletons/reports/ReportRouteLoadingSkeletons';
 
 export default function Loading() {
-  return <StaticRouteLoading route="/reports/hr" />;
+  return <HrReportLoadingSkeleton />;
 }

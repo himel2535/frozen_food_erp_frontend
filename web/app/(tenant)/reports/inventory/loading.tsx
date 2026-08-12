@@ -1,5 +1,5 @@
-import { StaticRouteLoading } from '@/components/skeletons/StaticRouteLoading';
+import { InventoryReportLoadingSkeleton } from '@/components/skeletons/reports/ReportRouteLoadingSkeletons';
 
 export default function Loading() {
-  return <StaticRouteLoading route="/reports/inventory" />;
+  return <InventoryReportLoadingSkeleton />;
 }

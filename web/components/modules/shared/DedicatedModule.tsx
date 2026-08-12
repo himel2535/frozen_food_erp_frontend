@@ -18,6 +18,8 @@ import { StatusBadge } from '@/components/shared/StatusBadge';
 import { TableIconAction } from '@/components/shared/TableIconAction';
 import { useLegacyParityConfig } from '@/hooks/use-legacy-parity-config';
 import { useApiResourceStore } from '@/hooks/use-api-resource-store';
+import { usePaginatedApiResource } from '@/hooks/use-paginated-api-resource';
+import { ListPagination } from '@/components/shared/ListPagination';
 import { useAppStore } from '@/lib/state/app-store';
 import { useLocaleFormat } from '@/hooks/useLocaleFormat';
 import { sortRowsNewestFirst } from '@/lib/services/domain-service';
@@ -142,30 +144,44 @@ function DedicatedModuleApiView({
   const { formatCount, formatMoney } = useLocaleFormat();
   const appState = useAppStore((s) => s.appState);
   const saveAppState = useAppStore((s) => s.saveAppState);
-  const apiStore = useApiResourceStore(apiModule, mapGenericApiRow);
+  const apiStore = usePaginatedApiResource(apiModule, mapGenericApiRow);
   const dateFieldKeys = useMemo(
     () => new Set(config.fields.filter((f) => f.type === 'date').map((f) => f.key)),
     [config.fields],
   );
   const [view, setView] = useState<'main' | 'form'>('main');
-  const [search, setSearch] = useState('');
   const [filterValues, setFilterValues] = useState<Record<string, string>>({});
   const [statusFilter, setStatusFilter] = useState('all');
   const [editingId, setEditingId] = useState<string | null>(null);
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [form, setForm] = useState<Record<string, string>>({});
 
-  const allRows = useMemo(
-    () => {
-      const apiRows = config.transformRows ? config.transformRows(apiStore.rows) : apiStore.rows;
-      return pickApiListRows(true, apiStore.initialized, apiRows, []);
-    },
-    [apiStore.rows, apiStore.initialized, config],
+  const tabStatusIds = useMemo(
+    () => new Set((config.statusTabs ?? []).map((tab) => tab.id)),
+    [config.statusTabs],
   );
-  const rows = useMemo(
-    () => filterModuleRows(allRows, config, search, filterValues, statusFilter),
-    [allRows, config, search, filterValues, statusFilter],
-  );
+
+  const allRows = useMemo(() => {
+    const apiRows = config.transformRows ? config.transformRows(apiStore.rows) : apiStore.rows;
+    return pickApiListRows(true, apiStore.initialized, apiRows, []);
+  }, [apiStore.rows, apiStore.initialized, config]);
+
+  const rows = useMemo(() => {
+    let data = allRows;
+    config.filters?.forEach((f) => {
+      const val = filterValues[f.key];
+      if (val && val !== 'all') data = data.filter((row) => String(row[f.key] ?? '') === val);
+    });
+    if (statusFilter !== 'all' && !tabStatusIds.has(statusFilter)) {
+      data = data.filter((row) => String(row.status ?? '').toLowerCase() === statusFilter.toLowerCase());
+    }
+    if (config.rowSort) {
+      data = [...data].sort(config.rowSort);
+    } else {
+      data = sortRowsNewestFirst(data);
+    }
+    return data;
+  }, [allRows, config, filterValues, statusFilter, tabStatusIds]);
 
   const moduleTitle = resolveModuleText(t, configId, config, 'title');
   const moduleSubtitle = resolveModuleText(t, configId, config, 'subtitle');
@@ -190,14 +206,14 @@ function DedicatedModuleApiView({
       }));
     }
     return [
-      { key: 'total', label: t('common.total_entity', { title: moduleTitle }), value: formatCount(allRows.length) },
+      { key: 'total', label: t('common.total_entity', { title: moduleTitle }), value: formatCount(apiStore.meta.total) },
       {
-        key: 'active',
+        key: 'page',
         label: t('crm.kpi_active_records'),
         value: formatCount(allRows.filter((r) => ['active', 'approved', 'paid', 'completed', 'received', 'present'].includes(String(r.status ?? '').toLowerCase())).length),
       },
     ];
-  }, [config, allRows, t, moduleTitle, formatCount, formatMoney]);
+  }, [config, allRows, apiStore.meta.total, t, moduleTitle, formatCount, formatMoney]);
 
   const buildFormState = (initial: Record<string, unknown>) => {
     const next: Record<string, string> = {};
@@ -207,11 +223,21 @@ function DedicatedModuleApiView({
   };
 
   const resetFilters = () => {
-    setSearch('');
+    apiStore.setSearchTerm('');
     setStatusFilter('all');
+    apiStore.setStatusFilter('all');
     const cleared: Record<string, string> = {};
     config.filters?.forEach((f) => { cleared[f.key] = 'all'; });
     setFilterValues(cleared);
+  };
+
+  const handleStatusTabChange = (tabId: string) => {
+    setStatusFilter(tabId);
+    if (tabId === 'all' || tabStatusIds.has(tabId)) {
+      apiStore.setStatusFilter(tabId);
+    } else {
+      apiStore.setStatusFilter('all');
+    }
   };
 
   const resetForm = () => {
@@ -288,7 +314,7 @@ function DedicatedModuleApiView({
 
   const emptyLabel = moduleTitle.toLowerCase();
   const emptyMessage = apiListEmptyMessage(apiStore.loading, apiStore.initialized, emptyLabel, {
-    totalCount: allRows.length,
+    totalCount: apiStore.meta.total,
     filteredCount: rows.length,
   });
 
@@ -306,12 +332,12 @@ function DedicatedModuleApiView({
         />
       )}
       <ListToolbar
-        search={search}
-        onSearchChange={setSearch}
+        search={apiStore.search}
+        onSearchChange={apiStore.setSearchTerm}
         searchPlaceholder={resolveModuleText(t, configId, config, 'searchPlaceholder')}
         filters={
           <>
-            <FilterTabs tabs={tabs} active={statusFilter} onChange={setStatusFilter} />
+            <FilterTabs tabs={tabs} active={statusFilter} onChange={handleStatusTabChange} />
             {config.filters?.map((f) => (
               <select key={f.key} value={filterValues[f.key] ?? 'all'} onChange={(e) => setFilterValues({ ...filterValues, [f.key]: e.target.value })} className={MODULE_FILTER_INPUT}>
                 <option value="all">{t('common.all_filter', { label: resolveLabel(t, f.label) })}</option>
@@ -382,6 +408,12 @@ function DedicatedModuleApiView({
             )}
           </>
         )}
+      />
+      <ListPagination
+        page={apiStore.page}
+        pageSize={apiStore.pageSize}
+        total={apiStore.meta.total}
+        onPageChange={apiStore.setPage}
       />
       <Footer />
       {!config.hideInlineForm && (

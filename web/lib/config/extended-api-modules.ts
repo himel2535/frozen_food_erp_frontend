@@ -158,7 +158,6 @@ export const LEGACY_CONFIG_API_MODULES: Record<string, ExtendedApiModule> = {
   'settings-permissions': 'permissions',
   'settings-documents': 'documents',
   'settings-company': 'companySettings',
-  'settings-audit-logs': 'auditLogs',
   projects: 'projects',
   'asset-management': 'assets',
   'workflow-approvals': 'workflowApprovals',

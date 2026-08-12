@@ -1,5 +1,3 @@
-'use client';
-
 export { SalesReportsPage as ReportsSalesPage } from '@/components/modules/reports/sales/SalesReportsPage';
 export { PurchaseReportsPage as ReportsPurchasesPage } from '@/components/modules/reports/purchases/PurchaseReportsPage';
 export { InventoryReportsPage as ReportsInventoryPage } from '@/components/modules/reports/inventory/InventoryReportsPage';

@@ -74,9 +74,6 @@ function normalizePath(pathname: string): string {
 export function getModuleKpiLayout(pathname: string): ModuleKpiLayout {
   const path = normalizePath(pathname);
   if (ROUTE_LAYOUTS[path]) return ROUTE_LAYOUTS[path];
-  if (path.startsWith('/reports/')) {
-    return { count: 4, gridClassName: GRID_4, tableColumns: 7 };
-  }
   return DEFAULT_LAYOUT;
 }
 

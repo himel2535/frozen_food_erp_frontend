@@ -214,24 +214,28 @@ export function mapApiSalesOrderRow(doc: Record<string, unknown>): Record<string
 
 export function mapApiInvoiceRow(doc: Record<string, unknown>): Record<string, unknown> {
   const id = String(doc.legacyId ?? apiDocId(doc));
+  const total = Number(doc.amount ?? doc.total ?? 0);
+  const paid = Number(doc.paid ?? 0);
+  const due = Number(doc.due ?? Math.max(0, total - paid));
+  const customerId = String(doc.customerId ?? doc.customer ?? '');
   return {
     id,
     legacyId: doc.legacyId ?? id,
-    customerId: doc.customerId ?? '',
+    customerId,
     customerName: doc.customerName ?? '',
-    customer: doc.customerName ?? '',
+    customer: doc.customerName ?? doc.customer ?? '',
     issueDate: doc.issueDate ?? doc.date ?? '',
     date: doc.date ?? doc.issueDate ?? '',
     dueDate: doc.dueDate ?? '',
     status: doc.status ?? 'pending',
     items: doc.items ?? [],
-    amount: doc.amount ?? 0,
-    paid: doc.paid ?? 0,
-    due: doc.due ?? 0,
+    amount: total,
+    paid,
+    due,
     discount: doc.discount ?? 0,
     tax: doc.tax ?? 0,
     notes: doc.notes ?? '',
-    total: doc.amount ?? 0,
+    total,
     createdAt: doc.createdAt,
     updatedAt: doc.updatedAt,
     _mongoId: apiDocId(doc),

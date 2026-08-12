@@ -3,6 +3,7 @@ import { MODULE_LIST_SHELL } from '@/lib/ui/module-layout';
 import { SkeletonBlock } from '@/components/shared/SkeletonBlock';
 import { ModuleTableSkeleton } from '@/components/shared/ModuleTableSkeleton';
 import { ModuleKpiSkeleton } from '@/components/shared/ModuleKpiSkeleton';
+import { DashboardLoadingSkeleton } from '@/components/skeletons/DashboardLoadingSkeleton';
 import { getKpiGridClassName } from '@/lib/ui/kpi-grid';
 
 export type PageSkeletonVariant =
@@ -94,20 +95,7 @@ function SkeletonModuleTable() {
 }
 
 function SkeletonDashboard({ label }: { label: string }) {
-  return (
-    <div className="flex-1 p-4 space-y-2" aria-busy="true" aria-label={label}>
-      <SkeletonKpiGrid
-        count={8}
-        className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2"
-        cardClassName="premium-card premium-shadow p-3.5 flex items-center justify-between gap-3 min-h-[86px]"
-      />
-      <section className="grid grid-cols-1 lg:grid-cols-4 gap-2">
-        <SkeletonChartPanel className="lg:col-span-2" />
-        <SkeletonChartPanel />
-        <SkeletonChartPanel />
-      </section>
-    </div>
-  );
+  return <DashboardLoadingSkeleton label={label} />;
 }
 
 function SkeletonModuleList({ label }: { label: string }) {

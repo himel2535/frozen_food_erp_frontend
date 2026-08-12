@@ -9,7 +9,7 @@ import {
   isMainAdmin,
 } from '@/lib/services/access-control-service';
 import { toast } from '@/lib/ui/feedback';
-import { PageSkeleton } from '@/components/shared/PageSkeleton';
+import { DashboardLoadingSkeleton } from '@/components/skeletons/DashboardLoadingSkeleton';
 
 export function AuthGuard({ children }: { children: React.ReactNode }) {
   const router = useRouter();
@@ -66,7 +66,11 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
   }
 
   if (!authReady) {
-    return <PageSkeleton variant="dashboard" label="Loading workspace" />;
+    const path = pathname.split('?')[0].split('#')[0].replace(/\/$/, '') || '/dashboard';
+    if (path === '/dashboard') {
+      return <DashboardLoadingSkeleton label="Loading workspace" />;
+    }
+    return null;
   }
 
   if (!isLoggedIn) {

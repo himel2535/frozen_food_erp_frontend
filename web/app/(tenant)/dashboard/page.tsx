@@ -4,12 +4,12 @@ import { isMongoDbBackend } from '@/lib/config/data-source';
 import { fetchDashboardSnapshot } from '@/lib/server/dashboard-snapshot';
 
 export default async function DashboardPage() {
-  const snapshot = isMongoDbBackend() ? await fetchDashboardSnapshot() : null;
+  const payload = isMongoDbBackend() ? await fetchDashboardSnapshot() : null;
 
   return (
     <>
-      {snapshot ? <ServerSnapshotHydrator snapshot={snapshot} /> : null}
-      <DashboardView serverSnapshot={snapshot} />
+      {payload?.modules ? <ServerSnapshotHydrator snapshot={payload.modules} /> : null}
+      <DashboardView serverPayload={payload} />
     </>
   );
 }

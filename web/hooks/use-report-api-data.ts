@@ -2,6 +2,7 @@
 
 import { useMemo } from 'react';
 import { useApiAggregate } from '@/hooks/use-api-aggregate';
+import type { ApiModule } from '@/lib/config/data-source';
 import {
   mergeSalesReportSource,
   purchaseOrdersToReportRows,
@@ -11,8 +12,16 @@ import {
   journalsToFinancialReportRows,
 } from '@/lib/services/report-api-mappers';
 
+const SALES_REPORT_MODULES = ['invoices', 'salesOrders'] as const satisfies readonly ApiModule[];
+const PURCHASE_REPORT_MODULES = ['purchaseOrders'] as const satisfies readonly ApiModule[];
+const INVENTORY_REPORT_MODULES = ['products', 'rawMaterials', 'finishedGoods', 'semiFinishedProducts', 'warehouses'] as const satisfies readonly ApiModule[];
+const CUSTOMER_REPORT_MODULES = ['customers', 'invoices'] as const satisfies readonly ApiModule[];
+const SUPPLIER_REPORT_MODULES = ['suppliers', 'purchaseOrders'] as const satisfies readonly ApiModule[];
+const FINANCIAL_REPORT_MODULES = ['journals', 'ledger'] as const satisfies readonly ApiModule[];
+const HR_REPORT_MODULES = ['employees', 'departments', 'leaveRequests'] as const satisfies readonly ApiModule[];
+
 export function useSalesReportApiRows() {
-  const { data, loading, initialized, error, reload } = useApiAggregate(['invoices', 'salesOrders']);
+  const { data, loading, initialized, error, reload } = useApiAggregate(SALES_REPORT_MODULES);
   const rows = useMemo(
     () => mergeSalesReportSource(data.invoices ?? [], data.salesOrders ?? []),
     [data.invoices, data.salesOrders],
@@ -21,7 +30,7 @@ export function useSalesReportApiRows() {
 }
 
 export function usePurchaseReportApiRows() {
-  const { data, loading, initialized, error, reload } = useApiAggregate(['purchaseOrders']);
+  const { data, loading, initialized, error, reload } = useApiAggregate(PURCHASE_REPORT_MODULES);
   const rows = useMemo(
     () => purchaseOrdersToReportRows(data.purchaseOrders ?? []),
     [data.purchaseOrders],
@@ -30,9 +39,7 @@ export function usePurchaseReportApiRows() {
 }
 
 export function useInventoryReportApiRows() {
-  const { data, loading, initialized, error, reload } = useApiAggregate([
-    'products', 'rawMaterials', 'finishedGoods', 'semiFinishedProducts', 'warehouses',
-  ]);
+  const { data, loading, initialized, error, reload } = useApiAggregate(INVENTORY_REPORT_MODULES);
   const rows = useMemo(() => {
     const wh = data.warehouses ?? [];
     return [
@@ -46,7 +53,7 @@ export function useInventoryReportApiRows() {
 }
 
 export function useCustomerReportApiRows() {
-  const { data, loading, initialized, error, reload } = useApiAggregate(['customers', 'invoices']);
+  const { data, loading, initialized, error, reload } = useApiAggregate(CUSTOMER_REPORT_MODULES);
   const rows = useMemo(() => {
     const customers = customersToReportRows(data.customers ?? []);
     const invoices = data.invoices ?? [];
@@ -63,7 +70,7 @@ export function useCustomerReportApiRows() {
 }
 
 export function useSupplierReportApiRows() {
-  const { data, loading, initialized, error, reload } = useApiAggregate(['suppliers', 'purchaseOrders']);
+  const { data, loading, initialized, error, reload } = useApiAggregate(SUPPLIER_REPORT_MODULES);
   const rows = useMemo(() => {
     const suppliers = suppliersToReportRows(data.suppliers ?? []);
     const pos = data.purchaseOrders ?? [];
@@ -80,7 +87,7 @@ export function useSupplierReportApiRows() {
 }
 
 export function useFinancialReportApiRows() {
-  const { data, loading, initialized, error, reload } = useApiAggregate(['journals', 'ledger']);
+  const { data, loading, initialized, error, reload } = useApiAggregate(FINANCIAL_REPORT_MODULES);
   const rows = useMemo(() => {
     const journalRows = journalsToFinancialReportRows(data.journals ?? []);
     const ledgerRows = (data.ledger ?? []).map((doc) => ({
@@ -99,7 +106,7 @@ export function useFinancialReportApiRows() {
 }
 
 export function useHrReportApiRows() {
-  const { data, loading, initialized, error, reload } = useApiAggregate(['employees', 'departments', 'leaveRequests']);
+  const { data, loading, initialized, error, reload } = useApiAggregate(HR_REPORT_MODULES);
   const rows = useMemo(() => {
     const employees = (data.employees ?? []) as Record<string, unknown>[];
     const departments = (data.departments ?? []) as Record<string, unknown>[];

@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   API_RESOURCE_PATHS,
   API_MODULE_LABELS,
@@ -15,18 +15,18 @@ import {
   readCachedResourceList,
   updateResource,
 } from '@/lib/services/api-resource-service';
+import { getApiListCacheMeta } from '@/lib/services/api-list-cache';
 import { notifyApiMutation, onApiMutation } from '@/lib/services/api-sync-events';
 import { invalidateApiListCache, setApiListCache } from '@/lib/services/api-list-cache';
-import { DEFAULT_LIST_PAGE_SIZE } from '@/lib/services/api-pagination-types';
+import { DEFAULT_LIST_PAGE_SIZE, type ApiPaginationMeta } from '@/lib/services/api-pagination-types';
 import { useModuleInitialRows } from '@/components/providers/ModuleInitialDataProvider';
 import { useAppStore } from '@/lib/state/app-store';
+import { useDebouncedValue } from '@/hooks/use-debounced-value';
 
-type ApiResourceStoreOptions = {
-  /** Server-fetched rows — skip blocking initial fetch when provided. */
+type PaginatedApiOptions = {
+  pageSize?: number;
   initialRows?: Record<string, unknown>[];
-  skipInitialFetch?: boolean;
-  /** When true, fetches only the first page (faster for large lists). */
-  pageOnly?: boolean;
+  initialMeta?: ApiPaginationMeta;
 };
 
 function auditEntityLabel(body: Record<string, unknown>, id: string): string {
@@ -53,59 +53,85 @@ function recordApiAudit(
   });
 }
 
-export function useApiResourceStore(
+export function usePaginatedApiResource(
   module: ApiModule,
   mapRow: (doc: Record<string, unknown>) => Record<string, unknown>,
-  options?: ApiResourceStoreOptions,
+  options?: PaginatedApiOptions,
 ) {
   const enabled = isModuleApiMode(module);
   const path = API_RESOURCE_PATHS[module];
+  const pageSize = options?.pageSize ?? DEFAULT_LIST_PAGE_SIZE;
   const mapRowRef = useRef(mapRow);
   mapRowRef.current = mapRow;
+
   const serverRows = useModuleInitialRows(module);
-  const initialRowsRef = useRef(options?.initialRows ?? serverRows);
-  initialRowsRef.current = options?.initialRows ?? serverRows;
-  const resolvedInitial = initialRowsRef.current;
-  const hasServerSeed = resolvedInitial !== undefined;
-  const skipInitialFetch = Boolean(options?.skipInitialFetch || hasServerSeed);
-  const pageOnly = options?.pageOnly ?? true;
-  const listQuery = { page: 1, limit: DEFAULT_LIST_PAGE_SIZE };
+  const initialRows = options?.initialRows ?? serverRows;
+  const hasServerSeed = initialRows !== undefined;
+
+  const [page, setPage] = useState(1);
+  const [search, setSearch] = useState('');
+  const [status, setStatus] = useState('all');
+  const debouncedSearch = useDebouncedValue(search, 300);
+
+  const queryKey = useMemo(
+    () => ({ page, limit: pageSize, search: debouncedSearch, status }),
+    [page, pageSize, debouncedSearch, status],
+  );
 
   const [rows, setRows] = useState<Record<string, unknown>[]>(() => {
     if (!enabled) return [];
-    if (hasServerSeed) {
-      return (resolvedInitial ?? []).map((doc) => mapRow(doc));
+    if (hasServerSeed && page === 1 && !debouncedSearch && status === 'all') {
+      return (initialRows ?? []).map((doc) => mapRow(doc));
     }
-    const docs = readCachedResourceList(path, listQuery);
-    return docs ? docs.map((doc) => mapRow(doc)) : [];
+    const cached = readCachedResourceList(path, queryKey);
+    return cached ? cached.map((doc) => mapRow(doc)) : [];
   });
+
+  const [meta, setMeta] = useState<ApiPaginationMeta>(() => {
+    if (options?.initialMeta) return options.initialMeta;
+    if (hasServerSeed) {
+      return {
+        total: initialRows?.length ?? 0,
+        page: 1,
+        limit: pageSize,
+        totalPages: 1,
+      };
+    }
+    return getApiListCacheMeta(path, queryKey) ?? {
+      total: 0,
+      page: 1,
+      limit: pageSize,
+      totalPages: 1,
+    };
+  });
+
   const [loading, setLoading] = useState(() => {
     if (!enabled) return false;
-    if (hasServerSeed) return false;
-    return !isCachedResourceList(path, listQuery);
+    if (hasServerSeed && page === 1 && !debouncedSearch && status === 'all') return false;
+    return !isCachedResourceList(path, queryKey);
   });
+
   const [initialized, setInitialized] = useState(() => {
     if (!enabled) return true;
-    if (hasServerSeed) return true;
-    return isCachedResourceList(path, listQuery);
+    if (hasServerSeed && page === 1 && !debouncedSearch && status === 'all') return true;
+    return isCachedResourceList(path, queryKey);
   });
+
   const [error, setError] = useState<string | null>(null);
   const fetchGenRef = useRef(0);
+  const skipFirstFetchRef = useRef(hasServerSeed);
 
   const reload = useCallback(async (opts?: { silent?: boolean }) => {
     if (!enabled) return;
     const generation = ++fetchGenRef.current;
-    if (!opts?.silent) {
-      setLoading(true);
-    }
+    if (!opts?.silent) setLoading(true);
     setError(null);
     try {
-      const result = pageOnly
-        ? await fetchResourcePage(path, listQuery)
-        : await fetchResourcePage(path, { page: 1, limit: 100 });
+      const result = await fetchResourcePage(path, queryKey);
       if (generation !== fetchGenRef.current) return;
-      const docs = result.rows;
-      setRows(docs.map((doc) => mapRowRef.current(doc)));
+      setRows(result.rows.map((doc) => mapRowRef.current(doc)));
+      setMeta(result.meta);
+      setApiListCache(path, result.rows, queryKey, result.meta);
     } catch (err) {
       if (generation !== fetchGenRef.current) return;
       setError(err instanceof Error ? err.message : `Failed to load ${module}`);
@@ -115,26 +141,40 @@ export function useApiResourceStore(
         setInitialized(true);
       }
     }
-  }, [enabled, path, module, pageOnly]);
+  }, [enabled, path, module, queryKey]);
 
   useEffect(() => {
     if (!enabled) return;
-    if (skipInitialFetch && initialRowsRef.current !== undefined) {
-      setApiListCache(path, initialRowsRef.current ?? [], listQuery);
+    if (skipFirstFetchRef.current && page === 1 && !debouncedSearch && status === 'all') {
+      skipFirstFetchRef.current = false;
+      if (initialRows) {
+        setApiListCache(path, initialRows, queryKey, meta);
+      }
       return;
     }
-    const hasCache = isCachedResourceList(path, listQuery);
-    void reload(hasCache ? { silent: true } : undefined);
-  }, [enabled, path, reload, skipInitialFetch, listQuery.limit]);
+    const cached = isCachedResourceList(path, queryKey);
+    void reload(cached ? { silent: true } : undefined);
+  }, [enabled, path, reload, queryKey, page, debouncedSearch, status]);
 
   useEffect(() => {
     if (!enabled) return;
     return onApiMutation((modules) => {
       if (!modules || modules.includes(module)) {
+        invalidateApiListCache(path);
         void reload();
       }
     });
-  }, [enabled, module, reload]);
+  }, [enabled, module, path, reload]);
+
+  const setSearchTerm = useCallback((value: string) => {
+    setSearch(value);
+    setPage(1);
+  }, []);
+
+  const setStatusFilter = useCallback((value: string) => {
+    setStatus(value);
+    setPage(1);
+  }, []);
 
   const create = useCallback(async (body: Record<string, unknown>) => {
     const result = await createResource(path, body);
@@ -169,5 +209,23 @@ export function useApiResourceStore(
     return result;
   }, [path, reload, module]);
 
-  return { enabled, rows, loading, initialized, error, reload, create, update, remove };
+  return {
+    enabled,
+    rows,
+    meta,
+    page,
+    pageSize,
+    search,
+    status,
+    loading,
+    initialized,
+    error,
+    setPage,
+    setSearchTerm,
+    setStatusFilter,
+    reload,
+    create,
+    update,
+    remove,
+  };
 }
