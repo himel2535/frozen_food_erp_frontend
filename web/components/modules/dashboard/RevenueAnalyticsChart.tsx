@@ -76,15 +76,15 @@ export function RevenueAnalyticsChart() {
       </div>
 
       <div className="grid grid-cols-3 gap-1.5 mb-2">
-        <div className="rounded-lg bg-violet-50/80 border border-violet-100 px-2 py-1.5 min-w-0">
+        <div className="dashboard-chart-kpi rounded-lg bg-violet-50/80 border border-violet-100 px-2 py-1.5 min-w-0" style={{ animationDelay: '40ms' }}>
           <p className="text-[9px] font-bold text-violet-600 uppercase tracking-wide truncate">{t('dashboard.revenue_total')}</p>
           <p className="text-xs font-extrabold text-slate-900 tabular-nums mt-0.5 truncate">{formatMoney(total)}</p>
         </div>
-        <div className="rounded-lg bg-slate-50 border border-slate-100 px-2 py-1.5 min-w-0">
+        <div className="dashboard-chart-kpi rounded-lg bg-slate-50 border border-slate-100 px-2 py-1.5 min-w-0" style={{ animationDelay: '90ms' }}>
           <p className="text-[9px] font-bold text-slate-500 uppercase tracking-wide truncate">{t('dashboard.revenue_avg')}</p>
           <p className="text-xs font-extrabold text-slate-900 tabular-nums mt-0.5 truncate">{formatMoney(average)}</p>
         </div>
-        <div className="rounded-lg bg-emerald-50/80 border border-emerald-100 px-2 py-1.5 min-w-0">
+        <div className="dashboard-chart-kpi rounded-lg bg-emerald-50/80 border border-emerald-100 px-2 py-1.5 min-w-0" style={{ animationDelay: '140ms' }}>
           <p className="text-[9px] font-bold text-emerald-600 uppercase tracking-wide truncate">{t('dashboard.sales_trend_peak')}</p>
           <p className="text-xs font-extrabold text-slate-900 tabular-nums mt-0.5 truncate">
             {activePoint && activePoint.value > 0
@@ -110,7 +110,7 @@ export function RevenueAnalyticsChart() {
             ))}
           </div>
 
-          <div className="absolute inset-0 bottom-6 flex items-end justify-between gap-1.5">
+          <div key={range} className="absolute inset-0 bottom-6 flex items-end justify-between gap-1.5">
             {series.map((point, idx) => {
               const heightPct = point.value > 0 ? Math.max(6, (point.value / maxValue) * 100) : 3;
               const isActive = idx === activeIdx;
@@ -122,19 +122,19 @@ export function RevenueAnalyticsChart() {
                   onMouseLeave={() => setHoverIdx(null)}
                 >
                   <span
-                    className={`text-[9px] font-extrabold mb-1 tabular-nums transition-opacity ${
-                      isActive ? 'text-violet-600 opacity-100' : 'text-slate-500 opacity-0 group-hover:opacity-100'
+                    className={`text-[9px] font-extrabold mb-1 tabular-nums transition-all duration-300 ${
+                      isActive ? 'text-violet-600 opacity-100 translate-y-0' : 'text-slate-500 opacity-0 translate-y-1 group-hover:opacity-100 group-hover:translate-y-0'
                     }`}
                   >
                     {point.value > 0 ? formatCompactMoney(point.value) : ''}
                   </span>
                   <div
-                    className={`w-full max-w-12 rounded-t-lg transition-all cursor-pointer ${
+                    className={`dashboard-chart-bar w-full max-w-12 rounded-t-lg cursor-pointer ${
                       isActive
-                        ? 'bg-gradient-to-t from-violet-700 to-violet-500 shadow-md shadow-violet-200/60'
+                        ? 'is-active bg-gradient-to-t from-violet-700 to-violet-500 shadow-md shadow-violet-200/60'
                         : 'bg-gradient-to-t from-violet-400/70 to-violet-300/50 group-hover:from-violet-600 group-hover:to-violet-400'
                     }`}
-                    style={{ height: `${heightPct}%` }}
+                    style={{ height: `${heightPct}%`, animationDelay: `${idx * 50}ms` }}
                     title={`${point.label}: ${formatMoney(point.value)}`}
                   />
                 </div>
@@ -143,10 +143,11 @@ export function RevenueAnalyticsChart() {
           </div>
 
           <div className="absolute bottom-0 left-0 w-full flex justify-between border-t border-slate-100 pt-2">
-            {series.map((point) => (
+            {series.map((point, idx) => (
               <span
                 key={`${point.key}-lbl`}
-                className={`flex-1 text-center font-bold text-slate-500 truncate px-0.5 ${series.length > 14 ? 'text-[8px]' : 'text-[10px]'}`}
+                className={`dashboard-chart-label flex-1 text-center font-bold text-slate-500 truncate px-0.5 ${series.length > 14 ? 'text-[8px]' : 'text-[10px]'}`}
+                style={{ animationDelay: `${120 + idx * 30}ms` }}
               >
                 {point.label}
               </span>

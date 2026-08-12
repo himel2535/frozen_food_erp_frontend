@@ -71,15 +71,15 @@ export function SalesTrendChart() {
       </div>
 
       <div className="grid grid-cols-3 gap-1.5 mb-2">
-        <div className="rounded-lg bg-blue-50/80 border border-blue-100 px-2 py-1.5">
+        <div className="dashboard-chart-kpi rounded-lg bg-blue-50/80 border border-blue-100 px-2 py-1.5" style={{ animationDelay: '40ms' }}>
           <p className="text-[9px] font-bold text-blue-600 uppercase tracking-wide">{t('dashboard.sales_trend_total')}</p>
           <p className="text-xs font-extrabold text-slate-900 tabular-nums mt-0.5">{formatMoney(total)}</p>
         </div>
-        <div className="rounded-lg bg-slate-50 border border-slate-100 px-2 py-1.5">
+        <div className="dashboard-chart-kpi rounded-lg bg-slate-50 border border-slate-100 px-2 py-1.5" style={{ animationDelay: '90ms' }}>
           <p className="text-[9px] font-bold text-slate-500 uppercase tracking-wide">{t('dashboard.sales_trend_avg')}</p>
           <p className="text-xs font-extrabold text-slate-900 tabular-nums mt-0.5">{formatMoney(average)}</p>
         </div>
-        <div className="rounded-lg bg-emerald-50/80 border border-emerald-100 px-2 py-1.5">
+        <div className="dashboard-chart-kpi rounded-lg bg-emerald-50/80 border border-emerald-100 px-2 py-1.5" style={{ animationDelay: '140ms' }}>
           <p className="text-[9px] font-bold text-emerald-600 uppercase tracking-wide">{t('dashboard.sales_trend_peak')}</p>
           <p className="text-xs font-extrabold text-slate-900 tabular-nums mt-0.5 truncate">
             {activePoint ? `${activePoint.label} · ${formatCompactMoney(activePoint.value)}` : '—'}
@@ -103,7 +103,7 @@ export function SalesTrendChart() {
             ))}
           </div>
 
-          <div className="absolute inset-0 bottom-6 flex items-end justify-between gap-1.5">
+          <div key={range} className="absolute inset-0 bottom-6 flex items-end justify-between gap-1.5">
             {series.map((point, idx) => {
               const heightPct = point.value > 0 ? Math.max(6, (point.value / maxValue) * 100) : 3;
               const isActive = idx === activeIdx;
@@ -115,19 +115,19 @@ export function SalesTrendChart() {
                   onMouseLeave={() => setHoverIdx(null)}
                 >
                   <span
-                    className={`text-[9px] font-extrabold mb-1 tabular-nums transition-opacity ${
-                      isActive ? 'text-blue-600 opacity-100' : 'text-slate-500 opacity-0 group-hover:opacity-100'
+                    className={`text-[9px] font-extrabold mb-1 tabular-nums transition-all duration-300 ${
+                      isActive ? 'text-blue-600 opacity-100 translate-y-0' : 'text-slate-500 opacity-0 translate-y-1 group-hover:opacity-100 group-hover:translate-y-0'
                     }`}
                   >
                     {formatCompactMoney(point.value)}
                   </span>
                   <div
-                    className={`w-full max-w-12 rounded-t-lg transition-all cursor-pointer ${
+                    className={`dashboard-chart-bar w-full max-w-12 rounded-t-lg cursor-pointer ${
                       isActive
-                        ? 'bg-gradient-to-t from-blue-700 to-blue-500 shadow-md shadow-blue-200/60'
+                        ? 'is-active bg-gradient-to-t from-blue-700 to-blue-500 shadow-md shadow-blue-200/60'
                         : 'bg-gradient-to-t from-blue-400/70 to-blue-300/50 group-hover:from-blue-600 group-hover:to-blue-400'
                     }`}
-                    style={{ height: `${heightPct}%` }}
+                    style={{ height: `${heightPct}%`, animationDelay: `${idx * 50}ms` }}
                     title={`${point.label}: ${formatMoney(point.value)}`}
                   />
                 </div>
@@ -136,10 +136,11 @@ export function SalesTrendChart() {
           </div>
 
           <div className="absolute bottom-0 left-0 w-full flex justify-between border-t border-slate-100 pt-2">
-            {series.map((point) => (
+            {series.map((point, idx) => (
               <span
                 key={`${point.key}-lbl`}
-                className={`flex-1 text-center font-bold text-slate-500 truncate px-0.5 ${series.length > 14 ? 'text-[8px]' : 'text-[10px]'}`}
+                className={`dashboard-chart-label flex-1 text-center font-bold text-slate-500 truncate px-0.5 ${series.length > 14 ? 'text-[8px]' : 'text-[10px]'}`}
+                style={{ animationDelay: `${120 + idx * 30}ms` }}
               >
                 {point.label}
               </span>

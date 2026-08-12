@@ -920,6 +920,59 @@ body.dashboard-page .text-3xl { font-size: 2rem; }        /* 32px */
   body.dashboard-page .md\:text-3xl { font-size: 2rem; }
 }
 
+@keyframes dashboard-chart-bar-rise {
+  from {
+    transform: scaleY(0);
+    opacity: 0.25;
+  }
+  to {
+    transform: scaleY(1);
+    opacity: 1;
+  }
+}
+
+@keyframes dashboard-chart-kpi-rise {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes dashboard-chart-label-fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+body.dashboard-page .dashboard-chart-bar {
+  transform-origin: bottom center;
+  animation: dashboard-chart-bar-rise 0.65s cubic-bezier(0.22, 1, 0.36, 1) both;
+  transition: background 0.3s ease, box-shadow 0.3s ease, filter 0.25s ease;
+}
+
+body.dashboard-page .dashboard-chart-bar.is-active {
+  filter: brightness(1.05);
+}
+
+body.dashboard-page .dashboard-chart-kpi {
+  animation: dashboard-chart-kpi-rise 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+body.dashboard-page .dashboard-chart-label {
+  animation: dashboard-chart-label-fade 0.45s ease both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  body.dashboard-page .dashboard-chart-bar,
+  body.dashboard-page .dashboard-chart-kpi,
+  body.dashboard-page .dashboard-chart-label {
+    animation: none;
+  }
+}
+
 @layer utilities {
   .bg-blue-600 {
     background: linear-gradient(135deg, var(--color-blue-400), var(--color-blue-600)) !important;
