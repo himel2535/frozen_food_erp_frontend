@@ -46,9 +46,9 @@ export function CustomerDueFollowUpPage({ customerId }: { customerId: string }) 
   const appState = useAppStore((s) => s.appState);
   const saveAppState = useAppStore((s) => s.saveAppState);
   const apiMode = isModuleApiMode('invoices');
-  const invoiceStore = useApiResourceStore('invoices', mapApiInvoiceRow);
-  const paymentStore = useApiResourceStore('payments', mapGenericApiRow);
-  const cashboxStore = useApiResourceStore('cashbox', mapGenericApiRow);
+  const invoiceStore = useApiResourceStore('invoices', mapApiInvoiceRow, { pageOnly: true, lookupLimit: 200 });
+  const paymentStore = useApiResourceStore('payments', mapGenericApiRow, { pageOnly: true, lookupLimit: 100 });
+  const cashboxStore = useApiResourceStore('cashbox', mapGenericApiRow, { pageOnly: true, lookupLimit: 100 });
   const [, bump] = useState(0);
   const [saving, setSaving] = useState(false);
 

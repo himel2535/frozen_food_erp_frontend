@@ -18,7 +18,7 @@ import {
 import { getApiListCacheMeta } from '@/lib/services/api-list-cache';
 import { notifyApiMutation, onApiMutation } from '@/lib/services/api-sync-events';
 import { invalidateApiListCache, setApiListCache } from '@/lib/services/api-list-cache';
-import { DEFAULT_LIST_PAGE_SIZE, type ApiPaginationMeta } from '@/lib/services/api-pagination-types';
+import { DEFAULT_LIST_PAGE_SIZE, isDefaultListQuery, type ApiPaginationMeta } from '@/lib/services/api-pagination-types';
 import { useModuleInitialRows } from '@/components/providers/ModuleInitialDataProvider';
 import { useAppStore } from '@/lib/state/app-store';
 import { useDebouncedValue } from '@/hooks/use-debounced-value';
@@ -71,16 +71,19 @@ export function usePaginatedApiResource(
   const [pageSize, setPageSizeState] = useState(options?.pageSize ?? DEFAULT_LIST_PAGE_SIZE);
   const [search, setSearch] = useState('');
   const [status, setStatus] = useState('all');
+  const [queryFilters, setQueryFilters] = useState<Record<string, string>>({});
   const debouncedSearch = useDebouncedValue(search, 300);
 
   const queryKey = useMemo(
-    () => ({ page, limit: pageSize, search: debouncedSearch, status }),
-    [page, pageSize, debouncedSearch, status],
+    () => ({ page, limit: pageSize, search: debouncedSearch, status, ...queryFilters }),
+    [page, pageSize, debouncedSearch, status, queryFilters],
   );
+
+  const isDefaultQuery = isDefaultListQuery(queryKey);
 
   const [rows, setRows] = useState<Record<string, unknown>[]>(() => {
     if (!enabled) return [];
-    if (hasServerSeed && page === 1 && !debouncedSearch && status === 'all') {
+    if (hasServerSeed && page === 1 && isDefaultQuery) {
       return (initialRows ?? []).map((doc) => mapRow(doc));
     }
     const cached = readCachedResourceList(path, queryKey);
@@ -145,7 +148,7 @@ export function usePaginatedApiResource(
 
   useEffect(() => {
     if (!enabled) return;
-    if (skipFirstFetchRef.current && page === 1 && !debouncedSearch && status === 'all') {
+    if (skipFirstFetchRef.current && page === 1 && isDefaultQuery) {
       skipFirstFetchRef.current = false;
       if (initialRows) {
         setApiListCache(path, initialRows, queryKey, meta);
@@ -154,7 +157,7 @@ export function usePaginatedApiResource(
     }
     const cached = isCachedResourceList(path, queryKey);
     void reload(cached ? { silent: true } : undefined);
-  }, [enabled, path, reload, queryKey, page, debouncedSearch, status]);
+  }, [enabled, path, reload, queryKey, page, debouncedSearch, status, queryFilters]);
 
   useEffect(() => {
     if (!enabled) return;
@@ -173,6 +176,20 @@ export function usePaginatedApiResource(
 
   const setStatusFilter = useCallback((value: string) => {
     setStatus(value);
+    setPage(1);
+  }, []);
+
+  const setQueryFilter = useCallback((key: string, value: string) => {
+    setQueryFilters((prev) => {
+      if (!value || value === 'all') {
+        if (!(key in prev)) return prev;
+        const next = { ...prev };
+        delete next[key];
+        return next;
+      }
+      if (prev[key] === value) return prev;
+      return { ...prev, [key]: value };
+    });
     setPage(1);
   }, []);
 
@@ -222,6 +239,7 @@ export function usePaginatedApiResource(
     pageSize,
     search,
     status,
+    queryFilters,
     loading,
     initialized,
     error,
@@ -229,6 +247,7 @@ export function usePaginatedApiResource(
     setPageSize,
     setSearchTerm,
     setStatusFilter,
+    setQueryFilter,
     reload,
     create,
     update,

@@ -45,12 +45,7 @@ export async function fetchResourcePage(
   query: ApiListQuery = {},
 ): Promise<ApiPageResult> {
   const base = normalizeListPath(path);
-  const qs = buildListQueryString({
-    page: query.page ?? 1,
-    limit: query.limit ?? DEFAULT_LIST_PAGE_SIZE,
-    search: query.search,
-    status: query.status,
-  });
+  const qs = buildListQueryString(query);
   const { data, meta } = await apiRequest<Record<string, unknown>[]>(`${base}?${qs}`);
   const rows = Array.isArray(data) ? data : [];
   const parsed = parseApiPaginationMeta(meta);

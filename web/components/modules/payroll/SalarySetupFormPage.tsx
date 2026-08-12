@@ -2,7 +2,7 @@
 
 import { toast } from '@/lib/ui/feedback';
 
-import { useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useChromeSuppressed } from '@/components/layout/ModuleActionsContext';
 import { PageSkeleton } from '@/components/shared/PageSkeleton';
@@ -14,8 +14,8 @@ import {
   recordToSalarySetupFormValues,
 } from '@/components/modules/payroll/salary-setup-form/salary-setup-form-types';
 import { useAppStore } from '@/lib/state/app-store';
-import { isModuleApiMode } from '@/lib/config/data-source';
-import { useApiResourceStore } from '@/hooks/use-api-resource-store';
+import { isModuleApiMode, API_RESOURCE_PATHS } from '@/lib/config/data-source';
+import { createResource, fetchResourceById, updateResource } from '@/lib/services/api-resource-service';
 import { mapGenericApiRow, mapGenericPayloadToApi } from '@/lib/services/generic-api-mapper';
 import { resolveApiRowId } from '@/lib/services/entity-api-mappers';
 import {
@@ -27,34 +27,35 @@ import {
 } from '@/lib/services/payroll-service';
 import type { AppState } from '@/lib/state/types';
 
-function buildStructureState(
-  base: AppState,
-  apiMode: boolean,
-  rows: Record<string, unknown>[],
-  ready: boolean,
-): AppState {
-  if (!apiMode || !ready) return base;
-  return { ...base, salaryStructures: rows } as AppState;
-}
-
 export function SalarySetupFormPage({ mode, structureId }: { mode: 'create' | 'edit'; structureId?: string }) {
   const router = useRouter();
   const appState = useAppStore((s) => s.appState);
   const saveAppState = useAppStore((s) => s.saveAppState);
   const apiMode = isModuleApiMode('salaryStructures');
-  const apiStore = useApiResourceStore('salaryStructures', mapGenericApiRow);
+  const [apiStructure, setApiStructure] = useState<Record<string, unknown> | null>(null);
+  const [apiLoading, setApiLoading] = useState(apiMode && mode === 'edit' && Boolean(structureId));
+
+  useEffect(() => {
+    if (!apiMode || mode !== 'edit' || !structureId) return;
+    setApiLoading(true);
+    void fetchResourceById(API_RESOURCE_PATHS.salaryStructures, structureId).then((doc) => {
+      setApiStructure(doc ? enrichSalaryStructureRecord(mapGenericApiRow(doc)) : null);
+      setApiLoading(false);
+    });
+  }, [apiMode, mode, structureId]);
 
   useChromeSuppressed(true);
 
-  const structureState = useMemo(
-    () => buildStructureState(appState, apiMode, apiStore.rows, apiStore.initialized),
-    [appState, apiMode, apiStore.rows, apiStore.initialized],
-  );
+  const structureState = useMemo(() => {
+    if (!apiMode || !apiStructure) return appState;
+    return { ...appState, salaryStructures: [apiStructure] } as AppState;
+  }, [appState, apiMode, apiStructure]);
 
   const existing = useMemo(() => {
+    if (apiMode) return apiStructure;
     if (!structureId) return null;
-    return getSalaryStructureById(structureState, structureId);
-  }, [structureState, structureId]);
+    return getSalaryStructureById(appState, structureId);
+  }, [apiMode, apiStructure, appState, structureId]);
 
   const initialValues = useMemo(() => {
     if (existing) return recordToSalarySetupFormValues(existing);
@@ -63,11 +64,11 @@ export function SalarySetupFormPage({ mode, structureId }: { mode: 'create' | 'e
 
   const previewId = structureId ?? previewSalaryStructureId(structureState);
 
-  if (apiMode && !apiStore.initialized && mode === 'edit') {
+  if (apiLoading) {
     return <PageSkeleton variant="module-list" label="Loading salary structure" />;
   }
 
-  if (mode === 'edit' && structureId && apiStore.initialized && !existing) {
+  if (mode === 'edit' && structureId && !existing) {
     return (
       <div className="p-8 text-center text-sm text-slate-500">
         Salary structure not found.{' '}
@@ -87,8 +88,8 @@ export function SalarySetupFormPage({ mode, structureId }: { mode: 'create' | 'e
     if (apiMode) {
       const body = mapGenericPayloadToApi(record);
       const result = mode === 'edit' && structureId
-        ? await apiStore.update(resolveApiRowId(existing ?? record), body)
-        : await apiStore.create(body);
+        ? await updateResource(API_RESOURCE_PATHS.salaryStructures, resolveApiRowId(existing ?? record), body)
+        : await createResource(API_RESOURCE_PATHS.salaryStructures, body);
       if (!result.ok) {
         toast.error('Operation failed', { module: 'Salary Setup', description: 'error' in result ? String(result.error) : 'Save failed' });
         return;

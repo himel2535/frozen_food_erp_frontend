@@ -20,8 +20,7 @@ import { useLegacyParityConfig } from '@/hooks/use-legacy-parity-config';
 import { useAppStore } from '@/lib/state/app-store';
 import { isModuleApiMode } from '@/lib/config/data-source';
 import { API_RESOURCE_PATHS } from '@/lib/config/data-source';
-import { useApiResourceStore } from '@/hooks/use-api-resource-store';
-import { fetchResourceById } from '@/lib/services/api-resource-service';
+import { fetchResourceById, updateResource } from '@/lib/services/api-resource-service';
 import { mapApiEmployeeRow, mapEmployeeFormToApi } from '@/lib/services/entity-api-mappers';
 import { useApiAppState } from '@/hooks/use-api-app-state';
 import { ApiModeBanner } from '@/components/shared/ApiModeBanner';
@@ -38,7 +37,6 @@ export function EmployeeDetailPage() {
   const appState = useAppStore((s) => s.appState);
   const saveAppState = useAppStore((s) => s.saveAppState);
   const apiMode = isModuleApiMode('employees');
-  const apiStore = useApiResourceStore('employees', mapApiEmployeeRow);
   const apiRelated = useApiAppState(apiMode ? ['attendance', 'payrollSlips'] : undefined);
   const dataState = apiMode ? apiRelated.state : appState;
   const [apiEmployee, setApiEmployee] = useState<Record<string, unknown> | null>(null);
@@ -114,7 +112,7 @@ export function EmployeeDetailPage() {
       if (f.type === 'number') payload[f.key] = Number(form[f.key] || 0);
     });
     if (apiMode) {
-      const result = await apiStore.update(employeeId, mapEmployeeFormToApi(form));
+      const result = await updateResource(API_RESOURCE_PATHS.employees, employeeId, mapEmployeeFormToApi(form));
       if (!result.ok) {
         toast.error('Operation failed', { module: 'HRM', description: 'error' in result ? String(result.error) : 'Save failed' });
         return;

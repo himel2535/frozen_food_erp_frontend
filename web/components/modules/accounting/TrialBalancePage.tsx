@@ -8,7 +8,8 @@ import { Footer } from '@/components/layout/Footer';
 import { useRegisterModuleActions } from '@/components/layout/ModuleActionsContext';
 import { AppFormFields, AppFormModal } from '@/components/shared/AppForm';
 import { useAppStore } from '@/lib/state/app-store';
-import { useApiResourceStore } from '@/hooks/use-api-resource-store';
+import { usePaginatedApiResource } from '@/hooks/use-paginated-api-resource';
+import { useTrialBalanceSummary } from '@/hooks/use-accounting-summary';
 import { mapGenericApiRow, mapGenericPayloadToApi } from '@/lib/services/generic-api-mapper';
 import { ApiModeBanner } from '@/components/shared/ApiModeBanner';
 import { isModuleApiMode } from '@/lib/config/data-source';
@@ -46,7 +47,8 @@ export function TrialBalancePage() {
   const appState = useAppStore((s) => s.appState);
   const saveAppState = useAppStore((s) => s.saveAppState);
   const apiMode = isModuleApiMode('trialBalance');
-  const apiStore = useApiResourceStore('trialBalance', mapGenericApiRow);
+  const apiStore = usePaginatedApiResource('trialBalance', mapGenericApiRow, { pageSize: 500 });
+  const summaryApi = useTrialBalanceSummary(apiMode);
 
   const [draftFilters, setDraftFilters] = useState<TrialBalanceFilterState>(DEFAULT_TRIAL_BALANCE_FILTERS);
   const [appliedFilters, setAppliedFilters] = useState<TrialBalanceFilterState>(DEFAULT_TRIAL_BALANCE_FILTERS);
@@ -78,7 +80,10 @@ export function TrialBalancePage() {
     [allAccounts, appliedFilters],
   );
 
-  const metrics = useMemo(() => getTrialBalanceMetrics(filteredRows), [filteredRows]);
+  const metrics = useMemo(() => {
+    if (apiMode && summaryApi.summary) return summaryApi.summary;
+    return getTrialBalanceMetrics(filteredRows);
+  }, [apiMode, summaryApi.summary, filteredRows]);
 
   const applyFilters = () => {
     setAppliedFilters({ ...draftFilters });
@@ -112,6 +117,7 @@ export function TrialBalancePage() {
       setShowAddModal(false);
       setAddForm({ accountCode: '', accountName: '', parentAccount: 'Assets', debit: '', credit: '', notes: '' });
       resetFilters();
+      void summaryApi.reload();
       return;
     }
     const result = createTrialBalanceLine(appState, payload);

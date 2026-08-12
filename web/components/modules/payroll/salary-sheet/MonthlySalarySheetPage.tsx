@@ -22,6 +22,8 @@ import {
 import { useAppStore } from '@/lib/state/app-store';
 import { isModuleApiMode } from '@/lib/config/data-source';
 import { useApiResourceStore } from '@/hooks/use-api-resource-store';
+import { usePaginatedApiResource } from '@/hooks/use-paginated-api-resource';
+import { mapApiEmployeeRow } from '@/lib/services/entity-api-mappers';
 import { mapGenericApiRow, mapGenericPayloadToApi } from '@/lib/services/generic-api-mapper';
 import { resolveApiRowId } from '@/lib/services/entity-api-mappers';
 import { ApiModeBanner } from '@/components/shared/ApiModeBanner';
@@ -76,14 +78,20 @@ export function MonthlySalarySheetPage() {
   const replaceAppState = useAppStore((s) => s.replaceAppState);
   const apiDataReady = useAppStore((s) => s.apiDataReady);
   const apiMode = isModuleApiMode('salarySheet');
-  const apiStore = useApiResourceStore('salarySheet', mapGenericApiRow);
+  const apiStore = usePaginatedApiResource('salarySheet', mapGenericApiRow, { pageSize: 100 });
   const structureStore = useApiResourceStore('salaryStructures', (doc) =>
     enrichSalaryStructureRecord(mapGenericApiRow(doc)),
-  );
+  { pageOnly: true, lookupLimit: 200 });
+  const employeeStore = useApiResourceStore('employees', mapApiEmployeeRow, { pageOnly: true, lookupLimit: 200 });
   const [filters, setFilters] = useState<SheetFilterState>(DEFAULT_FILTERS);
   const [sheetBootstrapping, setSheetBootstrapping] = useState(apiMode);
   const [draftByEmployee, setDraftByEmployee] = useState<Record<string, Record<string, unknown>>>({});
   const bootstrapKeyRef = useRef('');
+
+  useEffect(() => {
+    if (!apiMode) return;
+    apiStore.setQueryFilter('period', filters.period);
+  }, [apiMode, filters.period, apiStore.setQueryFilter]);
 
   useEffect(() => {
     setDraftByEmployee({});
@@ -94,9 +102,10 @@ export function MonthlySalarySheetPage() {
     const salaryStructures = structureStore.initialized
       ? structureStore.rows.map((row) => enrichSalaryStructureRecord(row))
       : (appState.salaryStructures ?? []);
+    const employees = employeeStore.initialized ? employeeStore.rows : (appState.employees ?? []);
     const salarySheetEntries = apiStore.initialized ? apiStore.rows : [];
-    return { ...appState, salaryStructures, salarySheetEntries } as AppState;
-  }, [apiMode, apiStore.initialized, apiStore.rows, structureStore.initialized, structureStore.rows, appState]);
+    return { ...appState, employees, salaryStructures, salarySheetEntries } as AppState;
+  }, [apiMode, apiStore.initialized, apiStore.rows, structureStore.initialized, structureStore.rows, employeeStore.initialized, employeeStore.rows, appState]);
 
   const employees = useMemo(() => listSheetEmployees(sheetState), [sheetState]);
 
@@ -308,7 +317,7 @@ export function MonthlySalarySheetPage() {
     [],
   );
 
-  if (apiMode && (!apiDataReady || sheetBootstrapping || !apiStore.initialized || !structureStore.initialized)) {
+  if (apiMode && (!apiDataReady || sheetBootstrapping || !apiStore.initialized || !structureStore.initialized || !employeeStore.initialized)) {
     return <PageSkeleton variant="module-list" label="Loading salary sheet" />;
   }
 

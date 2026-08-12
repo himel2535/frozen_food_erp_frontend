@@ -2,7 +2,8 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { API_RESOURCE_PATHS, type ApiModule } from '@/lib/config/data-source';
-import { fetchResourceList, isCachedResourceList } from '@/lib/services/api-resource-service';
+import { fetchResourcePage, isCachedResourceList } from '@/lib/services/api-resource-service';
+import { LOOKUP_LIST_PAGE_SIZE } from '@/lib/services/api-pagination-types';
 import { setApiListCache } from '@/lib/services/api-list-cache';
 import { useModuleInitialSnapshot } from '@/components/providers/ModuleInitialDataProvider';
 
@@ -75,7 +76,13 @@ export function useApiAggregate(modules: readonly ApiModule[]): AggregateResult 
     setError(null);
     try {
       const entries = await Promise.all(
-        targets.map(async (mod) => [mod, await fetchResourceList(API_RESOURCE_PATHS[mod])] as const),
+        targets.map(async (mod) => {
+          const result = await fetchResourcePage(API_RESOURCE_PATHS[mod], {
+            page: 1,
+            limit: LOOKUP_LIST_PAGE_SIZE,
+          });
+          return [mod, result.rows] as const;
+        }),
       );
       if (gen !== genRef.current) return;
       setData((prev) => ({ ...prev, ...Object.fromEntries(entries) }));

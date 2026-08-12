@@ -9,8 +9,7 @@ import { useChromeSuppressed } from '@/components/layout/ModuleActionsContext';
 import { useAppStore } from '@/lib/state/app-store';
 import { isModuleApiMode } from '@/lib/config/data-source';
 import { API_RESOURCE_PATHS } from '@/lib/config/data-source';
-import { useApiResourceStore } from '@/hooks/use-api-resource-store';
-import { fetchResourceById } from '@/lib/services/api-resource-service';
+import { fetchResourceById, updateResource } from '@/lib/services/api-resource-service';
 import { mapApiSupplierRow, mapSupplierFormToApi } from '@/lib/services/entity-api-mappers';
 import { updateSupplier } from '@/lib/services/purchases-service';
 import { useApiAppState } from '@/hooks/use-api-app-state';
@@ -84,7 +83,6 @@ export function SupplierDetailPage({ supplierId }: { supplierId: string }) {
   const appState = useAppStore((s) => s.appState);
   const saveAppState = useAppStore((s) => s.saveAppState);
   const apiMode = isModuleApiMode('suppliers');
-  const apiStore = useApiResourceStore('suppliers', mapApiSupplierRow);
   const [apiSupplier, setApiSupplier] = useState<Record<string, unknown> | null>(null);
   const [apiLoading, setApiLoading] = useState(apiMode && Boolean(supplierId));
   const [, bump] = useState(0);
@@ -133,7 +131,7 @@ export function SupplierDetailPage({ supplierId }: { supplierId: string }) {
         rating: String(profile.supplier.rating ?? ''),
         imageUrl: String(profile.supplier.imageUrl ?? ''),
       });
-      const result = await apiStore.update(supplierId, body);
+      const result = await updateResource(API_RESOURCE_PATHS.suppliers, supplierId, body);
       if (!result.ok) {
         toast.error('Operation failed', { module: 'Suppliers', description: 'error' in result ? String(result.error) : 'Update failed' });
         return;

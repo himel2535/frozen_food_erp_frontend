@@ -137,10 +137,20 @@ export function PosPage() {
     if (fromApi.length > 0) return fromApi;
     return listPosProducts(appState);
   }, [productsStore.rows, appState]);
-  const filteredProducts = useMemo(
-    () => filterPosProducts(products, productsStore.enabled ? productsStore.search : search, category),
-    [products, search, productsStore.enabled, productsStore.search, category],
-  );
+
+  useEffect(() => {
+    if (!productsStore.enabled) return;
+    productsStore.setQueryFilter('posCategory', category);
+  }, [category, productsStore.enabled, productsStore.setQueryFilter]);
+
+  const filteredProducts = useMemo(() => {
+    if (productsStore.enabled) {
+      const q = productsStore.search.trim().toLowerCase();
+      if (!q) return products;
+      return products.filter((product) => `${product.name} ${product.sku}`.toLowerCase().includes(q));
+    }
+    return filterPosProducts(products, search, category);
+  }, [products, search, category, productsStore.enabled, productsStore.search]);
   const customers = useMemo(
     () => customersStore.rows.map((c) => ({
       id: String(c.id),

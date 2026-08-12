@@ -9,7 +9,8 @@ import { useRegisterModuleActions } from '@/components/layout/ModuleActionsConte
 import { AppFormFields, AppFormModal } from '@/components/shared/AppForm';
 import { DateInput } from '@/components/shared/DateInput';
 import { useAppStore } from '@/lib/state/app-store';
-import { useApiResourceStore } from '@/hooks/use-api-resource-store';
+import { usePaginatedApiResource } from '@/hooks/use-paginated-api-resource';
+import { useBalanceSheetSummary } from '@/hooks/use-accounting-summary';
 import { mapGenericApiRow, mapGenericPayloadToApi } from '@/lib/services/generic-api-mapper';
 import { ApiModeBanner } from '@/components/shared/ApiModeBanner';
 import { isModuleApiMode } from '@/lib/config/data-source';
@@ -92,7 +93,8 @@ export function BalanceSheetPage() {
   const appState = useAppStore((s) => s.appState);
   const saveAppState = useAppStore((s) => s.saveAppState);
   const apiMode = isModuleApiMode('balanceSheet');
-  const apiStore = useApiResourceStore('balanceSheet', mapGenericApiRow);
+  const apiStore = usePaginatedApiResource('balanceSheet', mapGenericApiRow, { pageSize: 500 });
+  const summaryApi = useBalanceSheetSummary(apiMode);
 
   const [asOnDate, setAsOnDate] = useState('2026-05-31');
   const [generatedAt, setGeneratedAt] = useState(() => formatGeneratedAt(new Date()));
@@ -113,7 +115,10 @@ export function BalanceSheetPage() {
     () => filterBalanceSheetLines(allLines, filters),
     [allLines, filters],
   );
-  const metrics = useMemo(() => getBalanceSheetMetrics(filteredLines), [filteredLines]);
+  const metrics = useMemo(() => {
+    if (apiMode && summaryApi.summary) return summaryApi.summary;
+    return getBalanceSheetMetrics(filteredLines);
+  }, [apiMode, summaryApi.summary, filteredLines]);
   const displayRows = useMemo(() => buildBalanceSheetDisplayRows(filteredLines), [filteredLines]);
 
   const formFields = useMemo<PortField[]>(() => FORM_FIELDS.map((field) => {
@@ -148,6 +153,7 @@ export function BalanceSheetPage() {
         return;
       }
       setGeneratedAt(formatGeneratedAt(new Date()));
+      void summaryApi.reload();
       return;
     }
     const result = deleteBalanceSheetLine(appState, sourceId);
@@ -176,6 +182,7 @@ export function BalanceSheetPage() {
       setEditingId(null);
       setForm(EMPTY_BS_FORM);
       setGeneratedAt(formatGeneratedAt(new Date()));
+      void summaryApi.reload();
       return;
     }
     const result = editingId

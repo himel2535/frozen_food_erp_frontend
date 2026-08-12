@@ -8,9 +8,8 @@ import { useChromeSuppressed } from '@/components/layout/ModuleActionsContext';
 import { CreateProjectForm } from '@/components/modules/projects/project-form/CreateProjectForm';
 import type { ProjectSaveAction } from '@/components/modules/projects/project-form/project-form-types';
 import { useAppStore } from '@/lib/state/app-store';
-import { isModuleApiMode } from '@/lib/config/data-source';
-import { useApiResourceStore } from '@/hooks/use-api-resource-store';
-import { mapGenericApiRow } from '@/lib/services/generic-api-mapper';
+import { isModuleApiMode, API_RESOURCE_PATHS } from '@/lib/config/data-source';
+import { createResource } from '@/lib/services/api-resource-service';
 import { useApiAppState } from '@/hooks/use-api-app-state';
 import {
   createProject,
@@ -25,9 +24,8 @@ export function CreateProjectFormPage() {
   const apiDataReady = useAppStore((s) => s.apiDataReady);
   const saveAppState = useAppStore((s) => s.saveAppState);
   const apiMode = isModuleApiMode('projects');
-  const apiStore = useApiResourceStore('projects', mapGenericApiRow);
   const { state: formState, loading: formStateLoading } = useApiAppState(
-    apiMode ? ['customers', 'products', 'employees', 'projects'] : undefined,
+    apiMode ? ['customers', 'products', 'employees'] : undefined,
   );
 
   useChromeSuppressed(true);
@@ -43,7 +41,7 @@ export function CreateProjectFormPage() {
   ) => {
     if (apiMode) {
       const body = mapProjectFormToApi(form, action);
-      const result = await apiStore.create(body);
+      const result = await createResource(API_RESOURCE_PATHS.projects, body);
       if (!result.ok) {
         toast.error('Operation failed', { module: 'Projects', description: 'error' in result ? String(result.error) : 'Save failed' });
         return;

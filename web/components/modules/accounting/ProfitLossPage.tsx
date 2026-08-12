@@ -8,7 +8,8 @@ import { Footer } from '@/components/layout/Footer';
 import { useRegisterModuleActions } from '@/components/layout/ModuleActionsContext';
 import { AppFormFields, AppFormModal } from '@/components/shared/AppForm';
 import { useAppStore } from '@/lib/state/app-store';
-import { useApiResourceStore } from '@/hooks/use-api-resource-store';
+import { usePaginatedApiResource } from '@/hooks/use-paginated-api-resource';
+import { useProfitLossSummary } from '@/hooks/use-accounting-summary';
 import { mapGenericApiRow, mapGenericPayloadToApi } from '@/lib/services/generic-api-mapper';
 import { ApiModeBanner } from '@/components/shared/ApiModeBanner';
 import { isModuleApiMode } from '@/lib/config/data-source';
@@ -74,7 +75,8 @@ export function ProfitLossPage() {
   const appState = useAppStore((s) => s.appState);
   const saveAppState = useAppStore((s) => s.saveAppState);
   const apiMode = isModuleApiMode('profitLoss');
-  const apiStore = useApiResourceStore('profitLoss', mapGenericApiRow);
+  const apiStore = usePaginatedApiResource('profitLoss', mapGenericApiRow, { pageSize: 500 });
+  const summaryApi = useProfitLossSummary(apiMode);
 
   const [period, setPeriod] = useState(DEFAULT_PL_PERIOD);
   const [generatedAt, setGeneratedAt] = useState(() => formatGeneratedAt(new Date()));
@@ -90,7 +92,10 @@ export function ProfitLossPage() {
     }
     return listProfitLossLines(appState);
   }, [apiMode, apiStore.initialized, apiStore.rows, appState]);
-  const metrics = useMemo(() => getProfitLossMetrics(lines), [lines]);
+  const metrics = useMemo(() => {
+    if (apiMode && summaryApi.summary) return summaryApi.summary;
+    return getProfitLossMetrics(lines);
+  }, [apiMode, summaryApi.summary, lines]);
   const displayRows = useMemo(() => buildProfitLossDisplayRows(lines), [lines]);
 
   const formFields = useMemo<PortField[]>(() => FORM_FIELDS.map((field) => {
@@ -131,6 +136,7 @@ export function ProfitLossPage() {
       setEditingId(null);
       setForm(EMPTY_PL_FORM);
       setGeneratedAt(formatGeneratedAt(new Date()));
+      void summaryApi.reload();
       return;
     }
     const result = editingId

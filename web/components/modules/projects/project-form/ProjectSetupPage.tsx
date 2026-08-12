@@ -2,7 +2,7 @@
 
 import { toast } from '@/lib/ui/feedback';
 
-import { useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { ArrowLeft, ArrowRight, Check, ExternalLink, Package } from 'lucide-react';
@@ -20,6 +20,8 @@ import {
 import { MODULE_SHELL_SUPPRESSED } from '@/lib/ui/module-layout';
 import { useAppStore } from '@/lib/state/app-store';
 import { isModuleApiMode } from '@/lib/config/data-source';
+import { API_RESOURCE_PATHS } from '@/lib/config/data-source';
+import { fetchResourceById, updateResource } from '@/lib/services/api-resource-service';
 import { useApiResourceStore } from '@/hooks/use-api-resource-store';
 import { mapGenericApiRow, mapGenericPayloadToApi } from '@/lib/services/generic-api-mapper';
 import { resolveApiRowId } from '@/lib/services/entity-api-mappers';
@@ -48,11 +50,20 @@ export function ProjectSetupPage({ projectId }: { projectId: string }) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const appState = useAppStore((s) => s.appState);
-  const apiDataReady = useAppStore((s) => s.apiDataReady);
   const saveAppState = useAppStore((s) => s.saveAppState);
   const apiMode = isModuleApiMode('projects');
-  const apiStore = useApiResourceStore('projects', mapGenericApiRow);
-  const recipeStore = useApiResourceStore('recipes', mapGenericApiRow);
+  const recipeStore = useApiResourceStore('recipes', mapGenericApiRow, { pageOnly: true, lookupLimit: 200 });
+  const [apiProject, setApiProject] = useState<ProjectRow | null>(null);
+  const [apiLoading, setApiLoading] = useState(apiMode && Boolean(projectId));
+
+  useEffect(() => {
+    if (!apiMode || !projectId) return;
+    setApiLoading(true);
+    void fetchResourceById(API_RESOURCE_PATHS.projects, projectId).then((doc) => {
+      setApiProject(doc ? mapGenericApiRow(doc) as ProjectRow : null);
+      setApiLoading(false);
+    });
+  }, [apiMode, projectId]);
 
   useChromeSuppressed(true);
 
@@ -62,14 +73,14 @@ export function ProjectSetupPage({ projectId }: { projectId: string }) {
     if (!apiMode) return appState;
     return {
       ...appState,
-      projects: apiStore.initialized ? apiStore.rows : [],
+      projects: apiProject ? [apiProject] : [],
       recipes: recipeStore.initialized ? recipeStore.rows : appState.recipes ?? [],
     };
-  }, [apiMode, apiStore.initialized, apiStore.rows, recipeStore.initialized, recipeStore.rows, appState]);
+  }, [apiMode, apiProject, recipeStore.initialized, recipeStore.rows, appState]);
 
   const project = useMemo(
-    () => getProjectById(projectState, projectId),
-    [projectState, projectId],
+    () => (apiMode ? apiProject : getProjectById(projectState, projectId)),
+    [apiMode, apiProject, projectState, projectId],
   );
 
   const items = useMemo(() => (project ? projectItems(project) : []), [project]);
@@ -94,7 +105,7 @@ export function ProjectSetupPage({ projectId }: { projectId: string }) {
     if (apiMode) {
       const pseudo = {
         ...projectState,
-        projects: apiStore.rows.map((row) => ({ ...row })),
+        projects: apiProject ? [{ ...apiProject }] : [],
       };
       const result = advanceProjectSetup(pseudo as typeof appState, rowId, nextStep, patch);
       if (!result.ok) {
@@ -103,11 +114,16 @@ export function ProjectSetupPage({ projectId }: { projectId: string }) {
       }
       const updated = getProjectById(pseudo as typeof appState, rowId);
       if (!updated) return false;
-      const sync = await apiStore.update(resolveApiRowId(project), mapGenericPayloadToApi(updated as Record<string, unknown>));
+      const sync = await updateResource(
+        API_RESOURCE_PATHS.projects,
+        resolveApiRowId(project),
+        mapGenericPayloadToApi(updated as Record<string, unknown>),
+      );
       if (!sync.ok) {
         toast.error('Operation failed', { module: 'Projects', description: 'error' in sync ? String(sync.error) : 'Sync failed' });
         return false;
       }
+      setApiProject(updated as ProjectRow);
       return true;
     }
 
@@ -137,7 +153,7 @@ export function ProjectSetupPage({ projectId }: { projectId: string }) {
     router.push('/projects');
   };
 
-  if (apiMode && (!apiDataReady || !apiStore.initialized)) {
+  if (apiMode && (apiLoading || !recipeStore.initialized)) {
     return <PageSkeleton variant="module-list" label="Loading project setup" />;
   }
 

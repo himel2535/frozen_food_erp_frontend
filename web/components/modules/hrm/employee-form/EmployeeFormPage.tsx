@@ -15,9 +15,8 @@ import {
   updateEmployee,
 } from '@/lib/services/hrm-service';
 import { isModuleApiMode } from '@/lib/config/data-source';
-import { useApiResourceStore } from '@/hooks/use-api-resource-store';
-import { fetchResourceById } from '@/lib/services/api-resource-service';
 import { API_RESOURCE_PATHS } from '@/lib/config/data-source';
+import { createResource, fetchResourceById, updateResource } from '@/lib/services/api-resource-service';
 import { mapApiEmployeeRow, mapApiEmployeeToForm, mapEmployeeFormToApi } from '@/lib/services/entity-api-mappers';
 import { getSalaryStructureById, resolveBasicSalary } from '@/lib/services/payroll-service';
 import { PageSkeleton } from '@/components/shared/PageSkeleton';
@@ -28,7 +27,6 @@ export function EmployeeFormPage({ mode, employeeId }: { mode: 'create' | 'edit'
   const apiDataReady = useAppStore((s) => s.apiDataReady);
   const saveAppState = useAppStore((s) => s.saveAppState);
   const apiMode = isModuleApiMode('employees');
-  const apiStore = useApiResourceStore('employees', mapApiEmployeeRow);
   const [apiEmployee, setApiEmployee] = useState<Record<string, unknown> | null>(null);
   const [apiLoading, setApiLoading] = useState(apiMode && mode === 'edit' && Boolean(employeeId));
 
@@ -88,8 +86,8 @@ export function EmployeeFormPage({ mode, employeeId }: { mode: 'create' | 'edit'
     if (apiMode) {
       const body = mapEmployeeFormToApi(payload, { forCreate: mode === 'create' });
       const result = mode === 'edit' && employeeId
-        ? await apiStore.update(employeeId, body)
-        : await apiStore.create(body);
+        ? await updateResource(API_RESOURCE_PATHS.employees, employeeId, body)
+        : await createResource(API_RESOURCE_PATHS.employees, body);
       if (!result.ok) {
         toast.error('Operation failed', { module: 'HRM', description: 'error' in result ? String(result.error) : 'Save failed' });
         return;

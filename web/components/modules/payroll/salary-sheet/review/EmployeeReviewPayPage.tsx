@@ -2,7 +2,7 @@
 
 import { toast } from '@/lib/ui/feedback';
 
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Footer } from '@/components/layout/Footer';
@@ -23,6 +23,8 @@ import { buildReviewUrl, defaultPeriod, type SheetFilterState } from '@/componen
 import { useAppStore } from '@/lib/state/app-store';
 import { isModuleApiMode } from '@/lib/config/data-source';
 import { useApiResourceStore } from '@/hooks/use-api-resource-store';
+import { usePaginatedApiResource } from '@/hooks/use-paginated-api-resource';
+import { mapApiEmployeeRow } from '@/lib/services/entity-api-mappers';
 import { mapGenericApiRow, mapGenericPayloadToApi } from '@/lib/services/generic-api-mapper';
 import { ApiModeBanner } from '@/components/shared/ApiModeBanner';
 import { listEmployees } from '@/lib/services/hrm-service';
@@ -42,10 +44,11 @@ export function EmployeeReviewPayPage({ employeeId }: { employeeId: string }) {
   const appState = useAppStore((s) => s.appState);
   const saveAppState = useAppStore((s) => s.saveAppState);
   const apiMode = isModuleApiMode('salarySheet');
-  const apiStore = useApiResourceStore('salarySheet', mapGenericApiRow);
+  const apiStore = usePaginatedApiResource('salarySheet', mapGenericApiRow, { pageSize: 50 });
   const structureStore = useApiResourceStore('salaryStructures', (doc) =>
     enrichSalaryStructureRecord(mapGenericApiRow(doc)),
-  );
+  { pageOnly: true, lookupLimit: 200 });
+  const employeeStore = useApiResourceStore('employees', mapApiEmployeeRow, { pageOnly: true, lookupLimit: 200 });
   const [, bump] = useState(0);
 
   useChromeSuppressed(true);
@@ -59,14 +62,20 @@ export function EmployeeReviewPayPage({ employeeId }: { employeeId: string }) {
 
   const listUrl = `/payroll/salary-sheet?period=${filters.period}`;
 
+  useEffect(() => {
+    if (!apiMode) return;
+    apiStore.setQueryFilter('period', filters.period);
+  }, [apiMode, filters.period, apiStore.setQueryFilter]);
+
   const sheetState = useMemo(() => {
     if (!apiMode) return appState;
     const salaryStructures = structureStore.initialized
       ? structureStore.rows.map((row) => enrichSalaryStructureRecord(row))
       : (appState.salaryStructures ?? []);
+    const employees = employeeStore.initialized ? employeeStore.rows : (appState.employees ?? []);
     const salarySheetEntries = apiStore.initialized ? apiStore.rows : [];
-    return { ...appState, salaryStructures, salarySheetEntries } as typeof appState;
-  }, [apiMode, apiStore.initialized, apiStore.rows, structureStore.initialized, structureStore.rows, appState]);
+    return { ...appState, employees, salaryStructures, salarySheetEntries } as typeof appState;
+  }, [apiMode, apiStore.initialized, apiStore.rows, structureStore.initialized, structureStore.rows, employeeStore.initialized, employeeStore.rows, appState]);
 
   const employee = useMemo(
     () => listEmployees(sheetState).find((e) => String(e.id) === employeeId) ?? null,
