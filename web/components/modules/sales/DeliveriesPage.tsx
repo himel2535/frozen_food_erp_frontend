@@ -36,7 +36,8 @@ import type { DeliveryChallanFormValues, DeliveryChallanLineItem } from '@/compo
 import { DeliveryChallanPrint } from '@/components/modules/sales/delivery-challan-form/DeliveryChallanPrint';
 import { deleteFromState } from '@/lib/services/domain-service';
 import { isModuleApiMode } from '@/lib/config/data-source';
-import { useApiResourceStore } from '@/hooks/use-api-resource-store';
+import { usePaginatedApiResource } from '@/hooks/use-paginated-api-resource';
+import { ListPagination } from '@/components/shared/ListPagination';
 import { mapApiSalesDocRow, mapDeliveryToApi, resolveApiRowId } from '@/lib/services/entity-api-mappers';
 import { ApiModeBanner } from '@/components/shared/ApiModeBanner';
 import { isModuleBootLoading, pickApiListRows } from '@/lib/ui/kpi-loading';
@@ -85,10 +86,10 @@ export function DeliveriesPage() {
   const appState = useAppStore((s) => s.appState);
   const saveAppState = useAppStore((s) => s.saveAppState);
   const apiMode = isModuleApiMode('deliveries');
-  const apiStore = useApiResourceStore('deliveries', mapApiSalesDocRow);
+  const apiStore = usePaginatedApiResource('deliveries', mapApiSalesDocRow, { pageSize: 25 });
   const bootLoading = isModuleBootLoading(apiMode, apiStore.initialized);
   const [view, setView] = useState<'main' | 'form'>('main');
-  const [search, setSearch] = useState('');
+  const [localSearch, setLocalSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [editingId, setEditingId] = useState<string | null>(null);
   const [formKey, setFormKey] = useState(0);
@@ -114,8 +115,8 @@ export function DeliveriesPage() {
 
   const rows = useMemo(() => {
     let data = allDeliveryRows;
-    if (search) {
-      const q = search.toLowerCase();
+    const q = (apiMode ? apiStore.search : localSearch).toLowerCase();
+    if (q) {
       data = data.filter((row) =>
         `${row.id} ${apiMode ? row.customerName ?? row.customer : resolveChallanCustomerLabel(appState, row)} ${row.orderId}`.toLowerCase().includes(q),
       );
@@ -124,7 +125,7 @@ export function DeliveriesPage() {
       data = data.filter((row) => String(row.status).toLowerCase() === statusFilter);
     }
     return data;
-  }, [allDeliveryRows, search, statusFilter]);
+  }, [allDeliveryRows, apiMode, apiStore.search, localSearch, statusFilter, appState]);
 
   const kpis = useMemo(() => {
     const allRows = allDeliveryRows;
@@ -339,10 +340,13 @@ export function DeliveriesPage() {
         <ModuleKpiSection items={kpis} loading={bootLoading} gridClassName={getKpiGridClassName(4)} kpiCount={4} />
 
         <ModuleFilterBar
-          search={search}
-          onSearchChange={setSearch}
+          search={apiMode ? apiStore.search : localSearch}
+          onSearchChange={(v) => {
+            if (apiMode) apiStore.setSearchTerm(v);
+            else setLocalSearch(v);
+          }}
           searchPlaceholder={t('sales.search_challan')}
-          filters={<FilterTabs tabs={statusTabsFor(t)} active={statusFilter} onChange={setStatusFilter} />}
+          filters={<FilterTabs tabs={statusTabsFor(t)} active={statusFilter} onChange={(v) => { setStatusFilter(v); if (apiMode) apiStore.setPage(1); }} />}
         />
 
         <AppTable
@@ -374,6 +378,15 @@ export function DeliveriesPage() {
             </>
           )}
         />
+
+        {apiMode ? (
+          <ListPagination
+            page={apiStore.page}
+            pageSize={apiStore.pageSize}
+            total={apiStore.meta.total}
+            onPageChange={apiStore.setPage}
+          />
+        ) : null}
 
         <Footer />
 

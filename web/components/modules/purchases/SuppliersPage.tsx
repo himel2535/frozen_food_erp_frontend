@@ -27,7 +27,7 @@ import {
 import { SUPPLIER_BTN_PRIMARY, SUPPLIER_CARD_CLS } from './suppliers/suppliers-styles';
 import { isModuleApiMode } from '@/lib/config/data-source';
 import { isKpiBootLoading, pickApiListRows } from '@/lib/ui/kpi-loading';
-import { useApiResourceStore } from '@/hooks/use-api-resource-store';
+import { usePaginatedApiResource } from '@/hooks/use-paginated-api-resource';
 import { ApiModeBanner } from '@/components/shared/ApiModeBanner';
 import { mapApiSupplierRow, mapSupplierFormToApi } from '@/lib/services/entity-api-mappers';
 
@@ -41,16 +41,15 @@ export function SuppliersPage() {
   const appState = useAppStore((s) => s.appState);
   const saveAppState = useAppStore((s) => s.saveAppState);
   const apiMode = isModuleApiMode('suppliers');
-  const apiStore = useApiResourceStore('suppliers', mapApiSupplierRow);
+  const apiStore = usePaginatedApiResource('suppliers', mapApiSupplierRow, { pageSize: PAGE_SIZE });
   const bootLoading = isKpiBootLoading(apiMode, apiStore.initialized);
   const [, bump] = useState(0);
 
   const [view, setView] = useState<PageView>('main');
-  const [search, setSearch] = useState('');
+  const [localSearch, setLocalSearch] = useState('');
   const [tab, setTab] = useState('all');
   const [sort, setSort] = useState('recent');
   const [category, setCategory] = useState('all');
-  const [page, setPage] = useState(1);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [formKey, setFormKey] = useState(0);
   const [formValues, setFormValues] = useState<SupplierFormValues>(EMPTY_SUPPLIER_FORM);
@@ -64,7 +63,7 @@ export function SuppliersPage() {
       const activeCount = allSuppliers.filter((s) => s.recordStatus === 'active').length;
       const payableRows = allSuppliers.filter((s) => s.payable > 0);
       return {
-        totalSuppliers: allSuppliers.length,
+        totalSuppliers: apiStore.meta.total,
         activeCount,
         inactiveCount: allSuppliers.length - activeCount,
         totalPayable: payableRows.reduce((s, r) => s + r.payable, 0),
@@ -78,10 +77,15 @@ export function SuppliersPage() {
     return getSupplierListMetrics(appState);
   }, [apiMode, allSuppliers, appState, bump]);
 
-  const filtered = useMemo(
-    () => filterEnrichedSuppliers(allSuppliers, { search, tab, sort, category }),
-    [allSuppliers, search, tab, sort, category],
-  );
+  const filtered = useMemo(() => {
+    if (apiMode) {
+      let data = allSuppliers;
+      if (tab !== 'all') data = data.filter((s) => s.recordStatus === tab);
+      if (category !== 'all') data = data.filter((s) => String(s.category) === category);
+      return data;
+    }
+    return filterEnrichedSuppliers(allSuppliers, { search: localSearch, tab, sort, category });
+  }, [allSuppliers, localSearch, tab, sort, category, apiMode]);
 
   const openCreate = () => {
     setEditingId(null);
@@ -203,21 +207,27 @@ export function SuppliersPage() {
 
       <div className={SUPPLIER_CARD_CLS}>
         <SuppliersFilterBar
-          search={search}
+          search={apiMode ? apiStore.search : localSearch}
           tab={tab}
           sort={sort}
           category={category}
-          onSearchChange={(v) => { setSearch(v); setPage(1); }}
-          onTabChange={(v) => { setTab(v); setPage(1); }}
-          onSortChange={(v) => { setSort(v); setPage(1); }}
-          onCategoryChange={(v) => { setCategory(v); setPage(1); }}
+          onSearchChange={(v) => {
+            if (apiMode) apiStore.setSearchTerm(v);
+            else setLocalSearch(v);
+            apiStore.setPage(1);
+          }}
+          onTabChange={(v) => { setTab(v); apiStore.setPage(1); }}
+          onSortChange={(v) => { setSort(v); apiStore.setPage(1); }}
+          onCategoryChange={(v) => { setCategory(v); apiStore.setPage(1); }}
         />
         <SuppliersTable
-          rows={filtered}
+          rows={filtered as EnrichedSupplier[]}
           loading={bootLoading}
-          page={page}
+          page={apiStore.page}
           pageSize={PAGE_SIZE}
-          onPageChange={setPage}
+          total={apiMode ? apiStore.meta.total : filtered.length}
+          serverPaginated={apiMode}
+          onPageChange={apiStore.setPage}
           onView={(supplier) => router.push(`/purchases/suppliers/${supplier.id}`)}
           onEdit={openEdit}
           onDeactivate={handleDeactivate}

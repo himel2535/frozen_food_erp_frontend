@@ -23,7 +23,8 @@ import {
   warehouseStockToStrings,
 } from '@/components/modules/inventory/product-form/product-form-types';
 import { isModuleApiMode } from '@/lib/config/data-source';
-import { useApiResourceStore } from '@/hooks/use-api-resource-store';
+import { usePaginatedApiResource } from '@/hooks/use-paginated-api-resource';
+import { ListPagination } from '@/components/shared/ListPagination';
 import { useInventoryLookups } from '@/hooks/use-inventory-lookups';
 import { ApiModeBanner } from '@/components/shared/ApiModeBanner';
 import { isModuleBootLoading, pickApiListRows } from '@/lib/ui/kpi-loading';
@@ -89,18 +90,18 @@ export function ProductsPage() {
   const appState = useAppStore((s) => s.appState);
   const saveAppState = useAppStore((s) => s.saveAppState);
   const apiMode = isModuleApiMode('products');
-  const apiStore = useApiResourceStore('products', mapApiProductRow);
+  const apiStore = usePaginatedApiResource('products', mapApiProductRow, { pageSize: 10 });
   const bootLoading = isModuleBootLoading(apiMode, apiStore.initialized);
   const lookups = useInventoryLookups();
   const [view, setView] = useState<'main' | 'form'>('main');
-  const [search, setSearch] = useState('');
+  const [localSearch, setLocalSearch] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('all');
   const [typeFilter, setTypeFilter] = useState('all');
   const [editingId, setEditingId] = useState<string | null>(null);
   const [formValues, setFormValues] = useState<ProductFormValues | null>(null);
   const [warehouseStock, setWarehouseStock] = useState<Record<string, string>>({});
   const [formKey, setFormKey] = useState(0);
-  const [page, setPage] = useState(1);
+  const [localPage, setLocalPage] = useState(1);
   const pageSize = 10;
 
   const categories = useMemo(
@@ -124,14 +125,19 @@ export function ProductsPage() {
 
   const products = useMemo(() => {
     let data = allProducts;
-    if (search) {
-      const q = search.toLowerCase();
+    const q = (apiMode ? apiStore.search : localSearch).toLowerCase().trim();
+    if (q) {
       data = data.filter((p) => `${p.name} ${p.sku}`.toLowerCase().includes(q));
     }
     if (categoryFilter !== 'all') data = data.filter((p) => String(p.category) === categoryFilter);
     if (typeFilter !== 'all') data = data.filter((p) => String(p.productType) === typeFilter);
-    return sortInventoryRowsNewestFirst(data);
-  }, [allProducts, search, categoryFilter, typeFilter]);
+    if (!apiMode) return sortInventoryRowsNewestFirst(data);
+    return data;
+  }, [allProducts, apiMode, apiStore.search, localSearch, categoryFilter, typeFilter]);
+
+  const displayRows = apiMode ? products : products.slice((localPage - 1) * pageSize, localPage * pageSize);
+  const listTotal = apiMode ? apiStore.meta.total : products.length;
+  const listPage = apiMode ? apiStore.page : localPage;
 
   const metrics = useMemo(() => {
     if (apiMode) {
@@ -144,7 +150,7 @@ export function ProductsPage() {
       }).length;
       const outOfStock = allProducts.filter((p) => computeAvailableStock(p) <= 0).length;
       return {
-        totalSkus: allProducts.length,
+        totalSkus: apiStore.meta.total,
         totalStock,
         lowStock,
         outOfStock,
@@ -152,9 +158,7 @@ export function ProductsPage() {
       };
     }
     return getProductMetrics(appState, allProducts);
-  }, [apiMode, allProducts, appState]);
-  const paged = products.slice((page - 1) * pageSize, page * pageSize);
-  const totalPages = Math.max(1, Math.ceil(products.length / pageSize));
+  }, [apiMode, allProducts, appState, apiStore.meta.total]);
 
   const columns = useMemo<AppTableColumn<Record<string, unknown>>[]>(() => [
     {
@@ -208,10 +212,12 @@ export function ProductsPage() {
   ], [warehouses]);
 
   const resetFilters = () => {
-    setSearch('');
+    if (apiMode) apiStore.setSearchTerm('');
+    else setLocalSearch('');
     setCategoryFilter('all');
     setTypeFilter('all');
-    setPage(1);
+    if (apiMode) apiStore.setPage(1);
+    else setLocalPage(1);
   };
 
   const resetForm = () => {
@@ -256,11 +262,11 @@ export function ProductsPage() {
       }
       if (!editingId) resetFilters();
       if (action === 'save-and-add') {
-        if (!editingId) setPage(1);
+        if (!editingId) resetFilters();
         resetForm();
         return;
       }
-      if (!editingId) setPage(1);
+      if (!editingId) resetFilters();
       setView('main');
       resetForm();
       return;
@@ -276,12 +282,12 @@ export function ProductsPage() {
     saveAppState();
 
     if (action === 'save-and-add') {
-      if (!editingId) setPage(1);
+      if (!editingId) resetFilters();
       resetForm();
       return;
     }
 
-    if (!editingId) setPage(1);
+    if (!editingId) resetFilters();
     setView('main');
     resetForm();
   };
@@ -324,16 +330,21 @@ export function ProductsPage() {
       />
 
       <ModuleFilterBar
-        search={search}
-        onSearchChange={(v) => { setSearch(v); setPage(1); }}
+        search={apiMode ? apiStore.search : localSearch}
+        onSearchChange={(v) => {
+          if (apiMode) apiStore.setSearchTerm(v);
+          else setLocalSearch(v);
+          if (apiMode) apiStore.setPage(1);
+          else setLocalPage(1);
+        }}
         searchPlaceholder="Search product name or SKU..."
         filters={
           <>
-            <select value={categoryFilter} onChange={(e) => { setCategoryFilter(e.target.value); setPage(1); }} className={MODULE_FILTER_INPUT}>
+            <select value={categoryFilter} onChange={(e) => { setCategoryFilter(e.target.value); if (apiMode) apiStore.setPage(1); else setLocalPage(1); }} className={MODULE_FILTER_INPUT}>
               <option value="all">All Categories</option>
               {categories.map((c) => <option key={String(c.id)} value={String(c.name)}>{String(c.name)}</option>)}
             </select>
-            <select value={typeFilter} onChange={(e) => { setTypeFilter(e.target.value); setPage(1); }} className={MODULE_FILTER_INPUT}>
+            <select value={typeFilter} onChange={(e) => { setTypeFilter(e.target.value); if (apiMode) apiStore.setPage(1); else setLocalPage(1); }} className={MODULE_FILTER_INPUT}>
               <option value="all">All Types</option>
               {PRODUCT_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
             </select>
@@ -343,7 +354,7 @@ export function ProductsPage() {
 
       <AppTable
         columns={columns}
-        rows={paged}
+        rows={displayRows}
         loading={bootLoading}
         emptyMessage={apiListEmptyMessage(apiStore.loading, apiStore.initialized, 'products', { totalCount: allProducts.length, filteredCount: products.length })}
         renderActions={(row) => (
@@ -400,13 +411,12 @@ export function ProductsPage() {
         )}
       />
 
-      <div className="flex items-center justify-between text-xs text-slate-500">
-        <span>Showing {(page - 1) * pageSize + 1} to {Math.min(page * pageSize, products.length)} of {products.length} products</span>
-        <div className="flex gap-2">
-          <button type="button" disabled={page <= 1} onClick={() => setPage(page - 1)} className="px-3 py-1.5 border border-slate-200 rounded-lg cursor-pointer disabled:opacity-50">Previous</button>
-          <button type="button" disabled={page >= totalPages} onClick={() => setPage(page + 1)} className="px-3 py-1.5 border border-slate-200 rounded-lg cursor-pointer disabled:opacity-50">Next</button>
-        </div>
-      </div>
+      <ListPagination
+        page={listPage}
+        pageSize={pageSize}
+        total={listTotal}
+        onPageChange={(p) => (apiMode ? apiStore.setPage(p) : setLocalPage(p))}
+      />
       <Footer />
     </>
   );

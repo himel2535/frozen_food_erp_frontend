@@ -43,7 +43,8 @@ import {
   type DealRecord,
 } from '@/lib/services/deals-pipeline-service';
 import { isModuleApiMode } from '@/lib/config/data-source';
-import { useApiResourceStore } from '@/hooks/use-api-resource-store';
+import { usePaginatedApiResource } from '@/hooks/use-paginated-api-resource';
+import { ListPagination } from '@/components/shared/ListPagination';
 import { mapApiDealRow, mapDealToApi, resolveApiRowId } from '@/lib/services/entity-api-mappers';
 import { ApiModeBanner } from '@/components/shared/ApiModeBanner';
 import { isModuleBootLoading, pickApiListRows } from '@/lib/ui/kpi-loading';
@@ -69,11 +70,11 @@ export function DealsPage() {
   const appState = useAppStore((s) => s.appState);
   const saveAppState = useAppStore((s) => s.saveAppState);
   const apiMode = isModuleApiMode('deals');
-  const apiStore = useApiResourceStore('deals', mapApiDealRow);
+  const apiStore = usePaginatedApiResource('deals', mapApiDealRow, { pageSize: 25 });
   const bootLoading = isModuleBootLoading(apiMode, apiStore.initialized);
 
   const [view, setView] = useState<'main' | 'form'>('main');
-  const [search, setSearch] = useState('');
+  const [localSearch, setLocalSearch] = useState('');
   const [stageFilter, setStageFilter] = useState('all');
   const [layoutMode, setLayoutMode] = useState<'kanban' | 'table'>('kanban');
   const [detailId, setDetailId] = useState<string | null>(null);
@@ -128,14 +129,14 @@ export function DealsPage() {
   const topPerformers = useMemo(() => getTopDealPerformers(appState, allDeals), [appState, allDeals]);
 
   const deals = useMemo(() => {
-    const q = search.trim().toLowerCase();
+    const q = (apiMode ? apiStore.search : localSearch).trim().toLowerCase();
     return allDeals.filter((deal) => {
       if (stageFilter !== 'all' && deal.stage !== stageFilter) return false;
       if (!q) return true;
       const hay = `${deal.title} ${deal.company} ${deal.contactPerson ?? ''}`.toLowerCase();
       return hay.includes(q);
     });
-  }, [allDeals, search, stageFilter]);
+  }, [allDeals, apiMode, apiStore.search, localSearch, stageFilter]);
 
   const dealListColumns = useMemo<AppTableColumn<DealRecord>[]>(() => [
     {
@@ -323,7 +324,8 @@ export function DealsPage() {
         return;
       }
       setStageFilter('all');
-      setSearch('');
+      if (apiMode) apiStore.setSearchTerm('');
+      else setLocalSearch('');
       setView('main');
       resetForm();
       toast.success(editingId ? 'Deal updated' : 'Deal created', { module: 'Deals' });
@@ -336,7 +338,7 @@ export function DealsPage() {
     }
     saveAppState();
     setStageFilter('all');
-    setSearch('');
+    setLocalSearch('');
     setView('main');
     resetForm();
     toast.success(editingId ? 'Deal updated' : 'Deal created', { module: 'Deals' });
@@ -398,8 +400,11 @@ export function DealsPage() {
       />
 
       <ModuleFilterBar
-        search={search}
-        onSearchChange={setSearch}
+        search={apiMode ? apiStore.search : localSearch}
+        onSearchChange={(v) => {
+          if (apiMode) apiStore.setSearchTerm(v);
+          else setLocalSearch(v);
+        }}
         searchPlaceholder={t('crm.search_deals')}
         filters={
           <>
@@ -419,7 +424,7 @@ export function DealsPage() {
                 <List className="w-3.5 h-3.5" /> {t('crm.layout_table')}
               </button>
             </div>
-            <select value={stageFilter} onChange={(e) => setStageFilter(e.target.value)} className={MODULE_FILTER_INPUT}>
+            <select value={stageFilter} onChange={(e) => { setStageFilter(e.target.value); if (apiMode) apiStore.setPage(1); }} className={MODULE_FILTER_INPUT}>
               <option value="all">All Stages{allDeals.length ? ` (${allDeals.length})` : ''}</option>
               {DEAL_KANBAN_STAGES.map((stage) => {
                 const count = allDeals.filter((d) => d.stage === stage).length;
@@ -456,17 +461,27 @@ export function DealsPage() {
           onAddInStage={(stage) => openCreate(stage)}
         />
       ) : (
-        <AppTable
-          columns={dealListColumns}
-          rows={deals}
-          loading={bootLoading}
-          emptyMessage={
-            stageFilter !== 'all' && allDeals.length > 0
-              ? `No deals in "${stageLabel(stageFilter)}". Select "All Stages" or create a deal in this stage.`
-              : t('crm.no_records_yet')
-          }
-          onRowClick={(row) => setDetailId(String(row.id))}
-        />
+        <>
+          <AppTable
+            columns={dealListColumns}
+            rows={deals}
+            loading={bootLoading}
+            emptyMessage={
+              stageFilter !== 'all' && allDeals.length > 0
+                ? `No deals in "${stageLabel(stageFilter)}". Select "All Stages" or create a deal in this stage.`
+                : t('crm.no_records_yet')
+            }
+            onRowClick={(row) => setDetailId(String(row.id))}
+          />
+          {apiMode ? (
+            <ListPagination
+              page={apiStore.page}
+              pageSize={apiStore.pageSize}
+              total={apiStore.meta.total}
+              onPageChange={apiStore.setPage}
+            />
+          ) : null}
+        </>
       )}
 
       <div className="mt-4 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-3">

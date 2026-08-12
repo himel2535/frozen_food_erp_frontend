@@ -9,6 +9,8 @@ import { useRegisterModuleActions } from '@/components/layout/ModuleActionsConte
 import { AppFormFields, AppFormModal } from '@/components/shared/AppForm';
 import { useAppStore } from '@/lib/state/app-store';
 import { useApiResourceStore } from '@/hooks/use-api-resource-store';
+import { usePaginatedApiResource } from '@/hooks/use-paginated-api-resource';
+import { ListPagination } from '@/components/shared/ListPagination';
 import { mapGenericApiRow, mapGenericPayloadToApi } from '@/lib/services/generic-api-mapper';
 import { ApiModeBanner } from '@/components/shared/ApiModeBanner';
 import { isModuleApiMode } from '@/lib/config/data-source';
@@ -51,8 +53,8 @@ export function DueManagementPage() {
   const appState = useAppStore((s) => s.appState);
   const saveAppState = useAppStore((s) => s.saveAppState);
   const apiMode = isModuleApiMode('dues');
-  const apiStore = useApiResourceStore('dues', mapGenericApiRow);
-  const cashboxStore = useApiResourceStore('cashbox', mapGenericApiRow);
+  const apiStore = usePaginatedApiResource('dues', mapGenericApiRow, { pageSize: PAGE_SIZE });
+  const cashboxStore = useApiResourceStore('cashbox', mapGenericApiRow, { pageOnly: true, lookupLimit: 100 });
 
   const [activeTab, setActiveTab] = useState<DueTab>('customer');
   const [search, setSearch] = useState('');
@@ -80,22 +82,31 @@ export function DueManagementPage() {
     }
     return listDueEntries(appState);
   }, [apiMode, apiStore.initialized, apiStore.rows, appState]);
-  const metrics = useMemo(() => {
-    if (apiMode && apiStore.initialized) {
-      return getDueMetrics({ dueEntries: apiStore.rows } as import('@/lib/state/types').AppState);
-    }
-    return getDueMetrics(appState);
-  }, [apiMode, apiStore.initialized, apiStore.rows, appState]);
+  const metrics = useMemo(() => getDueMetrics(
+    apiMode && apiStore.initialized
+      ? { dueEntries: apiStore.rows } as import('@/lib/state/types').AppState
+      : appState,
+  ), [apiMode, apiStore.initialized, apiStore.rows, appState]);
+
+  const effectiveSearch = apiMode ? apiStore.search : search;
 
   const filteredRows = useMemo(
-    () => filterDueEntries(allEntries, { type: activeTab, search, status: statusFilter }),
-    [allEntries, activeTab, search, statusFilter],
+    () => filterDueEntries(allEntries, { type: activeTab, search: effectiveSearch, status: statusFilter }),
+    [allEntries, activeTab, effectiveSearch, statusFilter],
   );
+
+  const onPageChange = (p: number) => {
+    if (apiMode) apiStore.setPage(p);
+    else setPage(p);
+  };
+
+  const tablePage = apiMode ? 1 : page;
+  const tablePageSize = apiMode ? Math.max(filteredRows.length, 1) : PAGE_SIZE;
 
   const handleTabChange = (tab: DueTab) => {
     setActiveTab(tab);
     setSelectedPartyId(null);
-    setPage(1);
+    onPageChange(1);
   };
 
   const openReceive = (entry: DueEntry) => {
@@ -133,9 +144,10 @@ export function DueManagementPage() {
       setActiveTab(openingForm.type as DueTab);
       setShowOpeningModal(false);
       setOpeningForm({ party: '', type: activeTab, amount: '', dueDate: new Date().toISOString().slice(0, 10), location: '', notes: '' });
-      setSearch('');
+      if (apiMode) apiStore.setSearchTerm('');
+      else setSearch('');
       setStatusFilter('all');
-      setPage(1);
+      onPageChange(1);
       return;
     }
     createOpeningDue(appState, openingForm);
@@ -182,9 +194,10 @@ export function DueManagementPage() {
       toast.success('Saved', { module: 'Due Management', description: 'Payment recorded.' });
       setShowReceiveModal(false);
       setReceiveTarget(null);
-      setSearch('');
+      if (apiMode) apiStore.setSearchTerm('');
+      else setSearch('');
       setStatusFilter('all');
-      setPage(1);
+      onPageChange(1);
       return;
     }
     receiveDuePayment(appState, receiveTarget.id, Number(receiveForm.amount));
@@ -217,21 +230,33 @@ export function DueManagementPage() {
           <div className="premium-card premium-shadow overflow-hidden min-w-0">
             <DueTabs active={activeTab} onChange={handleTabChange} />
             <DueFilterBar
-              search={search}
+              search={effectiveSearch}
               statusFilter={statusFilter}
-              onSearchChange={(v) => { setSearch(v); setPage(1); }}
-              onStatusChange={(v) => { setStatusFilter(v); setPage(1); }}
+              onSearchChange={(v) => {
+                if (apiMode) apiStore.setSearchTerm(v);
+                else setSearch(v);
+                onPageChange(1);
+              }}
+              onStatusChange={(v) => { setStatusFilter(v); onPageChange(1); }}
             />
             <DueTable
               rows={filteredRows}
-              page={page}
-              pageSize={PAGE_SIZE}
+              page={tablePage}
+              pageSize={tablePageSize}
               selectedPartyId={selectedPartyId}
               partyColumnLabel={activeTab === 'customer' ? 'Customer' : 'Supplier'}
-              onPageChange={setPage}
+              onPageChange={onPageChange}
               onRowClick={(entry) => { setSelectedPartyId(entry.partyId); setDetailTab('invoices'); }}
               onReceive={openReceive}
             />
+            {apiMode ? (
+              <ListPagination
+                page={apiStore.page}
+                pageSize={apiStore.pageSize}
+                total={apiStore.meta.total}
+                onPageChange={apiStore.setPage}
+              />
+            ) : null}
           </div>
 
           {selectedPartyId && (

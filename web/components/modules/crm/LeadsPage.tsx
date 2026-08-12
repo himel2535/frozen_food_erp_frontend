@@ -24,7 +24,8 @@ import {
 import { isModuleApiMode } from '@/lib/config/data-source';
 import { createCustomerViaApi } from '@/lib/services/customers-api-service';
 import type { CustomerFormPayload } from '@/components/modules/crm/CustomerForm';
-import { useApiResourceStore } from '@/hooks/use-api-resource-store';
+import { usePaginatedApiResource } from '@/hooks/use-paginated-api-resource';
+import { ListPagination } from '@/components/shared/ListPagination';
 import { mapApiLeadRow, mapLeadToApi, resolveApiRowId } from '@/lib/services/entity-api-mappers';
 import { ApiModeBanner } from '@/components/shared/ApiModeBanner';
 import { isModuleBootLoading, pickApiListRows } from '@/lib/ui/kpi-loading';
@@ -133,21 +134,21 @@ export function LeadsPage({ initialLeads }: { initialLeads?: Record<string, unkn
   const saveAppState = useAppStore((s) => s.saveAppState);
   const apiMode = isModuleApiMode('leads');
   const hasServerLeads = Boolean(initialLeads?.length);
-  const apiStore = useApiResourceStore('leads', mapApiLeadRow, {
+  const apiStore = usePaginatedApiResource('leads', mapApiLeadRow, {
+    pageSize: 10,
     initialRows: initialLeads,
-    skipInitialFetch: hasServerLeads,
   });
   const bootLoading = hasServerLeads ? false : isModuleBootLoading(apiMode, apiStore.initialized);
   const [view, setView] = useState<'main' | 'form'>('main');
-  const [search, setSearch] = useState('');
+  const [localSearch, setLocalSearch] = useState('');
   const [stageFilter, setStageFilter] = useState('all');
   const [ownerFilter, setOwnerFilter] = useState('all');
   const [sourceFilter, setSourceFilter] = useState('all');
   const [nextActionFilter, setNextActionFilter] = useState('all');
   const [funnelStage, setFunnelStage] = useState<string | null>(null);
   const [listTab, setListTab] = useState('all');
-  const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(10);
+  const [localPage, setLocalPage] = useState(1);
+  const [localPageSize, setLocalPageSize] = useState(10);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [detailTab, setDetailTab] = useState<'activity' | 'details' | 'notes' | 'files'>('activity');
@@ -171,12 +172,12 @@ export function LeadsPage({ initialLeads }: { initialLeads?: Record<string, unkn
         unassigned: open.filter((l) => !l.assignedRepId).length,
         pipelineValue: open.reduce((s, l) => s + Number(l.expectedValue ?? 0), 0),
         conversionRate: 0,
-        totalLeads: allLeads.length,
+        totalLeads: apiStore.meta.total,
         newUncontacted: allLeads.filter((l) => l.status === 'new').length,
       };
     }
     return getLeadMetrics(appState);
-  }, [apiMode, allLeads, appState]);
+  }, [apiMode, allLeads, appState, apiStore.meta.total]);
   const pipelineCounts = useMemo(() => {
     if (apiMode) {
       const counts: Record<string, number> = {};
@@ -191,7 +192,7 @@ export function LeadsPage({ initialLeads }: { initialLeads?: Record<string, unkn
 
   const filtered = useMemo(() => {
     let data = allLeads;
-    const q = search.toLowerCase().trim();
+    const q = (apiMode ? apiStore.search : localSearch).toLowerCase().trim();
 
     if (listTab === 'mine') {
       data = data.filter((lead) => String(lead.assignedRepId) === currentUser.employeeId);
@@ -225,10 +226,18 @@ export function LeadsPage({ initialLeads }: { initialLeads?: Record<string, unkn
     }
 
     return data;
-  }, [allLeads, search, stageFilter, ownerFilter, sourceFilter, nextActionFilter, funnelStage, listTab, currentUser.employeeId]);
+  }, [allLeads, apiMode, apiStore.search, localSearch, stageFilter, ownerFilter, sourceFilter, nextActionFilter, funnelStage, listTab, currentUser.employeeId]);
 
-  const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
-  const paged = filtered.slice((page - 1) * pageSize, page * pageSize);
+  const pageSize = apiMode ? apiStore.pageSize : localPageSize;
+  const displayRows = apiMode ? filtered : filtered.slice((localPage - 1) * pageSize, localPage * pageSize);
+  const listTotal = apiMode ? apiStore.meta.total : filtered.length;
+  const listPage = apiMode ? apiStore.page : localPage;
+
+  const onPageChange = (p: number) => {
+    if (apiMode) apiStore.setPage(p);
+    else setLocalPage(p);
+  };
+
   const selectedLead = useMemo(
     () => filtered.find((l) => String(l.id) === selectedId) ?? allLeads.find((l) => String(l.id) === selectedId) ?? null,
     [filtered, allLeads, selectedId],
@@ -254,7 +263,7 @@ export function LeadsPage({ initialLeads }: { initialLeads?: Record<string, unkn
   };
 
   const toggleSelectAll = () => {
-    const pageIds = paged.map((l) => String(l.id));
+    const pageIds = displayRows.map((l) => String(l.id));
     const allSelected = pageIds.every((id) => selectedIds.has(id));
     setSelectedIds((prev) => {
       const next = new Set(prev);
@@ -267,14 +276,15 @@ export function LeadsPage({ initialLeads }: { initialLeads?: Record<string, unkn
   };
 
   const resetFilters = () => {
-    setSearch('');
+    if (apiMode) apiStore.setSearchTerm('');
+    else setLocalSearch('');
     setStageFilter('all');
     setOwnerFilter('all');
     setSourceFilter('all');
     setNextActionFilter('all');
     setFunnelStage(null);
     setListTab('all');
-    setPage(1);
+    onPageChange(1);
   };
 
   const resetForm = () => {
@@ -343,16 +353,6 @@ export function LeadsPage({ initialLeads }: { initialLeads?: Record<string, unkn
     setView('main');
     resetForm();
   };
-
-  const pageNumbers = useMemo(() => {
-    const pages: number[] = [];
-    const maxVisible = 5;
-    let start = Math.max(1, page - 2);
-    const end = Math.min(totalPages, start + maxVisible - 1);
-    start = Math.max(1, end - maxVisible + 1);
-    for (let i = start; i <= end; i += 1) pages.push(i);
-    return pages;
-  }, [page, totalPages]);
 
   const columns = useMemo<AppTableColumn<Record<string, unknown>>[]>(() => [
     {
@@ -499,12 +499,16 @@ export function LeadsPage({ initialLeads }: { initialLeads?: Record<string, unkn
       <LeadPipelineFunnel
         counts={pipelineCounts}
         activeStage={funnelStage}
-        onStageClick={(stage) => { setFunnelStage(stage); setPage(1); }}
+        onStageClick={(stage) => { setFunnelStage(stage); onPageChange(1); }}
       />
 
       <ModuleFilterBar
-        search={search}
-        onSearchChange={(v) => { setSearch(v); setPage(1); }}
+        search={apiMode ? apiStore.search : localSearch}
+        onSearchChange={(v) => {
+          if (apiMode) apiStore.setSearchTerm(v);
+          else setLocalSearch(v);
+          onPageChange(1);
+        }}
         searchPlaceholder={t('crm.search_leads')}
         filters={
           <>
@@ -517,23 +521,23 @@ export function LeadsPage({ initialLeads }: { initialLeads?: Record<string, unkn
                 { id: 'all', label: t('crm.filter_all_leads', { n: metrics.totalLeads }) },
               ]}
               active={listTab}
-              onChange={(id) => { setListTab(id); setPage(1); }}
+              onChange={(id) => { setListTab(id); onPageChange(1); }}
             />
-            <select value={stageFilter} onChange={(e) => { setStageFilter(e.target.value); setPage(1); }} className={MODULE_FILTER_INPUT}>
+            <select value={stageFilter} onChange={(e) => { setStageFilter(e.target.value); onPageChange(1); }} className={MODULE_FILTER_INPUT}>
               <option value="all">{t('crm.filter_stage')}</option>
               {Object.entries(LEAD_STAGE_LABELS).map(([value]) => (
                 <option key={value} value={value}>{translateStatus(t, value)}</option>
               ))}
             </select>
-            <select value={ownerFilter} onChange={(e) => { setOwnerFilter(e.target.value); setPage(1); }} className={MODULE_FILTER_INPUT}>
+            <select value={ownerFilter} onChange={(e) => { setOwnerFilter(e.target.value); onPageChange(1); }} className={MODULE_FILTER_INPUT}>
               <option value="all">{t('crm.filter_sales_rep')}</option>
               {owners.map((o: { id: string; name: string }) => <option key={o.id} value={o.id}>{o.name}</option>)}
             </select>
-            <select value={sourceFilter} onChange={(e) => { setSourceFilter(e.target.value); setPage(1); }} className={MODULE_FILTER_INPUT}>
+            <select value={sourceFilter} onChange={(e) => { setSourceFilter(e.target.value); onPageChange(1); }} className={MODULE_FILTER_INPUT}>
               <option value="all">{t('crm.filter_source')}</option>
               {sourceFilterOptions.map((s) => <option key={s} value={s}>{s}</option>)}
             </select>
-            <select value={nextActionFilter} onChange={(e) => { setNextActionFilter(e.target.value); setPage(1); }} className={MODULE_FILTER_INPUT}>
+            <select value={nextActionFilter} onChange={(e) => { setNextActionFilter(e.target.value); onPageChange(1); }} className={MODULE_FILTER_INPUT}>
               <option value="all">{t('crm.filter_next_action')}</option>
               {NEXT_ACTION_FILTERS.map((a) => <option key={a} value={a}>{t(NEXT_ACTION_I18N[a] ?? a)}</option>)}
             </select>
@@ -549,7 +553,7 @@ export function LeadsPage({ initialLeads }: { initialLeads?: Record<string, unkn
           <div className="flex items-center gap-2 px-1">
             <input
               type="checkbox"
-              checked={paged.length > 0 && paged.every((l) => selectedIds.has(String(l.id)))}
+              checked={displayRows.length > 0 && displayRows.every((l) => selectedIds.has(String(l.id)))}
               onChange={toggleSelectAll}
               className="cursor-pointer"
             />
@@ -558,7 +562,7 @@ export function LeadsPage({ initialLeads }: { initialLeads?: Record<string, unkn
           <AppTable
             className="flex-1"
             columns={columns}
-            rows={paged}
+            rows={displayRows}
             loading={bootLoading}
             emptyMessage={t('crm.no_leads')}
             rowClassName={(row) => (String(row.id) === selectedId ? 'bg-blue-50/80' : '')}
@@ -581,22 +585,22 @@ export function LeadsPage({ initialLeads }: { initialLeads?: Record<string, unkn
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 text-xs text-slate-500">
             <span>
               {t('crm.showing_leads', {
-                from: filtered.length === 0 ? 0 : (page - 1) * pageSize + 1,
-                to: Math.min(page * pageSize, filtered.length),
-                total: filtered.length,
+                from: listTotal === 0 ? 0 : (listPage - 1) * pageSize + 1,
+                to: Math.min(listPage * pageSize, listTotal),
+                total: listTotal,
               })}
             </span>
-            <div className="flex flex-wrap items-center gap-2">
-              <button type="button" disabled={page <= 1} onClick={() => setPage(page - 1)} className="px-3 py-1.5 border border-slate-200 rounded-lg cursor-pointer disabled:opacity-50">{t('crm.previous')}</button>
-              {pageNumbers.map((n) => (
-                <button key={n} type="button" onClick={() => setPage(n)} className={`min-w-[32px] px-2 py-1.5 rounded-lg font-bold cursor-pointer ${n === page ? 'bg-blue-600 text-white' : 'border border-slate-200 hover:bg-slate-50'}`}>{formatCount(n)}</button>
-              ))}
-              <button type="button" disabled={page >= totalPages} onClick={() => setPage(page + 1)} className="px-3 py-1.5 border border-slate-200 rounded-lg cursor-pointer disabled:opacity-50">{t('crm.next')}</button>
-              <select value={pageSize} onChange={(e) => { setPageSize(Number(e.target.value)); setPage(1); }} className="bg-slate-50 border border-slate-200 rounded-lg px-2 py-1.5 cursor-pointer">
+            {!apiMode ? (
+              <select
+                value={localPageSize}
+                onChange={(e) => { setLocalPageSize(Number(e.target.value)); setLocalPage(1); }}
+                className="bg-slate-50 border border-slate-200 rounded-lg px-2 py-1.5 cursor-pointer"
+              >
                 {PAGE_SIZE_OPTIONS.map((size) => <option key={size} value={size}>{t('crm.per_page', { n: size })}</option>)}
               </select>
-            </div>
+            ) : null}
           </div>
+          <ListPagination page={listPage} pageSize={pageSize} total={listTotal} onPageChange={onPageChange} />
         </div>
 
         <div className="min-w-0 max-w-full overflow-hidden">

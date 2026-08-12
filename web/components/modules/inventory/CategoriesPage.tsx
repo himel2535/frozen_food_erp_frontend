@@ -15,7 +15,9 @@ import { useAppStore } from '@/lib/state/app-store';
 import type { PortField } from '@/lib/modules/port-types';
 import { isModuleApiMode } from '@/lib/config/data-source';
 import { useApiResourceStore } from '@/hooks/use-api-resource-store';
-import { useInventoryLookups } from '@/hooks/use-inventory-lookups';
+import { usePaginatedApiResource } from '@/hooks/use-paginated-api-resource';
+import { ListPagination } from '@/components/shared/ListPagination';
+import { mapApiProductRow } from '@/lib/services/entity-api-mappers';
 import { ApiModeBanner } from '@/components/shared/ApiModeBanner';
 import { isModuleBootLoading } from '@/lib/ui/kpi-loading';
 import { apiListEmptyMessage } from '@/lib/services/api-list-ui';
@@ -76,11 +78,13 @@ export function CategoriesPage() {
   const appState = useAppStore((s) => s.appState);
   const saveAppState = useAppStore((s) => s.saveAppState);
   const apiMode = isModuleApiMode('categories');
-  const apiStore = useApiResourceStore('categories', mapApiCategoryRow);
+  const apiStore = usePaginatedApiResource('categories', mapApiCategoryRow, { pageSize: 10 });
+  const productOptions = useApiResourceStore('products', mapApiProductRow, { pageOnly: true, lookupLimit: 100 });
   const bootLoading = isModuleBootLoading(apiMode, apiStore.initialized);
-  const lookups = useInventoryLookups();
   const [view, setView] = useState<'main' | 'form'>('main');
-  const [search, setSearch] = useState('');
+  const [localSearch, setLocalSearch] = useState('');
+  const [localPage, setLocalPage] = useState(1);
+  const [localPageSize, setLocalPageSize] = useState(10);
   const [statusFilter, setStatusFilter] = useState('all');
   const [typeFilter, setTypeFilter] = useState('all');
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -90,26 +94,45 @@ export function CategoriesPage() {
     defaultTaxRate: '', defaultUnitType: '', stockPolicy: 'FIFO', imageUrl: '',
   });
 
-  const { categories, activeCategories, emptyCategories, topCategory } = useMemo(() => {
-    if (apiMode) return buildCategoryMetrics(apiStore.rows, lookups.products);
-    return getCategoryMetrics(appState);
-  }, [apiMode, apiStore.rows, lookups.products, appState]);
+  const { categories, activeCategories, emptyCategories, topCategory, totalCount } = useMemo(() => {
+    if (apiMode) {
+      const built = buildCategoryMetrics(apiStore.rows, productOptions.rows);
+      return { ...built, totalCount: apiStore.meta.total };
+    }
+    const local = getCategoryMetrics(appState);
+    return { ...local, totalCount: local.categories.length };
+  }, [apiMode, apiStore.rows, apiStore.meta.total, productOptions.rows, appState]);
 
   const filtered = useMemo(() => {
     let data = categories;
     if (statusFilter !== 'all') data = data.filter((c) => String(c.status) === statusFilter);
     if (typeFilter !== 'all') data = data.filter((c) => String(c.type) === typeFilter);
-    if (search) {
-      const q = search.toLowerCase();
+    const q = (apiMode ? apiStore.search : localSearch).toLowerCase().trim();
+    if (q) {
       data = data.filter((c) => `${c.name} ${c.code}`.toLowerCase().includes(q));
     }
-    return sortInventoryRowsNewestFirst(data);
-  }, [categories, search, statusFilter, typeFilter]);
+    if (!apiMode) return sortInventoryRowsNewestFirst(data);
+    return data;
+  }, [categories, apiMode, apiStore.search, localSearch, statusFilter, typeFilter]);
+
+  const pageSize = apiMode ? apiStore.pageSize : localPageSize;
+  const displayRows = apiMode
+    ? filtered
+    : filtered.slice((localPage - 1) * pageSize, localPage * pageSize);
+  const listTotal = apiMode ? apiStore.meta.total : filtered.length;
+  const listPage = apiMode ? apiStore.page : localPage;
+
+  const onPageChange = (p: number) => {
+    if (apiMode) apiStore.setPage(p);
+    else setLocalPage(p);
+  };
 
   const resetFilters = () => {
-    setSearch('');
+    if (apiMode) apiStore.setSearchTerm('');
+    else setLocalSearch('');
     setStatusFilter('all');
     setTypeFilter('all');
+    onPageChange(1);
   };
 
   const resetForm = () => {
@@ -206,7 +229,7 @@ export function CategoriesPage() {
       addLabel="Add Category"
       onAdd={() => { resetForm(); setView('form'); }}
       kpis={[
-        { key: 'total', label: 'Total Categories', value: String(categories.length), sub: 'organized product groups in the master list' },
+        { key: 'total', label: 'Total Categories', value: String(totalCount), sub: 'organized product groups in the master list' },
         { key: 'active', label: 'Active Categories', value: String(activeCategories), sub: 'available for product assignment' },
         { key: 'empty', label: 'Empty Categories', value: String(emptyCategories), sub: 'currently have no linked products' },
         { key: 'top', label: 'Top Category Value', value: topCategory ? formatMoney(Number(topCategory.totalStockValue ?? 0)) : '$0.00', sub: topCategory ? String(topCategory.name) : '—' },
@@ -214,18 +237,25 @@ export function CategoriesPage() {
       bootLoading={bootLoading}
       filters={
         <FilterBar
-          search={search}
-          onSearchChange={setSearch}
+          search={apiMode ? apiStore.search : localSearch}
+          onSearchChange={(v) => {
+            if (apiMode) apiStore.setSearchTerm(v);
+            else setLocalSearch(v);
+            onPageChange(1);
+          }}
           searchPlaceholder="Search categories..."
         >
-          <FilterSelect label="Status" value={statusFilter} onChange={setStatusFilter}><option value="all">All</option><option value="Active">Active</option><option value="Inactive">Inactive</option></FilterSelect>
-          <FilterSelect label="Type" value={typeFilter} onChange={setTypeFilter}><option value="all">All Types</option>{PRODUCT_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}</FilterSelect>
+          <FilterSelect label="Status" value={statusFilter} onChange={(v) => { setStatusFilter(v); onPageChange(1); }}><option value="all">All</option><option value="Active">Active</option><option value="Inactive">Inactive</option></FilterSelect>
+          <FilterSelect label="Type" value={typeFilter} onChange={(v) => { setTypeFilter(v); onPageChange(1); }}><option value="all">All Types</option>{PRODUCT_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}</FilterSelect>
         </FilterBar>
+      }
+      pagination={
+        <ListPagination page={listPage} pageSize={pageSize} total={listTotal} onPageChange={onPageChange} />
       }
     >
       <AppTable
         columns={columns}
-        rows={filtered}
+        rows={displayRows}
         loading={bootLoading}
         emptyMessage={apiListEmptyMessage(apiStore.loading, apiStore.initialized, 'categories', { totalCount: categories.length, filteredCount: filtered.length })}
         renderActions={(cat) => (

@@ -6,7 +6,8 @@ import { useMemo, useState } from 'react';
 import { Footer } from '@/components/layout/Footer';
 import { useChromeSuppressed } from '@/components/layout/ModuleActionsContext';
 import { useAppStore } from '@/lib/state/app-store';
-import { useApiResourceStore } from '@/hooks/use-api-resource-store';
+import { usePaginatedApiResource } from '@/hooks/use-paginated-api-resource';
+import { ListPagination } from '@/components/shared/ListPagination';
 import { mapGenericApiRow, mapGenericPayloadToApi } from '@/lib/services/generic-api-mapper';
 import { ApiModeBanner } from '@/components/shared/ApiModeBanner';
 import { isModuleApiMode } from '@/lib/config/data-source';
@@ -36,7 +37,7 @@ export function CashboxPage() {
   const appState = useAppStore((s) => s.appState);
   const saveAppState = useAppStore((s) => s.saveAppState);
   const apiMode = isModuleApiMode('cashbox');
-  const apiStore = useApiResourceStore('cashbox', mapGenericApiRow);
+  const apiStore = usePaginatedApiResource('cashbox', mapGenericApiRow, { pageSize: PAGE_SIZE });
 
   const [view, setView] = useState<'main' | 'form'>('main');
   const [formType, setFormType] = useState<CashboxTab>('cash_in');
@@ -45,7 +46,7 @@ export function CashboxPage() {
   const [dateTo, setDateTo] = useState('');
   const [typeFilter, setTypeFilter] = useState('all');
   const [categoryFilter, setCategoryFilter] = useState('all');
-  const [page, setPage] = useState(1);
+  const [localPage, setLocalPage] = useState(1);
 
   const allEntries = useMemo(() => {
     if (apiMode && apiStore.initialized) {
@@ -54,7 +55,9 @@ export function CashboxPage() {
     return listCashboxEntries(appState);
   }, [apiMode, apiStore.initialized, apiStore.rows, appState]);
   const metrics = useMemo(() => getCashboxMetrics(
-    apiMode && apiStore.initialized ? { cashboxEntries: apiStore.rows } as import('@/lib/state/types').AppState : appState,
+    apiMode && apiStore.initialized
+      ? { cashboxEntries: apiStore.rows } as import('@/lib/state/types').AppState
+      : appState,
   ), [apiMode, apiStore.initialized, apiStore.rows, appState]);
   const partyOptions = useMemo(() => getCashboxPartyOptions(appState), [appState]);
 
@@ -66,6 +69,14 @@ export function CashboxPage() {
   const totals = useMemo(() => getFilteredTotals(filteredRows), [filteredRows]);
   const inCount = useMemo(() => filteredRows.filter((e) => e.cashIn > 0).length, [filteredRows]);
   const outCount = useMemo(() => filteredRows.filter((e) => e.cashOut > 0).length, [filteredRows]);
+
+  const listPage = apiMode ? apiStore.page : localPage;
+  const onPageChange = (p: number) => {
+    if (apiMode) apiStore.setPage(p);
+    else setLocalPage(p);
+  };
+  const tablePage = apiMode ? 1 : listPage;
+  const tablePageSize = apiMode ? Math.max(filteredRows.length, 1) : PAGE_SIZE;
 
   const openCreateForm = (type: CashboxTab) => {
     setFormType(type);
@@ -115,7 +126,7 @@ export function CashboxPage() {
       closeForm();
       setTypeFilter('all');
       setCategoryFilter('all');
-      setPage(1);
+      onPageChange(1);
       return;
     }
 
@@ -126,7 +137,7 @@ export function CashboxPage() {
     }
     saveAppState();
     closeForm();
-    setPage(1);
+    onPageChange(1);
   };
 
   const handleDelete = async (entry: CashboxEntry) => {
@@ -176,17 +187,25 @@ export function CashboxPage() {
             dateTo={dateTo}
             typeFilter={typeFilter}
             categoryFilter={categoryFilter}
-            page={page}
-            pageSize={PAGE_SIZE}
-            onDateFromChange={(v) => { setDateFrom(v); setPage(1); }}
-            onDateToChange={(v) => { setDateTo(v); setPage(1); }}
-            onTypeFilterChange={(v) => { setTypeFilter(v); setPage(1); }}
-            onCategoryFilterChange={(v) => { setCategoryFilter(v); setPage(1); }}
-            onPageChange={setPage}
+            page={tablePage}
+            pageSize={tablePageSize}
+            onDateFromChange={(v) => { setDateFrom(v); onPageChange(1); }}
+            onDateToChange={(v) => { setDateTo(v); onPageChange(1); }}
+            onTypeFilterChange={(v) => { setTypeFilter(v); onPageChange(1); }}
+            onCategoryFilterChange={(v) => { setCategoryFilter(v); onPageChange(1); }}
+            onPageChange={onPageChange}
             onExport={() => exportCashboxCsv(filteredRows)}
             onEdit={openEditForm}
             onDelete={handleDelete}
           />
+          {apiMode ? (
+            <ListPagination
+              page={apiStore.page}
+              pageSize={apiStore.pageSize}
+              total={apiStore.meta.total}
+              onPageChange={apiStore.setPage}
+            />
+          ) : null}
           <CashboxFooterBar
             totalIn={totals.totalIn}
             totalOut={totals.totalOut}

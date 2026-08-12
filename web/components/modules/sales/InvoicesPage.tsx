@@ -44,7 +44,8 @@ import {
 import { getDefaultSignature, getCompanySignatures } from '@/lib/services/settings-service';
 import { isModuleApiMode } from '@/lib/config/data-source';
 import { isKpiBootLoading, pickApiListRows } from '@/lib/ui/kpi-loading';
-import { useApiResourceStore } from '@/hooks/use-api-resource-store';
+import { usePaginatedApiResource } from '@/hooks/use-paginated-api-resource';
+import { ListPagination } from '@/components/shared/ListPagination';
 import { useCustomersApiStore } from '@/hooks/use-customers-module';
 import { ApiModeBanner } from '@/components/shared/ApiModeBanner';
 import { mapApiInvoiceRow, mapInvoiceRecordToApi, resolveApiRowId } from '@/lib/services/entity-api-mappers';
@@ -124,12 +125,12 @@ export function InvoicesPage() {
   const saveAppState = useAppStore((s) => s.saveAppState);
   const apiMode = isModuleApiMode('invoices');
   const customersApiMode = isModuleApiMode('customers');
-  const apiStore = useApiResourceStore('invoices', mapApiInvoiceRow);
+  const apiStore = usePaginatedApiResource('invoices', mapApiInvoiceRow, { pageSize: 25 });
   const customersApiStore = useCustomersApiStore();
   const t = useAppStore((s) => s.t);
   const { formatMoney } = useLocaleFormat();
   const [view, setView] = useState<'main' | 'form'>('main');
-  const [search, setSearch] = useState('');
+  const [localSearch, setLocalSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingMongoId, setEditingMongoId] = useState<string | null>(null);
@@ -164,8 +165,8 @@ export function InvoicesPage() {
 
   const rows = useMemo(() => {
     let data = allInvoiceRows;
-    if (search) {
-      const q = search.toLowerCase();
+    const q = (apiMode ? apiStore.search : localSearch).toLowerCase().trim();
+    if (q) {
       data = data.filter((row) =>
         `${row.id} ${apiMode ? row.customerName : resolveInvoiceCustomerLabel(appState, row)}`.toLowerCase().includes(q),
       );
@@ -174,7 +175,7 @@ export function InvoicesPage() {
       data = data.filter((row) => String(row.status).toLowerCase() === statusFilter);
     }
     return data;
-  }, [allInvoiceRows, appState, search, statusFilter, apiMode]);
+  }, [allInvoiceRows, appState, apiMode, apiStore.search, localSearch, statusFilter]);
 
   const dashboardSummary = useMemo(() => {
     if (apiMode) {
@@ -437,8 +438,12 @@ export function InvoicesPage() {
         <InvoiceAgingSnapshot aging={dashboardSummary.aging} />
 
         <ModuleFilterBar
-          search={search}
-          onSearchChange={setSearch}
+          search={apiMode ? apiStore.search : localSearch}
+          onSearchChange={(v) => {
+            if (apiMode) apiStore.setSearchTerm(v);
+            else setLocalSearch(v);
+            if (apiMode) apiStore.setPage(1);
+          }}
           searchPlaceholder="Search invoice, customer..."
           filters={<FilterTabs tabs={STATUS_TABS} active={statusFilter} onChange={setStatusFilter} />}
         />
@@ -459,6 +464,15 @@ export function InvoicesPage() {
             </>
           )}
         />
+
+        {apiMode ? (
+          <ListPagination
+            page={apiStore.page}
+            pageSize={apiStore.pageSize}
+            total={apiStore.meta.total}
+            onPageChange={apiStore.setPage}
+          />
+        ) : null}
 
         <Footer />
 

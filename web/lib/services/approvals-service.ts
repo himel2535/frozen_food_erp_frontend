@@ -13,7 +13,7 @@ import {
 import {
   createResource,
   fetchResourceById,
-  fetchResourceList,
+  fetchResourcePage,
   updateResource,
 } from '@/lib/services/api-resource-service';
 import { mapGenericApiRow, mapGenericPayloadToApi } from '@/lib/services/generic-api-mapper';
@@ -69,7 +69,7 @@ function approvalRefsMatch(row: Row, refType: string, refId: string) {
 }
 
 async function findApprovalRowInApi(refType: string, refId: string, approval?: Row) {
-  const rows = await fetchResourceList(APPROVALS_PATH);
+  const { rows } = await fetchResourcePage(APPROVALS_PATH, { page: 1, limit: 200 });
   if (approval) {
     const direct = rows.find((row) => resolveApiRowId(row) === resolveApiRowId(approval));
     if (direct) return direct;
@@ -129,7 +129,7 @@ async function syncSiblingApprovals(
   const refId = String(approval.refId ?? '');
   if (!refType || !refId) return;
 
-  const rows = await fetchResourceList(APPROVALS_PATH);
+  const { rows } = await fetchResourcePage(APPROVALS_PATH, { page: 1, limit: 200 });
   for (const row of rows) {
     if (String(row.status ?? '').toLowerCase() !== 'pending') continue;
     if (!approvalRefsMatch(row, refType, refId)) continue;
@@ -275,7 +275,7 @@ async function loadPurchaseRmRowsForApproval(
   }
 
   try {
-    const fetched = (await fetchResourceList(PURCHASE_RM_PATH)).map((doc) => mapGenericApiRow(doc));
+    const fetched = (await fetchResourcePage(PURCHASE_RM_PATH, { page: 1, limit: 200 })).rows.map((doc) => mapGenericApiRow(doc));
     const pseudo = { purchaseRmOrders: fetched } as AppState;
     let order = resolvePurchaseRmRefId(pseudo, refId, approval);
     if (order) return { rows: fetched, order };

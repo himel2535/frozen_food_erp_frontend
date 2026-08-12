@@ -11,6 +11,8 @@ import { AppFormFields, AppFormModal } from '@/components/shared/AppForm';
 import { useAppStore } from '@/lib/state/app-store';
 import { isModuleApiMode } from '@/lib/config/data-source';
 import { useApiResourceStore } from '@/hooks/use-api-resource-store';
+import { usePaginatedApiResource } from '@/hooks/use-paginated-api-resource';
+import { ListPagination } from '@/components/shared/ListPagination';
 import { mapGenericApiRow, mapGenericPayloadToApi } from '@/lib/services/generic-api-mapper';
 import { mapVendorBillRecordToApi, resolveApiRowId } from '@/lib/services/entity-api-mappers';
 import { ApiModeBanner } from '@/components/shared/ApiModeBanner';
@@ -68,9 +70,9 @@ export function SupplierDuePage() {
   const apiDataReady = useAppStore((s) => s.apiDataReady);
   const saveAppState = useAppStore((s) => s.saveAppState);
   const apiMode = isModuleApiMode('vendorBills');
-  const billStore = useApiResourceStore('vendorBills', mapGenericApiRow);
-  const paymentStore = useApiResourceStore('purchasePayments', mapGenericApiRow);
-  const cashboxStore = useApiResourceStore('cashbox', mapGenericApiRow);
+  const billStore = usePaginatedApiResource('vendorBills', mapGenericApiRow, { pageSize: PAGE_SIZE });
+  const paymentStore = useApiResourceStore('purchasePayments', mapGenericApiRow, { pageOnly: true, lookupLimit: 100 });
+  const cashboxStore = useApiResourceStore('cashbox', mapGenericApiRow, { pageOnly: true, lookupLimit: 100 });
 
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all_due');
@@ -132,10 +134,20 @@ export function SupplierDuePage() {
   const allSuppliers = useMemo(() => listSupplierPayables(payableState), [payableState]);
   const metrics = useMemo(() => getSupplierPayableMetrics(payableState), [payableState]);
 
+  const effectiveSearch = apiMode ? billStore.search : search;
+
   const filteredRows = useMemo(
-    () => filterSupplierPayables(allSuppliers, { search, status: statusFilter }),
-    [allSuppliers, search, statusFilter],
+    () => filterSupplierPayables(allSuppliers, { search: effectiveSearch, status: statusFilter }),
+    [allSuppliers, effectiveSearch, statusFilter],
   );
+
+  const onPageChange = (p: number) => {
+    if (apiMode) billStore.setPage(p);
+    else setPage(p);
+  };
+
+  const tablePage = apiMode ? 1 : page;
+  const tablePageSize = apiMode ? Math.max(filteredRows.length, 1) : PAGE_SIZE;
 
   const selectedSupplier = useMemo(
     () => (selectedSupplierId ? getSupplierPayableDetail(payableState, selectedSupplierId) : null),
@@ -203,9 +215,10 @@ export function SupplierDuePage() {
       toast.success('Saved', { module: 'Supplier Due', description: 'Supplier payable recorded.' });
       setShowAddPayableModal(false);
       setAddPayableForm({ supplier: '', amount: '', dueDate: new Date().toISOString().slice(0, 10), notes: '' });
-      setSearch('');
+      if (apiMode) billStore.setSearchTerm('');
+      else setSearch('');
       setStatusFilter('all_due');
-      setPage(1);
+      onPageChange(1);
       if (result.id) {
         setSelectedSupplierId(result.id);
         setSelectedBillIds([]);
@@ -305,9 +318,10 @@ export function SupplierDuePage() {
       setPaymentTarget(null);
       setPaymentBillIds(undefined);
       setSelectedBillIds([]);
-      setSearch('');
+      if (apiMode) billStore.setSearchTerm('');
+      else setSearch('');
       setStatusFilter('all_due');
-      setPage(1);
+      onPageChange(1);
     } finally {
       setSaving(false);
     }
@@ -356,17 +370,21 @@ export function SupplierDuePage() {
         <div className="grid grid-cols-1 xl:grid-cols-[1fr_380px] gap-3 items-stretch">
           <div className="premium-card premium-shadow overflow-hidden min-w-0 min-h-[580px] flex flex-col">
             <SupplierDueFilterBar
-              search={search}
+              search={effectiveSearch}
               statusFilter={statusFilter}
-              onSearchChange={(v) => { setSearch(v); setPage(1); }}
-              onStatusChange={(v) => { setStatusFilter(v); setPage(1); }}
+              onSearchChange={(v) => {
+                if (apiMode) billStore.setSearchTerm(v);
+                else setSearch(v);
+                onPageChange(1);
+              }}
+              onStatusChange={(v) => { setStatusFilter(v); onPageChange(1); }}
             />
             <SupplierDueTable
               rows={filteredRows}
-              page={page}
-              pageSize={PAGE_SIZE}
+              page={tablePage}
+              pageSize={tablePageSize}
               selectedSupplierId={selectedSupplierId}
-              onPageChange={setPage}
+              onPageChange={onPageChange}
               onRowClick={(supplier) => {
                 setSelectedSupplierId(supplier.supplierId);
                 setDetailTab('overview');
@@ -374,6 +392,14 @@ export function SupplierDuePage() {
               }}
               onPay={openPay}
             />
+            {apiMode ? (
+              <ListPagination
+                page={billStore.page}
+                pageSize={billStore.pageSize}
+                total={billStore.meta.total}
+                onPageChange={billStore.setPage}
+              />
+            ) : null}
           </div>
 
           <SupplierDueDetailPanel

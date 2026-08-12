@@ -22,10 +22,13 @@ import { useLocaleFormat } from '@/hooks/useLocaleFormat';
 import { sortRowsNewestFirst } from '@/lib/services/domain-service';
 import { translateStatus } from '@/lib/i18n/resolve-label';
 import type { ApiModule } from '@/lib/config/data-source';
-import { useApiResourceStore } from '@/hooks/use-api-resource-store';
+import { usePaginatedApiResource } from '@/hooks/use-paginated-api-resource';
+import { ListPagination } from '@/components/shared/ListPagination';
 import { mapApiSalesDocRow, mapSalesDocToApi, resolveApiRowId, convertQuotationToOrderViaApi } from '@/lib/services/entity-api-mappers';
 import { ApiModeBanner } from '@/components/shared/ApiModeBanner';
 import { isModuleBootLoading, shouldShowModuleKpis } from '@/lib/ui/kpi-loading';
+
+const PAGE_SIZE = 25;
 
 export interface SalesDocColumn {
   key: string;
@@ -69,10 +72,9 @@ function lineItemsToPayload(items: LineItem[]) {
 export function SalesDocumentModule({ config }: { config: SalesDocumentConfig }) {
   const t = useAppStore((s) => s.t);
   const { formatMoney } = useLocaleFormat();
-  const apiStore = useApiResourceStore(config.apiModule, mapApiSalesDocRow);
+  const apiStore = usePaginatedApiResource(config.apiModule, mapApiSalesDocRow, { pageSize: PAGE_SIZE });
   const bootLoading = isModuleBootLoading(true, apiStore.initialized);
   const [view, setView] = useState<'main' | 'form' | 'detail'>('main');
-  const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [editingId, setEditingId] = useState<string | null>(null);
   const [detailId, setDetailId] = useState<string | null>(null);
@@ -82,15 +84,11 @@ export function SalesDocumentModule({ config }: { config: SalesDocumentConfig })
 
   const rows = useMemo(() => {
     let data = apiStore.rows;
-    if (search) {
-      const q = search.toLowerCase();
-      data = data.filter((row) => config.searchKeys.some((k) => String(row[k] ?? '').toLowerCase().includes(q)));
-    }
     if (statusFilter !== 'all') {
       data = data.filter((row) => String(row.status ?? '').toLowerCase() === statusFilter);
     }
     return sortRowsNewestFirst(data);
-  }, [apiStore.rows, config, search, statusFilter]);
+  }, [apiStore.rows, statusFilter]);
 
   const kpis = useMemo(() => (config.kpi ? config.kpi(rows) : []), [config, rows]);
   const detailRow = useMemo(() => rows.find((r) => String(r.id) === detailId), [rows, detailId]);
@@ -275,10 +273,10 @@ export function SalesDocumentModule({ config }: { config: SalesDocumentConfig })
         <ModuleKpiSection items={kpis} loading={bootLoading} />
       )}
       <ListToolbar
-        search={search}
-        onSearchChange={setSearch}
+        search={apiStore.search}
+        onSearchChange={apiStore.setSearchTerm}
         searchPlaceholder={t('crm.search_module', { title: config.title.toLowerCase() })}
-        filters={<FilterTabs tabs={tabs} active={statusFilter} onChange={setStatusFilter} />}
+        filters={<FilterTabs tabs={tabs} active={statusFilter} onChange={(v) => { setStatusFilter(v); apiStore.setPage(1); }} />}
       />
       <AppTable
         columns={config.columns.map((col) => ({
@@ -302,6 +300,12 @@ export function SalesDocumentModule({ config }: { config: SalesDocumentConfig })
             <TableIconAction variant="delete" onClick={() => handleDelete(String(row.id))} />
           </>
         )}
+      />
+      <ListPagination
+        page={apiStore.page}
+        pageSize={apiStore.pageSize}
+        total={apiStore.meta.total}
+        onPageChange={apiStore.setPage}
       />
       <Footer />
     </>

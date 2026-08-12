@@ -44,9 +44,9 @@ export function WorkflowApprovalsPage() {
   const appState = useAppStore((s) => s.appState);
   const apiDataReady = useAppStore((s) => s.apiDataReady);
   const apiMode = isModuleApiMode('workflowApprovals');
-  const approvalStore = useApiResourceStore('workflowApprovals', mapGenericApiRow);
-  const purchaseRmStore = useApiResourceStore('purchaseRm', mapGenericApiRow);
-  const leaveStore = useApiResourceStore('leaveRequests', mapGenericApiRow);
+  const approvalStore = useApiResourceStore('workflowApprovals', mapGenericApiRow, { pageOnly: true, lookupLimit: 100 });
+  const purchaseRmStore = useApiResourceStore('purchaseRm', mapGenericApiRow, { pageOnly: true, lookupLimit: 100 });
+  const leaveStore = useApiResourceStore('leaveRequests', mapGenericApiRow, { pageOnly: true, lookupLimit: 100 });
   const base = useLegacyParityConfig('workflow-approvals');
 
   useEffect(() => {

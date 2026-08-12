@@ -60,7 +60,6 @@ export function usePaginatedApiResource(
 ) {
   const enabled = isModuleApiMode(module);
   const path = API_RESOURCE_PATHS[module];
-  const pageSize = options?.pageSize ?? DEFAULT_LIST_PAGE_SIZE;
   const mapRowRef = useRef(mapRow);
   mapRowRef.current = mapRow;
 
@@ -69,6 +68,7 @@ export function usePaginatedApiResource(
   const hasServerSeed = initialRows !== undefined;
 
   const [page, setPage] = useState(1);
+  const [pageSize, setPageSizeState] = useState(options?.pageSize ?? DEFAULT_LIST_PAGE_SIZE);
   const [search, setSearch] = useState('');
   const [status, setStatus] = useState('all');
   const debouncedSearch = useDebouncedValue(search, 300);
@@ -209,6 +209,11 @@ export function usePaginatedApiResource(
     return result;
   }, [path, reload, module]);
 
+  const setPageSize = useCallback((size: number) => {
+    setPageSizeState(size);
+    setPage(1);
+  }, []);
+
   return {
     enabled,
     rows,
@@ -221,6 +226,7 @@ export function usePaginatedApiResource(
     initialized,
     error,
     setPage,
+    setPageSize,
     setSearchTerm,
     setStatusFilter,
     reload,

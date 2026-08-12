@@ -17,7 +17,6 @@ import { DateDisplay } from '@/components/shared/DateDisplay';
 import { StatusBadge } from '@/components/shared/StatusBadge';
 import { TableIconAction } from '@/components/shared/TableIconAction';
 import { useLegacyParityConfig } from '@/hooks/use-legacy-parity-config';
-import { useApiResourceStore } from '@/hooks/use-api-resource-store';
 import { usePaginatedApiResource } from '@/hooks/use-paginated-api-resource';
 import { ListPagination } from '@/components/shared/ListPagination';
 import { useAppStore } from '@/lib/state/app-store';

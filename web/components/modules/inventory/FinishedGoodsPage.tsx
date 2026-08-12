@@ -25,7 +25,8 @@ import { useAppStore } from '@/lib/state/app-store';
 import type { PortField } from '@/lib/modules/port-types';
 import { INVENTORY_STANDARD_KPI_ICONS as KPI_ICON } from '@/lib/ui/kpi-icons';
 import { isModuleApiMode } from '@/lib/config/data-source';
-import { useApiResourceStore } from '@/hooks/use-api-resource-store';
+import { usePaginatedApiResource } from '@/hooks/use-paginated-api-resource';
+import { ListPagination } from '@/components/shared/ListPagination';
 import { useInventoryLookups } from '@/hooks/use-inventory-lookups';
 import { ApiModeBanner } from '@/components/shared/ApiModeBanner';
 import { isModuleBootLoading, pickApiListRows } from '@/lib/ui/kpi-loading';
@@ -110,7 +111,7 @@ export function FinishedGoodsPage() {
   const appState = useAppStore((s) => s.appState);
   const saveAppState = useAppStore((s) => s.saveAppState);
   const apiMode = isModuleApiMode('finishedGoods');
-  const apiStore = useApiResourceStore('finishedGoods', mapApiFinishedGoodRow);
+  const apiStore = usePaginatedApiResource('finishedGoods', mapApiFinishedGoodRow, { pageSize: 10 });
   const bootLoading = isModuleBootLoading(apiMode, apiStore.initialized);
   const lookups = useInventoryLookups();
   const [view, setView] = useState<'main' | 'form' | 'detail' | 'summary' | 'capacity' | 'materials' | 'bom'>('main');
@@ -118,14 +119,14 @@ export function FinishedGoodsPage() {
   const [capacityId, setCapacityId] = useState<string | null>(null);
   const [materialsId, setMaterialsId] = useState<string | null>(null);
   const [bomId, setBomId] = useState<string | null>(null);
-  const [search, setSearch] = useState('');
+  const [localSearch, setLocalSearch] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('all');
   const [warehouseFilter, setWarehouseFilter] = useState('all');
   const [stockStatusFilter, setStockStatusFilter] = useState('all');
   const [unitFilter, setUnitFilter] = useState('all');
   const [stockTab, setStockTab] = useState('all');
-  const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(10);
+  const [localPage, setLocalPage] = useState(1);
+  const [localPageSize, setLocalPageSize] = useState(10);
   const [showAddMenu, setShowAddMenu] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [showAdvanced, setShowAdvanced] = useState(false);
@@ -176,14 +177,14 @@ export function FinishedGoodsPage() {
       const lowStock = items.filter((r) => getFinishedGoodsStockStatus(r) === 'Low Stock').length;
       const outOfStock = items.filter((r) => getFinishedGoodsStockStatus(r) === 'Out of Stock').length;
       const inStock = items.filter((r) => getFinishedGoodsStockStatus(r) === 'In Stock').length;
-      return { count: items.length, totalValue, totalQuantity, lowStock, outOfStock, inStock };
+      return { count: apiStore.meta.total, totalValue, totalQuantity, lowStock, outOfStock, inStock };
     }
     return getFinishedGoodsMetrics(appState);
-  }, [apiMode, apiStore.rows, appState]);
+  }, [apiMode, apiStore.rows, apiStore.meta.total, appState]);
 
   const filtered = useMemo(() => {
     let data = allProducts;
-    const q = search.toLowerCase().trim();
+    const q = (apiMode ? apiStore.search : localSearch).toLowerCase().trim();
 
     if (stockTab === 'in') {
       data = data.filter((row) => getFinishedGoodsStockStatus(row) === 'In Stock');
@@ -213,21 +214,30 @@ export function FinishedGoodsPage() {
       );
     }
 
-    return sortInventoryRowsNewestFirst(data);
-  }, [allProducts, search, categoryFilter, warehouseFilter, stockStatusFilter, unitFilter, stockTab]);
+    if (!apiMode) return sortInventoryRowsNewestFirst(data);
+    return data;
+  }, [allProducts, apiMode, apiStore.search, localSearch, categoryFilter, warehouseFilter, stockStatusFilter, unitFilter, stockTab]);
 
-  const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
-  const paged = filtered.slice((page - 1) * pageSize, page * pageSize);
+  const pageSize = apiMode ? apiStore.pageSize : localPageSize;
+  const displayRows = apiMode ? filtered : filtered.slice((localPage - 1) * pageSize, localPage * pageSize);
+  const listTotal = apiMode ? apiStore.meta.total : filtered.length;
+  const listPage = apiMode ? apiStore.page : localPage;
   const liveStockValue = Number(form.quantity || 0) * Number(form.avgCost || 0);
 
+  const onPageChange = (p: number) => {
+    if (apiMode) apiStore.setPage(p);
+    else setLocalPage(p);
+  };
+
   const resetFilters = () => {
-    setSearch('');
+    if (apiMode) apiStore.setSearchTerm('');
+    else setLocalSearch('');
     setCategoryFilter('all');
     setWarehouseFilter('all');
     setStockStatusFilter('all');
     setUnitFilter('all');
     setStockTab('all');
-    setPage(1);
+    onPageChange(1);
   };
 
   const columns = useMemo<AppTableColumn<Record<string, unknown>>[]>(() => [
@@ -434,7 +444,7 @@ export function FinishedGoodsPage() {
       if (!editingId) {
         resetFilters();
       } else {
-        setPage(1);
+        onPageChange(1);
       }
       setView('main');
       resetForm();
@@ -459,20 +469,10 @@ export function FinishedGoodsPage() {
       });
     }
     saveAppState();
-    if (!editingId) setPage(1);
+    if (!editingId) onPageChange(1);
     setView('main');
     resetForm();
   };
-
-  const pageNumbers = useMemo(() => {
-    const pages: number[] = [];
-    const maxVisible = 5;
-    let start = Math.max(1, page - 2);
-    const end = Math.min(totalPages, start + maxVisible - 1);
-    start = Math.max(1, end - maxVisible + 1);
-    for (let i = start; i <= end; i += 1) pages.push(i);
-    return pages;
-  }, [page, totalPages]);
 
   const productFields = [...FG_BASIC_FIELDS, ...FG_ADVANCED_FIELDS];
   const detailRow = useMemo(
@@ -651,25 +651,29 @@ export function FinishedGoodsPage() {
         />
 
         <FilterBar
-          search={search}
-          onSearchChange={(v) => { setSearch(v); setPage(1); }}
+          search={apiMode ? apiStore.search : localSearch}
+          onSearchChange={(v) => {
+            if (apiMode) apiStore.setSearchTerm(v);
+            else setLocalSearch(v);
+            onPageChange(1);
+          }}
           searchPlaceholder="Search by product name, SKU, barcode..."
         >
-          <FilterSelect label="Category" value={categoryFilter} onChange={(v) => { setCategoryFilter(v); setPage(1); }}>
+          <FilterSelect label="Category" value={categoryFilter} onChange={(v) => { setCategoryFilter(v); onPageChange(1); }}>
             <option value="all">All Categories</option>
             {categories.map((cat) => <option key={cat} value={cat}>{cat}</option>)}
           </FilterSelect>
-          <FilterSelect label="Warehouse" value={warehouseFilter} onChange={(v) => { setWarehouseFilter(v); setPage(1); }}>
+          <FilterSelect label="Warehouse" value={warehouseFilter} onChange={(v) => { setWarehouseFilter(v); onPageChange(1); }}>
             <option value="all">All Warehouses</option>
             {warehouses.map((wh) => <option key={String(wh.id)} value={String(wh.id)}>{String(wh.name)}</option>)}
           </FilterSelect>
-          <FilterSelect label="Stock Status" value={stockStatusFilter} onChange={(v) => { setStockStatusFilter(v); setPage(1); }}>
+          <FilterSelect label="Stock Status" value={stockStatusFilter} onChange={(v) => { setStockStatusFilter(v); onPageChange(1); }}>
             <option value="all">All Status</option>
             <option value="in-stock">In Stock</option>
             <option value="low-stock">Low Stock</option>
             <option value="out-of-stock">Out of Stock</option>
           </FilterSelect>
-          <FilterSelect label="Unit" value={unitFilter} onChange={(v) => { setUnitFilter(v); setPage(1); }}>
+          <FilterSelect label="Unit" value={unitFilter} onChange={(v) => { setUnitFilter(v); onPageChange(1); }}>
             <option value="all">All Units</option>
             {units.map((unit) => <option key={unit} value={unit}>{unit}</option>)}
           </FilterSelect>
@@ -685,7 +689,7 @@ export function FinishedGoodsPage() {
               { id: 'out', label: `Out of Stock (${metrics.outOfStock})` },
             ]}
             active={stockTab}
-            onChange={(id) => { setStockTab(id); setPage(1); }}
+            onChange={(id) => { setStockTab(id); onPageChange(1); }}
           />
           <div className="flex items-center gap-2 self-end sm:self-auto">
             <button
@@ -709,7 +713,7 @@ export function FinishedGoodsPage() {
         <AppTable
           className="flex-1"
           columns={columns}
-          rows={paged}
+          rows={displayRows}
           loading={bootLoading}
           emptyMessage={apiListEmptyMessage(apiStore.loading, apiStore.initialized, 'finished goods', { totalCount: allProducts.length, filteredCount: filtered.length })}
           renderActions={(row) => (
@@ -770,48 +774,21 @@ export function FinishedGoodsPage() {
 
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 text-xs text-slate-500">
           <span>
-            Showing {filtered.length === 0 ? 0 : (page - 1) * pageSize + 1} to {Math.min(page * pageSize, filtered.length)} of {filtered.length} entries
+            Showing {listTotal === 0 ? 0 : (listPage - 1) * pageSize + 1} to {Math.min(listPage * pageSize, listTotal)} of {listTotal} entries
           </span>
-          <div className="flex flex-wrap items-center gap-2">
-            <button
-              type="button"
-              disabled={page <= 1}
-              onClick={() => setPage(page - 1)}
-              className="px-3 py-1.5 border border-slate-200 rounded-lg cursor-pointer disabled:opacity-50"
-            >
-              Previous
-            </button>
-            {pageNumbers.map((n) => (
-              <button
-                key={n}
-                type="button"
-                onClick={() => setPage(n)}
-                className={`min-w-[32px] px-2 py-1.5 rounded-lg font-bold cursor-pointer ${
-                  n === page ? 'bg-blue-600 text-white' : 'border border-slate-200 hover:bg-slate-50'
-                }`}
-              >
-                {n}
-              </button>
-            ))}
-            <button
-              type="button"
-              disabled={page >= totalPages}
-              onClick={() => setPage(page + 1)}
-              className="px-3 py-1.5 border border-slate-200 rounded-lg cursor-pointer disabled:opacity-50"
-            >
-              Next
-            </button>
+          {!apiMode ? (
             <select
-              value={pageSize}
-              onChange={(e) => { setPageSize(Number(e.target.value)); setPage(1); }}
+              value={localPageSize}
+              onChange={(e) => { setLocalPageSize(Number(e.target.value)); setLocalPage(1); }}
               className="bg-slate-50 border border-slate-200 rounded-lg px-2 py-1.5 cursor-pointer"
             >
               {PAGE_SIZE_OPTIONS.map((size) => (
                 <option key={size} value={size}>{size} / page</option>
               ))}
             </select>
-          </div>
+          ) : null}
         </div>
+        <ListPagination page={listPage} pageSize={pageSize} total={listTotal} onPageChange={onPageChange} />
         <Footer />
 
       <AppFormModal

@@ -27,6 +27,8 @@ type ApiResourceStoreOptions = {
   skipInitialFetch?: boolean;
   /** When true, fetches only the first page (faster for large lists). */
   pageOnly?: boolean;
+  /** Page size for pageOnly fetches (dropdowns / lookups). */
+  lookupLimit?: number;
 };
 
 function auditEntityLabel(body: Record<string, unknown>, id: string): string {
@@ -69,7 +71,7 @@ export function useApiResourceStore(
   const hasServerSeed = resolvedInitial !== undefined;
   const skipInitialFetch = Boolean(options?.skipInitialFetch || hasServerSeed);
   const pageOnly = options?.pageOnly ?? true;
-  const listQuery = { page: 1, limit: DEFAULT_LIST_PAGE_SIZE };
+  const listQuery = { page: 1, limit: options?.lookupLimit ?? DEFAULT_LIST_PAGE_SIZE };
 
   const [rows, setRows] = useState<Record<string, unknown>[]>(() => {
     if (!enabled) return [];

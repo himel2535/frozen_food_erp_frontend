@@ -34,6 +34,8 @@ export function SuppliersTable({
   loading = false,
   page,
   pageSize,
+  total,
+  serverPaginated = false,
   onPageChange,
   onView,
   onEdit,
@@ -43,14 +45,19 @@ export function SuppliersTable({
   loading?: boolean;
   page: number;
   pageSize: number;
+  total?: number;
+  serverPaginated?: boolean;
   onPageChange: (page: number) => void;
   onView: (supplier: EnrichedSupplier) => void;
   onEdit: (supplier: EnrichedSupplier) => void;
   onDeactivate: (supplier: EnrichedSupplier) => void;
 }) {
-  const totalPages = Math.max(1, Math.ceil(rows.length / pageSize));
+  const rowTotal = total ?? rows.length;
+  const totalPages = Math.max(1, Math.ceil(rowTotal / pageSize));
   const safePage = Math.min(page, totalPages);
-  const pagedRows = rows.slice((safePage - 1) * pageSize, safePage * pageSize);
+  const pagedRows = serverPaginated
+    ? rows
+    : rows.slice((safePage - 1) * pageSize, safePage * pageSize);
 
   const columns = useMemo<AppTableColumn<EnrichedSupplier>[]>(() => [
     {
@@ -180,7 +187,7 @@ export function SuppliersTable({
 
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 px-4 py-3 border-t border-slate-100 text-xs text-slate-500">
         <span>
-          Showing {rows.length === 0 ? 0 : (safePage - 1) * pageSize + 1}–{Math.min(safePage * pageSize, rows.length)} of {rows.length} suppliers
+          Showing {rowTotal === 0 ? 0 : (safePage - 1) * pageSize + 1}–{Math.min(safePage * pageSize, rowTotal)} of {rowTotal} suppliers
         </span>
         <div className="flex flex-wrap items-center gap-2">
           <button

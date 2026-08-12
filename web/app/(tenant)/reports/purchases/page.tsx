@@ -1,6 +1,6 @@
 import { ReportsPurchasesPage } from '@/lib/modules/reports-pages';
-import { prefetchModulePage } from '@/lib/server/prefetch-module-page';
+import { prefetchReportPage } from '@/lib/server/prefetch-report-page';
 
 export default async function Page() {
-  return prefetchModulePage(['purchaseOrders'], <ReportsPurchasesPage />);
+  return prefetchReportPage('purchases', <ReportsPurchasesPage />);
 }

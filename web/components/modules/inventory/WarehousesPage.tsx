@@ -15,7 +15,9 @@ import { useAppStore } from '@/lib/state/app-store';
 import type { PortField } from '@/lib/modules/port-types';
 import { isModuleApiMode } from '@/lib/config/data-source';
 import { useApiResourceStore } from '@/hooks/use-api-resource-store';
-import { useInventoryLookups } from '@/hooks/use-inventory-lookups';
+import { usePaginatedApiResource } from '@/hooks/use-paginated-api-resource';
+import { ListPagination } from '@/components/shared/ListPagination';
+import { mapApiProductRow } from '@/lib/services/entity-api-mappers';
 import { ApiModeBanner } from '@/components/shared/ApiModeBanner';
 import { isModuleBootLoading } from '@/lib/ui/kpi-loading';
 import { apiListEmptyMessage } from '@/lib/services/api-list-ui';
@@ -49,11 +51,13 @@ export function WarehousesPage() {
   const appState = useAppStore((s) => s.appState);
   const saveAppState = useAppStore((s) => s.saveAppState);
   const apiMode = isModuleApiMode('warehouses');
-  const apiStore = useApiResourceStore('warehouses', mapApiWarehouseRow);
+  const apiStore = usePaginatedApiResource('warehouses', mapApiWarehouseRow, { pageSize: 10 });
+  const productOptions = useApiResourceStore('products', mapApiProductRow, { pageOnly: true, lookupLimit: 100 });
   const bootLoading = isModuleBootLoading(apiMode, apiStore.initialized);
-  const lookups = useInventoryLookups();
   const [view, setView] = useState<'main' | 'form'>('main');
-  const [search, setSearch] = useState('');
+  const [localSearch, setLocalSearch] = useState('');
+  const [localPage, setLocalPage] = useState(1);
+  const [localPageSize, setLocalPageSize] = useState(10);
   const [statusFilter, setStatusFilter] = useState('all');
   const [editingId, setEditingId] = useState<string | null>(null);
   const [showAdvanced, setShowAdvanced] = useState(false);
@@ -66,7 +70,7 @@ export function WarehousesPage() {
     if (apiMode) {
       const warehouses: Record<string, unknown>[] = apiStore.rows.map((wh) => {
         const derived = getWarehouseDerivedStats(
-          { inventory: lookups.products } as import('@/lib/state/types').AppState,
+          { inventory: productOptions.rows } as import('@/lib/state/types').AppState,
           String(wh.id),
         );
         const capacity = Number(wh.capacity ?? 0);
@@ -79,24 +83,40 @@ export function WarehousesPage() {
       const inactiveWarehouses = warehouses.length - activeWarehouses;
       const utilizationPercent = totalCapacity > 0 ? (totalCurrentStock / totalCapacity) * 100 : 0;
       const totalStockValue = warehouses.reduce((s, w) => s + Number(w.stockValueStored ?? 0), 0);
-      return { warehouses, totalCapacity, totalCurrentStock, activeWarehouses, inactiveWarehouses, utilizationPercent, totalStockValue };
+      return { warehouses, totalCount: apiStore.meta.total, totalCapacity, totalCurrentStock, activeWarehouses, inactiveWarehouses, utilizationPercent, totalStockValue };
     }
-    return getWarehouseMetrics(appState);
-  }, [apiMode, apiStore.rows, lookups.products, appState]);
+    const local = getWarehouseMetrics(appState);
+    return { ...local, totalCount: local.warehouses.length };
+  }, [apiMode, apiStore.rows, apiStore.meta.total, productOptions.rows, appState]);
 
   const filtered = useMemo(() => {
     let data = metrics.warehouses;
     if (statusFilter !== 'all') data = data.filter((w) => String(w.status) === statusFilter);
-    if (search) {
-      const q = search.toLowerCase();
+    const q = (apiMode ? apiStore.search : localSearch).toLowerCase().trim();
+    if (q) {
       data = data.filter((w) => `${w.name} ${w.location} ${w.manager}`.toLowerCase().includes(q));
     }
-    return sortInventoryRowsNewestFirst(data);
-  }, [metrics.warehouses, search, statusFilter]);
+    if (!apiMode) return sortInventoryRowsNewestFirst(data);
+    return data;
+  }, [metrics.warehouses, apiMode, apiStore.search, localSearch, statusFilter]);
+
+  const pageSize = apiMode ? apiStore.pageSize : localPageSize;
+  const displayRows = apiMode
+    ? filtered
+    : filtered.slice((localPage - 1) * pageSize, localPage * pageSize);
+  const listTotal = apiMode ? apiStore.meta.total : filtered.length;
+  const listPage = apiMode ? apiStore.page : localPage;
+
+  const onPageChange = (p: number) => {
+    if (apiMode) apiStore.setPage(p);
+    else setLocalPage(p);
+  };
 
   const resetFilters = () => {
-    setSearch('');
+    if (apiMode) apiStore.setSearchTerm('');
+    else setLocalSearch('');
     setStatusFilter('all');
+    onPageChange(1);
   };
 
   const resetForm = () => {
@@ -189,7 +209,7 @@ export function WarehousesPage() {
       addLabel="Add Warehouse"
       onAdd={() => { resetForm(); setView('form'); }}
       kpis={[
-        { key: 'total', label: 'Total Warehouses', value: String(metrics.warehouses.length), sub: `${metrics.activeWarehouses} active · ${metrics.inactiveWarehouses} inactive` },
+        { key: 'total', label: 'Total Warehouses', value: String(metrics.totalCount), sub: `${metrics.activeWarehouses} active · ${metrics.inactiveWarehouses} inactive` },
         { key: 'capacity', label: 'Total Stock Capacity', value: metrics.totalCapacity.toLocaleString(), sub: 'units across all facilities' },
         { key: 'util', label: 'Current Stock Utilization', value: `${metrics.utilizationPercent.toFixed(1)}%`, sub: `${metrics.totalCurrentStock.toLocaleString()} units stored` },
         { key: 'value', label: 'Total Stock Value', value: formatMoney(metrics.totalStockValue), sub: 'across all warehouses' },
@@ -197,17 +217,24 @@ export function WarehousesPage() {
       bootLoading={bootLoading}
       filters={
         <FilterBar
-          search={search}
-          onSearchChange={setSearch}
+          search={apiMode ? apiStore.search : localSearch}
+          onSearchChange={(v) => {
+            if (apiMode) apiStore.setSearchTerm(v);
+            else setLocalSearch(v);
+            onPageChange(1);
+          }}
           searchPlaceholder="Search warehouses..."
         >
-          <FilterSelect label="Status" value={statusFilter} onChange={setStatusFilter}><option value="all">All</option><option value="Active">Active</option><option value="Inactive">Inactive</option></FilterSelect>
+          <FilterSelect label="Status" value={statusFilter} onChange={(v) => { setStatusFilter(v); onPageChange(1); }}><option value="all">All</option><option value="Active">Active</option><option value="Inactive">Inactive</option></FilterSelect>
         </FilterBar>
+      }
+      pagination={
+        <ListPagination page={listPage} pageSize={pageSize} total={listTotal} onPageChange={onPageChange} />
       }
     >
       <AppTable
         columns={columns}
-        rows={filtered}
+        rows={displayRows}
         loading={bootLoading}
         emptyMessage={apiListEmptyMessage(apiStore.loading, apiStore.initialized, 'warehouses', { totalCount: metrics.warehouses.length, filteredCount: filtered.length })}
         renderActions={(wh) => (

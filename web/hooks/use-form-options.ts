@@ -35,7 +35,7 @@ export function useCustomersOptions(): FormOption[] {
 }
 
 export function useSalesPersonOptions(): FormOption[] {
-  const employeesStore = useApiResourceStore('employees', mapApiEmployeeRow);
+  const employeesStore = useApiResourceStore('employees', mapApiEmployeeRow, { pageOnly: true, lookupLimit: 200 });
 
   return useMemo(
     () => employeesStore.rows.map((e) => ({
@@ -48,7 +48,7 @@ export function useSalesPersonOptions(): FormOption[] {
 
 export function useHrmDepartmentOptions(appState: AppState): string[] {
   const apiMode = isModuleApiMode('departments');
-  const deptStore = useApiResourceStore('departments', mapGenericApiRow);
+  const deptStore = useApiResourceStore('departments', mapGenericApiRow, { pageOnly: true, lookupLimit: 200 });
 
   return useMemo(() => {
     const rows = apiMode && deptStore.initialized
@@ -73,7 +73,7 @@ export function useHrmDepartmentOptions(appState: AppState): string[] {
 
 export function useHrmDesignationOptions(appState: AppState, department?: string): DesignationOption[] {
   const apiMode = isModuleApiMode('designations');
-  const desStore = useApiResourceStore('designations', mapGenericApiRow);
+  const desStore = useApiResourceStore('designations', mapGenericApiRow, { pageOnly: true, lookupLimit: 200 });
 
   return useMemo(() => {
     const rows = apiMode && desStore.initialized

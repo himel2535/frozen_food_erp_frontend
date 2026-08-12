@@ -24,7 +24,8 @@ import {
 import { isModuleApiMode } from '@/lib/config/data-source';
 import { isKpiBootLoading, pickApiListRows } from '@/lib/ui/kpi-loading';
 import { getKpiGridClassName } from '@/lib/ui/kpi-grid';
-import { useApiResourceStore } from '@/hooks/use-api-resource-store';
+import { usePaginatedApiResource } from '@/hooks/use-paginated-api-resource';
+import { ListPagination } from '@/components/shared/ListPagination';
 import { ApiModeBanner } from '@/components/shared/ApiModeBanner';
 import { mapApiSalesOrderRow, resolveApiRowId } from '@/lib/services/entity-api-mappers';
 import type { PoLineItem } from '@/lib/services/purchases-service';
@@ -67,10 +68,10 @@ export function SalesOrdersPage() {
   const appState = useAppStore((s) => s.appState);
   const saveAppState = useAppStore((s) => s.saveAppState);
   const apiMode = isModuleApiMode('salesOrders');
-  const apiStore = useApiResourceStore('salesOrders', mapApiSalesOrderRow);
+  const apiStore = usePaginatedApiResource('salesOrders', mapApiSalesOrderRow, { pageSize: 25 });
   const bootLoading = isKpiBootLoading(apiMode, apiStore.initialized);
   const { formatMoney, formatCount } = useLocaleFormat();
-  const [search, setSearch] = useState('');
+  const [localSearch, setLocalSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
 
   const statusTabs = useMemo(() => [
@@ -88,8 +89,8 @@ export function SalesOrdersPage() {
 
   const rows = useMemo(() => {
     let data = allRows;
-    if (search) {
-      const q = search.toLowerCase();
+    const q = (apiMode ? apiStore.search : localSearch).toLowerCase().trim();
+    if (q) {
       data = data.filter((row) =>
         `${row.id} ${row.customer} ${summarizeItems(row, t)}`.toLowerCase().includes(q),
       );
@@ -98,7 +99,11 @@ export function SalesOrdersPage() {
       data = data.filter((row) => String(row.status).toLowerCase() === statusFilter);
     }
     return data;
-  }, [allRows, search, statusFilter, t]);
+  }, [allRows, apiMode, apiStore.search, localSearch, statusFilter, t]);
+
+  const listTotal = apiMode ? apiStore.meta.total : rows.length;
+  const listPage = apiMode ? apiStore.page : 1;
+  const pageSize = apiStore.pageSize;
 
   const kpis = useMemo(() => orderKpis(allRows, t, formatMoney, formatCount), [allRows, t, formatMoney, formatCount]);
 
@@ -171,10 +176,14 @@ export function SalesOrdersPage() {
       <ModuleKpiSection items={kpis} loading={bootLoading} gridClassName={getKpiGridClassName(4)} kpiCount={4} />
 
       <ModuleFilterBar
-        search={search}
-        onSearchChange={setSearch}
+        search={apiMode ? apiStore.search : localSearch}
+        onSearchChange={(v) => {
+          if (apiMode) apiStore.setSearchTerm(v);
+          else setLocalSearch(v);
+          if (apiMode) apiStore.setPage(1);
+        }}
         searchPlaceholder={t('sales.search_orders_placeholder')}
-        filters={<FilterTabs tabs={statusTabs} active={statusFilter} onChange={setStatusFilter} />}
+        filters={<FilterTabs tabs={statusTabs} active={statusFilter} onChange={(v) => { setStatusFilter(v); if (apiMode) apiStore.setPage(1); }} />}
       />
 
       <div className="mt-4 premium-card overflow-hidden">
@@ -192,6 +201,15 @@ export function SalesOrdersPage() {
           )}
         />
       </div>
+
+      {apiMode ? (
+        <ListPagination
+          page={listPage}
+          pageSize={pageSize}
+          total={listTotal}
+          onPageChange={apiStore.setPage}
+        />
+      ) : null}
 
       <Footer />
     </>

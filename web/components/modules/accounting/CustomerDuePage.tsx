@@ -21,6 +21,8 @@ import { useAppStore } from '@/lib/state/app-store';
 import { isModuleApiMode } from '@/lib/config/data-source';
 
 import { useApiResourceStore } from '@/hooks/use-api-resource-store';
+import { usePaginatedApiResource } from '@/hooks/use-paginated-api-resource';
+import { ListPagination } from '@/components/shared/ListPagination';
 
 import { mapGenericApiRow, mapGenericPayloadToApi } from '@/lib/services/generic-api-mapper';
 
@@ -85,11 +87,11 @@ export function CustomerDuePage() {
 
   const apiMode = isModuleApiMode('invoices');
 
-  const invoiceStore = useApiResourceStore('invoices', mapApiInvoiceRow);
+  const invoiceStore = usePaginatedApiResource('invoices', mapApiInvoiceRow, { pageSize: DEFAULT_PAGE_SIZE });
 
-  const paymentStore = useApiResourceStore('payments', mapGenericApiRow);
+  const paymentStore = useApiResourceStore('payments', mapGenericApiRow, { pageOnly: true, lookupLimit: 100 });
 
-  const cashboxStore = useApiResourceStore('cashbox', mapGenericApiRow);
+  const cashboxStore = useApiResourceStore('cashbox', mapGenericApiRow, { pageOnly: true, lookupLimit: 100 });
 
 
 
@@ -204,15 +206,24 @@ export function CustomerDuePage() {
 
   const todayStats = useMemo(() => getTodayCollectionStats(receivableState), [receivableState]);
 
-
+  const effectiveSearch = apiMode ? invoiceStore.search : search;
 
   const filteredRows = useMemo(
-
-    () => filterCustomerReceivables(allCustomers, { search, status: statusFilter }),
-
-    [allCustomers, search, statusFilter],
-
+    () => filterCustomerReceivables(allCustomers, { search: effectiveSearch, status: statusFilter }),
+    [allCustomers, effectiveSearch, statusFilter],
   );
+
+  const listPage = apiMode ? invoiceStore.page : page;
+  const listPageSize = apiMode ? invoiceStore.pageSize : pageSize;
+  const listTotal = apiMode ? invoiceStore.meta.total : filteredRows.length;
+
+  const onPageChange = (p: number) => {
+    if (apiMode) invoiceStore.setPage(p);
+    else setPage(p);
+  };
+
+  const tablePage = apiMode ? 1 : listPage;
+  const tablePageSize = apiMode ? Math.max(filteredRows.length, 1) : listPageSize;
 
 
 
@@ -255,14 +266,12 @@ export function CustomerDuePage() {
 
 
   const resetListFilters = useCallback(() => {
-
-    setSearch('');
-
+    if (apiMode) invoiceStore.setSearchTerm('');
+    else setSearch('');
     setStatusFilter('all');
-
-    setPage(1);
-
-  }, []);
+    if (apiMode) invoiceStore.setPage(1);
+    else setPage(1);
+  }, [apiMode, invoiceStore.setSearchTerm, invoiceStore.setPage]);
 
 
 
@@ -602,7 +611,7 @@ export function CustomerDuePage() {
 
         stats={todayStats}
 
-        onStartCollection={() => { setStatusFilter('overdue'); setPage(1); }}
+        onStartCollection={() => { setStatusFilter('overdue'); onPageChange(1); }}
 
       />
 
@@ -614,15 +623,18 @@ export function CustomerDuePage() {
 
           <CustomerDueFilterBar
 
-            search={search}
+            search={effectiveSearch}
 
             statusFilter={statusFilter}
 
             viewMode={viewMode}
 
-            onSearchChange={(v) => { setSearch(v); setPage(1); }}
-
-            onStatusChange={(v) => { setStatusFilter(v); setPage(1); }}
+            onSearchChange={(v) => {
+              if (apiMode) invoiceStore.setSearchTerm(v);
+              else setSearch(v);
+              onPageChange(1);
+            }}
+            onStatusChange={(v) => { setStatusFilter(v); onPageChange(1); }}
 
             onViewModeChange={setViewMode}
 
@@ -634,19 +646,28 @@ export function CustomerDuePage() {
 
               rows={filteredRows}
 
-              page={page}
+              page={tablePage}
 
-              pageSize={pageSize}
+              pageSize={tablePageSize}
 
               selectedCustomerId={selectedCustomerId}
 
-              onPageChange={setPage}
+              onPageChange={onPageChange}
 
-              onPageSizeChange={(size) => { setPageSize(size); setPage(1); }}
+              onPageSizeChange={apiMode ? undefined : (size) => { setPageSize(size); onPageChange(1); }}
 
               onRowClick={(customer) => { setSelectedCustomerId(customer.customerId); setDetailTab('overview'); }}
 
             />
+
+            {apiMode ? (
+              <ListPagination
+                page={invoiceStore.page}
+                pageSize={invoiceStore.pageSize}
+                total={listTotal}
+                onPageChange={invoiceStore.setPage}
+              />
+            ) : null}
 
           </div>
 

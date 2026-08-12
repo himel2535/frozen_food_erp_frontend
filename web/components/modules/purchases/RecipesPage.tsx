@@ -20,7 +20,8 @@ import { RecipeCard } from '@/components/modules/purchases/RecipeCard';
 import { RecipesBomMetrics } from '@/components/modules/purchases/RecipesBomMetrics';
 import { RecipeProductionPlanView } from '@/components/modules/purchases/RecipeProductionPlanView';
 import { useAppStore } from '@/lib/state/app-store';
-import { useApiResourceStore } from '@/hooks/use-api-resource-store';
+import { usePaginatedApiResource } from '@/hooks/use-paginated-api-resource';
+import { ListPagination } from '@/components/shared/ListPagination';
 import { mapGenericApiRow, mapGenericPayloadToApi } from '@/lib/services/generic-api-mapper';
 import { ApiModeBanner } from '@/components/shared/ApiModeBanner';
 import { PageSkeleton } from '@/components/shared/PageSkeleton';
@@ -177,12 +178,12 @@ export function RecipesPage({ variant = 'finished-goods' }: { variant?: RecipeVa
   const apiDataReady = useAppStore((s) => s.apiDataReady);
   const saveAppState = useAppStore((s) => s.saveAppState);
   const apiMode = isModuleApiMode('recipes');
-  const apiStore = useApiResourceStore('recipes', mapGenericApiRow);
+  const apiStore = usePaginatedApiResource('recipes', mapGenericApiRow, { pageSize: 25 });
   const searchParams = useSearchParams();
   const config = VARIANT_CONFIG[variant];
 
   const [view, setView] = useState<View>('main');
-  const [search, setSearch] = useState('');
+  const [localSearch, setLocalSearch] = useState('');
   const [bomRecipeId, setBomRecipeId] = useState<string | null>(null);
   const [editingMaterialId, setEditingMaterialId] = useState<string | null>(null);
   const [materialFormKey, setMaterialFormKey] = useState(0);
@@ -218,8 +219,8 @@ export function RecipesPage({ variant = 'finished-goods' }: { variant?: RecipeVa
   const supplierOptions = useMemo(() => listSupplierOptions(recipeState), [recipeState]);
 
   const filteredRecipes = useMemo(() => {
-    if (!search.trim()) return recipes;
-    const q = search.toLowerCase();
+    const q = (apiMode ? apiStore.search : localSearch).trim().toLowerCase();
+    if (!q) return recipes;
     return recipes.filter(
       (r) =>
         r.product.toLowerCase().includes(q) ||
@@ -227,7 +228,7 @@ export function RecipesPage({ variant = 'finished-goods' }: { variant?: RecipeVa
         r.recipeNumber.toLowerCase().includes(q) ||
         r.id.toLowerCase().includes(q),
     );
-  }, [recipes, search]);
+  }, [recipes, apiMode, apiStore.search, localSearch]);
 
   const bomKpiMetrics = useMemo(() => getRecipeBomKpiMetrics(recipes), [recipes]);
   const activeRecipe = useMemo(
@@ -649,8 +650,11 @@ export function RecipesPage({ variant = 'finished-goods' }: { variant?: RecipeVa
       <RecipesBomMetrics variant={variant} metrics={bomKpiMetrics} />
 
       <ListToolbar
-        search={search}
-        onSearchChange={setSearch}
+        search={apiMode ? apiStore.search : localSearch}
+        onSearchChange={(v) => {
+          if (apiMode) apiStore.setSearchTerm(v);
+          else setLocalSearch(v);
+        }}
         searchPlaceholder={config.searchPlaceholder}
         filters={
           <div className="inline-flex rounded-xl border border-slate-200 bg-slate-50 p-0.5 shrink-0">
@@ -725,6 +729,15 @@ export function RecipesPage({ variant = 'finished-goods' }: { variant?: RecipeVa
           )}
         />
       )}
+
+      {apiMode ? (
+        <ListPagination
+          page={apiStore.page}
+          pageSize={apiStore.pageSize}
+          total={apiStore.meta.total}
+          onPageChange={apiStore.setPage}
+        />
+      ) : null}
 
       <Footer />
     <AppFormModal

@@ -1,9 +1,6 @@
 import { ReportsInventoryPage } from '@/lib/modules/reports-pages';
-import { prefetchModulePage } from '@/lib/server/prefetch-module-page';
+import { prefetchReportPage } from '@/lib/server/prefetch-report-page';
 
 export default async function Page() {
-  return prefetchModulePage(
-    ['products', 'rawMaterials', 'finishedGoods', 'semiFinishedProducts', 'warehouses'],
-    <ReportsInventoryPage />,
-  );
+  return prefetchReportPage('inventory', <ReportsInventoryPage />);
 }

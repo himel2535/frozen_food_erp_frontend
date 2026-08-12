@@ -12,7 +12,8 @@ import { StatusBadge } from '@/components/shared/StatusBadge';
 import { TableIconAction } from '@/components/shared/TableIconAction';
 import { InventoryItemThumb } from '@/components/shared/InventoryItemThumb';
 import { ApiModeBanner } from '@/components/shared/ApiModeBanner';
-import { useApiResourceStore } from '@/hooks/use-api-resource-store';
+import { usePaginatedApiResource } from '@/hooks/use-paginated-api-resource';
+import { ListPagination } from '@/components/shared/ListPagination';
 import { employeeAvatarClass, employeeInitials, getEmployeeMetrics } from '@/lib/services/hrm-service';
 import { formatMoney } from '@/lib/services/payroll-service';
 import { mapApiEmployeeRow } from '@/lib/services/entity-api-mappers';
@@ -22,22 +23,16 @@ import { CF_BTN_PRIMARY } from '@/components/modules/crm/customer-form/customer-
 
 export function EmployeesApiPage() {
   const router = useRouter();
-  const apiStore = useApiResourceStore('employees', mapApiEmployeeRow);
+  const apiStore = usePaginatedApiResource('employees', mapApiEmployeeRow, { pageSize: 25 });
   const bootLoading = isModuleBootLoading(true, apiStore.initialized);
-  const [search, setSearch] = useState('');
+  const [localSearch, setLocalSearch] = useState('');
 
   const sourceRows = useMemo(
     () => pickApiListRows(true, apiStore.initialized, apiStore.rows, []),
     [apiStore.initialized, apiStore.rows],
   );
 
-  const rows = useMemo(() => {
-    if (!search) return sourceRows;
-    const q = search.toLowerCase();
-    return sourceRows.filter((row) =>
-      [row.name, row.email, row.department, row.phone].some((v) => String(v ?? '').toLowerCase().includes(q)),
-    );
-  }, [sourceRows, search]);
+  const rows = sourceRows;
 
   const kpis = useMemo(() => {
     const m = getEmployeeMetrics(rows);
@@ -91,7 +86,11 @@ export function EmployeesApiPage() {
     <>
       <ApiModeBanner module="employees" error={apiStore.error} />
       <ModuleKpiSection items={kpis} loading={bootLoading} gridClassName="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2" kpiCount={5} />
-      <ModuleFilterBar search={search} onSearchChange={setSearch} searchPlaceholder="Search employees..." />
+      <ModuleFilterBar
+        search={apiStore.search || localSearch}
+        onSearchChange={(v) => { apiStore.setSearchTerm(v); setLocalSearch(v); }}
+        searchPlaceholder="Search employees..."
+      />
       <AppTable
         columns={columns}
         rows={rows}
@@ -115,6 +114,12 @@ export function EmployeesApiPage() {
             />
           </>
         )}
+      />
+      <ListPagination
+        page={apiStore.page}
+        pageSize={apiStore.pageSize}
+        total={apiStore.meta.total}
+        onPageChange={apiStore.setPage}
       />
       <Footer />
     </>

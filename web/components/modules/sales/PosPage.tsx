@@ -41,7 +41,7 @@ import {
 } from '@/components/modules/sales/pos/pos-utils';
 import { useAppStore } from '@/lib/state/app-store';
 import { useLocaleFormat } from '@/hooks/useLocaleFormat';
-import { useApiResourceStore } from '@/hooks/use-api-resource-store';
+import { usePaginatedApiResource } from '@/hooks/use-paginated-api-resource';
 import { useCustomersApiStore } from '@/hooks/use-customers-module';
 import { mapApiPosRow, mapApiProductRow, mapPosToApi } from '@/lib/services/entity-api-mappers';
 import { ApiModeBanner } from '@/components/shared/ApiModeBanner';
@@ -72,9 +72,9 @@ export function PosPage() {
   const t = useAppStore((s) => s.t);
   const appState = useAppStore((s) => s.appState);
   const { formatMoney, formatNumber } = useLocaleFormat();
-  const productsStore = useApiResourceStore('products', mapApiProductRow);
+  const productsStore = usePaginatedApiResource('products', mapApiProductRow, { pageSize: 50 });
   const customersStore = useCustomersApiStore();
-  const apiStore = useApiResourceStore('pos', mapApiPosRow);
+  const apiStore = usePaginatedApiResource('pos', mapApiPosRow, { pageSize: 20 });
 
   const [posView, setPosView] = useState<PosView>('terminal');
   const [search, setSearch] = useState('');
@@ -138,8 +138,8 @@ export function PosPage() {
     return listPosProducts(appState);
   }, [productsStore.rows, appState]);
   const filteredProducts = useMemo(
-    () => filterPosProducts(products, search, category),
-    [products, search, category],
+    () => filterPosProducts(products, productsStore.enabled ? productsStore.search : search, category),
+    [products, search, productsStore.enabled, productsStore.search, category],
   );
   const customers = useMemo(
     () => customersStore.rows.map((c) => ({
@@ -703,7 +703,7 @@ export function PosPage() {
       <div className="grid grid-cols-1 xl:grid-cols-[1fr_340px] gap-3 flex-1 min-h-0">
         <PosProductPanel
           products={filteredProducts}
-          search={search}
+          search={productsStore.enabled ? productsStore.search : search}
           category={category}
           viewMode={viewMode}
           barcodeMode={barcodeMode}
@@ -719,7 +719,10 @@ export function PosPage() {
             'sales.pos_cat_puzzles': labels.catPuzzles,
             'sales.pos_cat_others': labels.catOthers,
           }}
-          onSearchChange={setSearch}
+          onSearchChange={(v) => {
+            if (productsStore.enabled) productsStore.setSearchTerm(v);
+            else setSearch(v);
+          }}
           onSearchKeyDown={handleSearchKeyDown}
           onCategoryChange={setCategory}
           onViewModeChange={setViewMode}

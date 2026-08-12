@@ -14,6 +14,9 @@ import { InventoryListLayout, FilterBar, FilterSelect } from '@/components/modul
 import { useAppStore } from '@/lib/state/app-store';
 import { isModuleApiMode } from '@/lib/config/data-source';
 import { useApiResourceStore } from '@/hooks/use-api-resource-store';
+import { usePaginatedApiResource } from '@/hooks/use-paginated-api-resource';
+import { ListPagination } from '@/components/shared/ListPagination';
+import { mapApiProductRow } from '@/lib/services/entity-api-mappers';
 import { useInventoryLookups, resolveWarehouseName } from '@/hooks/use-inventory-lookups';
 import { ApiModeBanner } from '@/components/shared/ApiModeBanner';
 import { isModuleBootLoading, pickApiListRows } from '@/lib/ui/kpi-loading';
@@ -40,11 +43,14 @@ export function StockOutPage() {
   const appState = useAppStore((s) => s.appState);
   const saveAppState = useAppStore((s) => s.saveAppState);
   const apiMode = isModuleApiMode('stockOut');
-  const apiStore = useApiResourceStore('stockOut', mapApiStockOutRow);
+  const apiStore = usePaginatedApiResource('stockOut', mapApiStockOutRow, { pageSize: 25 });
+  const productOptions = useApiResourceStore('products', mapApiProductRow, { pageOnly: true, lookupLimit: 100 });
   const bootLoading = isModuleBootLoading(apiMode, apiStore.initialized);
   const lookups = useInventoryLookups();
   const [view, setView] = useState<'main' | 'form'>('main');
-  const [search, setSearch] = useState('');
+  const [localSearch, setLocalSearch] = useState('');
+  const [localPage, setLocalPage] = useState(1);
+  const [localPageSize, setLocalPageSize] = useState(25);
   const [statusFilter, setStatusFilter] = useState('all');
   const [warehouseFilter, setWarehouseFilter] = useState('all');
   const [showAdvanced, setShowAdvanced] = useState(false);
@@ -75,11 +81,11 @@ export function StockOutPage() {
         pendingQty += Number(item.qty ?? 0);
       }
     });
-    return { totalRuns: records.length, totalQty, totalValue, pendingQty, lostValue };
-  }, [apiMode, records, appState]);
+    return { totalRuns: apiMode ? apiStore.meta.total : records.length, totalQty, totalValue, pendingQty, lostValue };
+  }, [apiMode, records, appState, apiStore.meta.total]);
   const products = useMemo(
-    () => (apiMode ? lookups.products : listInventory(appState)),
-    [apiMode, lookups.products, appState],
+    () => (apiMode ? productOptions.rows : listInventory(appState)),
+    [apiMode, productOptions.rows, appState],
   );
   const warehouses = useMemo(
     () => (apiMode ? lookups.warehouses : appState.inventoryWarehouses ?? []),
@@ -92,17 +98,32 @@ export function StockOutPage() {
     let data = records;
     if (statusFilter !== 'all') data = data.filter((r) => String(r.status) === statusFilter);
     if (warehouseFilter !== 'all') data = data.filter((r) => String(r.warehouseId) === warehouseFilter);
-    if (search) {
-      const q = search.toLowerCase();
+    const q = (apiMode ? apiStore.search : localSearch).toLowerCase().trim();
+    if (q) {
       data = data.filter((r) => `${r.legacyId ?? ''} ${r.id} ${r.refDocId} ${r.reasonCode}`.toLowerCase().includes(q));
     }
-    return sortInventoryRowsNewestFirst(data);
-  }, [records, search, statusFilter, warehouseFilter]);
+    if (!apiMode) return sortInventoryRowsNewestFirst(data);
+    return data;
+  }, [records, apiMode, apiStore.search, localSearch, statusFilter, warehouseFilter]);
+
+  const pageSize = apiMode ? apiStore.pageSize : localPageSize;
+  const displayRows = apiMode
+    ? filtered
+    : filtered.slice((localPage - 1) * pageSize, localPage * pageSize);
+  const listTotal = apiMode ? apiStore.meta.total : filtered.length;
+  const listPage = apiMode ? apiStore.page : localPage;
+
+  const onPageChange = (p: number) => {
+    if (apiMode) apiStore.setPage(p);
+    else setLocalPage(p);
+  };
 
   const resetFilters = () => {
-    setSearch('');
+    if (apiMode) apiStore.setSearchTerm('');
+    else setLocalSearch('');
     setStatusFilter('all');
     setWarehouseFilter('all');
+    onPageChange(1);
   };
 
   const resetForm = () => {
@@ -197,18 +218,25 @@ export function StockOutPage() {
       bootLoading={bootLoading}
       filters={
         <FilterBar
-          search={search}
-          onSearchChange={setSearch}
+          search={apiMode ? apiStore.search : localSearch}
+          onSearchChange={(v) => {
+            if (apiMode) apiStore.setSearchTerm(v);
+            else setLocalSearch(v);
+            onPageChange(1);
+          }}
           searchPlaceholder="Search ref, reason..."
         >
-          <FilterSelect label="Status" value={statusFilter} onChange={setStatusFilter}><option value="all">All</option><option value="Pending">Pending</option><option value="Completed">Completed</option></FilterSelect>
-          <FilterSelect label="Warehouse" value={warehouseFilter} onChange={setWarehouseFilter}><option value="all">All Warehouses</option>{warehouses.map((w) => <option key={String(w.id)} value={String(w.id)}>{String(w.name)}</option>)}</FilterSelect>
+          <FilterSelect label="Status" value={statusFilter} onChange={(v) => { setStatusFilter(v); onPageChange(1); }}><option value="all">All</option><option value="Pending">Pending</option><option value="Completed">Completed</option></FilterSelect>
+          <FilterSelect label="Warehouse" value={warehouseFilter} onChange={(v) => { setWarehouseFilter(v); onPageChange(1); }}><option value="all">All Warehouses</option>{warehouses.map((w) => <option key={String(w.id)} value={String(w.id)}>{String(w.name)}</option>)}</FilterSelect>
         </FilterBar>
+      }
+      pagination={
+        <ListPagination page={listPage} pageSize={pageSize} total={listTotal} onPageChange={onPageChange} />
       }
     >
       <AppTable
         columns={columns}
-        rows={filtered}
+        rows={displayRows}
         loading={bootLoading}
         emptyMessage={apiListEmptyMessage(apiStore.loading, apiStore.initialized, 'stock-out records', { totalCount: records.length, filteredCount: filtered.length })}
         renderActions={(row) => (

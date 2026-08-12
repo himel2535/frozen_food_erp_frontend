@@ -45,7 +45,7 @@ import {
   updateComplaintStatus,
 } from '@/lib/services/complaints-service';
 import { isModuleApiMode } from '@/lib/config/data-source';
-import { useApiResourceStore } from '@/hooks/use-api-resource-store';
+import { usePaginatedApiResource } from '@/hooks/use-paginated-api-resource';
 import { mapApiComplaintRow, mapComplaintToApi, resolveApiRowId } from '@/lib/services/entity-api-mappers';
 import { ApiModeBanner } from '@/components/shared/ApiModeBanner';
 import { isModuleBootLoading, pickApiListRows } from '@/lib/ui/kpi-loading';
@@ -62,16 +62,16 @@ export function ComplaintsPage() {
   const saveAppState = useAppStore((s) => s.saveAppState);
   const { formatCount } = useLocaleFormat();
   const apiMode = isModuleApiMode('complaints');
-  const apiStore = useApiResourceStore('complaints', mapApiComplaintRow);
+  const apiStore = usePaginatedApiResource('complaints', mapApiComplaintRow, { pageSize: PAGE_SIZE });
   const bootLoading = isModuleBootLoading(apiMode, apiStore.initialized);
 
   const [view, setView] = useState<'main' | 'form'>('main');
   const [layout, setLayout] = useState<'table' | 'kanban'>('table');
-  const [search, setSearch] = useState('');
+  const [localSearch, setLocalSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [priorityFilter, setPriorityFilter] = useState('all');
   const [categoryFilter, setCategoryFilter] = useState('all');
-  const [page, setPage] = useState(1);
+  const [localPage, setLocalPage] = useState(1);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [menuOpenId, setMenuOpenId] = useState<string | null>(null);
 
@@ -82,7 +82,7 @@ export function ComplaintsPage() {
   const metrics = useMemo(() => {
     if (apiMode) {
       return {
-        total: allRows.length,
+        total: apiStore.meta.total,
         open: allRows.filter((r) => r.status === 'open').length,
         inProgress: allRows.filter((r) => r.status === 'in-progress').length,
         resolved: allRows.filter((r) => r.status === 'resolved').length,
@@ -127,7 +127,7 @@ export function ComplaintsPage() {
   const pct = (n: number) => (metrics.total > 0 ? `${Math.round((n / metrics.total) * 1000) / 10}%` : '0%');
 
   const filtered = useMemo(() => {
-    const q = search.trim().toLowerCase();
+    const q = (apiMode ? apiStore.search : localSearch).trim().toLowerCase();
     return allRows.filter((row) => {
       if (statusFilter !== 'all' && row.status !== statusFilter) return false;
       if (priorityFilter !== 'all' && row.priority !== priorityFilter) return false;
@@ -136,12 +136,20 @@ export function ComplaintsPage() {
       const hay = [row.ticketNo, row.customerName, row.customerPhone, row.subject, row.sku ?? ''].join(' ').toLowerCase();
       return hay.includes(q);
     });
-  }, [allRows, search, statusFilter, priorityFilter, categoryFilter]);
+  }, [allRows, apiMode, apiStore.search, localSearch, statusFilter, priorityFilter, categoryFilter]);
 
-  const paged = useMemo(() => {
-    const start = (page - 1) * PAGE_SIZE;
-    return filtered.slice(start, start + PAGE_SIZE);
-  }, [filtered, page]);
+  const displayRows = apiMode
+    ? filtered
+    : filtered.slice((localPage - 1) * PAGE_SIZE, localPage * PAGE_SIZE);
+  const listTotal = apiMode ? apiStore.meta.total : filtered.length;
+  const listPage = apiMode ? apiStore.page : localPage;
+
+  const onPageChange = (p: number) => {
+    if (apiMode) apiStore.setPage(p);
+    else setLocalPage(p);
+  };
+
+  const paged = displayRows;
 
   const toggleSelectAll = useCallback(() => {
     setSelectedIds((prev) => {
@@ -395,24 +403,28 @@ export function ComplaintsPage() {
       />
 
       <ModuleFilterBar
-        search={search}
-        onSearchChange={(v) => { setSearch(v); setPage(1); }}
+        search={apiMode ? apiStore.search : localSearch}
+        onSearchChange={(v) => {
+          if (apiMode) apiStore.setSearchTerm(v);
+          else setLocalSearch(v);
+          onPageChange(1);
+        }}
         searchPlaceholder="Search by ticket ID, customer name, subject or product..."
         filters={
           <>
-            <select value={statusFilter} onChange={(e) => { setStatusFilter(e.target.value); setPage(1); }} className={MODULE_FILTER_INPUT}>
+            <select value={statusFilter} onChange={(e) => { setStatusFilter(e.target.value); onPageChange(1); }} className={MODULE_FILTER_INPUT}>
               <option value="all">All Status</option>
               {COMPLAINT_STATUSES.map((s) => (
                 <option key={s} value={s}>{translateStatus(t, s)}</option>
               ))}
             </select>
-            <select value={priorityFilter} onChange={(e) => { setPriorityFilter(e.target.value); setPage(1); }} className={MODULE_FILTER_INPUT}>
+            <select value={priorityFilter} onChange={(e) => { setPriorityFilter(e.target.value); onPageChange(1); }} className={MODULE_FILTER_INPUT}>
               <option value="all">All Priority</option>
               {COMPLAINT_PRIORITIES.map((p) => (
                 <option key={p} value={p}>{p.charAt(0).toUpperCase() + p.slice(1)}</option>
               ))}
             </select>
-            <select value={categoryFilter} onChange={(e) => { setCategoryFilter(e.target.value); setPage(1); }} className={MODULE_FILTER_INPUT}>
+            <select value={categoryFilter} onChange={(e) => { setCategoryFilter(e.target.value); onPageChange(1); }} className={MODULE_FILTER_INPUT}>
               <option value="all">All Categories</option>
               {COMPLAINT_CATEGORIES.map((c) => (
                 <option key={c.value} value={c.value}>{c.label}</option>
@@ -488,7 +500,7 @@ export function ComplaintsPage() {
                   </div>
                 )}
               />
-              <PaginationBar page={page} pageSize={PAGE_SIZE} total={filtered.length} onPageChange={setPage} />
+              <PaginationBar page={listPage} pageSize={PAGE_SIZE} total={listTotal} onPageChange={onPageChange} />
             </>
           ) : (
             <ComplaintKanbanView

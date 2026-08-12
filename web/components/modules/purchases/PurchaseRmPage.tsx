@@ -17,7 +17,8 @@ import { TableIconAction } from '@/components/shared/TableIconAction';
 import { AppTable, type AppTableColumn } from '@/components/shared/AppTable';
 import { CF_BTN_OUTLINE, CF_BTN_PRIMARY } from '@/components/modules/crm/customer-form/customer-form-styles';
 import { useAppStore } from '@/lib/state/app-store';
-import { useApiResourceStore } from '@/hooks/use-api-resource-store';
+import { usePaginatedApiResource } from '@/hooks/use-paginated-api-resource';
+import { ListPagination } from '@/components/shared/ListPagination';
 import { mapGenericApiRow, mapGenericPayloadToApi } from '@/lib/services/generic-api-mapper';
 import { ApiModeBanner } from '@/components/shared/ApiModeBanner';
 import { isModuleBootLoading } from '@/lib/ui/kpi-loading';
@@ -129,12 +130,12 @@ export function PurchaseRmPage() {
   const appState = useAppStore((s) => s.appState);
   const saveAppState = useAppStore((s) => s.saveAppState);
   const apiMode = isModuleApiMode('purchaseRm');
-  const apiStore = useApiResourceStore('purchaseRm', mapGenericApiRow);
+  const apiStore = usePaginatedApiResource('purchaseRm', mapGenericApiRow, { pageSize: 25 });
   const bootLoading = isModuleBootLoading(apiMode, apiStore.initialized);
   const focusPoId = searchParams.get('focus');
   const fromApproval = searchParams.get('from') === 'approval';
   const [view, setView] = useState<'main' | 'form'>('main');
-  const [search, setSearch] = useState('');
+  const [localSearch, setLocalSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [supplierFilter, setSupplierFilter] = useState('');
   const [warehouseFilter, setWarehouseFilter] = useState('');
@@ -168,8 +169,8 @@ export function PurchaseRmPage() {
 
   const rows = useMemo(() => {
     let data = listPurchaseRmOrders(rmState);
-    if (search) {
-      const q = search.toLowerCase();
+    const q = (apiMode ? apiStore.search : localSearch).toLowerCase();
+    if (q) {
       data = data.filter((row) => {
         const items = Array.isArray(row.items) ? row.items : [];
         const itemNames = items.map((i) => String((i as Record<string, unknown>).productName ?? '')).join(' ');
@@ -191,7 +192,7 @@ export function PurchaseRmPage() {
     return data.sort((a, b) =>
       String(b.createdAt ?? b.date ?? '').localeCompare(String(a.createdAt ?? a.date ?? '')),
     );
-  }, [rmState, search, statusFilter, supplierFilter, warehouseFilter, paymentFilter, dateFrom, dateTo, lowStockOnly]);
+  }, [rmState, apiMode, apiStore.search, localSearch, statusFilter, supplierFilter, warehouseFilter, paymentFilter, dateFrom, dateTo, lowStockOnly]);
 
   useEffect(() => {
     if (skipSelectionResetRef.current) {
@@ -218,7 +219,8 @@ export function PurchaseRmPage() {
       return;
     }
     setFocusNotFound(false);
-    setSearch('');
+    if (apiMode) apiStore.setSearchTerm('');
+    else setLocalSearch('');
     setSupplierFilter('');
     setWarehouseFilter('');
     setPaymentFilter('');
@@ -366,7 +368,8 @@ export function PurchaseRmPage() {
   ], []);
 
   const resetListFilters = () => {
-    setSearch('');
+    if (apiMode) apiStore.setSearchTerm('');
+    else setLocalSearch('');
     setSupplierFilter('');
     setWarehouseFilter('');
     setPaymentFilter('');
@@ -588,8 +591,11 @@ export function PurchaseRmPage() {
               <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
               <input
                 type="text"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
+                value={apiMode ? apiStore.search : localSearch}
+                onChange={(e) => {
+                  if (apiMode) apiStore.setSearchTerm(e.target.value);
+                  else setLocalSearch(e.target.value);
+                }}
                 placeholder="RM order ID, supplier, product..."
                 className={MODULE_FILTER_SEARCH}
               />
@@ -746,6 +752,14 @@ export function PurchaseRmPage() {
               );
             }}
           />
+          {apiMode ? (
+            <ListPagination
+              page={apiStore.page}
+              pageSize={apiStore.pageSize}
+              total={apiStore.meta.total}
+              onPageChange={apiStore.setPage}
+            />
+          ) : null}
         </div>
 
         {selectedPo && (

@@ -11,23 +11,25 @@ import {
   type ApiCustomerDoc,
 } from '@/lib/services/customers-api-service';
 import {
-  fetchResourceList,
+  fetchResourcePage,
   isCachedResourceList,
   readCachedResourceList,
 } from '@/lib/services/api-resource-service';
+import { setApiListCache } from '@/lib/services/api-list-cache';
 
 const CUSTOMERS_PATH = '/customers';
+const CUSTOMER_LOOKUP_QUERY = { page: 1, limit: 200 } as const;
 
 function mapCachedCustomers(): Record<string, unknown>[] {
-  const docs = readCachedResourceList(CUSTOMERS_PATH);
+  const docs = readCachedResourceList(CUSTOMERS_PATH, CUSTOMER_LOOKUP_QUERY);
   return docs ? docs.map((doc) => mapApiCustomerToListRow(doc as ApiCustomerDoc)) : [];
 }
 
 export function useCustomersApiStore() {
   const enabled = isCustomersApiMode();
   const [rows, setRows] = useState<Record<string, unknown>[]>(() => (enabled ? mapCachedCustomers() : []));
-  const [loading, setLoading] = useState(() => enabled && !isCachedResourceList(CUSTOMERS_PATH));
-  const [initialized, setInitialized] = useState(() => !enabled || isCachedResourceList(CUSTOMERS_PATH));
+  const [loading, setLoading] = useState(() => enabled && !isCachedResourceList(CUSTOMERS_PATH, CUSTOMER_LOOKUP_QUERY));
+  const [initialized, setInitialized] = useState(() => !enabled || isCachedResourceList(CUSTOMERS_PATH, CUSTOMER_LOOKUP_QUERY));
   const [error, setError] = useState<string | null>(null);
 
   const reload = useCallback(async (opts?: { silent?: boolean }) => {
@@ -35,8 +37,9 @@ export function useCustomersApiStore() {
     if (!opts?.silent) setLoading(true);
     setError(null);
     try {
-      const docs = await fetchResourceList(CUSTOMERS_PATH);
-      setRows(docs.map((doc) => mapApiCustomerToListRow(doc as ApiCustomerDoc)));
+      const result = await fetchResourcePage(CUSTOMERS_PATH, CUSTOMER_LOOKUP_QUERY);
+      setApiListCache(CUSTOMERS_PATH, result.rows, CUSTOMER_LOOKUP_QUERY, result.meta);
+      setRows(result.rows.map((doc) => mapApiCustomerToListRow(doc as ApiCustomerDoc)));
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load customers');
     } finally {
@@ -47,7 +50,7 @@ export function useCustomersApiStore() {
 
   useEffect(() => {
     if (!enabled) return;
-    const hasCache = isCachedResourceList(CUSTOMERS_PATH);
+    const hasCache = isCachedResourceList(CUSTOMERS_PATH, CUSTOMER_LOOKUP_QUERY);
     void reload(hasCache ? { silent: true } : undefined);
   }, [enabled, reload]);
 

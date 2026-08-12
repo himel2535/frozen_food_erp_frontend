@@ -12,7 +12,9 @@ import { useAppStore } from '@/lib/state/app-store';
 import type { PortField } from '@/lib/modules/port-types';
 import { isModuleApiMode } from '@/lib/config/data-source';
 import { useApiResourceStore } from '@/hooks/use-api-resource-store';
-import { useInventoryLookups } from '@/hooks/use-inventory-lookups';
+import { usePaginatedApiResource } from '@/hooks/use-paginated-api-resource';
+import { ListPagination } from '@/components/shared/ListPagination';
+import { mapApiProductRow } from '@/lib/services/entity-api-mappers';
 import { ApiModeBanner } from '@/components/shared/ApiModeBanner';
 import { isModuleBootLoading } from '@/lib/ui/kpi-loading';
 import { apiListEmptyMessage } from '@/lib/services/api-list-ui';
@@ -43,11 +45,13 @@ export function UnitsPage() {
   const appState = useAppStore((s) => s.appState);
   const saveAppState = useAppStore((s) => s.saveAppState);
   const apiMode = isModuleApiMode('units');
-  const apiStore = useApiResourceStore('units', mapApiUnitRow);
+  const apiStore = usePaginatedApiResource('units', mapApiUnitRow, { pageSize: 10 });
+  const productOptions = useApiResourceStore('products', mapApiProductRow, { pageOnly: true, lookupLimit: 100 });
   const bootLoading = isModuleBootLoading(apiMode, apiStore.initialized);
-  const lookups = useInventoryLookups();
   const [view, setView] = useState<'main' | 'form'>('main');
-  const [search, setSearch] = useState('');
+  const [localSearch, setLocalSearch] = useState('');
+  const [localPage, setLocalPage] = useState(1);
+  const [localPageSize, setLocalPageSize] = useState(10);
   const [statusFilter, setStatusFilter] = useState('all');
   const [editingId, setEditingId] = useState<string | null>(null);
   const [showAdvanced, setShowAdvanced] = useState(false);
@@ -59,25 +63,40 @@ export function UnitsPage() {
     if (apiMode) {
       const rows = apiStore.rows;
       const active = rows.filter((u) => String(u.status) === 'Active').length;
-      const used = rows.filter((u) => countProductsUsingUnit({ inventory: lookups.products } as import('@/lib/state/types').AppState, u) > 0).length;
-      return { total: rows.length, activeUnits: active, usedUnits: used, units: rows };
+      const used = rows.filter((u) => countProductsUsingUnit({ inventory: productOptions.rows } as import('@/lib/state/types').AppState, u) > 0).length;
+      return { total: apiStore.meta.total, activeUnits: active, usedUnits: used, units: rows };
     }
     return getUnitMetrics(appState);
-  }, [apiMode, apiStore.rows, lookups.products, appState]);
+  }, [apiMode, apiStore.rows, apiStore.meta.total, productOptions.rows, appState]);
 
   const filtered = useMemo(() => {
     let data = units;
     if (statusFilter !== 'all') data = data.filter((u) => String(u.status) === statusFilter);
-    if (search) {
-      const q = search.toLowerCase();
+    const q = (apiMode ? apiStore.search : localSearch).toLowerCase().trim();
+    if (q) {
       data = data.filter((u) => `${u.name} ${u.code} ${u.symbol}`.toLowerCase().includes(q));
     }
-    return sortInventoryRowsNewestFirst(data);
-  }, [units, search, statusFilter]);
+    if (!apiMode) return sortInventoryRowsNewestFirst(data);
+    return data;
+  }, [units, apiMode, apiStore.search, localSearch, statusFilter]);
+
+  const pageSize = apiMode ? apiStore.pageSize : localPageSize;
+  const displayRows = apiMode
+    ? filtered
+    : filtered.slice((localPage - 1) * pageSize, localPage * pageSize);
+  const listTotal = apiMode ? apiStore.meta.total : filtered.length;
+  const listPage = apiMode ? apiStore.page : localPage;
+
+  const onPageChange = (p: number) => {
+    if (apiMode) apiStore.setPage(p);
+    else setLocalPage(p);
+  };
 
   const resetFilters = () => {
-    setSearch('');
+    if (apiMode) apiStore.setSearchTerm('');
+    else setLocalSearch('');
     setStatusFilter('all');
+    onPageChange(1);
   };
 
   const resetForm = () => {
@@ -130,7 +149,7 @@ export function UnitsPage() {
   };
 
   const countProducts = (unit: Record<string, unknown>) => {
-    if (apiMode) return countProductsUsingUnit({ inventory: lookups.products } as import('@/lib/state/types').AppState, unit);
+    if (apiMode) return countProductsUsingUnit({ inventory: productOptions.rows } as import('@/lib/state/types').AppState, unit);
     return countProductsUsingUnit(appState, unit);
   };
 
@@ -162,17 +181,24 @@ export function UnitsPage() {
       bootLoading={bootLoading}
       filters={
         <FilterBar
-          search={search}
-          onSearchChange={setSearch}
+          search={apiMode ? apiStore.search : localSearch}
+          onSearchChange={(v) => {
+            if (apiMode) apiStore.setSearchTerm(v);
+            else setLocalSearch(v);
+            onPageChange(1);
+          }}
           searchPlaceholder="Search units..."
         >
-          <FilterSelect label="Status" value={statusFilter} onChange={setStatusFilter}><option value="all">All</option><option value="Active">Active</option><option value="Inactive">Inactive</option></FilterSelect>
+          <FilterSelect label="Status" value={statusFilter} onChange={(v) => { setStatusFilter(v); onPageChange(1); }}><option value="all">All</option><option value="Active">Active</option><option value="Inactive">Inactive</option></FilterSelect>
         </FilterBar>
+      }
+      pagination={
+        <ListPagination page={listPage} pageSize={pageSize} total={listTotal} onPageChange={onPageChange} />
       }
     >
       <AppTable
         columns={columns}
-        rows={filtered}
+        rows={displayRows}
         loading={bootLoading}
         emptyMessage={apiListEmptyMessage(apiStore.loading, apiStore.initialized, 'units', { totalCount: units.length, filteredCount: filtered.length })}
         renderActions={(unit) => (

@@ -2,7 +2,7 @@
 
 
 
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 
 import { useRouter } from 'next/navigation';
 
@@ -11,12 +11,13 @@ import { Plus } from 'lucide-react';
 import { Footer } from '@/components/layout/Footer';
 import { useRegisterModuleActions } from '@/components/layout/ModuleActionsContext';
 import { useAppStore } from '@/lib/state/app-store';
-import { API_RESOURCE_PATHS, isModuleApiMode } from '@/lib/config/data-source';
+import { isModuleApiMode } from '@/lib/config/data-source';
+import { usePaginatedApiResource } from '@/hooks/use-paginated-api-resource';
 import { useApiResourceStore } from '@/hooks/use-api-resource-store';
+import { ListPagination } from '@/components/shared/ListPagination';
 import { mapGenericApiRow } from '@/lib/services/generic-api-mapper';
 import { ApiModeBanner } from '@/components/shared/ApiModeBanner';
 import { isModuleBootLoading, pickApiListRows } from '@/lib/ui/kpi-loading';
-import { fetchResourceList } from '@/lib/services/api-resource-service';
 import { mapApiSupplierRow } from '@/lib/services/entity-api-mappers';
 
 import {
@@ -49,14 +50,15 @@ export function PurchaseOrdersPage() {
 
   const router = useRouter();
   const apiMode = isModuleApiMode('purchaseOrders');
-  const apiStore = useApiResourceStore('purchaseOrders', mapGenericApiRow);
+  const apiStore = usePaginatedApiResource('purchaseOrders', mapGenericApiRow, { pageSize: 25 });
+  const supplierStore = useApiResourceStore('suppliers', mapApiSupplierRow, { pageOnly: true, lookupLimit: 100 });
   const bootLoading = isModuleBootLoading(apiMode, apiStore.initialized);
 
   const appState = useAppStore((s) => s.appState);
 
   const saveAppState = useAppStore((s) => s.saveAppState);
 
-  const [search, setSearch] = useState('');
+  const [localSearch, setLocalSearch] = useState('');
 
   const [statusFilter, setStatusFilter] = useState('all');
 
@@ -79,19 +81,11 @@ export function PurchaseOrdersPage() {
     [apiMode, apiStore.initialized, apiStore.rows, appState],
   );
 
-  const [apiSuppliers, setApiSuppliers] = useState<Record<string, unknown>[]>([]);
-  useEffect(() => {
-    if (!apiMode) return;
-    void fetchResourceList(API_RESOURCE_PATHS.suppliers).then((docs) => {
-      setApiSuppliers(docs.map((d) => mapApiSupplierRow(d)));
-    });
-  }, [apiMode, apiStore.rows.length]);
-
   const suppliers = useMemo(
     () => (apiMode
-      ? apiSuppliers.map((s) => ({ id: String(s.id), name: String(s.name ?? s.id) }))
+      ? supplierStore.rows.map((s) => ({ id: String(s.id), name: String(s.name ?? s.id) }))
       : listSuppliers(appState).map((s) => ({ id: String(s.id), name: String(s.name ?? s.id) }))),
-    [apiMode, apiSuppliers, appState],
+    [apiMode, supplierStore.rows, appState],
   );
 
 
@@ -100,9 +94,9 @@ export function PurchaseOrdersPage() {
 
     let data = allRows;
 
-    if (search) {
+    const q = (apiMode ? apiStore.search : localSearch).toLowerCase();
 
-      const q = search.toLowerCase();
+    if (q) {
 
       data = data.filter((row) => {
 
@@ -150,7 +144,7 @@ export function PurchaseOrdersPage() {
 
     return data.sort((a, b) => String(b.date).localeCompare(String(a.date)));
 
-  }, [allRows, search, statusFilter, supplierFilter, paymentFilter, dateFrom, dateTo]);
+  }, [allRows, apiMode, apiStore.search, localSearch, statusFilter, supplierFilter, paymentFilter, dateFrom, dateTo]);
 
 
 
@@ -205,7 +199,7 @@ export function PurchaseOrdersPage() {
 
         <PurchaseOrdersFilterBar
 
-          search={search}
+          search={apiMode ? apiStore.search : localSearch}
 
           statusFilter={statusFilter}
 
@@ -219,9 +213,13 @@ export function PurchaseOrdersPage() {
 
           suppliers={suppliers}
 
-          onSearchChange={setSearch}
+          onSearchChange={(v) => {
+            if (apiMode) apiStore.setSearchTerm(v);
+            else setLocalSearch(v);
+            if (apiMode) apiStore.setPage(1);
+          }}
 
-          onStatusChange={setStatusFilter}
+          onStatusChange={(v) => { setStatusFilter(v); if (apiMode) apiStore.setPage(1); }}
 
           onSupplierChange={setSupplierFilter}
 
@@ -239,21 +237,32 @@ export function PurchaseOrdersPage() {
 
       <div className="grid grid-cols-1 xl:grid-cols-[1fr_300px] gap-4 items-stretch">
 
-        <PurchaseOrdersTable
+        <div className="min-w-0">
+          <PurchaseOrdersTable
 
-          rows={rows}
+            rows={rows}
 
-          loading={bootLoading}
+            loading={bootLoading}
 
-          selectedPoId={selectedPoId}
+            selectedPoId={selectedPoId}
 
-          appState={appState}
+            appState={appState}
 
-          onSelect={setSelectedPoId}
+            onSelect={setSelectedPoId}
 
-          onSave={save}
+            onSave={save}
 
-        />
+          />
+
+          {apiMode ? (
+            <ListPagination
+              page={apiStore.page}
+              pageSize={apiStore.pageSize}
+              total={apiStore.meta.total}
+              onPageChange={apiStore.setPage}
+            />
+          ) : null}
+        </div>
 
         {selectedPo && (
 

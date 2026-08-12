@@ -22,12 +22,11 @@ import {
   updateSalesOrder,
 } from '@/lib/services/sales-service';
 import {
-  findApiSalesOrderRow,
   mapApiSalesOrderRow,
   mapSalesOrderRecordToApi,
   resolveApiRowId,
 } from '@/lib/services/entity-api-mappers';
-import { fetchResourceList } from '@/lib/services/api-resource-service';
+import { fetchResourceById } from '@/lib/services/api-resource-service';
 import { API_RESOURCE_PATHS } from '@/lib/config/data-source';
 
 export function SalesOrderFormPage({ mode, orderId }: { mode: 'create' | 'edit'; orderId?: string }) {
@@ -44,8 +43,8 @@ export function SalesOrderFormPage({ mode, orderId }: { mode: 'create' | 'edit';
   useEffect(() => {
     if (!apiMode || mode !== 'edit' || !orderId) return;
     setApiLoading(true);
-    void fetchResourceList(API_RESOURCE_PATHS.salesOrders).then((docs) => {
-      setApiOrder(findApiSalesOrderRow(docs, orderId));
+    void fetchResourceById(API_RESOURCE_PATHS.salesOrders, orderId).then((doc) => {
+      setApiOrder(doc ? mapApiSalesOrderRow(doc) : null);
       setApiLoading(false);
     });
   }, [apiMode, mode, orderId]);
