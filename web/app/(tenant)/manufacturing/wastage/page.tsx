@@ -1,5 +1,6 @@
 import { WastagePage } from '@/lib/modules/manufacturing-pages';
+import { prefetchModulePage } from '@/lib/server/prefetch-module-page';
 
-export default function Page() {
-  return <WastagePage />;
+export default async function Page() {
+  return prefetchModulePage('wastage', <WastagePage />);
 }

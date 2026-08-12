@@ -1,5 +1,6 @@
 import { DealsPage } from '@/components/modules/crm/DealsPage';
+import { prefetchModulePage } from '@/lib/server/prefetch-module-page';
 
-export default function Page() {
-  return <DealsPage />;
+export default async function Page() {
+  return prefetchModulePage('deals', <DealsPage />);
 }

@@ -126,14 +126,18 @@ function buildCustomerPayloadFromLead(lead: Record<string, unknown>): CustomerFo
   };
 }
 
-export function LeadsPage() {
+export function LeadsPage({ initialLeads }: { initialLeads?: Record<string, unknown>[] }) {
   const t = useAppStore((s) => s.t);
   const { formatMoney, formatCount } = useLocaleFormat();
   const appState = useAppStore((s) => s.appState);
   const saveAppState = useAppStore((s) => s.saveAppState);
   const apiMode = isModuleApiMode('leads');
-  const apiStore = useApiResourceStore('leads', mapApiLeadRow);
-  const bootLoading = isModuleBootLoading(apiMode, apiStore.initialized);
+  const hasServerLeads = Boolean(initialLeads?.length);
+  const apiStore = useApiResourceStore('leads', mapApiLeadRow, {
+    initialRows: initialLeads,
+    skipInitialFetch: hasServerLeads,
+  });
+  const bootLoading = hasServerLeads ? false : isModuleBootLoading(apiMode, apiStore.initialized);
   const [view, setView] = useState<'main' | 'form'>('main');
   const [search, setSearch] = useState('');
   const [stageFilter, setStageFilter] = useState('all');

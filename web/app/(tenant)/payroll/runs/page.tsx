@@ -1,5 +1,6 @@
 import { PayrollRunsPage } from '@/lib/modules/hrm-pages';
+import { prefetchModulePage } from '@/lib/server/prefetch-module-page';
 
-export default function Page() {
-  return <PayrollRunsPage />;
+export default async function Page() {
+  return prefetchModulePage('payrollRuns', <PayrollRunsPage />);
 }

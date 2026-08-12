@@ -1,5 +1,6 @@
 import { MoldManagementPage } from '@/lib/modules/manufacturing-pages';
+import { prefetchModulePage } from '@/lib/server/prefetch-module-page';
 
-export default function Page() {
-  return <MoldManagementPage />;
+export default async function Page() {
+  return prefetchModulePage('molds', <MoldManagementPage />);
 }

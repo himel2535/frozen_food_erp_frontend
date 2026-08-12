@@ -1,5 +1,6 @@
 import { AssetManagementPage } from '@/lib/modules/settings-pages';
+import { prefetchModulePage } from '@/lib/server/prefetch-module-page';
 
-export default function Page() {
-  return <AssetManagementPage />;
+export default async function Page() {
+  return prefetchModulePage('assets', <AssetManagementPage />);
 }

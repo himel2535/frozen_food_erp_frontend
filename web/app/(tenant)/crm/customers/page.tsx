@@ -1,5 +1,6 @@
 import { CustomersPage } from '@/components/modules/crm/CustomersPage';
+import { prefetchModulePage } from '@/lib/server/prefetch-module-page';
 
-export default function Page() {
-  return <CustomersPage />;
+export default async function Page() {
+  return prefetchModulePage('customers', <CustomersPage />);
 }

@@ -1,5 +1,6 @@
 import { DuesPage } from '@/lib/modules/accounting-pages';
+import { prefetchModulePage } from '@/lib/server/prefetch-module-page';
 
-export default function Page() {
-  return <DuesPage />;
+export default async function Page() {
+  return prefetchModulePage('dues', <DuesPage />);
 }

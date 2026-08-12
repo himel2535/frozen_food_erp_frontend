@@ -1,5 +1,6 @@
 import { CategoriesPage } from '@/components/modules/inventory/CategoriesPage';
+import { prefetchModulePage } from '@/lib/server/prefetch-module-page';
 
-export default function Page() {
-  return <CategoriesPage />;
+export default async function Page() {
+  return prefetchModulePage('categories', <CategoriesPage />);
 }

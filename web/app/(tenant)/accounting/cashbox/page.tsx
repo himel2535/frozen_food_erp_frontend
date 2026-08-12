@@ -1,5 +1,6 @@
 import { CashboxPage } from '@/lib/modules/accounting-pages';
+import { prefetchModulePage } from '@/lib/server/prefetch-module-page';
 
-export default function Page() {
-  return <CashboxPage />;
+export default async function Page() {
+  return prefetchModulePage('cashbox', <CashboxPage />);
 }

@@ -6,18 +6,13 @@ import { loadIcons } from '@iconify/react';
 import { Icon } from '@iconify/react';
 import { Footer } from '@/components/layout/Footer';
 import { PageSkeleton } from '@/components/shared/PageSkeleton';
-import type { AppState } from '@/lib/state/types';
 import { useLocaleFormat } from '@/hooks/useLocaleFormat';
 import { pageSkeletonLoader } from '@/components/shared/PageSkeleton';
-import { countLowStockItems } from '@/lib/services/business-alert-service';
-import {
-  getFinishedGoodsMetrics,
-  getRawMaterialMetrics,
-  getSemiFinishedMetrics,
-} from '@/lib/services/inventory-service';
-import { useDashboardAppState, useDashboardReady } from '@/hooks/use-dashboard-api-data';
-import { getLeadList } from '@/lib/services/crm-service';
+import { emptyDashboardShell, useDashboardReady, DashboardStateProvider } from '@/hooks/use-dashboard-api-data';
 import { useAppStore } from '@/lib/state/app-store';
+import { applyApiDataToAppState } from '@/lib/services/api-app-state-mapper';
+import { getDashboardMetrics } from '@/lib/services/dashboard-metrics';
+import type { ApiModuleSnapshot } from '@/lib/server/fetch-modules';
 
 const SalesTrendChart = dynamic(
   () => import('@/components/modules/dashboard/SalesTrendChart').then((m) => m.SalesTrendChart),
@@ -40,58 +35,6 @@ const DashboardProjectProgress = dynamic(
   { ssr: false, loading: pageSkeletonLoader('generic', { count: 2, className: 'min-h-[160px]' }) },
 );
 
-function getDashboardMetrics(appState: AppState) {
-  const production = Array.isArray(appState.productionOrders) ? appState.productionOrders : [];
-  const purchases = Array.isArray(appState.purchases) ? appState.purchases : [];
-  const sales = Array.isArray(appState.salesOrders) ? appState.salesOrders : [];
-  const customers = Array.isArray(appState.crmCustomers) ? appState.crmCustomers : [];
-  const suppliers = Array.isArray(appState.purchasesSuppliers) ? appState.purchasesSuppliers : [];
-
-  const lowStock = countLowStockItems(appState);
-
-  const pendingProd = production.filter((p) => ['Planned', 'In Progress'].includes(String(p.status)));
-  const pendingPurchase = purchases.filter((p) => ['Draft', 'Sent'].includes(String(p.status)));
-  const pendingSales = sales.filter((s) => ['confirmed', 'processing', 'draft'].includes(String(s.status || '').toLowerCase()));
-  const completedProd = production.filter((p) => p.status === 'Completed');
-  const prodQty = completedProd.reduce((s, p) => s + Number(p.actualQuantity || p.plannedQuantity || 0), 0);
-  const pendingProdQty = pendingProd.reduce((s, p) => s + Number(p.plannedQuantity || 0), 0);
-  const customersWithDue = customers.filter((c) => Number(c.due || 0) > 0);
-  const suppliersWithDue = suppliers.filter((s) => Number(s.due || s.balance || 0) > 0);
-  const currentMonth = new Date().toISOString().slice(0, 7);
-  const monthSales = sales.filter((s) => String(s.date ?? s.createdAt ?? '').startsWith(currentMonth));
-  const monthRevenue = monthSales.reduce((s, o) => s + Number(o.total || 0), 0);
-  const openLeads = getLeadList(appState).filter((lead) => {
-    const status = String((lead as Record<string, unknown>).status ?? '').toLowerCase();
-    return status !== 'won' && status !== 'lost' && status !== 'closed';
-  });
-  const rmStockValue = getRawMaterialMetrics(appState).totalValue;
-  const sfStockValue = getSemiFinishedMetrics(appState).totalValue;
-  const fgStockValue = getFinishedGoodsMetrics(appState).totalValue;
-
-  return {
-    pendingProduction: pendingProd.length,
-    pendingProductionQty: pendingProdQty,
-    pendingPurchase: pendingPurchase.length,
-    pendingSales: pendingSales.length,
-    lowStock,
-    rmStockValue,
-    sfStockValue,
-    fgStockValue,
-    totalInventoryValue: rmStockValue + sfStockValue + fgStockValue,
-    customerDue: customers.reduce((s, c) => s + Number(c.due || 0), 0),
-    customerDueCount: customersWithDue.length || customers.length,
-    supplierDue: suppliers.reduce((s, item) => s + Number(item.due || item.balance || 0), 0),
-    supplierDueCount: suppliersWithDue.length || suppliers.length,
-    productionSummary: { completed: completedProd.length, qty: prodQty },
-    purchaseSummary: { count: purchases.length, total: purchases.reduce((s, o) => s + Number(o.total || 0), 0) },
-    salesSummary: { count: sales.length, total: sales.reduce((s, o) => s + Number(o.total || 0), 0) },
-    monthRevenue,
-    monthSalesCount: monthSales.length,
-    openLeadsCount: openLeads.length,
-    openLeadsValue: openLeads.reduce((s: number, l) => s + Number((l as Record<string, unknown>).expectedValue || 0), 0),
-  };
-}
-
 const KPI_CARDS: { key: string; labelKey: string; icon: string; alert?: boolean }[] = [
   { key: 'month-revenue', labelKey: 'dashboard.total_revenue', icon: 'flat-color-icons:currency-exchange' },
   { key: 'sales-summary', labelKey: 'dashboard.sales_summary', icon: 'fluent-color:data-trending-24' },
@@ -110,11 +53,25 @@ const KPI_CARDS: { key: string; labelKey: string; icon: string; alert?: boolean 
   { key: 'supplier-due', labelKey: 'dashboard.supplier_due', icon: 'fluent-color:building-store-24' },
 ];
 
-export function DashboardView() {
-  const dashboardState = useDashboardAppState();
+type DashboardViewProps = {
+  serverSnapshot?: ApiModuleSnapshot | null;
+};
+
+export function DashboardView({ serverSnapshot = null }: DashboardViewProps) {
+  const baseState = useAppStore((s) => s.appState);
   const ready = useDashboardReady();
   const t = useAppStore((s) => s.t);
   const { formatMoney } = useLocaleFormat();
+
+  const dashboardState = useMemo(() => {
+    if (ready) return baseState;
+    if (serverSnapshot && Object.keys(serverSnapshot).length > 0) {
+      return applyApiDataToAppState(emptyDashboardShell(baseState), serverSnapshot);
+    }
+    return emptyDashboardShell(baseState);
+  }, [ready, baseState, serverSnapshot]);
+
+  const hasInitialData = ready || Boolean(serverSnapshot && Object.keys(serverSnapshot).length > 0);
 
   useEffect(() => {
     document.body.classList.add('dashboard-page');
@@ -184,12 +141,13 @@ export function DashboardView() {
     [t, formatMoney, metrics],
   );
 
-  if (!ready) {
+  if (!hasInitialData) {
     return <PageSkeleton variant="dashboard" label="Loading dashboard" />;
   }
 
   return (
-    <div className="space-y-2 flex flex-col">
+    <DashboardStateProvider value={dashboardState}>
+      <div className="space-y-2 flex flex-col">
       <section className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2">
         {KPI_CARDS.map((card) => {
           const data = metricValues[card.key];
@@ -231,6 +189,7 @@ export function DashboardView() {
       <DashboardProjectProgress />
 
       <Footer />
-    </div>
+      </div>
+    </DashboardStateProvider>
   );
 }

@@ -1,5 +1,6 @@
 import { PaymentsPage } from '@/components/modules/sales/PaymentsPage';
+import { prefetchModulePage } from '@/lib/server/prefetch-module-page';
 
-export default function Page() {
-  return <PaymentsPage />;
+export default async function Page() {
+  return prefetchModulePage('payments', <PaymentsPage />);
 }

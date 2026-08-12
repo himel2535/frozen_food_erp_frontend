@@ -1,5 +1,6 @@
 import { AttendancePage } from '@/lib/modules/hrm-pages';
+import { prefetchModulePage } from '@/lib/server/prefetch-module-page';
 
-export default function Page() {
-  return <AttendancePage />;
+export default async function Page() {
+  return prefetchModulePage('attendance', <AttendancePage />);
 }

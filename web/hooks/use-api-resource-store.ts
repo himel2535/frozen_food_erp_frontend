@@ -15,27 +15,48 @@ import {
   updateResource,
 } from '@/lib/services/api-resource-service';
 import { notifyApiMutation, onApiMutation } from '@/lib/services/api-sync-events';
+import { setApiListCache } from '@/lib/services/api-list-cache';
+import { useModuleInitialRows } from '@/components/providers/ModuleInitialDataProvider';
+
+type ApiResourceStoreOptions = {
+  /** Server-fetched rows — skip blocking initial fetch when provided. */
+  initialRows?: Record<string, unknown>[];
+  skipInitialFetch?: boolean;
+};
 
 export function useApiResourceStore(
   module: ApiModule,
   mapRow: (doc: Record<string, unknown>) => Record<string, unknown>,
+  options?: ApiResourceStoreOptions,
 ) {
   const enabled = isModuleApiMode(module);
   const path = API_RESOURCE_PATHS[module];
   const mapRowRef = useRef(mapRow);
   mapRowRef.current = mapRow;
+  const serverRows = useModuleInitialRows(module);
+  const initialRowsRef = useRef(options?.initialRows ?? serverRows);
+  initialRowsRef.current = options?.initialRows ?? serverRows;
+  const resolvedInitial = initialRowsRef.current;
+  const skipInitialFetch = Boolean(
+    (options?.skipInitialFetch || serverRows?.length) && resolvedInitial?.length,
+  );
 
   const [rows, setRows] = useState<Record<string, unknown>[]>(() => {
     if (!enabled) return [];
+    if (resolvedInitial?.length) {
+      return resolvedInitial.map((doc) => mapRow(doc));
+    }
     const docs = readCachedResourceList(path);
     return docs ? docs.map((doc) => mapRow(doc)) : [];
   });
   const [loading, setLoading] = useState(() => {
     if (!enabled) return false;
+    if (resolvedInitial?.length) return false;
     return !isCachedResourceList(path);
   });
   const [initialized, setInitialized] = useState(() => {
     if (!enabled) return true;
+    if (resolvedInitial?.length) return true;
     return isCachedResourceList(path);
   });
   const [error, setError] = useState<string | null>(null);
@@ -65,9 +86,13 @@ export function useApiResourceStore(
 
   useEffect(() => {
     if (!enabled) return;
+    if (skipInitialFetch && initialRowsRef.current?.length) {
+      setApiListCache(path, initialRowsRef.current);
+      return;
+    }
     const hasCache = isCachedResourceList(path);
     void reload(hasCache ? { silent: true } : undefined);
-  }, [enabled, path, reload]);
+  }, [enabled, path, reload, skipInitialFetch]);
 
   useEffect(() => {
     if (!enabled) return;

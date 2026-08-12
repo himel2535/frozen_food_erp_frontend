@@ -1,5 +1,6 @@
 import { LedgerPage } from '@/lib/modules/accounting-pages';
+import { prefetchModulePage } from '@/lib/server/prefetch-module-page';
 
-export default function Page() {
-  return <LedgerPage />;
+export default async function Page() {
+  return prefetchModulePage('ledger', <LedgerPage />);
 }

@@ -1,5 +1,6 @@
 import { StockOutPage } from '@/components/modules/inventory/StockOutPage';
+import { prefetchModulePage } from '@/lib/server/prefetch-module-page';
 
-export default function Page() {
-  return <StockOutPage />;
+export default async function Page() {
+  return prefetchModulePage('stockOut', <StockOutPage />);
 }

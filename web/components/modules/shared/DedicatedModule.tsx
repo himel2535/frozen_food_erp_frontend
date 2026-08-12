@@ -25,7 +25,7 @@ import { DEDICATED_MODULE_I18N, resolveLabel, type TranslateFn } from '@/lib/i18
 import type { PortModuleConfig } from '@/lib/modules/port-types';
 import type { AppState } from '@/lib/state/types';
 import { getLegacyApiModule } from '@/lib/config/extended-api-modules';
-import { isModuleApiMode } from '@/lib/config/data-source';
+import { isModuleApiMode, type ApiModule } from '@/lib/config/data-source';
 import { isKpiBootLoading, pickApiListRows, shouldShowModuleKpis } from '@/lib/ui/kpi-loading';
 import { mapGenericApiRow, mapGenericPayloadToApi } from '@/lib/services/generic-api-mapper';
 import { ApiModeBanner } from '@/components/shared/ApiModeBanner';

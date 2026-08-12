@@ -1,5 +1,6 @@
 import { ProductsPage } from '@/components/modules/inventory/ProductsPage';
+import { prefetchModulePage } from '@/lib/server/prefetch-module-page';
 
-export default function Page() {
-  return <ProductsPage />;
+export default async function Page() {
+  return prefetchModulePage('products', <ProductsPage />);
 }

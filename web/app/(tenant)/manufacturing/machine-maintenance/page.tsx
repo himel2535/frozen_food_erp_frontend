@@ -1,5 +1,6 @@
 import { MachineMaintenancePage } from '@/lib/modules/manufacturing-pages';
+import { prefetchModulePage } from '@/lib/server/prefetch-module-page';
 
-export default function Page() {
-  return <MachineMaintenancePage />;
+export default async function Page() {
+  return prefetchModulePage('machineMaintenance', <MachineMaintenancePage />);
 }

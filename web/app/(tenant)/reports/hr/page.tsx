@@ -1,5 +1,6 @@
 import { ReportsHrPage } from '@/lib/modules/reports-pages';
+import { prefetchModulePage } from '@/lib/server/prefetch-module-page';
 
-export default function Page() {
-  return <ReportsHrPage />;
+export default async function Page() {
+  return prefetchModulePage(['employees', 'attendance'], <ReportsHrPage />);
 }

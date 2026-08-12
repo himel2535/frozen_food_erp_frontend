@@ -1,5 +1,6 @@
 import { SettingsAuditLogsPage } from '@/lib/modules/settings-pages';
+import { prefetchModulePage } from '@/lib/server/prefetch-module-page';
 
-export default function Page() {
-  return <SettingsAuditLogsPage />;
+export default async function Page() {
+  return prefetchModulePage('auditLogs', <SettingsAuditLogsPage />);
 }

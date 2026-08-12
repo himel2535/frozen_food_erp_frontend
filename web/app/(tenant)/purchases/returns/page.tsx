@@ -1,5 +1,6 @@
 import { PurchaseReturnsPage } from '@/lib/modules/purchases-pages';
+import { prefetchModulePage } from '@/lib/server/prefetch-module-page';
 
-export default function Page() {
-  return <PurchaseReturnsPage />;
+export default async function Page() {
+  return prefetchModulePage('purchaseReturns', <PurchaseReturnsPage />);
 }

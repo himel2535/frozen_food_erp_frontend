@@ -1,5 +1,6 @@
 import { ReceivablesPage } from '@/lib/modules/accounting-pages';
+import { prefetchModulePage } from '@/lib/server/prefetch-module-page';
 
-export default function Page() {
-  return <ReceivablesPage />;
+export default async function Page() {
+  return prefetchModulePage(['customers', 'invoices', 'payments'], <ReceivablesPage />);
 }

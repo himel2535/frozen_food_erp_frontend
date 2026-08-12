@@ -1,5 +1,6 @@
 import { WarehousesPage } from '@/components/modules/inventory/WarehousesPage';
+import { prefetchModulePage } from '@/lib/server/prefetch-module-page';
 
-export default function Page() {
-  return <WarehousesPage />;
+export default async function Page() {
+  return prefetchModulePage('warehouses', <WarehousesPage />);
 }

@@ -1,5 +1,6 @@
 import { SuppliersPage } from '@/lib/modules/purchases-pages';
+import { prefetchModulePage } from '@/lib/server/prefetch-module-page';
 
-export default function Page() {
-  return <SuppliersPage />;
+export default async function Page() {
+  return prefetchModulePage('suppliers', <SuppliersPage />);
 }

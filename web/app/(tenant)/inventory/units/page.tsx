@@ -1,5 +1,6 @@
 import { UnitsPage } from '@/components/modules/inventory/UnitsPage';
+import { prefetchModulePage } from '@/lib/server/prefetch-module-page';
 
-export default function Page() {
-  return <UnitsPage />;
+export default async function Page() {
+  return prefetchModulePage('units', <UnitsPage />);
 }
