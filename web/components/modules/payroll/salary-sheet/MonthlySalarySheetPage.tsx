@@ -2,7 +2,7 @@
 
 import { toast } from '@/lib/ui/feedback';
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { ChevronDown, Info, Upload } from 'lucide-react';
 import { Footer } from '@/components/layout/Footer';
 import { useRegisterModuleActions } from '@/components/layout/ModuleActionsContext';
@@ -78,15 +78,13 @@ export function MonthlySalarySheetPage() {
   const replaceAppState = useAppStore((s) => s.replaceAppState);
   const apiDataReady = useAppStore((s) => s.apiDataReady);
   const apiMode = isModuleApiMode('salarySheet');
-  const apiStore = usePaginatedApiResource('salarySheet', mapGenericApiRow, { pageSize: 100 });
+  const apiStore = usePaginatedApiResource('salarySheet', mapGenericApiRow, { pageSize: 500 });
   const structureStore = useApiResourceStore('salaryStructures', (doc) =>
     enrichSalaryStructureRecord(mapGenericApiRow(doc)),
   { pageOnly: true, lookupLimit: 200 });
   const employeeStore = useApiResourceStore('employees', mapApiEmployeeRow, { pageOnly: true, lookupLimit: 200 });
   const [filters, setFilters] = useState<SheetFilterState>(DEFAULT_FILTERS);
-  const [sheetBootstrapping, setSheetBootstrapping] = useState(apiMode);
   const [draftByEmployee, setDraftByEmployee] = useState<Record<string, Record<string, unknown>>>({});
-  const bootstrapKeyRef = useRef('');
 
   useEffect(() => {
     if (!apiMode) return;
@@ -108,42 +106,6 @@ export function MonthlySalarySheetPage() {
   }, [apiMode, apiStore.initialized, apiStore.rows, structureStore.initialized, structureStore.rows, employeeStore.initialized, employeeStore.rows, appState]);
 
   const employees = useMemo(() => listSheetEmployees(sheetState), [sheetState]);
-
-  useEffect(() => {
-    if (!apiMode || !apiDataReady || !apiStore.initialized) return;
-    const bootstrapKey = `${filters.period}:${employees.map((e) => String(e.id)).join(',')}`;
-    if (bootstrapKeyRef.current === bootstrapKey) {
-      setSheetBootstrapping(false);
-      return;
-    }
-
-    let cancelled = false;
-    setSheetBootstrapping(true);
-
-    void (async () => {
-      for (const emp of employees) {
-        if (cancelled) return;
-        const employeeId = String(emp.id);
-        const exists = pickLatestSheetEntry(
-          apiStore.rows as Record<string, unknown>[],
-          employeeId,
-        );
-        if (exists && String(exists.period) === filters.period) continue;
-
-        const draft = buildDefaultSheetEntry(sheetState, filters.period, employeeId);
-        if (!draft) continue;
-
-        await apiStore.create(mapGenericPayloadToApi(draft as unknown as Record<string, unknown>));
-      }
-
-      if (!cancelled) {
-        bootstrapKeyRef.current = bootstrapKey;
-        setSheetBootstrapping(false);
-      }
-    })();
-
-    return () => { cancelled = true; };
-  }, [apiMode, apiDataReady, apiStore, employees, filters.period, sheetState]);
 
   const departments = useMemo(
     () => [...new Set(employees.map((e) => String(e.department ?? '')).filter(Boolean))].sort(),
@@ -317,7 +279,7 @@ export function MonthlySalarySheetPage() {
     [],
   );
 
-  if (apiMode && (!apiDataReady || sheetBootstrapping || !apiStore.initialized || !structureStore.initialized || !employeeStore.initialized)) {
+  if (apiMode && (!apiDataReady || !apiStore.initialized || !structureStore.initialized || !employeeStore.initialized)) {
     return <PageSkeleton variant="module-list" label="Loading salary sheet" />;
   }
 
