@@ -10,8 +10,7 @@
     "lint": "eslint",
     "analyze": "cross-env ANALYZE=true next build --webpack",
     "clean": "node -e \"require('fs').rmSync('.next',{recursive:true,force:true})\"",
-    "seed:admin": "node scripts/seed-main-admin.mjs",
-    "cleanup:orphan-auth": "node scripts/cleanup-orphan-auth.mjs"
+    "seed:admin": "node scripts/seed-main-admin.mjs"
   },
   "dependencies": {
     "@iconify/react": "^6.0.2",
@@ -41,7 +40,6 @@
     "uuid": "^11.1.0"
   },
   "allowScripts": {
-    "@firebase/util@1.15.2": true,
     "core-js@3.49.0": true,
     "protobufjs@7.6.5": true,
     "unrs-resolver@1.12.2": true
