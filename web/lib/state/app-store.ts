@@ -285,11 +285,6 @@ export const useAppStore = create<AppStore>((set, get) => ({
 
   logout: async () => {
     const prevUser = get().authUser;
-    try {
-      await authSignOut();
-    } catch {
-      // still clear local session
-    }
     if (prevUser) {
       get().recordAuditEvent({
         action: 'LOGOUT',
@@ -298,6 +293,11 @@ export const useAppStore = create<AppStore>((set, get) => ({
         actorId: prevUser.uid,
         actorName: prevUser.name,
       });
+    }
+    try {
+      await authSignOut();
+    } catch {
+      // still clear local session
     }
     get().applyAuthSession(null);
   },
