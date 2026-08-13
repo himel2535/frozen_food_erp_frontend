@@ -235,7 +235,12 @@ function resolveBackend(module: ApiModule): DataBackend {
 
 export const dataSourceConfig = {
 
-  apiBaseUrl: (process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:5000/api/v1').replace(/\/$/, ''),
+  get apiBaseUrl(): string {
+    if (typeof window !== 'undefined') {
+      return '/api/v1';
+    }
+    return (process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:5000/api/v1').replace(/\/$/, '');
+  },
 
   customers: resolveBackend('customers'),
 

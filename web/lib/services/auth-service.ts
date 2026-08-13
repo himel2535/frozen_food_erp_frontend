@@ -44,6 +44,9 @@ function clearCachedAuthProfile() {
 }
 
 function getApiUrl() {
+  if (typeof window !== 'undefined') {
+    return '/api/v1';
+  }
   return process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api/v1';
 }
 
