@@ -117,17 +117,13 @@ export async function loadAuthProfile(): Promise<AuthUserRecord | null> {
 export function onAuthSession(
   callback: (session: AuthSession | null) => void,
 ): () => void {
-  // Check if we have a token
-  const token = getJwtToken();
-  if (!token) {
-    clearCachedAuthProfile();
-    callback(null);
-    return () => {};
-  }
-
+  // We use HttpOnly cookies, so we can't check the token directly.
+  // Instead, we rely on the cached profile or load from the server.
   const cached = readCachedAuthProfile();
+  
+  // We can pass a dummy token string because the real token is in the cookie
   if (cached && cached.status !== 'disabled') {
-    callback({ token, authUser: cached });
+    callback({ token: 'cookie-auth', authUser: cached });
   }
 
   void (async () => {
@@ -136,7 +132,7 @@ export function onAuthSession(
       callback(null);
     } else {
       writeCachedAuthProfile(freshProfile);
-      callback({ token, authUser: freshProfile });
+      callback({ token: 'cookie-auth', authUser: freshProfile });
     }
   })();
 
