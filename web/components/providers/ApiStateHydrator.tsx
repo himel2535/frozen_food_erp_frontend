@@ -48,7 +48,6 @@ export function ApiStateHydrator() {
 
   useEffect(() => {
     if (!USE_API) return;
-    setApiDataReady(true);
 
     let cancelled = false;
 
@@ -57,9 +56,11 @@ export function ApiStateHydrator() {
         const boot = await fetchModulesPageSafe([...API_BOOT_MODULES]);
         if (cancelled) return;
         mergeApiSnapshot(boot);
+        setApiDataReady(true);
         bootDoneRef.current = true;
       } catch {
         if (!cancelled && !bootDoneRef.current) {
+          setApiDataReady(true);
           bootDoneRef.current = true;
         }
       }
