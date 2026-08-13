@@ -15,8 +15,7 @@
   },
   "dependencies": {
     "@iconify/react": "^6.0.2",
-    "firebase": "^12.17.1",
-    "firebase-admin": "^14.2.0",
+    "jsonwebtoken": "^9.0.3",
     "jspdf": "^4.2.1",
     "jspdf-autotable": "^5.0.8",
     "lucide-react": "^1.27.0",

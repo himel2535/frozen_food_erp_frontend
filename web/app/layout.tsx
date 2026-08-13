@@ -7,6 +7,7 @@ import { AppFeedbackProviders } from '@/components/shared/AppFeedbackProviders';
 const nunito = Nunito({
   subsets: ['latin'],
   variable: '--font-nunito',
+  preload: false,
 });
 
 export const metadata: Metadata = {

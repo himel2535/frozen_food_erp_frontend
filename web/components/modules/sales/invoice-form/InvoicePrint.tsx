@@ -49,7 +49,7 @@ import {
 } from '@/components/modules/sales/invoice-form/inv-print-styles';
 import { useLocaleFormat } from '@/hooks/useLocaleFormat';
 
-const signatureFont = Dancing_Script({ subsets: ['latin'], weight: ['600', '700'] });
+const signatureFont = Dancing_Script({ subsets: ['latin'], weight: ['600', '700'], preload: false });
 
 function formatDisplayDate(dateStr: string) {
   if (!dateStr) return '—';

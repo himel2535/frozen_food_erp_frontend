@@ -13,17 +13,7 @@ import {
 } from '../services/auth-service';
 import { isMongoDbBackend } from '../config/data-source';
 
-type FirebaseApi = typeof import('../firebase');
-
-let firebaseApi: FirebaseApi | null = null;
 let authListenerStarted = false;
-
-async function getFirebase(): Promise<FirebaseApi> {
-  if (!firebaseApi) {
-    firebaseApi = await import('../firebase');
-  }
-  return firebaseApi;
-}
 
 function hydrateAppState(state: Partial<AppState> | null): AppState {
   const nextState = { ...DEFAULT_STATE, ...(state ?? {}) } as AppState;
@@ -157,12 +147,6 @@ function flushPersistedAppState(
   }
 
   set({ lastSyncedState: serialized });
-  const { isLoggedIn: _li, sidebarCollapsed: _sc, ...toSend } = appState;
-  void getFirebase().then(({ saveRemoteAppState }) => {
-    saveRemoteAppState(toSend as Record<string, unknown>).catch((error) => {
-      console.warn('Firebase sync failed', error);
-    });
-  });
 }
 
 export const useAppStore = create<AppStore>((set, get) => ({
@@ -238,64 +222,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
         return;
       }
 
-      void getFirebase()
-        .then(({ subscribeToRemoteAppState, saveRemoteAppState }) => {
-          let isFirstRemote = true;
-          let debounceTimer: ReturnType<typeof setTimeout> | null = null;
-
-          const applyRemoteState = (remoteState: Record<string, unknown> | null) => {
-            if (!remoteState) {
-              const { appState } = get();
-              const { isLoggedIn: _li, sidebarCollapsed: _sc, ...toSend } = appState;
-              saveRemoteAppState(toSend as Record<string, unknown>).catch(() => {});
-              return;
-            }
-
-            const current = get();
-            const hydrated = hydrateAppState(remoteState as Partial<AppState>);
-            const serialized = JSON.stringify(hydrated);
-            if (serialized === current.lastSyncedState) return;
-
-            const loggedIn = current.appState.isLoggedIn;
-            const sidebar = current.appState.sidebarCollapsed;
-            const authUser = current.authUser;
-            hydrated.isLoggedIn = loggedIn;
-            hydrated.sidebarCollapsed = sidebar;
-            if (authUser) {
-              hydrated.currentUser = {
-                ...hydrated.currentUser,
-                ...authUserToCurrentProfile(authUser),
-              };
-            }
-            const lang = (hydrated.lang ?? 'en') as Lang;
-            set({
-              ignoreRemoteEcho: true,
-              appState: hydrated,
-              lastSyncedState: serialized,
-              t: createT(lang),
-            });
-            localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(hydrated));
-            set({ ignoreRemoteEcho: false });
-            if (typeof window !== 'undefined') {
-              window.dispatchEvent(new CustomEvent('hookerp:state-synced'));
-            }
-          };
-
-          subscribeToRemoteAppState((remoteState) => {
-            if (isFirstRemote) {
-              isFirstRemote = false;
-              applyRemoteState(remoteState);
-              return;
-            }
-            if (debounceTimer) clearTimeout(debounceTimer);
-            debounceTimer = setTimeout(() => applyRemoteState(remoteState), 250);
-          });
-          resolve();
-        })
-        .catch(() => {
-          set({ remoteListenerStarted: false });
-          resolve();
-        });
+      resolve();
     }),
 
   saveAppState: (options) => {

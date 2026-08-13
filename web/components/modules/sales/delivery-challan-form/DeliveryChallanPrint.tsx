@@ -45,7 +45,7 @@ import {
 } from '@/components/modules/sales/delivery-challan-form/dc-print-styles';
 import { useLocaleFormat } from '@/hooks/useLocaleFormat';
 
-const signatureFont = Dancing_Script({ subsets: ['latin'], weight: ['600', '700'] });
+const signatureFont = Dancing_Script({ subsets: ['latin'], weight: ['600', '700'], preload: false });
 
 function formatDisplayDate(dateStr: string) {
   if (!dateStr) return '—';
