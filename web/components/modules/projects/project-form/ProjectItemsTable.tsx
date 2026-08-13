@@ -170,7 +170,7 @@ export function ProjectItemsTable({
                         >
                           <option value="">Select BOM</option>
                           {[...allRecipes]
-                            .filter((r) => String(r.variant ?? 'finished-goods') !== 'semi-finished')
+                            .filter((r) => String((r as any).variant ?? 'finished-goods') !== 'semi-finished')
                             .sort((a, b) => {
                               const aMatch = matchingRecipes.some((m) => m.id === a.id);
                               const bMatch = matchingRecipes.some((m) => m.id === b.id);

@@ -255,8 +255,8 @@ export function ProjectSetupPage({ projectId }: { projectId: string }) {
                     const recipeProduct = r.product.toLowerCase().trim();
 
                     if (selectedProduct) {
-                      const sku = selectedProduct.sku?.toLowerCase().trim();
-                      const name = selectedProduct.name?.toLowerCase().trim();
+                      const sku = String((selectedProduct as any).sku || '').toLowerCase().trim();
+                      const name = String((selectedProduct as any).name || '').toLowerCase().trim();
                       if (sku && (model === sku || productSku === sku)) return true;
                       if (name && recipeProduct === name) return true;
                     }
@@ -277,7 +277,7 @@ export function ProjectSetupPage({ projectId }: { projectId: string }) {
                         >
                           <option value="">Select BOM</option>
                           {[...allRecipes]
-                            .filter((r) => String(r.variant ?? 'finished-goods') !== 'semi-finished')
+                            .filter((r) => String((r as any).variant ?? 'finished-goods') !== 'semi-finished')
                             .sort((a, b) => {
                               const aMatch = matchingRecipes.some((m) => m.id === a.id);
                               const bMatch = matchingRecipes.some((m) => m.id === b.id);

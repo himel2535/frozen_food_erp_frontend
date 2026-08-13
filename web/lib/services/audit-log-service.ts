@@ -180,7 +180,7 @@ export function logSystemAudit(state: AppState, payload: AuditPayload): SystemAu
   }
 
   if (isMongoDbBackend()) {
-    createResource('/audit-logs', entry).catch(() => {});
+    createResource('/audit-logs', entry as any).catch(() => {});
   }
 
   return entry;
