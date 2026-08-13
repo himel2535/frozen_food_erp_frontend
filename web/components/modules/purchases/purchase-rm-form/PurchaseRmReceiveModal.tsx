@@ -63,15 +63,15 @@ export function PurchaseRmReceiveModal({
     
     // Use Cloudinary for images
     if (file.type.startsWith('image/')) {
-      const toastId = toast.loading('Uploading image...', { module: 'Purchase RM' });
+      toast.info('Uploading image...', { module: 'Purchase RM' });
       try {
         const { uploadImageToCloudinary } = await import('@/lib/services/cloudinary-service');
         const res = await uploadImageToCloudinary(file);
         setAttachmentName(file.name);
         setAttachmentDataUrl(res.url); // save cloudinary URL here
-        toast.success('Upload complete', { id: toastId, module: 'Purchase RM' });
+        toast.success('Upload complete', { module: 'Purchase RM' });
       } catch (err: any) {
-        toast.error('Upload failed', { id: toastId, module: 'Purchase RM', description: err.message });
+        toast.error('Upload failed', { module: 'Purchase RM', description: err.message });
       }
     } else {
       const reader = new FileReader();

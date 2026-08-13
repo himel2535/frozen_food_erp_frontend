@@ -273,7 +273,7 @@ export function BomMaterialForm({
 
     // Use Cloudinary for images
     if (file.type.startsWith('image/')) {
-      const toastId = toast.loading('Uploading image...', { module: 'Purchases' });
+      toast.info('Uploading image...', { module: 'Purchases' });
       try {
         const { uploadImageToCloudinary } = await import('@/lib/services/cloudinary-service');
         const res = await uploadImageToCloudinary(file);
@@ -282,9 +282,9 @@ export function BomMaterialForm({
           attachmentName: file.name,
           attachmentDataUrl: res.url, // save cloudinary URL here
         }));
-        toast.success('Upload complete', { id: toastId, module: 'Purchases' });
+        toast.success('Upload complete', { module: 'Purchases' });
       } catch (err: any) {
-        toast.error('Upload failed', { id: toastId, module: 'Purchases', description: err.message });
+        toast.error('Upload failed', { module: 'Purchases', description: err.message });
       }
     } else {
       // Fallback for PDF to base64

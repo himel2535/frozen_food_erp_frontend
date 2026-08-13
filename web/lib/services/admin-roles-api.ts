@@ -1,34 +1,22 @@
-import {
-  auth,
-  authRoleRef,
-  authUserRef,
-  database,
-  listAuthRoleRecords,
-  listAuthUserRecords,
-} from '@/lib/firebase';
-import { get, ref, remove, set, update } from 'firebase/database';
+import { apiRequest } from '@/lib/services/api-client';
+import { apiDocId } from '@/lib/services/api-resource-service';
 import type { RoleRecord, SectionId } from '@/lib/state/types';
-import {
-  generateRoleId,
-  normalizeRole,
-  normalizeRoleSections,
-  stripUndefinedDeep,
-} from '@/lib/services/admin-rtdb-utils';
-
-async function countUsersByRole(): Promise<Record<string, number>> {
-  const raw = await listAuthUserRecords();
-  const counts: Record<string, number> = {};
-  for (const value of Object.values(raw)) {
-    const roleId = value.roleId ? String(value.roleId) : '';
-    if (roleId) counts[roleId] = (counts[roleId] ?? 0) + 1;
-  }
-  return counts;
-}
 
 export async function fetchAdminRoles(): Promise<RoleRecord[]> {
-  const raw = await listAuthRoleRecords();
-  const roles = Object.entries(raw).map(([id, value]) => normalizeRole(id, value));
-  roles.sort((a, b) => {
+  const { data } = await apiRequest<any[]>('/roles');
+  const roles = (data || []).map((r: any) => ({
+    id: apiDocId(r),
+    name: r.name,
+    description: r.description,
+    contactEmail: r.contactEmail,
+    notes: r.notes,
+    allowedSections: r.allowedSections || [],
+    status: r.status,
+    isPreset: r.isPreset,
+    createdAt: r.createdAt || new Date().toISOString(),
+    createdBy: r.createdBy
+  }));
+  roles.sort((a: any, b: any) => {
     const diff = String(b.createdAt ?? '').localeCompare(String(a.createdAt ?? ''));
     return diff !== 0 ? diff : a.name.localeCompare(b.name);
   });
@@ -36,7 +24,15 @@ export async function fetchAdminRoles(): Promise<RoleRecord[]> {
 }
 
 export async function fetchRoleUserCounts(): Promise<Record<string, number>> {
-  return countUsersByRole();
+  // Since we removed Firebase, we can either get counts from backend or just fetch all users and count.
+  // For simplicity and since admin lists are usually small, we fetch all users and count here.
+  const { data } = await apiRequest<any[]>('/admin/users');
+  const counts: Record<string, number> = {};
+  for (const user of (data || [])) {
+    const roleId = user.roleId ? String(user.roleId) : '';
+    if (roleId) counts[roleId] = (counts[roleId] ?? 0) + 1;
+  }
+  return counts;
 }
 
 export async function createAdminRole(payload: {
@@ -51,22 +47,31 @@ export async function createAdminRole(payload: {
   const name = String(payload.name ?? '').trim();
   if (!name) throw new Error('Role name is required');
 
-  const id = generateRoleId(name);
-  const record: RoleRecord = {
-    id,
-    name,
-    description: payload.description?.trim() || undefined,
-    contactEmail: payload.contactEmail?.trim().toLowerCase() || undefined,
-    notes: payload.notes?.trim() || undefined,
-    allowedSections: normalizeRoleSections(payload.allowedSections),
-    status: payload.status === 'inactive' ? 'inactive' : 'active',
-    isPreset: Boolean(payload.isPreset),
-    createdAt: new Date().toISOString(),
-    createdBy: auth.currentUser?.uid,
-  };
+  const { data } = await apiRequest<any>('/roles', {
+    method: 'POST',
+    body: JSON.stringify({
+      name,
+      description: payload.description?.trim() || undefined,
+      contactEmail: payload.contactEmail?.trim().toLowerCase() || undefined,
+      notes: payload.notes?.trim() || undefined,
+      allowedSections: payload.allowedSections,
+      status: payload.status === 'inactive' ? 'inactive' : 'active',
+      isPreset: Boolean(payload.isPreset)
+    })
+  });
 
-  await set(authRoleRef(id), stripUndefinedDeep(record));
-  return record;
+  return {
+    id: apiDocId(data),
+    name: data.name,
+    description: data.description,
+    contactEmail: data.contactEmail,
+    notes: data.notes,
+    allowedSections: data.allowedSections || [],
+    status: data.status,
+    isPreset: data.isPreset,
+    createdAt: data.createdAt,
+    createdBy: data.createdBy
+  };
 }
 
 export async function updateAdminRole(payload: {
@@ -81,64 +86,46 @@ export async function updateAdminRole(payload: {
   const id = String(payload.id ?? '').trim();
   if (!id) throw new Error('Role id is required');
 
-  const snap = await get(authRoleRef(id));
-  if (!snap.exists()) throw new Error('Role not found');
+  const { data } = await apiRequest<any>(`/roles/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify({
+      name: payload.name?.trim(),
+      description: payload.description?.trim(),
+      contactEmail: payload.contactEmail?.trim().toLowerCase(),
+      notes: payload.notes?.trim(),
+      allowedSections: payload.allowedSections,
+      status: payload.status
+    })
+  });
 
-  const existing = normalizeRole(id, snap.val() as Record<string, unknown>);
-  const updates: Partial<RoleRecord> = {};
-
-  if (typeof payload.name === 'string' && payload.name.trim()) {
-    updates.name = payload.name.trim();
-  }
-  if (typeof payload.description === 'string') {
-    updates.description = payload.description.trim() || undefined;
-  }
-  if (typeof payload.contactEmail === 'string') {
-    updates.contactEmail = payload.contactEmail.trim().toLowerCase() || undefined;
-  }
-  if (typeof payload.notes === 'string') {
-    updates.notes = payload.notes.trim() || undefined;
-  }
-  if (payload.allowedSections) {
-    updates.allowedSections = normalizeRoleSections(payload.allowedSections);
-  }
-  if (payload.status === 'active' || payload.status === 'inactive') {
-    updates.status = payload.status;
-  }
-
-  if (Object.keys(updates).length) {
-    await update(authRoleRef(id), stripUndefinedDeep(updates));
-  }
-
-  if (updates.name && updates.name !== existing.name) {
-    const users = await listAuthUserRecords();
-    const userUpdates: Record<string, unknown> = {};
-    for (const [uid, user] of Object.entries(users)) {
-      if (String(user.roleId ?? '') === id) {
-        userUpdates[`toysfactory/auth/users/${uid}/roleName`] = updates.name;
-      }
-    }
-    if (Object.keys(userUpdates).length) {
-      await update(ref(database, '/'), userUpdates);
-    }
-  }
-
-  const nextSnap = await get(authRoleRef(id));
-  return normalizeRole(id, nextSnap.val() as Record<string, unknown>);
+  return {
+    id: apiDocId(data),
+    name: data.name,
+    description: data.description,
+    contactEmail: data.contactEmail,
+    notes: data.notes,
+    allowedSections: data.allowedSections || [],
+    status: data.status,
+    isPreset: data.isPreset,
+    createdAt: data.createdAt,
+    createdBy: data.createdBy
+  };
 }
 
 export async function deactivateAdminRole(id: string): Promise<void> {
   const roleId = String(id ?? '').trim();
   if (!roleId) throw new Error('Role id is required');
 
-  const snap = await get(authRoleRef(roleId));
-  if (!snap.exists()) throw new Error('Role not found');
-
-  const counts = await countUsersByRole();
+  const counts = await fetchRoleUserCounts();
   if ((counts[roleId] ?? 0) > 0) {
-    await update(authRoleRef(roleId), { status: 'inactive' });
+    await apiRequest(`/roles/${roleId}`, {
+      method: 'PUT',
+      body: JSON.stringify({ status: 'inactive' })
+    });
     return;
   }
 
-  await remove(authRoleRef(roleId));
+  await apiRequest(`/roles/${roleId}`, {
+    method: 'DELETE'
+  });
 }
