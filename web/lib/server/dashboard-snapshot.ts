@@ -10,6 +10,7 @@ export const DASHBOARD_CHART_MODULES: readonly ApiModule[] = [
   'products',
   'pos',
   'projects',
+  'auditLogs',
 ] as const;
 
 export type DashboardServerPayload = {

@@ -4,10 +4,10 @@ import { useMemo } from 'react';
 import { useAppStore } from '@/lib/state/app-store';
 import { applyApiDataToAppState } from '@/lib/services/api-app-state-mapper';
 import { useApiAggregate } from '@/hooks/use-api-aggregate';
-import type { ApiModule } from '@/lib/config/data-source';
+import { isMongoDbBackend, type ApiModule } from '@/lib/config/data-source';
 import type { AppState } from '@/lib/state/types';
 
-const USE_API = process.env.NEXT_PUBLIC_DATA_BACKEND === 'mongodb';
+const USE_API = isMongoDbBackend();
 
 /** Scoped API merge for pages that need fresh data beyond global hydrator timing. */
 export function useApiAppState(modules?: ApiModule[]) {

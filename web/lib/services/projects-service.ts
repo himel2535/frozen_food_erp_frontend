@@ -80,6 +80,8 @@ export function getProjectInitialForm(state: AppState, projectId?: string): Proj
     attachments: [],
     status: 'draft',
     setupStep: 1,
+    tasks: [],
+    assignedStaffIds: [],
   };
 }
 
@@ -92,6 +94,7 @@ export function createEmptyProjectLineItem(): ProjectLineItem {
     qty: 0,
     unitPrice: 0,
     lineTotal: 0,
+    recipeId: '',
   };
 }
 
@@ -156,6 +159,8 @@ export function projectFormToRecord(form: ProjectFormValues, action: ProjectSave
     sampleRequired: form.sampleRequired,
     specialInstructions: form.specialInstructions,
     attachments: form.attachments,
+    tasks: form.tasks,
+    assignedStaffIds: form.assignedStaffIds,
     status: 'draft',
     setupStep,
     setupStage: action === 'create' ? 'bom' : 'project_details',

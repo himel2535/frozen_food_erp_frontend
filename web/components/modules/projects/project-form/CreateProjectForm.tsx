@@ -9,6 +9,7 @@ import { ProjectSectionCard } from '@/components/modules/projects/project-form/P
 import { ProjectOrderInfoSection } from '@/components/modules/projects/project-form/ProjectOrderInfoSection';
 import { ProjectItemsTable } from '@/components/modules/projects/project-form/ProjectItemsTable';
 import { ProjectRequirementsSection } from '@/components/modules/projects/project-form/ProjectRequirementsSection';
+import { ProjectTasksSection } from '@/components/modules/projects/project-form/ProjectTasksSection';
 import { ProjectSummaryCard } from '@/components/modules/projects/project-form/ProjectSummaryCard';
 import { ProjectHelpTip, ProjectSetupProgress } from '@/components/modules/projects/project-form/ProjectSetupProgress';
 import {
@@ -78,7 +79,7 @@ export function CreateProjectForm({
   };
 
   return (
-    <div className={`${MODULE_SHELL_SUPPRESSED} pb-4`}>
+    <div className={`${MODULE_SHELL_SUPPRESSED} px-3 md:px-6 pb-4`}>
       <form ref={formRef} onSubmit={handleSubmit} noValidate className="w-full flex flex-col min-h-full pb-4">
         <div className="pt-3 md:pt-4 mb-2">
           <FormHeader
@@ -125,6 +126,7 @@ export function CreateProjectForm({
               <ProjectItemsTable
                 items={form.items}
                 productOptions={productOptions}
+                appState={appState}
                 onChange={(items) => updateForm({ items })}
                 error={errors.items}
               />
@@ -136,6 +138,14 @@ export function CreateProjectForm({
               subtitle="Specifications, packaging, branding, and special instructions"
             >
               <ProjectRequirementsSection form={form} onChange={updateForm} />
+            </ProjectSectionCard>
+
+            <ProjectSectionCard
+              letter="D"
+              title="Project Tasks & Deadlines"
+              subtitle="To-do list for tracking specific milestones and their deadlines"
+            >
+              <ProjectTasksSection form={form} appState={appState} onChange={updateForm} />
             </ProjectSectionCard>
           </div>
 

@@ -317,9 +317,19 @@ export function RecipesPage({ variant = 'finished-goods' }: { variant?: RecipeVa
     });
     if (linked && recipes.some((recipe) => recipe.id === linked.id)) {
       openBom(linked.id);
+    } else {
+      const invRow = recipeState.inventory?.find(
+        (p) => String(p.id) === productParam || String(p.sku) === productParam || String(p.name) === productParam
+      );
+      setNewRecipe({
+        product: String(invRow?.name ?? productParam),
+        model: String(invRow?.sku ?? invRow?.id ?? productParam),
+        recipeNumber: '',
+      });
+      setView('form');
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [searchParams, recipes]);
+  }, [searchParams, recipes, recipeState.inventory]);
 
   const openPlanInput = (recipeId: string) => {
     const recipe = getRecipe(recipeState, recipeId);
@@ -531,11 +541,28 @@ export function RecipesPage({ variant = 'finished-goods' }: { variant?: RecipeVa
 
   useChromeSuppressed(view !== 'main');
 
+  const handleCreateRecipeClick = () => {
+    const productParam = searchParams.get('product');
+    if (productParam) {
+      const invRow = recipeState.inventory?.find(
+        (p) => String(p.id) === productParam || String(p.sku) === productParam || String(p.name) === productParam
+      );
+      setNewRecipe({
+        product: String(invRow?.name ?? productParam),
+        model: String(invRow?.sku ?? invRow?.id ?? productParam),
+        recipeNumber: '',
+      });
+    } else {
+      setNewRecipe({ product: '', model: '', recipeNumber: '' });
+    }
+    setView('form');
+  };
+
   useRegisterModuleActions(
     view === 'main' ? (
-      <ModuleToolbarActions onAdd={() => setView('form')} addLabel="Create Recipe" />
+      <ModuleToolbarActions onAdd={handleCreateRecipeClick} addLabel="Create Recipe" />
     ) : null,
-    [view],
+    [view, searchParams, recipeState.inventory],
   );
 
   if (apiMode && !apiDataReady && !apiStore.initialized) {

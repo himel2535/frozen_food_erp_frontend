@@ -31,7 +31,7 @@ import {
   getProjectById,
   projectSetupLabel,
 } from '@/lib/services/projects-service';
-import { resolveRecipeForInventoryRow } from '@/lib/services/recipes-service';
+import { resolveRecipeForInventoryRow, listRecipes } from '@/lib/services/recipes-service';
 
 type ProjectRow = Record<string, unknown>;
 type ProjectItem = {
@@ -71,10 +71,14 @@ export function ProjectSetupPage({ projectId }: { projectId: string }) {
 
   const projectState = useMemo(() => {
     if (!apiMode) return appState;
+    const allRecipes = recipeStore.initialized ? recipeStore.rows : [];
+    const fg = allRecipes.filter((r) => String(r.variant ?? 'finished-goods') !== 'semi-finished');
+    const sf = allRecipes.filter((r) => String(r.variant) === 'semi-finished');
     return {
       ...appState,
       projects: apiProject ? [apiProject] : [],
-      recipes: recipeStore.initialized ? recipeStore.rows : appState.recipes ?? [],
+      finishedGoodsRecipes: fg,
+      semiFinishedRecipes: sf,
     };
   }, [apiMode, apiProject, recipeStore.initialized, recipeStore.rows, appState]);
 
@@ -85,11 +89,17 @@ export function ProjectSetupPage({ projectId }: { projectId: string }) {
 
   const items = useMemo(() => (project ? projectItems(project) : []), [project]);
 
+  const allRecipes = useMemo(() => listRecipes(projectState), [projectState]);
+
   const recipeLinks = useMemo(() => {
     return items.map((item) => {
       const productId = String(item.productId ?? '');
-      const recipe = productId
-        ? resolveRecipeForInventoryRow(projectState, { id: productId, sku: productId })
+      const recipe = (productId || (item as any).recipeId)
+        ? resolveRecipeForInventoryRow(projectState, {
+            id: productId,
+            sku: productId,
+            recipeId: (item as any).recipeId,
+          })
         : null;
       return { item, recipe, productId };
     });
@@ -142,6 +152,42 @@ export function ProjectSetupPage({ projectId }: { projectId: string }) {
     router.push(`/projects/${projectId}/setup?step=${nextStep}`);
   };
 
+  const handleSelectRecipeId = async (itemIndex: number, recipeId: string) => {
+    if (!project) return;
+    const nextItems = items.map((item, idx) =>
+      idx === itemIndex ? { ...item, recipeId } : item
+    );
+    const updatedProject = {
+      ...project,
+      items: nextItems,
+    };
+
+    const rowId = String(project.id);
+    if (apiMode) {
+      const sync = await updateResource(
+        API_RESOURCE_PATHS.projects,
+        resolveApiRowId(project),
+        mapGenericPayloadToApi(updatedProject as Record<string, unknown>),
+      );
+      if (!sync.ok) {
+        toast.error('Operation failed', { module: 'Projects', description: 'error' in sync ? String(sync.error) : 'Sync failed' });
+        return;
+      }
+      setApiProject(updatedProject as ProjectRow);
+      toast.success('BOM updated', { module: 'Projects' });
+      return;
+    }
+
+    const idx = appState.projects.findIndex((p) => String(p.id) === rowId);
+    if (idx >= 0) {
+      const nextProjects = [...appState.projects];
+      nextProjects[idx] = updatedProject;
+      useAppStore.setState({ appState: { ...appState, projects: nextProjects } });
+      saveAppState();
+      toast.success('BOM updated', { module: 'Projects' });
+    }
+  };
+
   const startProduction = async () => {
     if (!allBomReady) {
       toast.error('Complete setup', { module: 'Projects', description: 'Finish BOM setup before starting production.' });
@@ -172,7 +218,7 @@ export function ProjectSetupPage({ projectId }: { projectId: string }) {
   const totalValue = Number(project.totalValue ?? project.budget ?? 0);
 
   return (
-    <div className={`${MODULE_SHELL_SUPPRESSED} pb-4`}>
+    <div className={`${MODULE_SHELL_SUPPRESSED} px-3 md:px-6 pb-4`}>
       <div className="pt-3 md:pt-4 mb-2">
         <FormHeader
           compact
@@ -199,18 +245,63 @@ export function ProjectSetupPage({ projectId }: { projectId: string }) {
                 {recipeLinks.map(({ item, recipe, productId }, index) => {
                   const materialCount = recipe?.materials?.length ?? 0;
                   const ready = materialCount > 0;
+
+                  const selectedProductId = productId;
+                  const selectedProduct = projectState.inventory?.find((p) => String(p.id) === selectedProductId);
+                  const matchingRecipes = allRecipes.filter((r) => {
+                    if (!selectedProductId) return false;
+                    const model = r.model.toLowerCase().trim();
+                    const productSku = r.productSku.toLowerCase().trim();
+                    const recipeProduct = r.product.toLowerCase().trim();
+
+                    if (selectedProduct) {
+                      const sku = selectedProduct.sku?.toLowerCase().trim();
+                      const name = selectedProduct.name?.toLowerCase().trim();
+                      if (sku && (model === sku || productSku === sku)) return true;
+                      if (name && recipeProduct === name) return true;
+                    }
+                    return model === selectedProductId.toLowerCase() || productSku === selectedProductId.toLowerCase();
+                  });
+
                   return (
                     <div key={`${productId}-${index}`} className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-100 bg-slate-50/60 px-3 py-2.5">
                       <div className="min-w-0">
                         <p className="text-xs font-bold text-slate-800 truncate">{String(item.productName ?? 'Product')}</p>
                         <p className="text-[10px] text-slate-500">{Number(item.qty ?? 0).toLocaleString()} pcs · {formatProjectMoney(Number(item.lineTotal ?? 0))}</p>
                       </div>
-                      <div className="flex items-center gap-2">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <select
+                          value={(item as any).recipeId || ''}
+                          onChange={(e) => handleSelectRecipeId(index, e.target.value)}
+                          className="px-2 py-1.5 border border-slate-200 bg-white rounded-lg text-[10px] font-bold text-slate-700 focus:outline-none focus:ring-1 focus:ring-blue-500 max-w-[180px] cursor-pointer"
+                        >
+                          <option value="">Select BOM</option>
+                          {[...allRecipes]
+                            .filter((r) => String(r.variant ?? 'finished-goods') !== 'semi-finished')
+                            .sort((a, b) => {
+                              const aMatch = matchingRecipes.some((m) => m.id === a.id);
+                              const bMatch = matchingRecipes.some((m) => m.id === b.id);
+                              if (aMatch && !bMatch) return -1;
+                              if (!aMatch && bMatch) return 1;
+                              return 0;
+                            })
+                            .map((r) => {
+                              const isMatch = matchingRecipes.some((m) => m.id === r.id);
+                              return (
+                                <option key={r.id} value={r.id}>
+                                  {isMatch ? '★ ' : ''}{r.product} - {r.model} ({r.materials.length} mats)
+                                </option>
+                              );
+                            })}
+                        </select>
+
                         <span className={`text-[10px] font-bold px-2 py-0.5 rounded-lg border ${ready ? 'bg-emerald-50 text-emerald-700 border-emerald-100' : 'bg-amber-50 text-amber-700 border-amber-100'}`}>
                           {ready ? `${materialCount} materials` : 'No BOM yet'}
                         </span>
                         <Link
-                          href={`/purchases/recipes/finished-goods${productId ? `?focusProduct=${encodeURIComponent(productId)}` : ''}`}
+                          href={`/purchases/recipes/finished-goods${productId ? `?product=${encodeURIComponent(productId)}` : ''}`}
+                          target="_blank"
+                          rel="noreferrer"
                           className={`${PJ_BTN_OUTLINE} !py-1.5 !px-2.5 text-[10px]`}
                         >
                           <ExternalLink className="w-3 h-3" />

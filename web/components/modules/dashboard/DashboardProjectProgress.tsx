@@ -11,7 +11,7 @@ import {
   projectProgressBarClass,
 } from '@/lib/services/projects-service';
 
-const PREVIEW_COUNT = 2;
+const PREVIEW_COUNT = 4;
 
 export function DashboardProjectProgress() {
   const appState = useDashboardAppState();
@@ -23,7 +23,7 @@ export function DashboardProjectProgress() {
   const hasMore = allProjects.length > PREVIEW_COUNT;
 
   return (
-    <section className="premium-card premium-shadow p-2.5 shrink-0">
+    <section className="premium-card premium-shadow p-2.5 min-h-0 flex flex-col" style={{ flex: '1.2 1 0%' }}>
       <div className="flex items-center justify-between mb-1.5 border-b border-slate-100 pb-1.5">
         <div className="flex items-center gap-2">
           <Icon icon="fluent-color:document-folder-24" width={22} height={22} className="shrink-0" />
@@ -46,7 +46,7 @@ export function DashboardProjectProgress() {
       </div>
 
       {visibleProjects.length ? (
-        <div className={`grid gap-2 ${expanded ? 'grid-cols-1 md:grid-cols-2 xl:grid-cols-3' : 'grid-cols-1 md:grid-cols-2'}`}>
+        <div className={`grid gap-2 flex-1 overflow-y-auto min-h-0 ${expanded ? 'grid-cols-1 md:grid-cols-2 xl:grid-cols-3' : 'grid-cols-1 md:grid-cols-2'}`}>
           {visibleProjects.map((project) => (
             <Link
               key={project.id}

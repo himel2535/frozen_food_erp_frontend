@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { Plus, Search, Trash2 } from 'lucide-react';
 import {
   PJ_ADD_ITEM_BTN_CLS,
@@ -12,15 +13,19 @@ import {
   formatProjectMoney,
   recalcProjectLineItem,
 } from '@/lib/services/projects-service';
+import { listRecipes } from '@/lib/services/recipes-service';
+import type { AppState } from '@/lib/state/types';
 
 export function ProjectItemsTable({
   items,
   productOptions,
+  appState,
   onChange,
   error,
 }: {
   items: ProjectLineItem[];
   productOptions: Array<{ id: string; name: string; sku: string; price: number; unit: string }>;
+  appState: AppState;
   onChange: (items: ProjectLineItem[]) => void;
   error?: string;
 }) {
@@ -42,6 +47,7 @@ export function ProjectItemsTable({
       productId: product.id,
       productName: product.name,
       unitPrice: Number(product.price ?? 0),
+      recipeId: '',
     });
   };
 
@@ -56,24 +62,28 @@ export function ProjectItemsTable({
     { qty: 0, value: 0 },
   );
 
+  const allRecipes = listRecipes(appState);
+
   return (
     <div>
       <div className="overflow-x-auto rounded-xl border border-slate-200">
-        <table className="w-full table-fixed text-xs min-w-[720px]">
+        <table className="w-full table-fixed text-xs min-w-[760px]">
           <colgroup>
             <col style={{ width: '36px' }} />
-            <col style={{ width: '28%' }} />
-            <col style={{ width: '18%' }} />
-            <col style={{ width: '80px' }} />
-            <col style={{ width: '100px' }} />
-            <col style={{ width: '100px' }} />
-            <col style={{ width: '56px' }} />
+            <col style={{ width: '25%' }} />
+            <col style={{ width: '12%' }} />
+            <col style={{ width: '22%' }} />
+            <col style={{ width: '65px' }} />
+            <col style={{ width: '90px' }} />
+            <col style={{ width: '90px' }} />
+            <col style={{ width: '46px' }} />
           </colgroup>
           <thead>
             <tr className={PJ_TABLE_HEAD_CLS}>
               <th className="px-2 py-2.5 text-left">#</th>
               <th className="px-2 py-2.5 text-left">Product</th>
               <th className="px-2 py-2.5 text-left">Variant / Color</th>
+              <th className="px-2 py-2.5 text-left">BOM / Recipe</th>
               <th className="px-2 py-2.5 text-left">Qty</th>
               <th className="px-2 py-2.5 text-left">Unit Price</th>
               <th className="px-2 py-2.5 text-right">Total</th>
@@ -88,6 +98,24 @@ export function ProjectItemsTable({
                 return `${p.name} ${p.sku}`.toLowerCase().includes(q);
               });
               const calc = recalcProjectLineItem(item);
+              const selectedProduct = productOptions.find((p) => p.id === item.productId);
+              
+              const matchingRecipes = allRecipes.filter((r) => {
+                if (!selectedProduct) return false;
+                const model = r.model.toLowerCase().trim();
+                const productSku = r.productSku.toLowerCase().trim();
+                const recipeProduct = r.product.toLowerCase().trim();
+                const sku = selectedProduct.sku.toLowerCase().trim();
+                const name = selectedProduct.name.toLowerCase().trim();
+                
+                return (
+                  model === sku || 
+                  productSku === sku || 
+                  model === selectedProduct.id.toLowerCase() || 
+                  recipeProduct === name
+                );
+              });
+
               return (
                 <tr key={item.id} className="border-t border-slate-100">
                   <td className="px-2 py-2 text-slate-500 font-semibold align-top">{index + 1}</td>
@@ -98,7 +126,7 @@ export function ProjectItemsTable({
                         type="text"
                         list={`pj-products-${item.id}`}
                         value={item.productName}
-                        onChange={(e) => updateItem(item.id, { productName: e.target.value, productId: '' })}
+                        onChange={(e) => updateItem(item.id, { productName: e.target.value, productId: '', recipeId: '' })}
                         placeholder="Search product"
                         className={`${PJ_CELL_INPUT_CLS} pl-7`}
                       />
@@ -131,6 +159,46 @@ export function ProjectItemsTable({
                       placeholder="e.g. Red / Large"
                       className={PJ_CELL_INPUT_CLS}
                     />
+                  </td>
+                  <td className="px-2 py-2 align-top">
+                    {item.productId ? (
+                      <div className="space-y-1">
+                        <select
+                          value={item.recipeId || ''}
+                          onChange={(e) => updateItem(item.id, { recipeId: e.target.value })}
+                          className={PJ_CELL_INPUT_CLS}
+                        >
+                          <option value="">Select BOM</option>
+                          {[...allRecipes]
+                            .filter((r) => String(r.variant ?? 'finished-goods') !== 'semi-finished')
+                            .sort((a, b) => {
+                              const aMatch = matchingRecipes.some((m) => m.id === a.id);
+                              const bMatch = matchingRecipes.some((m) => m.id === b.id);
+                              if (aMatch && !bMatch) return -1;
+                              if (!aMatch && bMatch) return 1;
+                              return 0;
+                            })
+                            .map((r) => {
+                              const isMatch = matchingRecipes.some((m) => m.id === r.id);
+                              return (
+                                <option key={r.id} value={r.id}>
+                                  {isMatch ? '★ ' : ''}{r.product} - {r.model} ({r.materials.length} mats)
+                                </option>
+                              );
+                            })}
+                        </select>
+                        <a
+                          href={`/purchases/recipes/finished-goods?product=${encodeURIComponent(item.productId)}`}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="inline-block text-[10px] font-bold text-blue-600 hover:text-blue-700 cursor-pointer"
+                        >
+                          + Create BOM
+                        </a>
+                      </div>
+                    ) : (
+                      <span className="text-[10px] font-semibold text-slate-400">Select product first</span>
+                    )}
                   </td>
                   <td className="px-2 py-2 align-top">
                     <input

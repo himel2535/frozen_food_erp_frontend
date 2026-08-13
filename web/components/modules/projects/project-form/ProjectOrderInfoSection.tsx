@@ -170,6 +170,44 @@ export function ProjectOrderInfoSection({
         ))}
       </IconSelect>
 
+      <div className="md:col-span-2">
+        <label className={PJ_LABEL_CLS}>Assigned Staff (Optional)</label>
+        <div className="mt-1.5 border border-slate-200 rounded-lg p-2.5 bg-slate-50/50 flex flex-wrap gap-2 max-h-40 overflow-y-auto">
+          {salesPersons.map((p) => {
+            const isSelected = form.assignedStaffIds?.includes(p.id);
+            return (
+              <label
+                key={p.id}
+                className={`flex items-center gap-1.5 px-2.5 py-1.5 border rounded-md text-xs font-bold cursor-pointer transition-colors ${
+                  isSelected 
+                    ? 'bg-blue-50 border-blue-200 text-blue-700 shadow-sm' 
+                    : 'bg-white border-slate-200 text-slate-600 hover:border-slate-300'
+                }`}
+              >
+                <input
+                  type="checkbox"
+                  className="hidden"
+                  checked={isSelected || false}
+                  onChange={(e) => {
+                    const current = form.assignedStaffIds || [];
+                    if (e.target.checked) {
+                      onChange({ assignedStaffIds: [...current, p.id] });
+                    } else {
+                      onChange({ assignedStaffIds: current.filter((id) => id !== p.id) });
+                    }
+                  }}
+                />
+                <User className="w-3.5 h-3.5" />
+                {p.name}
+              </label>
+            );
+          })}
+          {salesPersons.length === 0 && (
+            <span className="text-xs font-medium text-slate-400 p-1">No staff members found.</span>
+          )}
+        </div>
+      </div>
+
     </div>
   );
 }

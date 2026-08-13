@@ -157,12 +157,12 @@ export function DashboardView({ serverPayload = null }: DashboardViewProps) {
           return (
             <div
               key={card.key}
-              className="premium-card premium-shadow p-2.5 flex items-center justify-between gap-2 transition-[border-color,box-shadow] hover:border-slate-300 hover:shadow-md min-h-[68px]"
+              className="premium-card premium-shadow px-4 py-2.5 flex items-center justify-between gap-3 transition-[border-color,box-shadow] hover:border-slate-300 hover:shadow-md min-h-[84px]"
               data-metric={card.key}
             >
               <div className="flex flex-col justify-center gap-0.5 min-w-0 flex-1 my-auto">
-                <span className="text-[11px] font-bold text-slate-500 tracking-wide leading-tight">{t(card.labelKey)}</span>
-                <span className="text-sm md:text-base font-extrabold tracking-tight text-slate-900 leading-tight mt-0.5 tabular-nums">{data?.value ?? '—'}</span>
+                <span className="text-xs font-bold text-slate-500 tracking-wide leading-tight block">{t(card.labelKey)}</span>
+                <span className="text-lg font-extrabold tracking-tight text-slate-900 mt-0.5 tabular-nums">{data?.value ?? '—'}</span>
                 {card.alert && data?.sub ? (
                   <span
                     className={`text-[10px] font-bold block ${lowStockCount > 0 ? 'text-rose-600' : 'text-emerald-600'}`}
@@ -173,15 +173,15 @@ export function DashboardView({ serverPayload = null }: DashboardViewProps) {
                   <span className="text-[10px] text-slate-500 font-medium block truncate">{data.sub}</span>
                 ) : null}
               </div>
-              <div className="kpi-card-icon-wrap shrink-0 my-auto self-center">
-                <Icon icon={card.icon} width={32} height={32} className="kpi-card-icon shrink-0" />
+              <div className="shrink-0 my-auto self-center">
+                <Icon icon={card.icon} width={40} height={40} className="shrink-0" />
               </div>
             </div>
           );
         })}
       </section>
 
-      <section className="grid grid-cols-1 lg:grid-cols-4 gap-1 flex-1 min-h-0 items-stretch">
+      <section className="grid grid-cols-1 lg:grid-cols-4 gap-1 min-h-0 items-stretch" style={{ flex: '2 1 0%' }}>
         <SalesTrendChart />
         <RevenueAnalyticsChart />
         <DashboardBusinessAlerts />

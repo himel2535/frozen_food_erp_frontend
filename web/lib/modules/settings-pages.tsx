@@ -65,6 +65,7 @@ export function SettingsAuditLogsPage() {
     }),
     [],
   );
+
   return <DedicatedModule config={config} configId="settings-audit-logs" />;
 }
 export function SettingsProfilePage() { return <ProfileSettingsPage />; }
@@ -81,7 +82,13 @@ export function ProjectsPage() {
     hideInlineForm: true,
     onAdd: () => router.push('/projects/new'),
     onRowClick: (row: Record<string, unknown>) => {
-      const id = String(row.id ?? row.projectId ?? '');
+      const id = String(row._mongoId ?? row.id ?? row.projectId ?? '');
+      if (!id) return;
+      const step = Math.min(4, Math.max(2, Number(row.setupStep ?? 2)));
+      router.push(`/projects/${encodeURIComponent(id)}/setup?step=${step}`);
+    },
+    onEditRow: (row: Record<string, unknown>) => {
+      const id = String(row._mongoId ?? row.id ?? row.projectId ?? '');
       if (!id) return;
       const step = Math.min(4, Math.max(2, Number(row.setupStep ?? 2)));
       router.push(`/projects/${encodeURIComponent(id)}/setup?step=${step}`);

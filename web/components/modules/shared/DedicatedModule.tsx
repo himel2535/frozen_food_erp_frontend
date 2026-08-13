@@ -251,7 +251,7 @@ function DedicatedModuleApiView({
   const openEdit = (row: Record<string, unknown>) => {
     const mapped = config.adapter.mapRowToForm?.(row) ?? row;
     setForm(buildFormState(mapped as Record<string, unknown>));
-    setEditingId(String(row.id));
+    setEditingId(String(row._mongoId ?? row.id ?? ''));
     setView('form');
   };
 
@@ -400,7 +400,7 @@ function DedicatedModuleApiView({
                       module: moduleTitle,
                     }).then(async (__ok) => {
                       if (!__ok) return;
-                      const result = await apiStore.remove(String(row.id));
+                      const result = await apiStore.remove(String(row._mongoId ?? row.id ?? ''));
                       if (!result.ok) toast.error('Delete failed', { module: moduleTitle, description: result.error });
                     });
                   }}

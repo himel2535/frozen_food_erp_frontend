@@ -1,5 +1,8 @@
 import type { AppState, SystemAuditLogRecord } from '@/lib/state/types';
 import type { KpiCardItem } from '@/components/shared/KpiCards';
+import { isMongoDbBackend } from '@/lib/config/data-source';
+import { createResource } from '@/lib/services/api-resource-service';
+import { apiRequest } from '@/lib/services/api-client';
 
 type AuditPayload = {
   action: string;
@@ -174,6 +177,10 @@ export function logSystemAudit(state: AppState, payload: AuditPayload): SystemAu
     for (let i = 0; i < removeCount; i += 1) {
       delete state.systemAuditLogsById![sorted[i].id];
     }
+  }
+
+  if (isMongoDbBackend()) {
+    createResource('/audit-logs', entry).catch(() => {});
   }
 
   return entry;

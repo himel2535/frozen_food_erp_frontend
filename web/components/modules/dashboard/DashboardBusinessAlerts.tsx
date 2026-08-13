@@ -49,7 +49,7 @@ export function DashboardBusinessAlerts() {
         </Link>
       </div>
 
-      <div className="flex flex-col gap-1 overflow-hidden">
+      <div className="flex flex-col gap-1 flex-1 overflow-y-auto min-h-0 justify-between">
         {summaries.length ? (
           summaries.map((item) => (
             <Link

@@ -8,6 +8,16 @@ export type ProjectLineItem = {
   qty: number;
   unitPrice: number;
   lineTotal: number;
+  recipeId?: string;
+};
+
+export type ProjectTask = {
+  id: string;
+  text: string;
+  deadline?: string;
+  completed: boolean;
+  assignedWorkerId?: string;
+  assignedWorkerName?: string;
 };
 
 export type ProjectFormValues = {
@@ -31,6 +41,8 @@ export type ProjectFormValues = {
   attachments: string[];
   status: string;
   setupStep: number;
+  tasks: ProjectTask[];
+  assignedStaffIds: string[];
 };
 
 export const PROJECT_PRIORITY_OPTIONS = ['High', 'Medium', 'Low'] as const;

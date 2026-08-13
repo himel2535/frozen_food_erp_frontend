@@ -146,6 +146,12 @@ export function applyApiDataToAppState(
   }
 
   applySettingsDocs(next, rowsOf(data, 'companySettings'));
+  
+  const auditLogs = rowsOf(data, 'auditLogs');
+  if (data.auditLogs !== undefined) {
+    next.systemAuditLogsById = indexById(auditLogs) as any;
+  }
+  
   applyCrmIndexed(next, data);
 
   ensureCrmState(next);

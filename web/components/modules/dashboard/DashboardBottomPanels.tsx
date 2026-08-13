@@ -35,18 +35,18 @@ export function DashboardBottomPanels() {
 
   const recentInvoices = useMemo(() => {
     const rows = Array.isArray(appState.invoices) ? [...appState.invoices] : [];
-    return rows.slice(0, 3);
+    return rows.slice(0, 5);
   }, [appState.invoices]);
 
-  const topProducts = useMemo(() => getTopProducts(appState, 3), [appState]);
+  const topProducts = useMemo(() => getTopProducts(appState, 5), [appState]);
 
   const activityItems = useMemo(
-    () => listSystemAuditLogRecords(appState).slice(0, 3),
+    () => listSystemAuditLogRecords(appState).slice(0, 5),
     [appState],
   );
 
   return (
-    <section className="grid grid-cols-1 lg:grid-cols-4 gap-1 items-stretch shrink-0">
+    <section className="grid grid-cols-1 lg:grid-cols-4 gap-1 items-stretch min-h-0" style={{ flex: '1.5 1 0%' }}>
       <div className="premium-card p-2.5 premium-shadow lg:col-span-2 flex flex-col">
         <div className="flex items-center justify-between mb-1.5 border-b border-slate-100 pb-1.5">
           <div className="flex items-center gap-2">
@@ -60,7 +60,7 @@ export function DashboardBottomPanels() {
             {t('dashboard.view_all')}
           </Link>
         </div>
-        <div className="flex flex-col gap-1">
+        <div className="flex flex-col gap-1 flex-1 overflow-y-auto min-h-0 justify-between">
           {topProducts.length ? (
             topProducts.map((product, idx) => (
               <div key={product.name} className="flex items-center justify-between text-xs min-h-[2rem] py-0.5">
@@ -102,7 +102,7 @@ export function DashboardBottomPanels() {
             {t('dashboard.view_all')}
           </Link>
         </div>
-        <div className="flex flex-col gap-1">
+        <div className="flex flex-col gap-1 flex-1 overflow-y-auto min-h-0 justify-between">
           {recentInvoices.map((inv) => {
             const status = String(inv.status ?? 'pending').toLowerCase();
             const paid = status === 'paid';
@@ -145,7 +145,7 @@ export function DashboardBottomPanels() {
             {t('dashboard.view_all')}
           </Link>
         </div>
-        <div className="flex flex-col gap-1">
+        <div className="flex flex-col gap-1 flex-1 overflow-y-auto min-h-0 justify-between">
           {activityItems.length ? (
             activityItems.map((log) => (
               <div key={log.id} className="flex items-center gap-2 min-h-[2rem] py-0.5">

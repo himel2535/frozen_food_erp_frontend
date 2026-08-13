@@ -25,7 +25,7 @@ export function CreateProjectFormPage() {
   const saveAppState = useAppStore((s) => s.saveAppState);
   const apiMode = isModuleApiMode('projects');
   const { state: formState, loading: formStateLoading } = useApiAppState(
-    apiMode ? ['customers', 'products', 'employees'] : undefined,
+    apiMode ? ['customers', 'products', 'employees', 'recipes'] : undefined,
   );
 
   useChromeSuppressed(true);
