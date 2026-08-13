@@ -16,6 +16,13 @@ export function ServerSnapshotHydrator({ snapshot }: { snapshot: ApiModuleSnapsh
 
   useLayoutEffect(() => {
     if (!snapshot || appliedRef.current) return;
+    
+    const { replaceAppState, appState, apiDataReady } = useAppStore.getState();
+    
+    // Do not overwrite client state or cache with server snapshot if client has already fetched its own data.
+    // This prevents empty SSR payloads (due to lack of auth token on server) from wiping out the real data.
+    if (apiDataReady) return;
+    
     appliedRef.current = true;
 
     for (const [mod, docs] of Object.entries(snapshot) as [ApiModule, Record<string, unknown>[]][]) {
@@ -25,7 +32,6 @@ export function ServerSnapshotHydrator({ snapshot }: { snapshot: ApiModuleSnapsh
       }
     }
 
-    const { replaceAppState, appState } = useAppStore.getState();
     replaceAppState(applyApiDataToAppState(appState, snapshot));
   }, [snapshot]);
 
