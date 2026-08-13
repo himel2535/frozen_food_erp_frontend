@@ -10,18 +10,12 @@ const AUTH_TOKEN_KEY = 'hookerp_jwt_token';
 const AUTH_PROFILE_CACHE_KEY = 'hookerp_auth_profile_cache';
 
 export function getJwtToken(): string | null {
-  if (typeof window === 'undefined') return null;
-  return localStorage.getItem(AUTH_TOKEN_KEY);
-}
-
-function setJwtToken(token: string) {
-  if (typeof window === 'undefined') return;
-  localStorage.setItem(AUTH_TOKEN_KEY, token);
+  // Not used directly anymore, token is in HttpOnly cookie.
+  return null;
 }
 
 function clearJwtToken() {
-  if (typeof window === 'undefined') return;
-  localStorage.removeItem(AUTH_TOKEN_KEY);
+  // No-op for localStorage
 }
 
 function readCachedAuthProfile(): AuthUserRecord | null {
@@ -78,7 +72,6 @@ export async function signIn(email: string, password: string): Promise<AuthSessi
     throw new Error('Failed to parse user profile.');
   }
 
-  setJwtToken(token);
   writeCachedAuthProfile(authUser);
 
   return { token, authUser };
@@ -87,15 +80,21 @@ export async function signIn(email: string, password: string): Promise<AuthSessi
 export async function signOut(): Promise<void> {
   clearJwtToken();
   clearCachedAuthProfile();
+  
+  try {
+    await fetch(`${getApiUrl()}/auth/logout`, {
+      method: 'POST',
+      credentials: 'include',
+    });
+  } catch (err) {
+    // Ignore error on logout
+  }
 }
 
 export async function loadAuthProfile(): Promise<AuthUserRecord | null> {
-  const token = getJwtToken();
-  if (!token) return null;
-
   try {
     const res = await fetch(`${getApiUrl()}/auth/me`, {
-      headers: { Authorization: `Bearer ${token}` },
+      credentials: 'include',
     });
     if (!res.ok) {
       if (res.status === 401) {

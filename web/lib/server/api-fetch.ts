@@ -1,3 +1,4 @@
+import { cookies } from 'next/headers';
 import { dataSourceConfig } from '@/lib/config/data-source';
 
 type ApiEnvelope<T> = {
@@ -12,9 +13,20 @@ export async function serverApiRequest<T>(
   revalidateSeconds = 30,
 ): Promise<{ data: T; meta?: Record<string, unknown> } | null> {
   const url = `${dataSourceConfig.apiBaseUrl}${path.startsWith('/') ? path : `/${path}`}`;
+  
+  const cookieStore = await cookies();
+  const token = cookieStore.get('token')?.value;
+  
+  const headers: HeadersInit = {};
+  if (token) {
+    headers['Cookie'] = `token=${token}`;
+  }
 
   try {
-    const res = await fetch(url, { next: { revalidate: revalidateSeconds } });
+    const res = await fetch(url, { 
+      headers,
+      next: { revalidate: revalidateSeconds } 
+    });
     let body: ApiEnvelope<T> | null = null;
     try {
       body = (await res.json()) as ApiEnvelope<T>;

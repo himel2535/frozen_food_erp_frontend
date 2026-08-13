@@ -36,17 +36,11 @@ export async function apiRequest<T>(
   if (!headers.has('Content-Type') && options.body) {
     headers.set('Content-Type', 'application/json');
   }
-  if (typeof window !== 'undefined') {
-    const token = localStorage.getItem('hookerp_jwt_token');
-    if (token && !headers.has('Authorization')) {
-      headers.set('Authorization', `Bearer ${token}`);
-    }
-  }
-
   const method = (options.method ?? 'GET').toUpperCase();
   const fetchOptions: RequestInit = {
     ...options,
     headers,
+    credentials: 'include',
     ...(method === 'GET' ? { cache: 'no-store' as RequestCache } : {}),
   };
 
