@@ -1,5 +1,5 @@
 import { apiRequest } from '@/lib/services/api-client';
-import { serverApiRequest } from '@/lib/server/api-fetch';
+// Import removed to avoid importing next/headers in Client Components
 
 export type ReportType =
   | 'sales'
@@ -32,14 +32,7 @@ export async function fetchReportData(type: ReportType): Promise<ReportPayload |
   }
 }
 
-export async function fetchServerReportData(
-  type: ReportType,
-  revalidateSeconds = 30,
-): Promise<ReportPayload | null> {
-  const result = await serverApiRequest<ReportPayload>(`/reports/${type}`, revalidateSeconds);
-  return result?.data ?? null;
-}
-
+// Server fetch function moved to lib/server/prefetch-report-page.tsx to avoid next/headers in Client Components
 export function isHrReportPayload(payload: ReportPayload): payload is HrReportPayload {
   return 'departments' in payload && 'joiners' in payload;
 }
