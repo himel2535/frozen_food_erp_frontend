@@ -65,7 +65,9 @@ export function usePaginatedApiResource(
 
   const serverRows = useModuleInitialRows(module);
   const initialRows = options?.initialRows ?? serverRows;
-  const hasServerSeed = initialRows !== undefined;
+  // If SSR returns 0 rows, it's very likely due to 401 Unauthorized (because server doesn't have localstorage JWT).
+  // By requiring length > 0, we prevent empty SSR payloads from wiping out valid client cache.
+  const hasServerSeed = initialRows !== undefined && initialRows.length > 0;
 
   const [page, setPage] = useState(1);
   const [pageSize, setPageSizeState] = useState(options?.pageSize ?? DEFAULT_LIST_PAGE_SIZE);
