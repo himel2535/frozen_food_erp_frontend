@@ -14,16 +14,17 @@ export function validateSignatureFile(file: File): { ok: true } | { ok: false; e
   return { ok: true };
 }
 
-export function readSignatureFile(file: File): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const validation = validateSignatureFile(file);
-    if (!validation.ok) {
-      reject(new Error(validation.error));
-      return;
-    }
-    const reader = new FileReader();
-    reader.onload = () => resolve(String(reader.result ?? ''));
-    reader.onerror = () => reject(new Error('read_failed'));
-    reader.readAsDataURL(file);
-  });
+export async function readSignatureFile(file: File): Promise<string> {
+  const validation = validateSignatureFile(file);
+  if (!validation.ok) {
+    throw new Error(validation.error);
+  }
+  
+  try {
+    const { uploadImageToCloudinary } = await import('@/lib/services/cloudinary-service');
+    const res = await uploadImageToCloudinary(file);
+    return res.url;
+  } catch {
+    throw new Error('read_failed');
+  }
 }

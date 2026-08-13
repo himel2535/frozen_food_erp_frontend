@@ -18,7 +18,7 @@ import {
   XCircle,
 } from 'lucide-react';
 import type { CustomerReceivable } from '@/lib/services/customer-receivables-service';
-import { ImgBBUploadError, uploadImageToImgBB, validateImageFile } from '@/lib/services/imgbb-service';
+import { CloudinaryUploadError, uploadImageToCloudinary, validateImageFile } from '@/lib/services/cloudinary-service';
 import { getCompanyInitials } from '@/lib/utils/communication-utils';
 import { toast } from '@/lib/ui/feedback';
 import { DUE_AVATAR_CLS } from '../customer-due-styles';
@@ -259,11 +259,11 @@ export function FileUploadZone({
 
     setUploading(true);
     try {
-      const result = await uploadImageToImgBB(file);
+      const result = await uploadImageToCloudinary(file);
       onFileSelect({ name: file.name, url: result.url });
-      toast.success('Image uploaded', { module: 'Customer Due', description: 'Attachment saved to ImgBB.' });
+      toast.success('Image uploaded', { module: 'Customer Due', description: 'Attachment saved to Cloudinary.' });
     } catch (err) {
-      const message = err instanceof ImgBBUploadError ? err.message : 'Image upload failed.';
+      const message = err instanceof CloudinaryUploadError ? err.message : 'Image upload failed.';
       toast.error('Upload failed', { module: 'Customer Due', description: message });
     } finally {
       setUploading(false);
@@ -291,7 +291,7 @@ export function FileUploadZone({
         <p className="text-xs font-bold text-slate-700">
           {uploading ? 'Uploading…' : fileName || 'Click to upload or drag and drop'}
         </p>
-        <p className="text-[10px] text-slate-400 mt-1">PNG, JPG, PDF (Max. 5MB) — images upload to ImgBB</p>
+        <p className="text-[10px] text-slate-400 mt-1">PNG, JPG, PDF (Max. 5MB) — images upload to Cloudinary</p>
       </button>
       <input
         ref={inputRef}

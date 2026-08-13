@@ -115,12 +115,23 @@ function resolveRecipeApiId(rows: Record<string, unknown>[], recipeId: string): 
   return match ? resolveApiRowId(match) : recipeId;
 }
 
-function MaterialCell({ name, attachmentName }: { name: string; attachmentName?: string }) {
+function MaterialCell({ name, attachmentName, attachmentDataUrl }: { name: string; attachmentName?: string; attachmentDataUrl?: string }) {
+  const isImage = attachmentDataUrl && (attachmentDataUrl.startsWith('data:image') || attachmentDataUrl.startsWith('http'));
+
   return (
     <div className="flex items-center gap-2.5 min-w-[140px]">
-      <span className="w-8 h-8 rounded-lg bg-slate-100 text-slate-500 flex items-center justify-center shrink-0">
-        <Package className="w-4 h-4" />
-      </span>
+      {isImage ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={attachmentDataUrl}
+          alt={attachmentName || name}
+          className="w-8 h-8 rounded-lg object-cover shrink-0 border border-slate-200"
+        />
+      ) : (
+        <span className="w-8 h-8 rounded-lg bg-slate-100 text-slate-500 flex items-center justify-center shrink-0">
+          <Package className="w-4 h-4" />
+        </span>
+      )}
       <span className="min-w-0">
         <span className="font-semibold text-slate-800 block">{name}</span>
         {attachmentName && (
@@ -247,7 +258,7 @@ export function RecipesPage({ variant = 'finished-goods' }: { variant?: RecipeVa
   const bomColumns = useMemo<AppTableColumn<BomMaterial>[]>(
     () => [
       { key: 'index', label: '#', render: (_row, index) => index + 1 },
-      { key: 'name', label: 'Material / Component', render: (row) => <MaterialCell name={row.name} attachmentName={row.attachmentName} /> },
+      { key: 'name', label: 'Material / Component', render: (row) => <MaterialCell name={row.name} attachmentName={row.attachmentName} attachmentDataUrl={row.attachmentDataUrl} /> },
       { key: 'category', label: 'Category' },
       { key: 'unit', label: 'Unit' },
       { key: 'qtyPerProduct', label: 'Qty per Product', render: (row) => row.qtyPerProduct.toLocaleString(undefined, { maximumFractionDigits: 2 }) },

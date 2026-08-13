@@ -4,7 +4,7 @@ import { ImagePlus, Loader2, Trash2 } from 'lucide-react';
 import { useRef, useState } from 'react';
 import { FORM_LABEL_CLS } from '@/lib/ui/form-styles';
 import { toast } from '@/lib/ui/feedback';
-import { ImgBBUploadError, uploadImageToImgBB, validateImageFile } from '@/lib/services/imgbb-service';
+import { CloudinaryUploadError, uploadImageToCloudinary, validateImageFile } from '@/lib/services/cloudinary-service';
 
 export function ImageUploadField({
   value,
@@ -34,11 +34,11 @@ export function ImageUploadField({
 
     setUploading(true);
     try {
-      const result = await uploadImageToImgBB(file);
+      const result = await uploadImageToCloudinary(file);
       onChange(result.url);
-      toast.success('Image uploaded', { module: 'Inventory', description: 'Image saved to ImgBB.' });
+      toast.success('Image uploaded', { module: 'Inventory', description: 'Image saved to Cloudinary.' });
     } catch (err) {
-      const message = err instanceof ImgBBUploadError
+      const message = err instanceof CloudinaryUploadError
         ? err.message
         : 'Image upload failed.';
       setError(message);

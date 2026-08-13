@@ -45,27 +45,42 @@ export function PurchaseRmReceiveModal({
     setAttachmentDataUrl('');
   }, [open, order]);
 
-  const handleAttachment = (file: File | null) => {
+  const handleAttachment = async (file: File | null) => {
     if (!file) {
       setAttachmentName('');
       setAttachmentDataUrl('');
       return;
     }
-    if (file.size > 2 * 1024 * 1024) {
-      toast.error('Action required', { module: 'Purchase RM', description: "File must be 2MB or smaller." });
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('Action required', { module: 'Purchase RM', description: "File must be 5MB or smaller." });
       return;
     }
-    const allowed = ['image/jpeg', 'image/png', 'application/pdf'];
+    const allowed = ['image/jpeg', 'image/png', 'application/pdf', 'image/webp'];
     if (!allowed.includes(file.type)) {
-      toast.error('Action required', { module: 'Purchase RM', description: "Only JPG, PNG, and PDF files are allowed." });
+      toast.error('Action required', { module: 'Purchase RM', description: "Only JPG, PNG, WebP and PDF files are allowed." });
       return;
     }
-    const reader = new FileReader();
-    reader.onload = () => {
-      setAttachmentName(file.name);
-      setAttachmentDataUrl(String(reader.result ?? ''));
-    };
-    reader.readAsDataURL(file);
+    
+    // Use Cloudinary for images
+    if (file.type.startsWith('image/')) {
+      const toastId = toast.loading('Uploading image...', { module: 'Purchase RM' });
+      try {
+        const { uploadImageToCloudinary } = await import('@/lib/services/cloudinary-service');
+        const res = await uploadImageToCloudinary(file);
+        setAttachmentName(file.name);
+        setAttachmentDataUrl(res.url); // save cloudinary URL here
+        toast.success('Upload complete', { id: toastId, module: 'Purchase RM' });
+      } catch (err: any) {
+        toast.error('Upload failed', { id: toastId, module: 'Purchase RM', description: err.message });
+      }
+    } else {
+      const reader = new FileReader();
+      reader.onload = () => {
+        setAttachmentName(file.name);
+        setAttachmentDataUrl(String(reader.result ?? ''));
+      };
+      reader.readAsDataURL(file);
+    }
   };
 
   const handleSubmit = (e: FormEvent) => {

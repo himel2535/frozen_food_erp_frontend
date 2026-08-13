@@ -256,29 +256,48 @@ export function BomMaterialForm({
     setForm((p) => ({ ...p, preferredSupplier: value }));
   };
 
-  const handleAttachment = (file: File | null) => {
+  const handleAttachment = async (file: File | null) => {
     if (!file) {
       setForm((p) => ({ ...p, attachmentName: undefined, attachmentDataUrl: undefined }));
       return;
     }
-    if (file.size > 2 * 1024 * 1024) {
-      toast.error('Action required', { module: 'Purchases', description: "File must be 2MB or smaller." });
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('Action required', { module: 'Purchases', description: "File must be 5MB or smaller." });
       return;
     }
-    const allowed = ['image/jpeg', 'image/png', 'application/pdf'];
+    const allowed = ['image/jpeg', 'image/png', 'application/pdf', 'image/webp'];
     if (!allowed.includes(file.type)) {
-      toast.error('Action required', { module: 'Purchases', description: "Only JPG, PNG, and PDF files are allowed." });
+      toast.error('Action required', { module: 'Purchases', description: "Only JPG, PNG, WebP and PDF files are allowed." });
       return;
     }
-    const reader = new FileReader();
-    reader.onload = () => {
-      setForm((p) => ({
-        ...p,
-        attachmentName: file.name,
-        attachmentDataUrl: String(reader.result ?? ''),
-      }));
-    };
-    reader.readAsDataURL(file);
+
+    // Use Cloudinary for images
+    if (file.type.startsWith('image/')) {
+      const toastId = toast.loading('Uploading image...', { module: 'Purchases' });
+      try {
+        const { uploadImageToCloudinary } = await import('@/lib/services/cloudinary-service');
+        const res = await uploadImageToCloudinary(file);
+        setForm((p) => ({
+          ...p,
+          attachmentName: file.name,
+          attachmentDataUrl: res.url, // save cloudinary URL here
+        }));
+        toast.success('Upload complete', { id: toastId, module: 'Purchases' });
+      } catch (err: any) {
+        toast.error('Upload failed', { id: toastId, module: 'Purchases', description: err.message });
+      }
+    } else {
+      // Fallback for PDF to base64
+      const reader = new FileReader();
+      reader.onload = () => {
+        setForm((p) => ({
+          ...p,
+          attachmentName: file.name,
+          attachmentDataUrl: String(reader.result ?? ''),
+        }));
+      };
+      reader.readAsDataURL(file);
+    }
   };
 
   const handleSubmit = () => {
