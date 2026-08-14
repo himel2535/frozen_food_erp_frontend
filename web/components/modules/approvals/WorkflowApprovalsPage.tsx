@@ -51,18 +51,18 @@ export function WorkflowApprovalsPage() {
   const base = useLegacyParityConfig('workflow-approvals');
 
   useEffect(() => {
-    if (!apiMode || !apiDataReady || !purchaseRmStore.initialized) return;
+    if (!apiMode || !apiDataReady) return;
     let cancelled = false;
     void reconcilePendingApprovalsFromApi(
       purchaseRmStore.rows,
-      leaveStore.initialized ? leaveStore.rows : [],
-      purchaseOrdersStore.initialized ? purchaseOrdersStore.rows : [],
+      leaveStore.rows,
+      purchaseOrdersStore.rows,
     ).then(() => {
       if (!cancelled) void approvalStore.reload();
     });
     return () => { cancelled = true; };
-  // eslint-disable-next-line react-hooks/exhaustive-deps -- sync pending sources once when stores initialize
-  }, [apiMode, apiDataReady, purchaseRmStore.initialized, leaveStore.initialized, purchaseOrdersStore.initialized]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- sync whenever store rows update
+  }, [apiMode, apiDataReady, purchaseRmStore.rows, leaveStore.rows, purchaseOrdersStore.rows]);
 
   const config = useMemo(() => {
     if (!base) return null;

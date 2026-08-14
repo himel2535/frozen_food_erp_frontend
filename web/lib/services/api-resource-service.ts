@@ -13,7 +13,9 @@ import {
   hasApiListCache,
   setApiListCache,
   isApiListCacheFresh,
+  invalidateApiListCache,
 } from '@/lib/services/api-list-cache';
+import { notifyApiMutation } from '@/lib/services/api-sync-events';
 
 export function apiDocId(doc: { id?: string; _id?: string; legacyId?: string }): string {
   return String(doc.id ?? doc._id ?? doc.legacyId ?? '');
@@ -122,6 +124,8 @@ export async function createResource(
     });
     const id = apiDocId(data ?? {});
     if (!id) return { ok: false, error: 'Missing id from API response' };
+    invalidateApiListCache(path);
+    notifyApiMutation();
     return { ok: true, id };
   } catch (err) {
     return { ok: false, error: err instanceof Error ? err.message : 'Create failed' };
@@ -138,6 +142,8 @@ export async function updateResource(
       method: 'PUT',
       body: JSON.stringify(body),
     });
+    invalidateApiListCache(path);
+    notifyApiMutation();
     return { ok: true };
   } catch (err) {
     return { ok: false, error: err instanceof Error ? err.message : 'Update failed' };
@@ -150,6 +156,8 @@ export async function deleteResource(
 ): Promise<{ ok: true } | { ok: false; error: string }> {
   try {
     await apiRequest<null>(`${path}/${id}`, { method: 'DELETE' });
+    invalidateApiListCache(path);
+    notifyApiMutation();
     return { ok: true };
   } catch (err) {
     return { ok: false, error: err instanceof Error ? err.message : 'Delete failed' };
