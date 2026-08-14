@@ -300,8 +300,6 @@ export function InvoicesPage() {
     const record = payloadToRecord(payload, editingId ?? undefined);
     if (action === 'sent') {
       record.status = 'sent';
-    } else if (!editingId) {
-      record.status = 'draft';
     }
 
     if (apiMode) {

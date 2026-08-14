@@ -12,11 +12,12 @@ import {
   deleteResource,
   fetchResourcePage,
   isCachedResourceList,
+  isCachedResourceListFresh,
   readCachedResourceList,
   updateResource,
 } from '@/lib/services/api-resource-service';
 import { getApiListCacheMeta } from '@/lib/services/api-list-cache';
-import { notifyApiMutation, onApiMutation } from '@/lib/services/api-sync-events';
+import { notifyApiMutation, onApiMutation, consumeModuleMutation } from '@/lib/services/api-sync-events';
 import { invalidateApiListCache, setApiListCache } from '@/lib/services/api-list-cache';
 import { DEFAULT_LIST_PAGE_SIZE, isDefaultListQuery, type ApiPaginationMeta } from '@/lib/services/api-pagination-types';
 import { useModuleInitialRows } from '@/components/providers/ModuleInitialDataProvider';
@@ -150,6 +151,11 @@ export function usePaginatedApiResource(
 
   useEffect(() => {
     if (!enabled) return;
+    const mutated = consumeModuleMutation(module);
+    if (mutated) {
+      skipFirstFetchRef.current = false;
+      invalidateApiListCache(path);
+    }
     if (skipFirstFetchRef.current && page === 1 && isDefaultQuery) {
       skipFirstFetchRef.current = false;
       if (initialRows) {
@@ -157,6 +163,8 @@ export function usePaginatedApiResource(
       }
       return;
     }
+    const isFresh = isCachedResourceListFresh(path, queryKey, 10000);
+    if (isFresh && !mutated) return;
     const cached = isCachedResourceList(path, queryKey);
     void reload(cached ? { silent: true } : undefined);
   }, [enabled, path, reload, queryKey, page, debouncedSearch, status, queryFilters]);

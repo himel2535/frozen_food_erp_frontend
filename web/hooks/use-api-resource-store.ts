@@ -12,10 +12,11 @@ import {
   deleteResource,
   fetchResourcePage,
   isCachedResourceList,
+  isCachedResourceListFresh,
   readCachedResourceList,
   updateResource,
 } from '@/lib/services/api-resource-service';
-import { notifyApiMutation, onApiMutation } from '@/lib/services/api-sync-events';
+import { notifyApiMutation, onApiMutation, consumeModuleMutation } from '@/lib/services/api-sync-events';
 import { invalidateApiListCache, setApiListCache } from '@/lib/services/api-list-cache';
 import { DEFAULT_LIST_PAGE_SIZE } from '@/lib/services/api-pagination-types';
 import { useModuleInitialRows } from '@/components/providers/ModuleInitialDataProvider';
@@ -70,6 +71,7 @@ export function useApiResourceStore(
   const resolvedInitial = initialRowsRef.current;
   const hasServerSeed = resolvedInitial !== undefined;
   const skipInitialFetch = Boolean(options?.skipInitialFetch || hasServerSeed);
+  const skipFetchRef = useRef(skipInitialFetch);
   const pageOnly = options?.pageOnly ?? true;
   const listQuery = { page: 1, limit: options?.lookupLimit ?? DEFAULT_LIST_PAGE_SIZE };
 
@@ -121,13 +123,21 @@ export function useApiResourceStore(
 
   useEffect(() => {
     if (!enabled) return;
-    if (skipInitialFetch && initialRowsRef.current !== undefined) {
+    const mutated = consumeModuleMutation(module);
+    if (mutated) {
+      skipFetchRef.current = false;
+      invalidateApiListCache(path);
+    }
+    if (skipFetchRef.current && initialRowsRef.current !== undefined) {
+      skipFetchRef.current = false;
       setApiListCache(path, initialRowsRef.current ?? [], listQuery);
       return;
     }
+    const isFresh = isCachedResourceListFresh(path, listQuery, 10000);
+    if (isFresh && !mutated) return;
     const hasCache = isCachedResourceList(path, listQuery);
     void reload(hasCache ? { silent: true } : undefined);
-  }, [enabled, path, reload, skipInitialFetch, listQuery.limit]);
+  }, [enabled, path, reload, listQuery.limit]);
 
   useEffect(() => {
     if (!enabled) return;

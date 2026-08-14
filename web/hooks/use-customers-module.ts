@@ -13,9 +13,11 @@ import {
 import {
   fetchResourcePage,
   isCachedResourceList,
+  isCachedResourceListFresh,
   readCachedResourceList,
 } from '@/lib/services/api-resource-service';
-import { setApiListCache } from '@/lib/services/api-list-cache';
+import { setApiListCache, invalidateApiListCache } from '@/lib/services/api-list-cache';
+import { consumeModuleMutation } from '@/lib/services/api-sync-events';
 
 const CUSTOMERS_PATH = '/customers';
 const CUSTOMER_LOOKUP_QUERY = { page: 1, limit: 200 } as const;
@@ -50,6 +52,12 @@ export function useCustomersApiStore() {
 
   useEffect(() => {
     if (!enabled) return;
+    const mutated = consumeModuleMutation('customers');
+    if (mutated) {
+      invalidateApiListCache(CUSTOMERS_PATH);
+    }
+    const isFresh = isCachedResourceListFresh(CUSTOMERS_PATH, CUSTOMER_LOOKUP_QUERY, 10000);
+    if (isFresh && !mutated) return;
     const hasCache = isCachedResourceList(CUSTOMERS_PATH, CUSTOMER_LOOKUP_QUERY);
     void reload(hasCache ? { silent: true } : undefined);
   }, [enabled, reload]);

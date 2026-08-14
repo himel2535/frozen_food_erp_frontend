@@ -276,15 +276,16 @@ function mapInvoiceItemsToApi(items: unknown[]) {
 export function mapInvoiceRecordToApi(record: Record<string, unknown>, existingLegacyId?: string): Record<string, unknown> {
   const items = mapInvoiceItemsToApi(Array.isArray(record.items) ? record.items : []);
   const total = Number(record.total ?? record.amount ?? 0);
-  const paid = Number(record.paid ?? 0);
-  const due = Number(record.due ?? Math.max(total - paid, 0));
+  const status = String(record.status ?? '').toLowerCase();
+  const paid = status === 'paid' ? total : Number(record.paid ?? 0);
+  const due = status === 'paid' ? 0 : Number(record.due ?? Math.max(total - paid, 0));
   const body: Record<string, unknown> = {
     customerId: record.customerId,
     customerName: record.customerName ?? record.customer,
     issueDate: record.issueDate ?? record.date,
     date: record.date ?? record.issueDate,
     dueDate: record.dueDate,
-    status: normalizeInvoiceApiStatus({ ...record, total, paid, due }),
+    status: normalizeInvoiceApiStatus({ ...record, status, total, paid, due }),
     items,
     amount: total,
     paid,

@@ -39,6 +39,13 @@ export function hasApiListCache(path: string, query?: ApiListQuery): boolean {
   return cache.has(cacheKey(path, query));
 }
 
+/** True if cache exists and was fetched less than `ttlMs` (default 10s) ago. */
+export function isApiListCacheFresh(path: string, query?: ApiListQuery, ttlMs: number = 10000): boolean {
+  const entry = cache.get(cacheKey(path, query));
+  if (!entry) return false;
+  return Date.now() - entry.fetchedAt < ttlMs;
+}
+
 export function setApiListCache(
   path: string,
   docs: Record<string, unknown>[],

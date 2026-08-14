@@ -27,7 +27,34 @@ function formatApiError(status: number, body: ApiEnvelope<unknown> | null): stri
   return base;
 }
 
+const inflightGetRequests = new Map<string, Promise<any>>();
+
 export async function apiRequest<T>(
+  path: string,
+  options: RequestInit = {},
+): Promise<{ data: T; meta?: Record<string, unknown> }> {
+  const method = (options.method ?? 'GET').toUpperCase();
+
+  if (method === 'GET') {
+    const url = `${dataSourceConfig.apiBaseUrl}${path.startsWith('/') ? path : `/${path}`}`;
+    let promise = inflightGetRequests.get(url);
+    if (!promise) {
+      promise = (async () => {
+        try {
+          return await apiRequestInternal<T>(path, options);
+        } finally {
+          inflightGetRequests.delete(url);
+        }
+      })();
+      inflightGetRequests.set(url, promise);
+    }
+    return promise;
+  }
+
+  return apiRequestInternal<T>(path, options);
+}
+
+async function apiRequestInternal<T>(
   path: string,
   options: RequestInit = {},
 ): Promise<{ data: T; meta?: Record<string, unknown> }> {

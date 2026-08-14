@@ -2,9 +2,10 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { API_RESOURCE_PATHS, type ApiModule } from '@/lib/config/data-source';
-import { fetchResourcePage, isCachedResourceList } from '@/lib/services/api-resource-service';
+import { fetchResourcePage, isCachedResourceList, isCachedResourceListFresh } from '@/lib/services/api-resource-service';
 import { LOOKUP_LIST_PAGE_SIZE } from '@/lib/services/api-pagination-types';
-import { setApiListCache } from '@/lib/services/api-list-cache';
+import { setApiListCache, invalidateApiListCache } from '@/lib/services/api-list-cache';
+import { consumeModuleMutation } from '@/lib/services/api-sync-events';
 import { useModuleInitialSnapshot } from '@/components/providers/ModuleInitialDataProvider';
 
 type AggregateResult = {
@@ -37,6 +38,10 @@ function seedAggregateCache(data: Partial<Record<ApiModule, Record<string, unkno
 
 function modulesHaveCache(modules: readonly ApiModule[]) {
   return modules.some((mod) => isCachedResourceList(API_RESOURCE_PATHS[mod]));
+}
+
+function modulesAreFresh(modules: readonly ApiModule[]) {
+  return modules.every((mod) => isCachedResourceListFresh(API_RESOURCE_PATHS[mod], undefined, 10000));
 }
 
 export function useApiAggregate(modules: readonly ApiModule[]): AggregateResult {
@@ -105,8 +110,16 @@ export function useApiAggregate(modules: readonly ApiModule[]): AggregateResult 
     if (bootstrappedKeyRef.current === modulesKey) return;
     bootstrappedKeyRef.current = modulesKey;
 
+    let mutated = false;
+    for (const mod of modulesRef.current) {
+      if (consumeModuleMutation(mod)) {
+        mutated = true;
+        invalidateApiListCache(API_RESOURCE_PATHS[mod]);
+      }
+    }
+
     const seed = seedFromSnapshot(modulesRef.current, serverSnapshotRef.current);
-    if (seed.ready) {
+    if (seed.ready && !mutated) {
       setData(seed.data);
       seedAggregateCache(seed.data);
       setLoading(false);
@@ -114,7 +127,13 @@ export function useApiAggregate(modules: readonly ApiModule[]): AggregateResult 
       return;
     }
 
-    if (modulesHaveCache(modulesRef.current)) {
+    if (modulesAreFresh(modulesRef.current) && !mutated) {
+      setLoading(false);
+      setInitialized(true);
+      return;
+    }
+
+    if (modulesHaveCache(modulesRef.current) && !mutated) {
       void reloadModules();
       return;
     }

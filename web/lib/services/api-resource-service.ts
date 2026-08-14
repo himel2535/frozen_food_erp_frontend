@@ -12,6 +12,7 @@ import {
   getApiListCache,
   hasApiListCache,
   setApiListCache,
+  isApiListCacheFresh,
 } from '@/lib/services/api-list-cache';
 
 export function apiDocId(doc: { id?: string; _id?: string; legacyId?: string }): string {
@@ -94,6 +95,11 @@ export function readCachedResourceList(
 /** True once this list endpoint has completed at least one fetch. */
 export function isCachedResourceList(path: string, query?: ApiListQuery): boolean {
   return hasApiListCache(normalizeListPath(path), query);
+}
+
+/** True if the cache exists and was fetched within the given TTL (default 10s). */
+export function isCachedResourceListFresh(path: string, query?: ApiListQuery, ttlMs?: number): boolean {
+  return isApiListCacheFresh(normalizeListPath(path), query, ttlMs);
 }
 
 export async function fetchResourceById(path: string, id: string): Promise<Record<string, unknown> | null> {
