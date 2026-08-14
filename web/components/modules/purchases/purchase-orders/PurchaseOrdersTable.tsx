@@ -7,6 +7,9 @@ import { AppTable, type AppTableColumn } from '@/components/shared/AppTable';
 import { StatusBadge } from '@/components/shared/StatusBadge';
 import { TableIconAction } from '@/components/shared/TableIconAction';
 import {
+  syncPurchaseOrderApproval,
+} from '@/lib/services/approvals-service';
+import {
   cancelPurchaseOrder,
   deletePurchaseOrder,
   formatMoney,
@@ -167,7 +170,12 @@ export function PurchaseOrdersTable({
                 <button
                   type="button"
                   title="Send"
-                  onClick={() => runAction(() => sendPurchaseOrder(appState, id), 'Purchase order sent.')}
+                  onClick={async () => {
+                    const ok = runAction(() => sendPurchaseOrder(appState, id), 'Purchase order sent.');
+                    if (ok) {
+                      await syncPurchaseOrderApproval({ ...row, status: 'Sent' });
+                    }
+                  }}
                   className="p-1.5 rounded-lg hover:bg-blue-50 text-blue-600 cursor-pointer text-[10px] font-bold"
                 >
                   Send

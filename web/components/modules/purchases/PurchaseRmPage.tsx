@@ -49,7 +49,7 @@ import {
   sendPurchaseRmOrder,
   updatePurchaseRmOrder,
 } from '@/lib/services/purchase-rm-service';
-import { syncPurchaseRmApproval } from '@/lib/services/approvals-service';
+import { buildPurchaseRmApproval, syncPurchaseRmApproval, upsertApprovalInState } from '@/lib/services/approvals-service';
 import {
   listFinishedGoods,
   listRawMaterials,
@@ -413,7 +413,7 @@ export function PurchaseRmPage() {
         return null;
       }
       const savedId = editingId ?? ('id' in result ? String(result.id) : previewPoNumber(rmState, payload.date));
-      if (String(record.status) === 'pending_approval') {
+      if (String(record.status) === 'pending_approval' || String(record.status) === 'pending') {
         const syncApproval = await syncPurchaseRmApproval({ ...record, id: savedId });
         if (!syncApproval.ok) {
           toast.error('Approval sync failed', { module: 'Purchases', description: syncApproval.error ?? 'Could not create approval request.' });
@@ -428,8 +428,12 @@ export function PurchaseRmPage() {
       toast.error('Operation failed', { module: 'Purchases', description: 'error' in result ? String(result.error) : 'Save failed' });
       return null;
     }
+    const savedId = editingId ?? ('id' in result ? String(result.id) : previewPoNumber(rmState, payload.date));
+    if (String(record.status) === 'pending_approval' || String(record.status) === 'pending') {
+      upsertApprovalInState(appState, buildPurchaseRmApproval({ ...record, id: savedId }));
+    }
     saveAppState();
-    return editingId ?? ('id' in result ? result.id : previewPoNumber(rmState, payload.date));
+    return savedId;
   };
 
   const handleSave = async (payload: PurchaseRmPayload, action: PurchaseRmSaveAction) => {

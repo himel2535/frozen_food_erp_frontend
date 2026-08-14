@@ -16,6 +16,11 @@ import { usePurchaseOrderFormApi } from '@/hooks/use-purchase-order-api';
 import { isModuleApiMode } from '@/lib/config/data-source';
 import { useAppStore } from '@/lib/state/app-store';
 import {
+  buildPurchaseOrderApproval,
+  syncPurchaseOrderApproval,
+  upsertApprovalInState,
+} from '@/lib/services/approvals-service';
+import {
   createPurchaseOrder,
   getPurchaserOptions,
   listPurchases,
@@ -78,6 +83,8 @@ export function PurchaseOrderFormPage({ mode, orderId }: { mode: 'create' | 'edi
         toast.error('Operation failed', { module: 'Purchases', description: 'error' in result ? String(result.error) : 'Save failed' });
         return;
       }
+      const savedPo = { ...record, id: orderId ?? ('id' in result ? String(result.id) : payload.poPreviewId) };
+      await syncPurchaseOrderApproval(savedPo);
       router.push('/purchases/orders');
       return;
     }
@@ -88,6 +95,7 @@ export function PurchaseOrderFormPage({ mode, orderId }: { mode: 'create' | 'edi
       toast.error('Operation failed', { module: 'Purchases', description: 'error' in result ? String(result.error) : 'Save failed' });
       return;
     }
+    upsertApprovalInState(appState, buildPurchaseOrderApproval(record));
     saveAppState();
     router.push('/purchases/orders');
   };

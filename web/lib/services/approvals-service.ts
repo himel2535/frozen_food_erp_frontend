@@ -188,6 +188,19 @@ export function buildPurchaseRmApproval(order: Row): ApprovalRequestPayload {
   };
 }
 
+export function buildPurchaseOrderApproval(order: Row): ApprovalRequestPayload {
+  const refId = String(order.id ?? order.legacyId ?? order._mongoId ?? '');
+  return {
+    item: `${refId} — ${String(order.supplier ?? order.supplierName ?? 'Supplier')}`,
+    requester: String(order.createdBy ?? order.purchaser ?? 'System'),
+    module: 'Purchase Order',
+    refType: 'purchase_order',
+    refId,
+    status: 'pending',
+    notes: String(order.notes ?? order.remarks ?? ''),
+  };
+}
+
 export function buildLeaveRequestApproval(leave: Row): ApprovalRequestPayload {
   const refId = String(leave.id ?? leave.legacyId ?? '');
   const name = String(leave.employee ?? leave.employeeName ?? leave.employeeId ?? 'Employee');
@@ -229,8 +242,17 @@ export async function syncApprovalToApi(payload: ApprovalRequestPayload) {
 }
 
 export async function syncPurchaseRmApproval(order: Row) {
-  if (String(order.status) !== 'pending_approval') return { ok: true as const };
+  const status = String(order.status ?? '').toLowerCase();
+  if (status !== 'pending_approval' && status !== 'pending') return { ok: true as const };
   return syncApprovalToApi(buildPurchaseRmApproval(order));
+}
+
+export async function syncPurchaseOrderApproval(order: Row) {
+  const status = String(order.status ?? '').toLowerCase();
+  if (status !== 'pending' && status !== 'pending_approval' && status !== 'sent') {
+    return { ok: true as const };
+  }
+  return syncApprovalToApi(buildPurchaseOrderApproval(order));
 }
 
 export async function syncLeaveRequestApproval(leave: Row) {
@@ -241,15 +263,23 @@ export async function syncLeaveRequestApproval(leave: Row) {
 export async function reconcilePendingApprovalsFromApi(
   purchaseRmRows: Row[],
   leaveRows: Row[] = [],
+  purchaseOrdersRows: Row[] = [],
 ) {
   for (const order of purchaseRmRows) {
-    if (String(order.status) === 'pending_approval') {
+    const status = String(order.status ?? '').toLowerCase();
+    if (status === 'pending_approval' || status === 'pending') {
       await syncPurchaseRmApproval(order);
     }
   }
   for (const leave of leaveRows) {
-    if (String(leave.status) === 'pending') {
+    if (String(leave.status ?? '').toLowerCase() === 'pending') {
       await syncLeaveRequestApproval(leave);
+    }
+  }
+  for (const po of purchaseOrdersRows) {
+    const status = String(po.status ?? '').toLowerCase();
+    if (status === 'pending' || status === 'pending_approval' || status === 'sent') {
+      await syncPurchaseOrderApproval(po);
     }
   }
 }
@@ -292,6 +322,30 @@ async function loadPurchaseRmRowsForApproval(
   }
 }
 
+async function loadPurchaseOrderRowsForApproval(
+  localRows: Row[],
+  refId: string,
+) {
+  if (localRows.length > 0) {
+    const match = localRows.find((row) => {
+      const ids = [row.id, row.legacyId, row._mongoId].map((v) => String(v ?? '')).filter(Boolean);
+      return ids.includes(refId);
+    });
+    if (match) return { rows: localRows, order: match };
+  }
+
+  try {
+    const fetched = (await fetchResourcePage(EXTENDED_API_PATHS.purchaseOrders, { page: 1, limit: 200 })).rows.map((doc) => mapGenericApiRow(doc));
+    const order = fetched.find((row) => {
+      const ids = [row.id, row.legacyId, row._mongoId].map((v) => String(v ?? '')).filter(Boolean);
+      return ids.includes(refId);
+    }) ?? null;
+    return { rows: fetched, order };
+  } catch {
+    return { rows: localRows, order: null };
+  }
+}
+
 export function approveLinkedRequest(state: AppState, approval: Row) {
   const refType = String(approval.refType ?? '');
   const refId = String(approval.refId ?? '');
@@ -329,7 +383,9 @@ export async function approveLinkedRequestApi(
   ctx: {
     appState: AppState;
     purchaseRmRows: Row[];
+    purchaseOrderRows?: Row[];
     updatePurchaseRm: (id: string, body: Row) => Promise<{ ok: boolean; error?: string }>;
+    updatePurchaseOrder?: (id: string, body: Row) => Promise<{ ok: boolean; error?: string }>;
     updateApproval: (id: string, body: Row) => Promise<{ ok: boolean; error?: string }>;
   },
 ) {
@@ -356,6 +412,15 @@ export async function approveLinkedRequestApi(
       );
       if (!sync.ok) return sync;
     }
+  } else if (refType === 'purchase_order' && ctx.updatePurchaseOrder) {
+    const loaded = await loadPurchaseOrderRowsForApproval(ctx.purchaseOrderRows ?? [], refId);
+    if (loaded.order) {
+      const sync = await ctx.updatePurchaseOrder(
+        resolveApiRowId(loaded.order),
+        mapGenericPayloadToApi({ ...loaded.order, status: 'Approved' }),
+      );
+      if (!sync.ok) return sync;
+    }
   }
 
   const syncApproval = await ctx.updateApproval(
@@ -377,7 +442,9 @@ export async function rejectLinkedRequestApi(
   ctx: {
     appState: AppState;
     purchaseRmRows: Row[];
+    purchaseOrderRows?: Row[];
     updatePurchaseRm: (id: string, body: Row) => Promise<{ ok: boolean; error?: string }>;
+    updatePurchaseOrder?: (id: string, body: Row) => Promise<{ ok: boolean; error?: string }>;
     updateApproval: (id: string, body: Row) => Promise<{ ok: boolean; error?: string }>;
   },
 ) {
@@ -404,6 +471,15 @@ export async function rejectLinkedRequestApi(
       );
       if (!sync.ok) return sync;
     }
+  } else if (refType === 'purchase_order' && ctx.updatePurchaseOrder) {
+    const loaded = await loadPurchaseOrderRowsForApproval(ctx.purchaseOrderRows ?? [], refId);
+    if (loaded.order) {
+      const sync = await ctx.updatePurchaseOrder(
+        resolveApiRowId(loaded.order),
+        mapGenericPayloadToApi({ ...loaded.order, status: 'Draft' }),
+      );
+      if (!sync.ok) return sync;
+    }
   }
 
   const syncApproval = await ctx.updateApproval(
@@ -425,6 +501,9 @@ export function approvalDetailHref(approval: Row): string | null {
   const refId = String(approval.refId ?? '');
   if (refType === 'purchase_rm_order') {
     return `/purchases/purchase-rm?focus=${encodeURIComponent(refId)}&from=approval`;
+  }
+  if (refType === 'purchase_order') {
+    return `/purchases/orders?focus=${encodeURIComponent(refId)}&from=approval`;
   }
   if (refType === 'leave_request') {
     return '/hrm/leave';

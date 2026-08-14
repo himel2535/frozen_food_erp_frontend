@@ -46,6 +46,7 @@ export function WorkflowApprovalsPage() {
   const apiMode = isModuleApiMode('workflowApprovals');
   const approvalStore = useApiResourceStore('workflowApprovals', mapGenericApiRow, { pageOnly: true, lookupLimit: 100 });
   const purchaseRmStore = useApiResourceStore('purchaseRm', mapGenericApiRow, { pageOnly: true, lookupLimit: 100 });
+  const purchaseOrdersStore = useApiResourceStore('purchaseOrders', mapGenericApiRow, { pageOnly: true, lookupLimit: 100 });
   const leaveStore = useApiResourceStore('leaveRequests', mapGenericApiRow, { pageOnly: true, lookupLimit: 100 });
   const base = useLegacyParityConfig('workflow-approvals');
 
@@ -55,12 +56,13 @@ export function WorkflowApprovalsPage() {
     void reconcilePendingApprovalsFromApi(
       purchaseRmStore.rows,
       leaveStore.initialized ? leaveStore.rows : [],
+      purchaseOrdersStore.initialized ? purchaseOrdersStore.rows : [],
     ).then(() => {
       if (!cancelled) void approvalStore.reload();
     });
     return () => { cancelled = true; };
   // eslint-disable-next-line react-hooks/exhaustive-deps -- sync pending sources once when stores initialize
-  }, [apiMode, apiDataReady, purchaseRmStore.initialized, leaveStore.initialized]);
+  }, [apiMode, apiDataReady, purchaseRmStore.initialized, leaveStore.initialized, purchaseOrdersStore.initialized]);
 
   const config = useMemo(() => {
     if (!base) return null;
@@ -82,7 +84,9 @@ export function WorkflowApprovalsPage() {
             const result = await approveLinkedRequestApi(row, {
               appState: ctx.appState,
               purchaseRmRows: purchaseRmStore.rows,
+              purchaseOrderRows: purchaseOrdersStore.rows,
               updatePurchaseRm: (id, body) => purchaseRmStore.update(id, body),
+              updatePurchaseOrder: (id, body) => purchaseOrdersStore.update(id, body),
               updateApproval: (id, body) => approvalStore.update(id, body),
             });
             if (!result.ok) {
@@ -115,7 +119,9 @@ export function WorkflowApprovalsPage() {
             const result = await rejectLinkedRequestApi(row, {
               appState: ctx.appState,
               purchaseRmRows: purchaseRmStore.rows,
+              purchaseOrderRows: purchaseOrdersStore.rows,
               updatePurchaseRm: (id, body) => purchaseRmStore.update(id, body),
+              updatePurchaseOrder: (id, body) => purchaseOrdersStore.update(id, body),
               updateApproval: (id, body) => approvalStore.update(id, body),
             });
             if (!result.ok) {
