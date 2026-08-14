@@ -145,8 +145,10 @@ export function recordToPoFormValues(record: Record<string, unknown>): PoFormVal
 export function payloadToRecord(payload: PoFormPayload) {
   const paidAmount = Number(payload.paidAmount || 0);
   const balanceDue = Math.max(0, payload.totals.total - paidAmount);
+  const userVisiblePoId = payload.id ?? payload.poPreviewId;
   return {
-    id: payload.id ?? payload.poPreviewId,
+    id: userVisiblePoId,
+    legacyId: userVisiblePoId,
     supplierId: payload.supplierId,
     supplier: payload.supplierName,
     supplierName: payload.supplierName,

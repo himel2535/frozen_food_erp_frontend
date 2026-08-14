@@ -189,7 +189,7 @@ export function buildPurchaseRmApproval(order: Row): ApprovalRequestPayload {
 }
 
 export function buildPurchaseOrderApproval(order: Row): ApprovalRequestPayload {
-  const refId = String(order.id ?? order.legacyId ?? order._mongoId ?? '');
+  const refId = String(order.legacyId ?? order.id ?? order._mongoId ?? '');
   return {
     item: `${refId} — ${String(order.supplier ?? order.supplierName ?? 'Supplier')}`,
     requester: String(order.createdBy ?? order.purchaser ?? 'System'),

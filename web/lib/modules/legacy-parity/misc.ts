@@ -279,7 +279,7 @@ export const CONFIGS: Record<string, DedicatedModuleConfig> = {
       kpiCount('approved', 'Approved', countStatus(rows, 'approved')),
       kpiCount('rejected', 'Rejected', countStatus(rows, 'rejected')),
     ],
-    hideDefaultRowActions: (row) => String(row.refType) === 'purchase_rm_order',
+    hideDefaultRowActions: (row) => String(row.refType) === 'purchase_rm_order' || String(row.refType) === 'purchase_order',
     adapter: adapter({ ...crudFactory('approvals', 'APR') }),
   },
   'notifications': {
