@@ -24,6 +24,7 @@ export type InvoiceFormValues = {
   docTaxOverride: number | null;
   includeSignature: boolean;
   signatureId: string | null;
+  paidAmount: number;
   items: InvoiceLineItem[];
 };
 
@@ -68,6 +69,7 @@ export const EMPTY_INVOICE_FORM: InvoiceFormValues = {
   docTaxOverride: null,
   includeSignature: false,
   signatureId: null,
+  paidAmount: 0,
   items: [createEmptyLineItem()],
 };
 

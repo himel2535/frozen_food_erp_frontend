@@ -1,7 +1,7 @@
 'use client';
 
 import dynamic from 'next/dynamic';
-import { useMemo, useEffect } from 'react';
+import { useMemo, useEffect, useState } from 'react';
 import { loadIcons } from '@iconify/react';
 import { Icon } from '@iconify/react';
 import {
@@ -18,6 +18,7 @@ import { useAppStore } from '@/lib/state/app-store';
 import { applyApiDataToAppState } from '@/lib/services/api-app-state-mapper';
 import { getDashboardMetrics } from '@/lib/services/dashboard-metrics';
 import { buildDashboardMetricValues, summaryLowStock } from '@/lib/services/dashboard-summary-metrics';
+import { fetchDashboardSummary, type DashboardSummary } from '@/lib/services/api-resource-service';
 import type { DashboardServerPayload } from '@/lib/server/dashboard-snapshot';
 
 const SalesTrendChart = dynamic(
@@ -62,6 +63,8 @@ export function DashboardView({ serverPayload = null }: DashboardViewProps) {
   const t = useAppStore((s) => s.t);
   const { formatMoney } = useLocaleFormat();
 
+  const [liveSummary, setLiveSummary] = useState<DashboardSummary | null>(null);
+
   const dashboardState = useMemo(() => {
     if (ready) return baseState;
     if (serverSnapshot && Object.keys(serverSnapshot).length > 0) {
@@ -78,14 +81,33 @@ export function DashboardView({ serverPayload = null }: DashboardViewProps) {
     return () => document.body.classList.remove('dashboard-page');
   }, []);
 
+  useEffect(() => {
+    let active = true;
+    void (async () => {
+      try {
+        const data = await fetchDashboardSummary();
+        if (active && data) {
+          setLiveSummary(data);
+        }
+      } catch (err) {
+        console.error('Failed to fetch live dashboard summary:', err);
+      }
+    })();
+    return () => {
+      active = false;
+    };
+  }, []);
+
   const metrics = useMemo(
     () => getDashboardMetrics(dashboardState),
     [dashboardState],
   );
 
+  const activeSummary = liveSummary || serverSummary;
+
   const metricValues = useMemo<Record<string, { value: string; sub?: string }>>(() => {
-    if (serverSummary && !ready) {
-      return buildDashboardMetricValues(serverSummary, t, formatMoney);
+    if (activeSummary) {
+      return buildDashboardMetricValues(activeSummary, t, formatMoney);
     }
     return {
       'production-summary': {
@@ -140,9 +162,9 @@ export function DashboardView({ serverPayload = null }: DashboardViewProps) {
         sub: t('dashboard.metric_month_orders', { n: metrics.monthSalesCount }),
       },
     };
-  }, [t, formatMoney, metrics, serverSummary, ready]);
+  }, [t, formatMoney, metrics, activeSummary]);
 
-  const lowStockCount = serverSummary && !ready ? summaryLowStock(serverSummary) : metrics.lowStock;
+  const lowStockCount = activeSummary ? summaryLowStock(activeSummary) : metrics.lowStock;
 
   if (!hasInitialData) {
     return <DashboardLoadingSkeleton />;

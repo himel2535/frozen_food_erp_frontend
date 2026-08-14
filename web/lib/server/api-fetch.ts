@@ -25,7 +25,7 @@ export async function serverApiRequest<T>(
   try {
     const res = await fetch(url, { 
       headers,
-      next: { revalidate: revalidateSeconds } 
+      cache: 'no-store'
     });
     let body: ApiEnvelope<T> | null = null;
     try {

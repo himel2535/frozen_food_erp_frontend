@@ -157,6 +157,18 @@ export function InvoiceForm({
     updateForm({ docTaxOverride: value });
   };
 
+  const handlePaidAmountChange = (val: number) => {
+    let nextStatus = form.status;
+    if (val >= totals.total && totals.total > 0) {
+      nextStatus = 'paid';
+    } else if (val > 0 && val < totals.total) {
+      nextStatus = 'pending';
+    } else if (val === 0 && (form.status === 'paid' || form.status === 'draft')) {
+      nextStatus = 'pending';
+    }
+    updateForm({ paidAmount: val, status: nextStatus });
+  };
+
   const addInvoiceItem = () => {
     updateForm({
       items: [...form.items, createEmptyLineItem()],
@@ -258,7 +270,16 @@ export function InvoiceForm({
                     <span className={`absolute left-3 top-1/2 -translate-y-1/2 w-2.5 h-2.5 rounded-full ${statusMeta.dotClass}`} />
                     <select
                       value={form.status}
-                      onChange={(e) => updateForm({ status: e.target.value })}
+                      onChange={(e) => {
+                        const newStatus = e.target.value;
+                        if (newStatus === 'paid') {
+                          updateForm({ status: newStatus, paidAmount: totals.total });
+                        } else if (newStatus === 'pending' && form.paidAmount === totals.total) {
+                          updateForm({ status: newStatus, paidAmount: 0 });
+                        } else {
+                          updateForm({ status: newStatus });
+                        }
+                      }}
                       className={`${INV_INPUT_CLS} pl-8 font-semibold cursor-pointer appearance-none`}
                     >
                       {INVOICE_STATUS_OPTIONS.map((status) => (
@@ -323,6 +344,8 @@ export function InvoiceForm({
 
             <InvoiceSummary
               totals={totals}
+              paidAmount={form.paidAmount}
+              onPaidAmountChange={handlePaidAmountChange}
               onEditDiscount={handleEditDiscount}
               onEditTax={handleEditTax}
             />

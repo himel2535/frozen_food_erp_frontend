@@ -22,8 +22,8 @@ export function getDashboardMetrics(appState: AppState) {
   const completedProd = production.filter((p) => p.status === 'Completed');
   const prodQty = completedProd.reduce((s, p) => s + Number(p.actualQuantity || p.plannedQuantity || 0), 0);
   const pendingProdQty = pendingProd.reduce((s, p) => s + Number(p.plannedQuantity || 0), 0);
-  const customersWithDue = customers.filter((c) => Number(c.due || 0) > 0);
-  const suppliersWithDue = suppliers.filter((s) => Number(s.due || s.balance || 0) > 0);
+  const customersWithDue = customers.filter((c) => Number(c.due ?? c.totalDue ?? 0) > 0);
+  const suppliersWithDue = suppliers.filter((s) => Number(s.due ?? s.totalDue ?? s.balance ?? 0) > 0);
   const currentMonth = new Date().toISOString().slice(0, 7);
   const monthSales = sales.filter((s) => String(s.date ?? s.createdAt ?? '').startsWith(currentMonth));
   const monthRevenue = monthSales.reduce((s, o) => s + Number(o.total || 0), 0);
@@ -45,10 +45,10 @@ export function getDashboardMetrics(appState: AppState) {
     sfStockValue,
     fgStockValue,
     totalInventoryValue: rmStockValue + sfStockValue + fgStockValue,
-    customerDue: customers.reduce((s, c) => s + Number(c.due || 0), 0),
-    customerDueCount: customersWithDue.length || customers.length,
-    supplierDue: suppliers.reduce((s, item) => s + Number(item.due || item.balance || 0), 0),
-    supplierDueCount: suppliersWithDue.length || suppliers.length,
+    customerDue: customers.reduce((s, c) => s + Number(c.due ?? c.totalDue ?? 0), 0),
+    customerDueCount: customersWithDue.length,
+    supplierDue: suppliers.reduce((s, item) => s + Number(item.due ?? item.totalDue ?? item.balance ?? 0), 0),
+    supplierDueCount: suppliersWithDue.length,
     productionSummary: { completed: completedProd.length, qty: prodQty },
     purchaseSummary: { count: purchases.length, total: purchases.reduce((s, o) => s + Number(o.total || 0), 0) },
     salesSummary: { count: sales.length, total: sales.reduce((s, o) => s + Number(o.total || 0), 0) },

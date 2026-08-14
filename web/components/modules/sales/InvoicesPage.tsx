@@ -88,6 +88,7 @@ function recordToFormValues(record: Record<string, unknown>): InvoiceFormValues 
     docTaxOverride: record.taxAmount != null ? Number(record.taxAmount) : null,
     includeSignature: Boolean(record.includeSignature),
     signatureId: record.signatureId ? String(record.signatureId) : null,
+    paidAmount: Number(record.paid ?? 0),
     items,
   };
 }
@@ -115,6 +116,8 @@ function payloadToRecord(payload: InvoicePayload, id?: string) {
     discountAmount: payload.totals.discountAmount,
     taxAmount: payload.totals.taxAmount,
     total: payload.totals.total,
+    paid: Number(payload.paidAmount ?? 0),
+    due: Math.max(0, Number(payload.totals.total) - Number(payload.paidAmount ?? 0)),
   };
 }
 
@@ -214,8 +217,23 @@ export function InvoicesPage() {
     { key: 'date', label: 'Date', render: (row) => String(row.issueDate ?? row.date ?? '—') },
     {
       key: 'amount',
-      label: 'Amount',
-      render: (row) => formatMoney(Number(row.amount ?? row.total ?? 0)),
+      label: 'Amount / Balance',
+      render: (row) => {
+        const total = Number(row.amount ?? row.total ?? 0);
+        const paid = Number(row.paid ?? 0);
+        const due = Number(row.due ?? Math.max(0, total - paid));
+        return (
+          <div className="flex flex-col text-xs leading-normal">
+            <span className="font-bold text-slate-950">{formatMoney(total)}</span>
+            {paid > 0 ? (
+              <span className="text-[10px] text-emerald-600 font-semibold">Paid: {formatMoney(paid)}</span>
+            ) : null}
+            {due > 0 && paid > 0 ? (
+              <span className="text-[10px] text-rose-600 font-semibold">Due: {formatMoney(due)}</span>
+            ) : null}
+          </div>
+        );
+      },
     },
     { key: 'status', label: 'Status', render: (row) => <StatusBadge status={String(row.status)} /> },
   ], [appState, formatMoney]);
