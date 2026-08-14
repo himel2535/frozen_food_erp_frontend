@@ -397,9 +397,11 @@ export function PurchaseRmPage() {
   };
 
   const persistPo = async (payload: PurchaseRmPayload, action: PurchaseRmSaveAction) => {
+    const userVisiblePoId = editingId ?? previewPoNumber(rmState, payload.date);
     const record = {
       ...payload,
-      id: editingId ?? undefined,
+      id: userVisiblePoId,
+      legacyId: userVisiblePoId,
       grandTotal: payload.totals.grandTotal,
       total: payload.totals.grandTotal,
     };
@@ -412,14 +414,13 @@ export function PurchaseRmPage() {
         toast.error('Operation failed', { module: 'Purchases', description: 'error' in result ? String(result.error) : 'Save failed' });
         return null;
       }
-      const savedId = editingId ?? ('id' in result ? String(result.id) : previewPoNumber(rmState, payload.date));
       if (String(record.status) === 'pending_approval' || String(record.status) === 'pending') {
-        const syncApproval = await syncPurchaseRmApproval({ ...record, id: savedId });
+        const syncApproval = await syncPurchaseRmApproval(record);
         if (!syncApproval.ok) {
           toast.error('Approval sync failed', { module: 'Purchases', description: syncApproval.error ?? 'Could not create approval request.' });
         }
       }
-      return savedId;
+      return userVisiblePoId;
     }
     const result = editingId
       ? updatePurchaseRmOrder(appState, editingId, record)
@@ -428,12 +429,11 @@ export function PurchaseRmPage() {
       toast.error('Operation failed', { module: 'Purchases', description: 'error' in result ? String(result.error) : 'Save failed' });
       return null;
     }
-    const savedId = editingId ?? ('id' in result ? String(result.id) : previewPoNumber(rmState, payload.date));
     if (String(record.status) === 'pending_approval' || String(record.status) === 'pending') {
-      upsertApprovalInState(appState, buildPurchaseRmApproval({ ...record, id: savedId }));
+      upsertApprovalInState(appState, buildPurchaseRmApproval(record));
     }
     saveAppState();
-    return savedId;
+    return userVisiblePoId;
   };
 
   const handleSave = async (payload: PurchaseRmPayload, action: PurchaseRmSaveAction) => {

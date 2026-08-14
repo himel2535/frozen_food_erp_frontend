@@ -358,6 +358,16 @@ export function approveLinkedRequest(state: AppState, approval: Row) {
     markApprovalRowStatus(state, approval, 'approved');
     return { ok: true as const };
   }
+  if (refType === 'purchase_order') {
+    const po = listFromState(state, 'purchaseOrders').find(
+      (r) => String(r.id) === refId || String(r.legacyId ?? '') === refId,
+    );
+    if (po) {
+      updateInState(state, 'purchaseOrders', String(po.id), { status: 'Approved' });
+    }
+    markApprovalRowStatus(state, approval, 'approved');
+    return { ok: true as const };
+  }
   markApprovalRowStatus(state, approval, 'approved');
   return { ok: true as const };
 }
@@ -370,6 +380,16 @@ export function rejectLinkedRequest(state: AppState, approval: Row) {
     if (order && String(order.status) === 'pending_approval') {
       const result = rejectPurchaseRmOrder(state, String(order.id));
       if (!result.ok) return result;
+    }
+    markApprovalRowStatus(state, approval, 'rejected');
+    return { ok: true as const };
+  }
+  if (refType === 'purchase_order') {
+    const po = listFromState(state, 'purchaseOrders').find(
+      (r) => String(r.id) === refId || String(r.legacyId ?? '') === refId,
+    );
+    if (po) {
+      updateInState(state, 'purchaseOrders', String(po.id), { status: 'Draft' });
     }
     markApprovalRowStatus(state, approval, 'rejected');
     return { ok: true as const };

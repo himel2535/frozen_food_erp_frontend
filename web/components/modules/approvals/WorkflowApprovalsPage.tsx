@@ -95,6 +95,11 @@ export function WorkflowApprovalsPage() {
             }
             toast.success('Approved', { module: 'Approvals', description: 'Request approved successfully.' });
             ctx.save();
+            await Promise.all([
+              approvalStore.reload(),
+              purchaseRmStore.reload(),
+              purchaseOrdersStore.reload(),
+            ]);
             return;
           }
           const result = approveLinkedRequest(ctx.appState, row);
@@ -130,6 +135,11 @@ export function WorkflowApprovalsPage() {
             }
             toast.success('Rejected', { module: 'Approvals', description: 'Request rejected.' });
             ctx.save();
+            await Promise.all([
+              approvalStore.reload(),
+              purchaseRmStore.reload(),
+              purchaseOrdersStore.reload(),
+            ]);
             return;
           }
           const result = rejectLinkedRequest(ctx.appState, row);

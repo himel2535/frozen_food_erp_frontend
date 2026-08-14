@@ -72,19 +72,22 @@ export function PurchaseOrderFormPage({ mode, orderId }: { mode: 'create' | 'edi
   }
 
   const handleSave = async (payload: PoFormPayload, action: PoSaveAction) => {
-    const record = payloadToRecord({
-      ...payload,
-      id: orderId ?? payload.id ?? payload.poPreviewId,
-      status: action === 'create' && payload.status === 'Draft' ? 'Sent' : payload.status,
-    });
+    const userVisiblePoId = orderId ?? payload.id ?? payload.poPreviewId;
+    const record = {
+      ...payloadToRecord({
+        ...payload,
+        id: userVisiblePoId,
+        status: action === 'create' && payload.status === 'Draft' ? 'Sent' : payload.status,
+      }),
+      legacyId: userVisiblePoId,
+    };
     if (apiMode) {
       const result = await poApi.saveOrder(orderId, record);
       if (!result.ok) {
         toast.error('Operation failed', { module: 'Purchases', description: 'error' in result ? String(result.error) : 'Save failed' });
         return;
       }
-      const savedPo = { ...record, id: orderId ?? ('id' in result ? String(result.id) : payload.poPreviewId) };
-      await syncPurchaseOrderApproval(savedPo);
+      await syncPurchaseOrderApproval(record);
       router.push('/purchases/orders');
       return;
     }
