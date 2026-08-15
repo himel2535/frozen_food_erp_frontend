@@ -1,6 +1,10 @@
 import type { AuthUserRecord, SectionId } from '@/lib/state/types';
 import { ALL_SECTION_IDS, pathToSectionId } from '@/lib/navigation/section-access';
 import { TENANT_SIDEBAR_SECTIONS, type SidebarSection } from '@/lib/navigation/tenant-sidebar';
+import {
+  filterSidebarSectionsByFeatureFlags,
+  isRouteEnabledByFeatureFlags,
+} from '@/lib/config/module-feature-flags';
 
 export function normalizeAuthUser(
   uid: string,
@@ -56,6 +60,9 @@ export function canAccessPath(
 
   // User management is main-admin only
   const path = pathname.split('?')[0].split('#')[0];
+  if (!isRouteEnabledByFeatureFlags(path)) {
+    return false;
+  }
   if (path === '/settings/users' || path.startsWith('/settings/users/')) {
     return false;
   }
@@ -72,12 +79,13 @@ export function getVisibleSections(
   user: AuthUserRecord | null | undefined,
 ): SidebarSection[] {
   if (!user || user.status === 'disabled') return [];
-  if (user.isMainAdmin || user.allowedSections.includes('*')) {
-    return TENANT_SIDEBAR_SECTIONS;
-  }
-  return TENANT_SIDEBAR_SECTIONS.filter((section) =>
-    canAccessSection(user, section.id as SectionId),
-  );
+  const base =
+    user.isMainAdmin || user.allowedSections.includes('*')
+      ? TENANT_SIDEBAR_SECTIONS
+      : TENANT_SIDEBAR_SECTIONS.filter((section) =>
+          canAccessSection(user, section.id as SectionId),
+        );
+  return filterSidebarSectionsByFeatureFlags(base);
 }
 
 export function getFirstAllowedHref(user: AuthUserRecord | null | undefined): string {

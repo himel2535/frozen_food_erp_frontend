@@ -46,7 +46,9 @@ export const TENANT_SIDEBAR_SECTIONS: SidebarSection[] = [
       { label: 'Raw Materials', href: '/inventory/raw-materials', view: 'raw-materials', imageIcon: '/images/sidebar/inventory/products.png', iconifyIcon: 'flat-color-icons:tree-structure' },
       { label: 'Semi-Finished Products', href: '/inventory/semi-finished-products', view: 'semi-finished-products', imageIcon: '/images/sidebar/inventory/products.png', iconifyIcon: 'flat-color-icons:puzzle' },
       { label: 'Finished Goods', href: '/inventory/finished-goods', view: 'finished-goods', imageIcon: '/images/sidebar/inventory/products.png', iconifyIcon: 'flat-color-icons:approval' },
+      // Disabled via MODULE_FEATURE_FLAGS.inventoryStockIn — see lib/config/module-feature-flags.ts
       { label: 'Stock In', href: '/inventory/stock-in', view: 'stock-in', imageIcon: '/images/sidebar/inventory/stock-in.png', iconifyIcon: 'flat-color-icons:download' },
+      // Disabled via MODULE_FEATURE_FLAGS.inventoryStockOut — see lib/config/module-feature-flags.ts
       { label: 'Stock Out', href: '/inventory/stock-out', view: 'stock-out', imageIcon: '/images/sidebar/inventory/stock-out.png', iconifyIcon: 'flat-color-icons:upload' },
       { label: 'Stock Transfers', href: '/inventory/transfers', view: 'transfers', imageIcon: '/images/sidebar/inventory/transfers.png', iconifyIcon: 'flat-color-icons:synchronize' },
       { label: 'Stock Correction', href: '/inventory/adjustments', view: 'adjustments', imageIcon: '/images/sidebar/inventory/adjustments.png', iconifyIcon: 'flat-color-icons:data-configuration' },
