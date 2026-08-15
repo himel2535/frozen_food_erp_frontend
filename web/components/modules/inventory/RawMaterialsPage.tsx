@@ -329,7 +329,7 @@ export function RawMaterialsPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!guardEdit()) return;
+    if (editingId && !guardEdit()) return;
     const payload = {
       ...form,
       quantity: Number(form.quantity || 0),
@@ -377,16 +377,16 @@ export function RawMaterialsPage() {
   useChromeSuppressed(view === 'form');
 
   useRegisterModuleActions(
-    view === 'main' && canEdit ? (
+    view === 'main' ? (
       <button
         type="button"
-        onClick={() => { if (!guardEdit()) return; resetForm(); setView('form'); }}
+        onClick={() => { resetForm(); setView('form'); }}
         className="bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold px-4 py-2.5 rounded-xl cursor-pointer"
       >
         + Add Raw Material
       </button>
     ) : null,
-    [view, canEdit, guardEdit],
+    [view],
   );
 
   return (

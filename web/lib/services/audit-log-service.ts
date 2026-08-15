@@ -179,7 +179,7 @@ export function logSystemAudit(state: AppState, payload: AuditPayload): SystemAu
     }
   }
 
-  if (isMongoDbBackend()) {
+  if (isMongoDbBackend() && payload.action !== 'LOGOUT') {
     createResource('/audit-logs', entry as any).catch(() => {});
   }
 

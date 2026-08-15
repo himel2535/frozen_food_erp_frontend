@@ -324,7 +324,6 @@ export function SemiFinishedProductsPage() {
   };
 
   const openCreate = () => {
-    if (!guardEdit()) return;
     resetForm();
     setView('form');
   };
@@ -367,7 +366,7 @@ export function SemiFinishedProductsPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!guardEdit()) return;
+    if (editingId && !guardEdit()) return;
     const payload = {
       ...form,
       recipeId: form.recipeId || undefined,
@@ -456,7 +455,7 @@ export function SemiFinishedProductsPage() {
   useChromeSuppressed(view !== 'main');
 
   useRegisterModuleActions(
-    view === 'main' && canEdit ? (
+    view === 'main' ? (
       <div className="relative self-start">
         <div className="flex">
           <button
@@ -495,7 +494,7 @@ export function SemiFinishedProductsPage() {
         ) : null}
       </div>
     ) : null,
-    [view, showAddMenu, openCreate, canEdit],
+    [view, showAddMenu, openCreate],
   );
 
   if (view === 'detail' && detailRow) {

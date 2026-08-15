@@ -140,7 +140,6 @@ export function AdjustmentsPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!guardEdit()) return;
     if (apiMode) {
       const product = products.find((p) => String(p.id) === form.productId);
       const body = mapStockAdjustmentPayloadToApi(
@@ -225,7 +224,7 @@ export function AdjustmentsPage() {
       title="Stock Adjustments"
       subtitle="Audit and approve inventory quantity corrections."
       addLabel="Create Adjustment"
-      onAdd={() => { if (!guardEdit()) return; resetForm(); setView('form'); }}
+      onAdd={() => { resetForm(); setView('form'); }}
       kpis={[
         { key: 'total', label: 'Total Adjustments', value: String(metrics.totalRuns) },
         { key: 'inc', label: 'Qty Increased', value: `+${metrics.totalIncreasedQty}` },

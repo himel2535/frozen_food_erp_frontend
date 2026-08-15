@@ -56,7 +56,7 @@ export function GranularPermissionsPanel({
         </span>
       </button>
       <p className="text-[10px] font-medium text-slate-500 leading-relaxed">
-        Without this, users can view inventory but cannot add, edit, delete, transfer, or adjust stock.
+        Without this, users can view and add inventory records but cannot edit, delete, update, transfer, approve, or adjust existing stock.
       </p>
     </div>
   );

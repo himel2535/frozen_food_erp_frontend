@@ -140,7 +140,7 @@ export function WarehousesPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!guardEdit()) return;
+    if (editingId && !guardEdit()) return;
     const payload = { ...form, capacity: Number(form.capacity || 0) };
     if (apiMode) {
       const body = mapWarehousePayloadToApi(payload);
@@ -211,7 +211,7 @@ export function WarehousesPage() {
       title="Warehouses"
       subtitle="Manage warehouse facilities, capacity, and utilization."
       addLabel="Add Warehouse"
-      onAdd={() => { if (!guardEdit()) return; resetForm(); setView('form'); }}
+      onAdd={() => { resetForm(); setView('form'); }}
       kpis={[
         { key: 'total', label: 'Total Warehouses', value: String(metrics.totalCount), sub: `${metrics.activeWarehouses} active · ${metrics.inactiveWarehouses} inactive` },
         { key: 'capacity', label: 'Total Stock Capacity', value: metrics.totalCapacity.toLocaleString(), sub: 'units across all facilities' },

@@ -125,7 +125,9 @@ export async function createResource(
     const id = apiDocId(data ?? {});
     if (!id) return { ok: false, error: 'Missing id from API response' };
     invalidateApiListCache(path);
-    notifyApiMutation();
+    if (!path.includes('/audit-logs')) {
+      notifyApiMutation();
+    }
     return { ok: true, id };
   } catch (err) {
     return { ok: false, error: err instanceof Error ? err.message : 'Create failed' };

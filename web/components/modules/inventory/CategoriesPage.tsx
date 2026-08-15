@@ -156,7 +156,7 @@ export function CategoriesPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!guardEdit()) return;
+    if (editingId && !guardEdit()) return;
     const payload = { ...form, defaultTaxRate: Number(form.defaultTaxRate || 0) };
     if (apiMode) {
       const body = mapCategoryPayloadToApi(payload);
@@ -231,7 +231,7 @@ export function CategoriesPage() {
       title="Categories"
       subtitle="Organize products with hierarchical categories and stock policies."
       addLabel="Add Category"
-      onAdd={() => { if (!guardEdit()) return; resetForm(); setView('form'); }}
+      onAdd={() => { resetForm(); setView('form'); }}
       kpis={[
         { key: 'total', label: 'Total Categories', value: String(totalCount), sub: 'organized product groups in the master list' },
         { key: 'active', label: 'Active Categories', value: String(activeCategories), sub: 'available for product assignment' },

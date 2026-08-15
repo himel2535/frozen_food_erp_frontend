@@ -86,7 +86,7 @@ export function InventoryMasterModule({ config }: { config: InventoryMasterConfi
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!guardEdit()) return;
+    if (editingId && !guardEdit()) return;
     const payload: Record<string, unknown> = { ...form };
     config.fields.forEach((f) => { if (f.type === 'number') payload[f.key] = Number(form[f.key] || 0); });
     const result = editingId ? config.update(appState, editingId, payload) : config.create(appState, payload);
@@ -104,16 +104,13 @@ export function InventoryMasterModule({ config }: { config: InventoryMasterConfi
   const tabs = config.statusTabs ?? [{ id: 'all', label: 'All' }, { id: 'active', label: 'Active' }, { id: 'inactive', label: 'Inactive' }];
 
   const handleAdd = useCallback(() => {
-    if (!guardEdit()) return;
     resetForm();
     setView('form');
-  }, [guardEdit, resetForm]);
+  }, [resetForm]);
 
   useRegisterModuleActions(
-    canEdit ? (
-      <ModuleToolbarActions onAdd={handleAdd} addLabel={config.addLabel} />
-    ) : null,
-    [handleAdd, config.addLabel, canEdit],
+    <ModuleToolbarActions onAdd={handleAdd} addLabel={config.addLabel} />,
+    [handleAdd, config.addLabel],
   );
 
   return (

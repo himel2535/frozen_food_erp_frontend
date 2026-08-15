@@ -43,11 +43,13 @@ function mergeApiSnapshot(partial: Partial<Record<ApiModule, Record<string, unkn
 
 /** Seeds Zustand with first-page API data — no full-list background sweep. */
 export function ApiStateHydrator() {
+  const authUser = useAppStore((s) => s.authUser);
+  const authReady = useAppStore((s) => s.authReady);
   const setApiDataReady = useAppStore((s) => s.setApiDataReady);
   const bootDoneRef = useRef(false);
 
   useEffect(() => {
-    if (!USE_API) return;
+    if (!USE_API || !authReady || !authUser) return;
 
     let cancelled = false;
 
@@ -67,10 +69,10 @@ export function ApiStateHydrator() {
     })();
 
     return () => { cancelled = true; };
-  }, [setApiDataReady]);
+  }, [authReady, authUser, setApiDataReady]);
 
   useEffect(() => {
-    if (!USE_API) return;
+    if (!USE_API || !authUser) return;
     return onApiMutation((modules) => {
       const targets = (modules?.length
         ? modules.filter((mod) => API_BOOT_MODULES.includes(mod as ApiModule))
@@ -78,7 +80,7 @@ export function ApiStateHydrator() {
       if (!targets.length) return;
       void fetchModulesPageSafe(targets).then((partial) => mergeApiSnapshot(partial));
     });
-  }, []);
+  }, [authUser]);
 
   return null;
 }

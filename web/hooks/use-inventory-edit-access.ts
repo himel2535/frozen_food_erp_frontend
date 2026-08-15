@@ -6,7 +6,7 @@ import { canEditInventory } from '@/lib/services/access-control-service';
 import { useAppStore } from '@/lib/state/app-store';
 
 export const INVENTORY_EDIT_DENIED_MESSAGE =
-  'You can view inventory but cannot make changes. Ask the main admin for edit permission.';
+  'You can add and view inventory, but cannot edit or delete existing records. Ask the main admin for edit permission.';
 
 export function useInventoryEditAccess() {
   const authUser = useAppStore((s) => s.authUser);

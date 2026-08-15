@@ -119,7 +119,7 @@ export function UnitsPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!guardEdit()) return;
+    if (editingId && !guardEdit()) return;
     const payload = { ...form, conversionFactor: Number(form.conversionFactor || 1) };
     if (apiMode) {
       const body = mapUnitPayloadToApi(payload);
@@ -175,7 +175,7 @@ export function UnitsPage() {
       title="Units of Measure"
       subtitle="Manage units used across products and inventory transactions."
       addLabel="Add Unit"
-      onAdd={() => { if (!guardEdit()) return; resetForm(); setView('form'); }}
+      onAdd={() => { resetForm(); setView('form'); }}
       kpis={[
         { key: 'total', label: 'Total Units', value: String(total) },
         { key: 'active', label: 'Active Units', value: String(activeUnits) },

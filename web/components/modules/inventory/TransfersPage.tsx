@@ -115,7 +115,6 @@ export function TransfersPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!guardEdit()) return;
     if (apiMode) {
       const product = products.find((p) => String(p.id) === form.productId);
       const body = mapStockTransferPayloadToApi(
@@ -179,7 +178,7 @@ export function TransfersPage() {
       title="Stock Transfers"
       subtitle="Move inventory between warehouse locations."
       addLabel="Create Transfer"
-      onAdd={() => { if (!guardEdit()) return; resetForm(); setView('form'); }}
+      onAdd={() => { resetForm(); setView('form'); }}
       kpis={[
         { key: 'total', label: 'Total Transfers', value: String(metrics.total) },
         { key: 'pending', label: 'Pending', value: String(metrics.pending), alert: metrics.pending > 0 },

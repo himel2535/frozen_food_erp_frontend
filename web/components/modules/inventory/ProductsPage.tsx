@@ -232,18 +232,17 @@ export function ProductsPage() {
   };
 
   const openCreate = useCallback(() => {
-    if (!guardEdit()) return;
     resetForm();
     setView('form');
-  }, [guardEdit]);
+  }, []);
 
   useChromeSuppressed(view !== 'main');
 
   useRegisterModuleActions(
-    view === 'main' && canEdit ? (
+    view === 'main' ? (
       <ModuleToolbarActions onAdd={openCreate} addLabel="Add Product SKU" />
     ) : null,
-    [view, openCreate, canEdit],
+    [view, openCreate],
   );
 
   const openEdit = (row: Record<string, unknown>) => {
@@ -256,7 +255,7 @@ export function ProductsPage() {
   };
 
   const handleSave = async (payload: ProductFormPayload, action: 'save' | 'save-and-add') => {
-    if (!guardEdit()) return;
+    if (editingId && !guardEdit()) return;
     if (apiMode) {
       const body = mapProductPayloadToApi(payload);
       const result = editingId
