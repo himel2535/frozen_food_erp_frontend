@@ -2,7 +2,7 @@
 
 import { useRef } from 'react';
 import { Icon } from '@iconify/react';
-import { formatCurrency } from '@/lib/services/domain-service';
+import { formatCurrencyWhole } from '@/lib/services/domain-service';
 import { ReportSectionHeader } from '@/components/modules/reports/shared/ReportSectionHeader';
 import {
   buildDonutArcs,
@@ -56,7 +56,7 @@ export function ReportDonutChart({
     ? getSliceColors(colorMap, legendSlices[0].key, 0)
     : DEFAULT_DONUT_COLORS;
 
-  const centerText = formatCenter ? formatCenter(totalAmount) : formatCurrency(totalAmount);
+  const centerText = formatCenter ? formatCenter(totalAmount) : formatCurrencyWhole(totalAmount);
   const svgRef = useRef<SVGSVGElement>(null);
   const motionKey = buildMotionKey([
     prefix,
@@ -137,10 +137,13 @@ export function ReportDonutChart({
               ))
             )}
           </svg>
-          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-            <div className="w-16 h-16 rounded-full bg-white/95 border border-slate-100 shadow-sm flex flex-col items-center justify-center px-1">
-              <span className="text-[9px] font-bold text-slate-500 leading-none">{totalLabel}</span>
-              <span className="text-[10px] font-extrabold text-slate-900 tabular-nums leading-tight mt-0.5 text-center">
+          <div
+            className="absolute inset-0 flex items-center justify-center pointer-events-none"
+            style={{ padding: DONUT_STROKE }}
+          >
+            <div className="flex h-full w-full flex-col items-center justify-center rounded-full bg-white/95 text-center px-1.5">
+              <span className="text-[9px] font-bold text-slate-500 leading-tight text-center">{totalLabel}</span>
+              <span className="text-[10px] font-extrabold text-slate-900 tabular-nums leading-tight mt-0.5 text-center break-words max-w-full">
                 {centerText}
               </span>
             </div>

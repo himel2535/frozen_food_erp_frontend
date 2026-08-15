@@ -9,6 +9,7 @@ import {
   type ReportType,
 } from '@/lib/services/report-api-service';
 import { useReportInitialData } from '@/components/providers/ReportInitialDataProvider';
+import { onApiMutation } from '@/lib/services/api-sync-events';
 
 type ReportHookResult<T> = {
   rows: T;
@@ -57,6 +58,21 @@ function useReportPayload(type: ReportType) {
 export function useSalesReportApiRows(): ReportHookResult<Record<string, unknown>[]> {
   const { payload, loading, initialized, error, reload } = useReportPayload('sales');
   const rows = !payload || isHrReportPayload(payload) ? [] : (payload as ReportListPayload).rows;
+  return { rows, loading, initialized, error, reload };
+}
+
+export function useProductSalesReportApiRows(): ReportHookResult<Record<string, unknown>[]> {
+  const { payload, loading, initialized, error, reload } = useReportPayload('product-sales');
+  const rows = !payload || isHrReportPayload(payload) ? [] : (payload as ReportListPayload).rows;
+
+  useEffect(() => {
+    return onApiMutation((modules) => {
+      if (!modules || modules.includes('invoices') || modules.includes('salesOrders')) {
+        void reload();
+      }
+    });
+  }, [reload]);
+
   return { rows, loading, initialized, error, reload };
 }
 

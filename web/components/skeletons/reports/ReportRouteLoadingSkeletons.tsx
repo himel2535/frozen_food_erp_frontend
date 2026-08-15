@@ -67,6 +67,19 @@ export function SalesReportLoadingSkeleton() {
   );
 }
 
+export function ProductSalesReportLoadingSkeleton() {
+  return (
+    <ReportRouteShell label="Loading product sales report" kpiCount={5} kpiGridClassName={SR_GRID_5}>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-2">
+        <ReportDonutSkeleton />
+        <ReportDonutSkeleton />
+        <ReportTopListSkeleton />
+      </div>
+      <ReportTableSkeleton columns={7} />
+    </ReportRouteShell>
+  );
+}
+
 export function PurchaseReportLoadingSkeleton() {
   return (
     <ReportRouteShell label="Loading purchase report" kpiCount={5} kpiGridClassName={SR_GRID_5}>
@@ -162,6 +175,7 @@ export function HrReportLoadingSkeleton() {
 
 const REPORT_LOADING_BY_ROUTE: Record<string, () => ReactNode> = {
   '/reports/sales': () => <SalesReportLoadingSkeleton />,
+  '/reports/product-sales': () => <ProductSalesReportLoadingSkeleton />,
   '/reports/purchases': () => <PurchaseReportLoadingSkeleton />,
   '/reports/inventory': () => <InventoryReportLoadingSkeleton />,
   '/reports/customers': () => <CustomerReportLoadingSkeleton />,

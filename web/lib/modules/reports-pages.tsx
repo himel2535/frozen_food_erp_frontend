@@ -1,4 +1,5 @@
 export { SalesReportsPage as ReportsSalesPage } from '@/components/modules/reports/sales/SalesReportsPage';
+export { ProductSalesReportsPage as ReportsProductSalesPage } from '@/components/modules/reports/product-sales/ProductSalesReportsPage';
 export { PurchaseReportsPage as ReportsPurchasesPage } from '@/components/modules/reports/purchases/PurchaseReportsPage';
 export { InventoryReportsPage as ReportsInventoryPage } from '@/components/modules/reports/inventory/InventoryReportsPage';
 export { CustomerReportsPage as ReportsCustomersPage } from '@/components/modules/reports/customers/CustomerReportsPage';

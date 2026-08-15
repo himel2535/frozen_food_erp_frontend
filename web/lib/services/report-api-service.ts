@@ -3,6 +3,7 @@ import { apiRequest } from '@/lib/services/api-client';
 
 export type ReportType =
   | 'sales'
+  | 'product-sales'
   | 'purchases'
   | 'inventory'
   | 'customers'

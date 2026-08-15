@@ -68,6 +68,7 @@ const htmlRedirects = [
   ['payroll-runs.html', '/payroll/runs'],
   ['payroll-slips.html', '/payroll/slips'],
   ['reports-sales.html', '/reports/sales'],
+  ['reports-product-sales.html', '/reports/product-sales'],
   ['reports-purchases.html', '/reports/purchases'],
   ['reports-inventory.html', '/reports/inventory'],
   ['reports-customers.html', '/reports/customers'],

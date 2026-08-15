@@ -115,6 +115,7 @@ const CUSTOM_PAGE_META: Record<string, MetaSource> = {
   '/messages': { titleKey: 'messages.title', subtitleKey: 'messages.subtitle' },
   '/alerts': { titleKey: 'alerts.title', subtitleKey: 'alerts.subtitle' },
   '/reports/sales': { titleKey: 'reports.sales_title', subtitleKey: 'reports.sales_subtitle' },
+  '/reports/product-sales': { titleKey: 'reports.product_sales_title', subtitleKey: 'reports.product_sales_subtitle' },
   '/reports/purchases': { titleKey: 'reports.purchases_title', subtitleKey: 'reports.purchases_subtitle' },
   '/reports/inventory': { titleKey: 'reports.inventory_title', subtitleKey: 'reports.inventory_subtitle' },
   '/reports/customers': { titleKey: 'reports.customers_title', subtitleKey: 'reports.customers_subtitle' },

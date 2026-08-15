@@ -111,6 +111,11 @@ export function formatCurrency(value: number) {
   return `৳ ${Number(value || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
 
+/** Taka amount without decimal places (donut centers and compact labels). */
+export function formatCurrencyWhole(value: number) {
+  return `৳ ${Math.round(Number(value || 0)).toLocaleString('en-US')}`;
+}
+
 /** Numeric amount without currency symbol (use column labels like "Unit Cost (tk)" instead). */
 export function formatAmount(value: number) {
   return Number(value || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });

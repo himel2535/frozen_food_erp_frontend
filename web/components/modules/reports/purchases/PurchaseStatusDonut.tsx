@@ -121,10 +121,13 @@ export function PurchaseStatusDonut({
               ))
             )}
           </svg>
-          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-            <div className="w-16 h-16 rounded-full bg-white/95 border border-slate-100 shadow-sm flex flex-col items-center justify-center px-1">
-              <span className="text-[9px] font-bold text-slate-500 leading-none">{t('reports.purchases_total_label')}</span>
-              <span className="text-[10px] font-extrabold text-slate-900 tabular-nums leading-tight mt-0.5 text-center">
+          <div
+            className="absolute inset-0 flex items-center justify-center pointer-events-none"
+            style={{ padding: DONUT_STROKE }}
+          >
+            <div className="flex h-full w-full flex-col items-center justify-center rounded-full bg-white/95 text-center px-2">
+              <span className="text-[10px] font-bold text-slate-500 leading-tight">{t('reports.purchases_total_label')}</span>
+              <span className="text-xs font-extrabold text-slate-900 tabular-nums leading-tight mt-0.5 break-words max-w-full">
                 {formatCurrency(totalAmount)}
               </span>
             </div>

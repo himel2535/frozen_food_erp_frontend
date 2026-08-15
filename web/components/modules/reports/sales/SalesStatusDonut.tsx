@@ -122,10 +122,13 @@ export function SalesStatusDonut({
               ))
             )}
           </svg>
-          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-            <div className="w-16 h-16 rounded-full bg-white/95 border border-slate-100 shadow-sm flex flex-col items-center justify-center">
-              <span className="text-lg font-extrabold text-emerald-600 tabular-nums leading-none">{paidPct}%</span>
-              <span className="text-[9px] font-bold text-slate-500 mt-0.5">{t('reports.sales_paid_label')}</span>
+          <div
+            className="absolute inset-0 flex items-center justify-center pointer-events-none"
+            style={{ padding: DONUT_STROKE }}
+          >
+            <div className="flex h-full w-full flex-col items-center justify-center rounded-full bg-white/95 text-center px-2">
+              <span className="text-lg font-extrabold text-emerald-600 tabular-nums leading-tight">{paidPct}%</span>
+              <span className="text-[10px] font-bold text-slate-500 leading-tight mt-0.5">{t('reports.sales_paid_label')}</span>
             </div>
           </div>
         </div>

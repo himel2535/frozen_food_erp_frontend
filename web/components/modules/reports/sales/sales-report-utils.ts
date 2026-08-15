@@ -41,6 +41,28 @@ export type SalesChartPoint = {
   lastMonth: number;
 };
 
+function parseDay(iso: string): Date | null {
+  const day = String(iso ?? '').slice(0, 10);
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(day)) return null;
+  const d = new Date(`${day}T00:00:00`);
+  return Number.isNaN(d.getTime()) ? null : d;
+}
+
+function monthKey(d: Date): string {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+}
+
+function referenceDate(rows: SalesReportRow[]): Date {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  let latest = today;
+  rows.forEach((row) => {
+    const d = parseDay(row.date);
+    if (d && d > latest) latest = d;
+  });
+  return latest;
+}
+
 function normalizeRow(row: Record<string, unknown>): SalesReportRow {
   return {
     id: String(row.id ?? row.ref ?? ''),
@@ -95,13 +117,17 @@ function trendSub(current: number, previous: number, suffix: string): string {
 }
 
 function splitByMonth(rows: SalesReportRow[]) {
+  const ref = referenceDate(rows);
+  const thisKey = monthKey(ref);
+  const last = new Date(ref.getFullYear(), ref.getMonth() - 1, 1);
+  const lastKey = monthKey(last);
   const thisMonth: SalesReportRow[] = [];
   const lastMonth: SalesReportRow[] = [];
 
   rows.forEach((row) => {
     const month = row.date.slice(0, 7);
-    if (month === '2026-06') thisMonth.push(row);
-    else if (month === '2026-05') lastMonth.push(row);
+    if (month === thisKey) thisMonth.push(row);
+    else if (month === lastKey) lastMonth.push(row);
   });
 
   return { thisMonth, lastMonth };
@@ -212,23 +238,44 @@ export function buildTopCustomers(rows: SalesReportRow[], limit = 5): SalesTopCu
     .slice(0, limit);
 }
 
-const CHART_BUCKETS = ['May 5', 'May 12', 'May 19', 'May 26', 'Jun 2', 'Jun 9', 'Jun 16'];
-
 export function buildChartSeries(rows: SalesReportRow[]): SalesChartPoint[] {
-  const mayRows = rows.filter((r) => r.date.startsWith('2026-05'));
-  const juneRows = rows.filter((r) => r.date.startsWith('2026-06'));
+  const active = rows.filter((row) => {
+    const status = row.status.toLowerCase();
+    return status !== 'cancelled' && status !== 'draft';
+  });
+  const ref = referenceDate(active);
+  const thisYear = ref.getFullYear();
+  const thisMonthIdx = ref.getMonth();
+  const lastDay = new Date(thisYear, thisMonthIdx + 1, 0).getDate();
+  const cuts = [...new Set([5, 10, 15, 20, 25, lastDay].filter((day) => day <= lastDay))];
 
-  const bucketMay = (day: number) => mayRows.filter((r) => Number(r.date.slice(8, 10)) <= day);
-  const bucketJune = (day: number) => juneRows.filter((r) => Number(r.date.slice(8, 10)) <= day);
+  const lastMonthDate = new Date(thisYear, thisMonthIdx - 1, 1);
+  const lastYear = lastMonthDate.getFullYear();
+  const lastMonthIdx = lastMonthDate.getMonth();
+  const lastMonthLastDay = new Date(lastYear, lastMonthIdx + 1, 0).getDate();
 
-  const mayCuts = [5, 12, 19, 26].map((d) => bucketMay(d).reduce((s, r) => s + r.total, 0));
-  const juneCuts = [2, 9, 16].map((d) => bucketJune(d).reduce((s, r) => s + r.total, 0));
+  const sumInWindow = (year: number, month: number, startDay: number, endDay: number) =>
+    active.reduce((sum, row) => {
+      const d = parseDay(row.date);
+      if (!d || d.getFullYear() !== year || d.getMonth() !== month) return sum;
+      const day = d.getDate();
+      if (day < startDay || day > endDay) return sum;
+      return sum + row.total;
+    }, 0);
 
-  return CHART_BUCKETS.map((label, idx) => ({
-    label,
-    lastMonth: idx < 4 ? mayCuts[idx] ?? 0 : 0,
-    thisMonth: idx >= 4 ? juneCuts[idx - 4] ?? 0 : 0,
-  }));
+  return cuts.map((endDay, index) => {
+    const startDay = index === 0 ? 1 : (cuts[index - 1] ?? 0) + 1;
+    return {
+      label: String(endDay),
+      thisMonth: sumInWindow(thisYear, thisMonthIdx, startDay, endDay),
+      lastMonth: sumInWindow(
+        lastYear,
+        lastMonthIdx,
+        startDay,
+        Math.min(endDay, lastMonthLastDay),
+      ),
+    };
+  });
 }
 
 export function customerInitials(name: string): string {

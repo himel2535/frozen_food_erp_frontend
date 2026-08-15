@@ -9,6 +9,7 @@ import type {
 import type { InventoryReportRow } from '@/components/modules/reports/inventory/inventory-report-utils';
 import type { PurchaseReportRow } from '@/components/modules/reports/purchases/purchase-report-utils';
 import type { SalesReportRow } from '@/components/modules/reports/sales/sales-report-utils';
+import type { ProductSaleLine, ProductSalesRow } from '@/components/modules/reports/product-sales/product-sales-report-utils';
 import type { SupplierReportRow } from '@/components/modules/reports/suppliers/supplier-report-utils';
 
 export type ReportExportKpi = {
@@ -117,6 +118,61 @@ export function exportSalesReportCsv(args: {
         row.status,
         row.paymentMethod,
         row.total.toFixed(2),
+      ]),
+    }],
+  });
+}
+
+export function exportProductSalesReportCsv(args: {
+  title: string;
+  filterSummary: string;
+  kpis: ReportExportKpi[];
+  rows: ProductSalesRow[];
+}): number {
+  if (!args.rows.length) return 0;
+  return downloadReportCsv({
+    slug: 'product-sales-report',
+    title: args.title,
+    filterSummary: args.filterSummary,
+    kpis: kpiItems(args.kpis),
+    sections: [{
+      title: 'Product Sales',
+      headers: ['Product', 'SKU', 'Qty Sold', 'Avg Price (BDT)', 'Revenue (BDT)', 'Invoices', 'Share %'],
+      rows: args.rows.map((row) => [
+        row.productName,
+        row.sku,
+        row.qty,
+        row.avgPrice.toFixed(2),
+        row.revenue.toFixed(2),
+        row.invoiceCount,
+        row.sharePct.toFixed(1),
+      ]),
+    }],
+  });
+}
+
+export function exportProductSalesLinesCsv(args: {
+  title: string;
+  filterSummary: string;
+  kpis: ReportExportKpi[];
+  rows: ProductSaleLine[];
+}): number {
+  if (!args.rows.length) return 0;
+  return downloadReportCsv({
+    slug: 'product-sales-item-report',
+    title: args.title,
+    filterSummary: args.filterSummary,
+    kpis: kpiItems(args.kpis),
+    sections: [{
+      title: 'Invoice Lines',
+      headers: ['Date', 'Invoice', 'Customer', 'Qty', 'Unit Price (BDT)', 'Revenue (BDT)'],
+      rows: args.rows.map((row) => [
+        row.date,
+        row.invoiceRef,
+        row.customer,
+        row.qty,
+        row.unitPrice.toFixed(2),
+        row.revenue.toFixed(2),
       ]),
     }],
   });

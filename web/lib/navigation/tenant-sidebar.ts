@@ -130,6 +130,7 @@ export const TENANT_SIDEBAR_SECTIONS: SidebarSection[] = [
     id: 'reports', label: 'Reports', href: '/reports/sales', imageIcon: '/images/sidebar/reports.png', iconifyIcon: 'fluent-color:chart-multiple-24', color: 'text-slate-600',
     items: [
       { label: 'Sales Reports', href: '/reports/sales', view: 'sales', iconifyIcon: 'fluent-color:data-bar-vertical-ascending-24' },
+      { label: 'Product Sales Reports', href: '/reports/product-sales', view: 'product-sales', iconifyIcon: 'fluent-color:data-area-24' },
       { label: 'Purchase Reports', href: '/reports/purchases', view: 'purchases', iconifyIcon: 'fluent-color:data-pie-24' },
       { label: 'Inventory Reports', href: '/reports/inventory', view: 'inventory', iconifyIcon: 'flat-color-icons:bar-chart' },
       { label: 'Customer Reports', href: '/reports/customers', view: 'customers', iconifyIcon: 'fluent-color:scan-person-24' },
