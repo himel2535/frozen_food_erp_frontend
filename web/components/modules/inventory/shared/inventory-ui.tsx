@@ -3,6 +3,7 @@
 import type { FormEvent, ReactNode } from 'react';
 import { Footer } from '@/components/layout/Footer';
 import { useRegisterModuleActions } from '@/components/layout/ModuleActionsContext';
+import { useInventoryEditAccess } from '@/hooks/use-inventory-edit-access';
 import { AppFormModal } from '@/components/shared/AppForm';
 import { ModuleKpiSection } from '@/components/shared/ModuleKpiSection';
 import type { KpiCardItem } from '@/components/shared/KpiCards';
@@ -21,11 +22,23 @@ export const SELECT_CLS = FORM_SELECT_CLS;
 export const BTN_PRIMARY = FORM_BTN_PRIMARY;
 export const BTN_SECONDARY = FORM_BTN_SECONDARY;
 
+export function InventoryEditActions({
+  canEdit,
+  children,
+}: {
+  canEdit: boolean;
+  children: ReactNode;
+}) {
+  if (!canEdit) return null;
+  return <>{children}</>;
+}
+
 export function InventoryListLayout({
   title,
   subtitle,
   addLabel,
   onAdd,
+  canEdit: canEditProp,
   kpis,
   kpiGridClassName,
   kpiCount,
@@ -38,6 +51,7 @@ export function InventoryListLayout({
   subtitle: string;
   addLabel: string;
   onAdd: () => void;
+  canEdit?: boolean;
   kpis: KpiCardItem[];
   kpiGridClassName?: string;
   kpiCount?: number;
@@ -46,9 +60,14 @@ export function InventoryListLayout({
   children: React.ReactNode;
   pagination?: React.ReactNode;
 }) {
+  const { canEdit: canEditFromHook } = useInventoryEditAccess();
+  const canEdit = canEditProp ?? canEditFromHook;
+
   useRegisterModuleActions(
-    <button type="button" onClick={onAdd} className={BTN_PRIMARY}>+ {addLabel}</button>,
-    [onAdd, addLabel],
+    canEdit ? (
+      <button type="button" onClick={onAdd} className={BTN_PRIMARY}>+ {addLabel}</button>
+    ) : null,
+    [onAdd, addLabel, canEdit],
   );
 
   return (

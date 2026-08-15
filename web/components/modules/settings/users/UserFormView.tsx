@@ -14,6 +14,8 @@ import {
   CF_SUB_PANEL_CLS,
 } from '@/components/modules/crm/customer-form/customer-form-styles';
 import { RoleSectionAccessGrid } from '@/components/modules/settings/roles/RoleSectionAccessGrid';
+import { GranularPermissionsPanel } from '@/components/modules/settings/roles/GranularPermissionsPanel';
+import type { GranularPermission } from '@/lib/config/granular-permissions';
 import { ImageUploadField } from '@/components/shared/ImageUploadField';
 import { summarizeRoleSections } from '@/lib/services/access-control-service';
 import { MODULE_LIST_SHELL } from '@/lib/ui/module-layout';
@@ -32,6 +34,7 @@ export type UserFormState = {
   roleId: string;
   customizeAccess: boolean;
   allowedSections: SectionId[];
+  allowedPermissions: string[];
 };
 
 type TranslateFn = (key: string, vars?: Record<string, string | number>) => string;
@@ -54,6 +57,7 @@ export function UserFormView({
   onSelectAllSections,
   onClearAllSections,
   onToggleCustomizeAccess,
+  onTogglePermission,
   t,
 }: {
   form: UserFormState;
@@ -73,6 +77,7 @@ export function UserFormView({
   onSelectAllSections: () => void;
   onClearAllSections: () => void;
   onToggleCustomizeAccess: () => void;
+  onTogglePermission: (permission: GranularPermission) => void;
   t: TranslateFn;
 }) {
   const sectionCount = displaySections.length;
@@ -273,6 +278,13 @@ export function UserFormView({
               <RoleSectionAccessGrid
                 selected={displaySections}
                 onToggle={onToggleSection}
+                disabled={accessDisabled}
+              />
+
+              <GranularPermissionsPanel
+                allowedSections={displaySections}
+                allowedPermissions={form.allowedPermissions}
+                onTogglePermission={onTogglePermission}
                 disabled={accessDisabled}
               />
 

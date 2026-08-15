@@ -21,6 +21,7 @@ import {
 } from '@/lib/services/admin-roles-api';
 import { createAdminUser } from '@/lib/services/admin-users-api';
 import { getSectionOptions } from '@/lib/navigation/section-access';
+import type { GranularPermission } from '@/lib/config/granular-permissions';
 import type { RoleRecord, SectionId } from '@/lib/state/types';
 import { toast, confirmAction } from '@/lib/ui/feedback';
 import { getKpiGridClassName } from '@/lib/ui/kpi-grid';
@@ -36,6 +37,7 @@ const EMPTY_FORM: FormState = {
   notes: '',
   status: 'active',
   allowedSections: ['dashboard'],
+  allowedPermissions: [],
   provisionName: '',
   provisionEmail: '',
   provisionPassword: '',
@@ -108,6 +110,7 @@ export function RolesAdminPage() {
       notes: row.notes ?? '',
       status: row.status,
       allowedSections: [...row.allowedSections],
+      allowedPermissions: [...(row.allowedPermissions ?? [])],
       provisionName: '',
       provisionEmail: '',
       provisionPassword: '',
@@ -189,6 +192,18 @@ export function RolesAdminPage() {
     });
   };
 
+  const togglePermission = (permission: GranularPermission) => {
+    setForm((prev) => {
+      const has = prev.allowedPermissions.includes(permission);
+      return {
+        ...prev,
+        allowedPermissions: has
+          ? prev.allowedPermissions.filter((p) => p !== permission)
+          : [...prev.allowedPermissions, permission],
+      };
+    });
+  };
+
   const handlePresetSelect = (preset: {
     name: string;
     description: string;
@@ -239,6 +254,7 @@ export function RolesAdminPage() {
         contactEmail: form.contactEmail.trim() || undefined,
         notes: form.notes.trim() || undefined,
         allowedSections: form.allowedSections,
+        allowedPermissions: form.allowedPermissions,
         status: form.status,
       };
 
@@ -256,6 +272,7 @@ export function RolesAdminPage() {
             email: form.provisionEmail.trim(),
             password: form.provisionPassword,
             allowedSections: savedRole.allowedSections,
+            allowedPermissions: savedRole.allowedPermissions ?? [],
             roleId: savedRole.id,
           });
           toast.success(t('settings.roles_provision_success'));
@@ -322,6 +339,7 @@ export function RolesAdminPage() {
         onClearAllSections={() =>
           setForm((f) => ({ ...f, allowedSections: ['dashboard'] }))
         }
+        onTogglePermission={togglePermission}
         t={t}
       />
     );

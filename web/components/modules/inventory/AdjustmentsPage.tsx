@@ -10,7 +10,8 @@ import { ProductSelect, WarehouseSelect } from '@/components/modules/inventory/s
 import { AppTable, type AppTableColumn } from '@/components/shared/AppTable';
 import { StatusBadge } from '@/components/shared/StatusBadge';
 import { TableIconAction } from '@/components/shared/TableIconAction';
-import { InventoryListLayout, FilterBar, FilterSelect } from '@/components/modules/inventory/shared/inventory-ui';
+import { InventoryListLayout, FilterBar, FilterSelect, InventoryEditActions } from '@/components/modules/inventory/shared/inventory-ui';
+import { useInventoryEditAccess } from '@/hooks/use-inventory-edit-access';
 import { useAppStore } from '@/lib/state/app-store';
 import { isModuleApiMode } from '@/lib/config/data-source';
 import { useApiResourceStore } from '@/hooks/use-api-resource-store';
@@ -38,6 +39,7 @@ import {
 } from '@/lib/services/inventory-service';
 
 export function AdjustmentsPage() {
+  const { canEdit, guardEdit } = useInventoryEditAccess();
   const appState = useAppStore((s) => s.appState);
   const saveAppState = useAppStore((s) => s.saveAppState);
   const apiMode = isModuleApiMode('stockAdjustments');
@@ -138,6 +140,7 @@ export function AdjustmentsPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!guardEdit()) return;
     if (apiMode) {
       const product = products.find((p) => String(p.id) === form.productId);
       const body = mapStockAdjustmentPayloadToApi(
@@ -169,6 +172,7 @@ export function AdjustmentsPage() {
   };
 
   const handleApprove = async (id: string) => {
+    if (!guardEdit()) return;
     if (apiMode) {
       const result = await approveStockAdjustmentApi(id);
       if (!result.ok) {
@@ -221,7 +225,7 @@ export function AdjustmentsPage() {
       title="Stock Adjustments"
       subtitle="Audit and approve inventory quantity corrections."
       addLabel="Create Adjustment"
-      onAdd={() => { resetForm(); setView('form'); }}
+      onAdd={() => { if (!guardEdit()) return; resetForm(); setView('form'); }}
       kpis={[
         { key: 'total', label: 'Total Adjustments', value: String(metrics.totalRuns) },
         { key: 'inc', label: 'Qty Increased', value: `+${metrics.totalIncreasedQty}` },
@@ -254,7 +258,7 @@ export function AdjustmentsPage() {
         loading={bootLoading}
         emptyMessage={apiListEmptyMessage(apiStore.loading, apiStore.initialized, 'adjustment records', { totalCount: records.length, filteredCount: filtered.length })}
         renderActions={(row) => (
-          String(row.status) === 'Pending' ? (
+          String(row.status) === 'Pending' && canEdit ? (
             <TableIconAction variant="approve" onClick={() => void handleApprove(String(row.id))} />
           ) : null
         )}

@@ -6,6 +6,7 @@ import { useMemo, useState } from 'react';
 import { ChevronDown, Calculator, Download, Info, Layers, Package, Settings2 } from 'lucide-react';
 import { Footer } from '@/components/layout/Footer';
 import { useChromeSuppressed, useRegisterModuleActions } from '@/components/layout/ModuleActionsContext';
+import { useInventoryEditAccess } from '@/hooks/use-inventory-edit-access';
 import { AppFormFields, AppFormModal, FORM_GRID_CLS, FORM_LABEL_CLS } from '@/components/shared/AppForm';
 import { AppTable, type AppTableColumn } from '@/components/shared/AppTable';
 import { FilterTabs } from '@/components/shared/FilterTabs';
@@ -96,6 +97,7 @@ function ProductThumb({ category }: { category: string }) {
 }
 
 export function SemiFinishedProductsPage() {
+  const { canEdit, guardEdit } = useInventoryEditAccess();
   const appState = useAppStore((s) => s.appState);
   const saveAppState = useAppStore((s) => s.saveAppState);
   const apiMode = isModuleApiMode('semiFinishedProducts');
@@ -322,11 +324,13 @@ export function SemiFinishedProductsPage() {
   };
 
   const openCreate = () => {
+    if (!guardEdit()) return;
     resetForm();
     setView('form');
   };
 
   const openEdit = (row: Record<string, unknown>) => {
+    if (!guardEdit()) return;
     setForm({
       name: String(row.name ?? ''),
       category: String(row.category ?? ''),
@@ -363,6 +367,7 @@ export function SemiFinishedProductsPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!guardEdit()) return;
     const payload = {
       ...form,
       recipeId: form.recipeId || undefined,
@@ -451,7 +456,7 @@ export function SemiFinishedProductsPage() {
   useChromeSuppressed(view !== 'main');
 
   useRegisterModuleActions(
-    view === 'main' ? (
+    view === 'main' && canEdit ? (
       <div className="relative self-start">
         <div className="flex">
           <button
@@ -490,7 +495,7 @@ export function SemiFinishedProductsPage() {
         ) : null}
       </div>
     ) : null,
-    [view, showAddMenu, openCreate],
+    [view, showAddMenu, openCreate, canEdit],
   );
 
   if (view === 'detail' && detailRow) {
@@ -684,7 +689,7 @@ export function SemiFinishedProductsPage() {
               >
                 <Calculator className="w-4 h-4" />
               </button>
-              <TableIconAction variant="edit" onClick={() => openEdit(row)} />
+              {canEdit ? <TableIconAction variant="edit" onClick={() => openEdit(row)} /> : null}
             </>
           )}
         />

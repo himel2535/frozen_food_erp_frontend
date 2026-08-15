@@ -14,7 +14,8 @@ import { InventoryItemThumb } from '@/components/shared/InventoryItemThumb';
 import { ModuleKpiSection } from '@/components/shared/ModuleKpiSection';
 import { StatusBadge } from '@/components/shared/StatusBadge';
 import { TableIconAction } from '@/components/shared/TableIconAction';
-import { FilterBar, FilterResetButton, FilterSelect } from '@/components/modules/inventory/shared/inventory-ui';
+import { FilterBar, FilterResetButton, FilterSelect, InventoryEditActions } from '@/components/modules/inventory/shared/inventory-ui';
+import { useInventoryEditAccess } from '@/hooks/use-inventory-edit-access';
 import { SupplierSelect, WarehouseSelect } from '@/components/modules/inventory/shared/selects';
 import { useAppStore } from '@/lib/state/app-store';
 import type { PortField } from '@/lib/modules/port-types';
@@ -85,6 +86,7 @@ function MaterialThumb({ category }: { category: string }) {
 }
 
 export function RawMaterialsPage() {
+  const { canEdit, guardEdit } = useInventoryEditAccess();
   const appState = useAppStore((s) => s.appState);
   const saveAppState = useAppStore((s) => s.saveAppState);
   const apiMode = isModuleApiMode('rawMaterials');
@@ -306,6 +308,7 @@ export function RawMaterialsPage() {
   };
 
   const openEdit = (row: Record<string, unknown>) => {
+    if (!guardEdit()) return;
     setForm({
       name: String(row.name ?? ''),
       category: String(row.category ?? ''),
@@ -326,6 +329,7 @@ export function RawMaterialsPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!guardEdit()) return;
     const payload = {
       ...form,
       quantity: Number(form.quantity || 0),
@@ -373,16 +377,16 @@ export function RawMaterialsPage() {
   useChromeSuppressed(view === 'form');
 
   useRegisterModuleActions(
-    view === 'main' ? (
+    view === 'main' && canEdit ? (
       <button
         type="button"
-        onClick={() => { resetForm(); setView('form'); }}
+        onClick={() => { if (!guardEdit()) return; resetForm(); setView('form'); }}
         className="bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold px-4 py-2.5 rounded-xl cursor-pointer"
       >
         + Add Raw Material
       </button>
     ) : null,
-    [view],
+    [view, canEdit, guardEdit],
   );
 
   return (
@@ -468,11 +472,12 @@ export function RawMaterialsPage() {
           loading={bootLoading}
           emptyMessage={apiListEmptyMessage(apiStore.loading, apiStore.initialized, 'raw materials', { totalCount: allMaterials.length, filteredCount: filtered.length })}
           renderActions={(rm) => (
-            <>
+            <InventoryEditActions canEdit={canEdit}>
               <TableIconAction variant="edit" onClick={() => openEdit(rm)} />
               <TableIconAction
                 variant="delete"
                 onClick={() => {
+                  if (!guardEdit()) return;
                   confirmAction({ title: 'Delete raw material', message: 'Delete this raw material?', confirmLabel: 'Delete', tone: 'danger', module: 'Raw Materials' }).then(async (__ok) => {
                     if (!__ok) return;
                     if (apiMode) {
@@ -485,7 +490,7 @@ export function RawMaterialsPage() {
                   });
                 }}
               />
-            </>
+            </InventoryEditActions>
           )}
         />
 

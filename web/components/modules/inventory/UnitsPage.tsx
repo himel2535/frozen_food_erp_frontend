@@ -7,7 +7,8 @@ import { AppFormFields, AppFormModal } from '@/components/shared/AppForm';
 import { AppTable, type AppTableColumn } from '@/components/shared/AppTable';
 import { StatusBadge } from '@/components/shared/StatusBadge';
 import { TableIconAction } from '@/components/shared/TableIconAction';
-import { InventoryListLayout, FilterBar, FilterSelect } from '@/components/modules/inventory/shared/inventory-ui';
+import { InventoryListLayout, FilterBar, FilterSelect, InventoryEditActions } from '@/components/modules/inventory/shared/inventory-ui';
+import { useInventoryEditAccess } from '@/hooks/use-inventory-edit-access';
 import { useAppStore } from '@/lib/state/app-store';
 import type { PortField } from '@/lib/modules/port-types';
 import { isModuleApiMode } from '@/lib/config/data-source';
@@ -42,6 +43,7 @@ const UNIT_FIELDS: PortField[] = [
 ];
 
 export function UnitsPage() {
+  const { canEdit, guardEdit } = useInventoryEditAccess();
   const appState = useAppStore((s) => s.appState);
   const saveAppState = useAppStore((s) => s.saveAppState);
   const apiMode = isModuleApiMode('units');
@@ -117,6 +119,7 @@ export function UnitsPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!guardEdit()) return;
     const payload = { ...form, conversionFactor: Number(form.conversionFactor || 1) };
     if (apiMode) {
       const body = mapUnitPayloadToApi(payload);
@@ -138,6 +141,7 @@ export function UnitsPage() {
   };
 
   const handleDelete = async (id: string) => {
+    if (!guardEdit()) return;
     const __ok = await confirmAction({ title: "Delete this unit", message: "Delete this unit?", confirmLabel: 'Delete', tone: 'danger', module: 'Units' }); if (!__ok) return;
     if (apiMode) {
       const result = await apiStore.remove(id);
@@ -171,7 +175,7 @@ export function UnitsPage() {
       title="Units of Measure"
       subtitle="Manage units used across products and inventory transactions."
       addLabel="Add Unit"
-      onAdd={() => { resetForm(); setView('form'); }}
+      onAdd={() => { if (!guardEdit()) return; resetForm(); setView('form'); }}
       kpis={[
         { key: 'total', label: 'Total Units', value: String(total) },
         { key: 'active', label: 'Active Units', value: String(activeUnits) },
@@ -202,10 +206,10 @@ export function UnitsPage() {
         loading={bootLoading}
         emptyMessage={apiListEmptyMessage(apiStore.loading, apiStore.initialized, 'units', { totalCount: units.length, filteredCount: filtered.length })}
         renderActions={(unit) => (
-          <>
-            <TableIconAction variant="edit" onClick={() => openEdit(unit)} />
+          <InventoryEditActions canEdit={canEdit}>
+            <TableIconAction variant="edit" onClick={() => { if (!guardEdit()) return; openEdit(unit); }} />
             <TableIconAction variant="delete" onClick={() => handleDelete(String(unit.id))} />
-          </>
+          </InventoryEditActions>
         )}
       />
     </InventoryListLayout>

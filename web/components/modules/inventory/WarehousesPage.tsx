@@ -10,7 +10,8 @@ import { ImageUploadField } from '@/components/shared/ImageUploadField';
 import { InventoryItemThumb } from '@/components/shared/InventoryItemThumb';
 import { StatusBadge } from '@/components/shared/StatusBadge';
 import { TableIconAction } from '@/components/shared/TableIconAction';
-import { InventoryListLayout, FilterBar, FilterSelect } from '@/components/modules/inventory/shared/inventory-ui';
+import { InventoryListLayout, FilterBar, FilterSelect, InventoryEditActions } from '@/components/modules/inventory/shared/inventory-ui';
+import { useInventoryEditAccess } from '@/hooks/use-inventory-edit-access';
 import { useAppStore } from '@/lib/state/app-store';
 import type { PortField } from '@/lib/modules/port-types';
 import { isModuleApiMode } from '@/lib/config/data-source';
@@ -48,6 +49,7 @@ const WAREHOUSE_FIELDS: PortField[] = [
 ];
 
 export function WarehousesPage() {
+  const { canEdit, guardEdit } = useInventoryEditAccess();
   const appState = useAppStore((s) => s.appState);
   const saveAppState = useAppStore((s) => s.saveAppState);
   const apiMode = isModuleApiMode('warehouses');
@@ -138,6 +140,7 @@ export function WarehousesPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!guardEdit()) return;
     const payload = { ...form, capacity: Number(form.capacity || 0) };
     if (apiMode) {
       const body = mapWarehousePayloadToApi(payload);
@@ -159,6 +162,7 @@ export function WarehousesPage() {
   };
 
   const handleDelete = async (id: string) => {
+    if (!guardEdit()) return;
     const __ok = await confirmAction({ title: "Delete this warehouse", message: "Delete this warehouse?", confirmLabel: 'Delete', tone: 'danger', module: 'Warehouses' }); if (!__ok) return;
     if (apiMode) {
       const result = await apiStore.remove(id);
@@ -207,7 +211,7 @@ export function WarehousesPage() {
       title="Warehouses"
       subtitle="Manage warehouse facilities, capacity, and utilization."
       addLabel="Add Warehouse"
-      onAdd={() => { resetForm(); setView('form'); }}
+      onAdd={() => { if (!guardEdit()) return; resetForm(); setView('form'); }}
       kpis={[
         { key: 'total', label: 'Total Warehouses', value: String(metrics.totalCount), sub: `${metrics.activeWarehouses} active · ${metrics.inactiveWarehouses} inactive` },
         { key: 'capacity', label: 'Total Stock Capacity', value: metrics.totalCapacity.toLocaleString(), sub: 'units across all facilities' },
@@ -238,10 +242,10 @@ export function WarehousesPage() {
         loading={bootLoading}
         emptyMessage={apiListEmptyMessage(apiStore.loading, apiStore.initialized, 'warehouses', { totalCount: metrics.warehouses.length, filteredCount: filtered.length })}
         renderActions={(wh) => (
-          <>
-            <TableIconAction variant="edit" onClick={() => openEdit(wh)} />
+          <InventoryEditActions canEdit={canEdit}>
+            <TableIconAction variant="edit" onClick={() => { if (!guardEdit()) return; openEdit(wh); }} />
             <TableIconAction variant="delete" onClick={() => handleDelete(String(wh.id))} />
-          </>
+          </InventoryEditActions>
         )}
       />
     </InventoryListLayout>

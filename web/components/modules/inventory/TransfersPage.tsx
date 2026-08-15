@@ -10,7 +10,8 @@ import { ProductSelect, WarehouseSelect } from '@/components/modules/inventory/s
 import { AppTable, type AppTableColumn } from '@/components/shared/AppTable';
 import { StatusBadge } from '@/components/shared/StatusBadge';
 import { TableIconAction } from '@/components/shared/TableIconAction';
-import { InventoryListLayout, FilterBar, FilterSelect } from '@/components/modules/inventory/shared/inventory-ui';
+import { InventoryListLayout, FilterBar, FilterSelect, InventoryEditActions } from '@/components/modules/inventory/shared/inventory-ui';
+import { useInventoryEditAccess } from '@/hooks/use-inventory-edit-access';
 import { useAppStore } from '@/lib/state/app-store';
 import { isModuleApiMode } from '@/lib/config/data-source';
 import { useApiResourceStore } from '@/hooks/use-api-resource-store';
@@ -37,6 +38,7 @@ import {
 } from '@/lib/services/inventory-service';
 
 export function TransfersPage() {
+  const { canEdit, guardEdit } = useInventoryEditAccess();
   const appState = useAppStore((s) => s.appState);
   const saveAppState = useAppStore((s) => s.saveAppState);
   const apiMode = isModuleApiMode('stockTransfers');
@@ -113,6 +115,7 @@ export function TransfersPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!guardEdit()) return;
     if (apiMode) {
       const product = products.find((p) => String(p.id) === form.productId);
       const body = mapStockTransferPayloadToApi(
@@ -142,6 +145,7 @@ export function TransfersPage() {
   };
 
   const handleComplete = async (id: string) => {
+    if (!guardEdit()) return;
     if (apiMode) {
       const result = await completeStockTransferApi(id);
       if (!result.ok) {
@@ -175,7 +179,7 @@ export function TransfersPage() {
       title="Stock Transfers"
       subtitle="Move inventory between warehouse locations."
       addLabel="Create Transfer"
-      onAdd={() => { resetForm(); setView('form'); }}
+      onAdd={() => { if (!guardEdit()) return; resetForm(); setView('form'); }}
       kpis={[
         { key: 'total', label: 'Total Transfers', value: String(metrics.total) },
         { key: 'pending', label: 'Pending', value: String(metrics.pending), alert: metrics.pending > 0 },
@@ -206,7 +210,7 @@ export function TransfersPage() {
         loading={bootLoading}
         emptyMessage={apiListEmptyMessage(apiStore.loading, apiStore.initialized, 'transfer records', { totalCount: records.length, filteredCount: filtered.length })}
         renderActions={(row) => (
-          String(row.status) === 'Pending' ? (
+          String(row.status) === 'Pending' && canEdit ? (
             <TableIconAction variant="approve" label="Complete" onClick={() => void handleComplete(String(row.id))} />
           ) : null
         )}

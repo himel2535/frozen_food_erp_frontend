@@ -5,6 +5,8 @@ import { toast, confirmAction } from '@/lib/ui/feedback';
 import { useMemo, useState, useCallback } from 'react';
 import { Footer } from '@/components/layout/Footer';
 import { useChromeSuppressed, useRegisterModuleActions } from '@/components/layout/ModuleActionsContext';
+import { useInventoryEditAccess } from '@/hooks/use-inventory-edit-access';
+import { InventoryEditActions } from '@/components/modules/inventory/shared/inventory-ui';
 import { ModuleToolbarActions } from '@/components/shared/ListToolbar';
 import { ModuleFilterBar } from '@/components/shared/ModuleFilterBar';
 import { MODULE_FILTER_INPUT } from '@/lib/ui/module-chrome-styles';
@@ -87,6 +89,7 @@ function emptyWarehouseStock(warehouseIds: string[]): Record<string, string> {
 }
 
 export function ProductsPage() {
+  const { canEdit, guardEdit } = useInventoryEditAccess();
   const appState = useAppStore((s) => s.appState);
   const saveAppState = useAppStore((s) => s.saveAppState);
   const apiMode = isModuleApiMode('products');
@@ -229,20 +232,22 @@ export function ProductsPage() {
   };
 
   const openCreate = useCallback(() => {
+    if (!guardEdit()) return;
     resetForm();
     setView('form');
-  }, []);
+  }, [guardEdit]);
 
   useChromeSuppressed(view !== 'main');
 
   useRegisterModuleActions(
-    view === 'main' ? (
+    view === 'main' && canEdit ? (
       <ModuleToolbarActions onAdd={openCreate} addLabel="Add Product SKU" />
     ) : null,
-    [view, openCreate],
+    [view, openCreate, canEdit],
   );
 
   const openEdit = (row: Record<string, unknown>) => {
+    if (!guardEdit()) return;
     setFormValues(rowToProductFormValues(row, warehouseIds));
     setWarehouseStock(warehouseStockToStrings(row, warehouseIds));
     setEditingId(String(row.id));
@@ -251,6 +256,7 @@ export function ProductsPage() {
   };
 
   const handleSave = async (payload: ProductFormPayload, action: 'save' | 'save-and-add') => {
+    if (!guardEdit()) return;
     if (apiMode) {
       const body = mapProductPayloadToApi(payload);
       const result = editingId
@@ -358,11 +364,12 @@ export function ProductsPage() {
         loading={bootLoading}
         emptyMessage={apiListEmptyMessage(apiStore.loading, apiStore.initialized, 'products', { totalCount: allProducts.length, filteredCount: products.length })}
         renderActions={(row) => (
-          <>
+          <InventoryEditActions canEdit={canEdit}>
             <TableIconAction variant="edit" onClick={() => openEdit(row)} />
             <TableIconAction
               variant={row.discontinued ? 'restore' : 'discontinue'}
               onClick={async () => {
+                if (!guardEdit()) return;
                 if (apiMode) {
                   await apiStore.update(String(row.id), {
                     ...mapProductPayloadToApi({
@@ -395,6 +402,7 @@ export function ProductsPage() {
             <TableIconAction
               variant="delete"
               onClick={() => {
+                if (!guardEdit()) return;
                 confirmAction({ title: 'Delete', message: 'Delete?', confirmLabel: 'Delete', tone: 'danger', module: 'Products' }).then(async (__ok) => {
                   if (!__ok) return;
                   if (apiMode) {
@@ -407,7 +415,7 @@ export function ProductsPage() {
                 });
               }}
             />
-          </>
+          </InventoryEditActions>
         )}
       />
 

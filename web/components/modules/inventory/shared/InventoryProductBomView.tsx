@@ -9,6 +9,8 @@ import { FormHeader } from '@/components/layout/FormHeader';
 import { AppTable, type AppTableColumn } from '@/components/shared/AppTable';
 import { StatusBadge } from '@/components/shared/StatusBadge';
 import { TableIconAction } from '@/components/shared/TableIconAction';
+import { useInventoryEditAccess } from '@/hooks/use-inventory-edit-access';
+import { InventoryEditActions } from '@/components/modules/inventory/shared/inventory-ui';
 import { BomMaterialForm, type BomMaterialFormValues } from '@/components/modules/purchases/BomMaterialForm';
 import type { AppState } from '@/lib/state/types';
 import {
@@ -111,6 +113,7 @@ export function InventoryProductBomView({
   onBack: () => void;
   onSave: () => void;
 }) {
+  const { canEdit, guardEdit } = useInventoryEditAccess();
   const [recipeId, setRecipeId] = useState<string | null>(null);
   const [editingMaterialId, setEditingMaterialId] = useState<string | null>(null);
   const [materialFormKey, setMaterialFormKey] = useState(0);
@@ -178,6 +181,7 @@ export function InventoryProductBomView({
   };
 
   const handleMaterialSubmit = (values: BomMaterialFormValues) => {
+    if (!guardEdit()) return;
     if (!recipeId) return;
     const payload = {
       materialId: values.materialId || `custom-${Date.now()}`,
@@ -206,6 +210,7 @@ export function InventoryProductBomView({
   };
 
   const handleEditMaterial = (material: BomMaterial) => {
+    if (!guardEdit()) return;
     setEditingMaterialId(material.id);
     setEditMaterialInitial({
       materialId: material.materialId,
@@ -225,6 +230,7 @@ export function InventoryProductBomView({
   };
 
   const handleDeleteMaterial = async (materialId: string) => {
+    if (!guardEdit()) return;
     if (!recipeId) return;
     const ok = await confirmAction({
       title: 'Remove material',
@@ -244,6 +250,7 @@ export function InventoryProductBomView({
   };
 
   const handleReorder = (materialId: string, direction: 'up' | 'down') => {
+    if (!guardEdit()) return;
     if (!recipeId) return;
     reorderMaterialInRecipe(appState, recipeId, materialId, direction);
     onSave();
@@ -294,24 +301,28 @@ export function InventoryProductBomView({
         {bomTotals && activeRecipe.materials.length > 0 ? <BomSummaryStrip totals={bomTotals} /> : null}
       </div>
 
-      <BomMaterialForm
-        key={materialFormKey}
-        appState={appState}
-        materialOptions={materialOptions}
-        supplierOptions={supplierOptions}
-        unitOptions={UNIT_OPTIONS}
-        editingMaterialId={editingMaterialId}
-        initialValues={editMaterialInitial}
-        onSubmit={handleMaterialSubmit}
-        onCancel={resetMaterialForm}
-      />
+      {canEdit ? (
+        <BomMaterialForm
+          key={materialFormKey}
+          appState={appState}
+          materialOptions={materialOptions}
+          supplierOptions={supplierOptions}
+          unitOptions={UNIT_OPTIONS}
+          editingMaterialId={editingMaterialId}
+          initialValues={editMaterialInitial}
+          onSubmit={handleMaterialSubmit}
+          onCancel={resetMaterialForm}
+        />
+      ) : null}
 
       <div className="space-y-3">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <h3 className="text-sm font-extrabold text-slate-900">
             Parts in {productId} - {productName} ({activeRecipe.materials.length} items)
           </h3>
-          <span className="text-xs font-bold text-slate-500">Use row arrows to reorder materials</span>
+          {canEdit ? (
+            <span className="text-xs font-bold text-slate-500">Use row arrows to reorder materials</span>
+          ) : null}
         </div>
         <AppTable<BomMaterial>
           columns={bomColumns}
@@ -319,7 +330,7 @@ export function InventoryProductBomView({
           rowKey={(r) => r.id}
           emptyMessage="No parts in this BOM yet. Add your first material above."
           renderActions={(r, index) => (
-            <>
+            <InventoryEditActions canEdit={canEdit}>
               <TableIconAction variant="edit" label="Edit material" onClick={() => handleEditMaterial(r)} />
               <button
                 type="button"
@@ -342,7 +353,7 @@ export function InventoryProductBomView({
                 <ArrowDown className="w-4 h-4" />
               </button>
               <TableIconAction variant="delete" onClick={() => handleDeleteMaterial(r.id)} />
-            </>
+            </InventoryEditActions>
           )}
         />
       </div>

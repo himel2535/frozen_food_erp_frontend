@@ -25,6 +25,7 @@ export interface RoleRecord {
   contactEmail?: string;
   notes?: string;
   allowedSections: SectionId[];
+  allowedPermissions?: string[];
   status: 'active' | 'inactive';
   isPreset?: boolean;
   createdAt: string;
@@ -38,6 +39,7 @@ export interface AuthUserRecord {
   imageUrl?: string;
   isMainAdmin?: boolean;
   allowedSections: Array<SectionId | '*'>;
+  allowedPermissions?: string[];
   roleId?: string;
   roleName?: string;
   status: 'active' | 'disabled';

@@ -11,6 +11,7 @@ export async function fetchAdminRoles(): Promise<RoleRecord[]> {
     contactEmail: r.contactEmail,
     notes: r.notes,
     allowedSections: r.allowedSections || [],
+    allowedPermissions: r.allowedPermissions || [],
     status: r.status,
     isPreset: r.isPreset,
     createdAt: r.createdAt || new Date().toISOString(),
@@ -41,6 +42,7 @@ export async function createAdminRole(payload: {
   contactEmail?: string;
   notes?: string;
   allowedSections: SectionId[];
+  allowedPermissions?: string[];
   status?: 'active' | 'inactive';
   isPreset?: boolean;
 }): Promise<RoleRecord> {
@@ -55,6 +57,7 @@ export async function createAdminRole(payload: {
       contactEmail: payload.contactEmail?.trim().toLowerCase() || undefined,
       notes: payload.notes?.trim() || undefined,
       allowedSections: payload.allowedSections,
+      allowedPermissions: payload.allowedPermissions ?? [],
       status: payload.status === 'inactive' ? 'inactive' : 'active',
       isPreset: Boolean(payload.isPreset)
     })
@@ -67,6 +70,7 @@ export async function createAdminRole(payload: {
     contactEmail: data.contactEmail,
     notes: data.notes,
     allowedSections: data.allowedSections || [],
+    allowedPermissions: data.allowedPermissions || [],
     status: data.status,
     isPreset: data.isPreset,
     createdAt: data.createdAt,
@@ -81,6 +85,7 @@ export async function updateAdminRole(payload: {
   contactEmail?: string;
   notes?: string;
   allowedSections?: SectionId[];
+  allowedPermissions?: string[];
   status?: 'active' | 'inactive';
 }): Promise<RoleRecord> {
   const id = String(payload.id ?? '').trim();
@@ -94,6 +99,7 @@ export async function updateAdminRole(payload: {
       contactEmail: payload.contactEmail?.trim().toLowerCase(),
       notes: payload.notes?.trim(),
       allowedSections: payload.allowedSections,
+      allowedPermissions: payload.allowedPermissions,
       status: payload.status
     })
   });
@@ -105,6 +111,7 @@ export async function updateAdminRole(payload: {
     contactEmail: data.contactEmail,
     notes: data.notes,
     allowedSections: data.allowedSections || [],
+    allowedPermissions: data.allowedPermissions || [],
     status: data.status,
     isPreset: data.isPreset,
     createdAt: data.createdAt,

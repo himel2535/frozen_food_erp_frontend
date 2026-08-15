@@ -7,6 +7,8 @@ import { Footer } from '@/components/layout/Footer';
 import { AppFormFields, AppFormModal } from '@/components/shared/AppForm';
 import { ListToolbar, ModuleToolbarActions } from '@/components/shared/ListToolbar';
 import { useRegisterModuleActions } from '@/components/layout/ModuleActionsContext';
+import { useInventoryEditAccess } from '@/hooks/use-inventory-edit-access';
+import { InventoryEditActions } from '@/components/modules/inventory/shared/inventory-ui';
 import { ModuleKpiSection } from '@/components/shared/ModuleKpiSection';
 import type { KpiCardItem } from '@/components/shared/KpiCards';
 import { FilterTabs } from '@/components/shared/FilterTabs';
@@ -38,6 +40,7 @@ export interface InventoryMasterConfig {
 }
 
 export function InventoryMasterModule({ config }: { config: InventoryMasterConfig }) {
+  const { canEdit, guardEdit } = useInventoryEditAccess();
   const appState = useAppStore((s) => s.appState);
   const saveAppState = useAppStore((s) => s.saveAppState);
   const [view, setView] = useState<'main' | 'form'>('main');
@@ -83,6 +86,7 @@ export function InventoryMasterModule({ config }: { config: InventoryMasterConfi
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (!guardEdit()) return;
     const payload: Record<string, unknown> = { ...form };
     config.fields.forEach((f) => { if (f.type === 'number') payload[f.key] = Number(form[f.key] || 0); });
     const result = editingId ? config.update(appState, editingId, payload) : config.create(appState, payload);
@@ -100,13 +104,16 @@ export function InventoryMasterModule({ config }: { config: InventoryMasterConfi
   const tabs = config.statusTabs ?? [{ id: 'all', label: 'All' }, { id: 'active', label: 'Active' }, { id: 'inactive', label: 'Inactive' }];
 
   const handleAdd = useCallback(() => {
+    if (!guardEdit()) return;
     resetForm();
     setView('form');
-  }, [resetForm]);
+  }, [guardEdit, resetForm]);
 
   useRegisterModuleActions(
-    <ModuleToolbarActions onAdd={handleAdd} addLabel={config.addLabel} />,
-    [handleAdd, config.addLabel],
+    canEdit ? (
+      <ModuleToolbarActions onAdd={handleAdd} addLabel={config.addLabel} />
+    ) : null,
+    [handleAdd, config.addLabel, canEdit],
   );
 
   return (
@@ -127,12 +134,13 @@ export function InventoryMasterModule({ config }: { config: InventoryMasterConfi
         rows={rows}
         emptyMessage="No records"
         renderActions={(row) => (
-          <>
-            <TableIconAction variant="edit" onClick={() => openEdit(row)} />
+          <InventoryEditActions canEdit={canEdit}>
+            <TableIconAction variant="edit" onClick={() => { if (!guardEdit()) return; openEdit(row); }} />
             {config.delete && (
               <TableIconAction
                 variant="delete"
                 onClick={() => {
+                  if (!guardEdit()) return;
                   confirmAction({ title: 'Delete', message: 'Delete?', confirmLabel: 'Delete', tone: 'danger', module: 'Inventory' }).then((__ok) => {
                     if (!__ok) return;
                     config.delete!(appState, String(row.id));
@@ -141,7 +149,7 @@ export function InventoryMasterModule({ config }: { config: InventoryMasterConfi
                 }}
               />
             )}
-          </>
+          </InventoryEditActions>
         )}
       />
       <Footer />

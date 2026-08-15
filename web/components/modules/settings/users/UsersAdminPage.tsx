@@ -20,6 +20,7 @@ import {
 } from '@/lib/services/admin-users-api';
 import { fetchAdminRoles } from '@/lib/services/admin-roles-api';
 import { getSectionOptions } from '@/lib/navigation/section-access';
+import type { GranularPermission } from '@/lib/config/granular-permissions';
 import type { AuthUserRecord, RoleRecord, SectionId } from '@/lib/state/types';
 import { toast, confirmAction } from '@/lib/ui/feedback';
 import { getKpiGridClassName } from '@/lib/ui/kpi-grid';
@@ -38,6 +39,7 @@ const EMPTY_FORM: FormState = {
   roleId: '',
   customizeAccess: false,
   allowedSections: ['dashboard'],
+  allowedPermissions: [],
 };
 
 export function UsersAdminPage() {
@@ -100,6 +102,7 @@ export function UsersAdminPage() {
       allowedSections: row.allowedSections.includes('*')
         ? sectionOptions.map((s) => s.id)
         : (row.allowedSections.filter((s): s is SectionId => s !== '*')),
+      allowedPermissions: [...(row.allowedPermissions ?? [])],
     });
     setShowAdvanced(false);
     setView('form');
@@ -174,7 +177,21 @@ export function UsersAdminPage() {
       roleId,
       customizeAccess: false,
       allowedSections: role ? [...role.allowedSections] : prev.allowedSections,
+      allowedPermissions: role ? [...(role.allowedPermissions ?? [])] : prev.allowedPermissions,
     }));
+  };
+
+  const togglePermission = (permission: GranularPermission) => {
+    if (sectionsLocked || form.isMainAdmin) return;
+    setForm((prev) => {
+      const has = prev.allowedPermissions.includes(permission);
+      return {
+        ...prev,
+        allowedPermissions: has
+          ? prev.allowedPermissions.filter((p) => p !== permission)
+          : [...prev.allowedPermissions, permission],
+      };
+    });
   };
 
   const sectionsLocked = Boolean(form.roleId && !form.customizeAccess && !form.isMainAdmin);
@@ -227,6 +244,7 @@ export function UsersAdminPage() {
           name: form.name.trim(),
           imageUrl: form.imageUrl.trim(),
           allowedSections: form.allowedSections,
+          allowedPermissions: form.isMainAdmin ? [] : form.allowedPermissions,
           roleId: form.isMainAdmin ? null : (form.roleId || null),
           status: form.status,
           isMainAdmin: form.isMainAdmin,
@@ -240,6 +258,7 @@ export function UsersAdminPage() {
           password: form.password,
           imageUrl: form.imageUrl.trim() || undefined,
           allowedSections: form.allowedSections,
+          allowedPermissions: form.isMainAdmin ? [] : form.allowedPermissions,
           roleId: form.isMainAdmin ? undefined : (form.roleId || undefined),
           isMainAdmin: form.isMainAdmin,
         });
@@ -306,6 +325,7 @@ export function UsersAdminPage() {
         onSelectAllSections={handleSelectAllSections}
         onClearAllSections={handleClearAllSections}
         onToggleCustomizeAccess={handleToggleCustomizeAccess}
+        onTogglePermission={togglePermission}
         t={t}
       />
     );

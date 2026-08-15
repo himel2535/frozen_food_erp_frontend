@@ -17,6 +17,7 @@ export async function createAdminUser(payload: {
   password?: string;
   imageUrl?: string;
   allowedSections: SectionId[];
+  allowedPermissions?: string[];
   roleId?: string;
   isMainAdmin?: boolean;
 }): Promise<AuthUserRecord> {
@@ -42,6 +43,7 @@ export async function createAdminUser(payload: {
       password,
       imageUrl: payload.imageUrl,
       allowedSections: payload.allowedSections,
+      allowedPermissions: payload.allowedPermissions ?? [],
       isMainAdmin: payload.isMainAdmin,
       roleId: payload.roleId
     })
@@ -55,6 +57,7 @@ export async function updateAdminUser(payload: {
   name?: string;
   imageUrl?: string;
   allowedSections?: SectionId[];
+  allowedPermissions?: string[];
   roleId?: string | null;
   status?: 'active' | 'disabled';
   password?: string;
@@ -69,6 +72,7 @@ export async function updateAdminUser(payload: {
       name: payload.name,
       imageUrl: payload.imageUrl,
       allowedSections: payload.allowedSections,
+      allowedPermissions: payload.allowedPermissions,
       roleId: payload.roleId,
       status: payload.status,
       password: payload.password,

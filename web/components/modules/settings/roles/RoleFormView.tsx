@@ -16,7 +16,9 @@ import {
 } from '@/components/modules/crm/customer-form/customer-form-styles';
 import { RoleNameInput } from '@/components/modules/settings/roles/RoleNameInput';
 import { RolePresetChips } from '@/components/modules/settings/roles/RolePresetChips';
+import { GranularPermissionsPanel } from '@/components/modules/settings/roles/GranularPermissionsPanel';
 import { RoleSectionAccessGrid } from '@/components/modules/settings/roles/RoleSectionAccessGrid';
+import type { GranularPermission } from '@/lib/config/granular-permissions';
 import { summarizeRoleSections } from '@/lib/services/access-control-service';
 import { MODULE_LIST_SHELL } from '@/lib/ui/module-layout';
 import type { RoleRecord, SectionId } from '@/lib/state/types';
@@ -31,6 +33,7 @@ export type RoleFormState = {
   notes: string;
   status: 'active' | 'inactive';
   allowedSections: SectionId[];
+  allowedPermissions: string[];
   provisionName: string;
   provisionEmail: string;
   provisionPassword: string;
@@ -53,6 +56,7 @@ export function RoleFormView({
   onToggleSection,
   onSelectAllSections,
   onClearAllSections,
+  onTogglePermission,
   t,
 }: {
   form: RoleFormState;
@@ -73,6 +77,7 @@ export function RoleFormView({
   onToggleSection: (id: SectionId) => void;
   onSelectAllSections: () => void;
   onClearAllSections: () => void;
+  onTogglePermission: (permission: GranularPermission) => void;
   t: TranslateFn;
 }) {
   const sectionCount = form.allowedSections.length;
@@ -264,6 +269,12 @@ export function RoleFormView({
               </div>
 
               <RoleSectionAccessGrid selected={form.allowedSections} onToggle={onToggleSection} />
+
+              <GranularPermissionsPanel
+                allowedSections={form.allowedSections}
+                allowedPermissions={form.allowedPermissions}
+                onTogglePermission={onTogglePermission}
+              />
 
               <div className={`${CF_SUB_PANEL_CLS} px-3 py-2.5`}>
                 <p className="text-[10px] font-bold uppercase tracking-wide text-slate-500 mb-1">

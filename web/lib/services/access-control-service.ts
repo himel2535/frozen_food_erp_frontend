@@ -5,6 +5,10 @@ import {
   filterSidebarSectionsByFeatureFlags,
   isRouteEnabledByFeatureFlags,
 } from '@/lib/config/module-feature-flags';
+import {
+  hasGranularPermission,
+  INVENTORY_EDIT_PERMISSION,
+} from '@/lib/config/granular-permissions';
 
 export function normalizeAuthUser(
   uid: string,
@@ -28,6 +32,9 @@ export function normalizeAuthUser(
     name,
     isMainAdmin: Boolean(raw.isMainAdmin),
     allowedSections: allowedSections.length ? allowedSections : (['dashboard'] as SectionId[]),
+    allowedPermissions: Array.isArray(raw.allowedPermissions)
+      ? (raw.allowedPermissions as string[])
+      : [],
     roleId: raw.roleId ? String(raw.roleId) : undefined,
     roleName: raw.roleName ? String(raw.roleName) : undefined,
     status,
@@ -38,6 +45,12 @@ export function normalizeAuthUser(
 
 export function isMainAdmin(user: AuthUserRecord | null | undefined): boolean {
   return Boolean(user?.isMainAdmin);
+}
+
+export function canEditInventory(user: AuthUserRecord | null | undefined): boolean {
+  if (!user || user.status === 'disabled') return false;
+  if (isMainAdmin(user)) return true;
+  return hasGranularPermission(user.allowedPermissions, INVENTORY_EDIT_PERMISSION);
 }
 
 export function canAccessSection(

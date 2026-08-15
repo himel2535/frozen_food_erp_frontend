@@ -10,7 +10,8 @@ import { ImageUploadField } from '@/components/shared/ImageUploadField';
 import { InventoryItemThumb } from '@/components/shared/InventoryItemThumb';
 import { StatusBadge } from '@/components/shared/StatusBadge';
 import { TableIconAction } from '@/components/shared/TableIconAction';
-import { InventoryListLayout, FilterBar, FilterSelect, SELECT_CLS } from '@/components/modules/inventory/shared/inventory-ui';
+import { InventoryListLayout, FilterBar, FilterSelect, SELECT_CLS, InventoryEditActions } from '@/components/modules/inventory/shared/inventory-ui';
+import { useInventoryEditAccess } from '@/hooks/use-inventory-edit-access';
 import { useAppStore } from '@/lib/state/app-store';
 import type { PortField } from '@/lib/modules/port-types';
 import { isModuleApiMode } from '@/lib/config/data-source';
@@ -75,6 +76,7 @@ function buildCategoryMetrics(
 }
 
 export function CategoriesPage() {
+  const { canEdit, guardEdit } = useInventoryEditAccess();
   const appState = useAppStore((s) => s.appState);
   const saveAppState = useAppStore((s) => s.saveAppState);
   const apiMode = isModuleApiMode('categories');
@@ -154,6 +156,7 @@ export function CategoriesPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!guardEdit()) return;
     const payload = { ...form, defaultTaxRate: Number(form.defaultTaxRate || 0) };
     if (apiMode) {
       const body = mapCategoryPayloadToApi(payload);
@@ -175,6 +178,7 @@ export function CategoriesPage() {
   };
 
   const handleDelete = async (id: string) => {
+    if (!guardEdit()) return;
     const __ok = await confirmAction({ title: "Delete this category", message: "Delete this category?", confirmLabel: 'Delete', tone: 'danger', module: 'Categories' }); if (!__ok) return;
     if (apiMode) {
       const result = await apiStore.remove(id);
@@ -227,7 +231,7 @@ export function CategoriesPage() {
       title="Categories"
       subtitle="Organize products with hierarchical categories and stock policies."
       addLabel="Add Category"
-      onAdd={() => { resetForm(); setView('form'); }}
+      onAdd={() => { if (!guardEdit()) return; resetForm(); setView('form'); }}
       kpis={[
         { key: 'total', label: 'Total Categories', value: String(totalCount), sub: 'organized product groups in the master list' },
         { key: 'active', label: 'Active Categories', value: String(activeCategories), sub: 'available for product assignment' },
@@ -259,10 +263,10 @@ export function CategoriesPage() {
         loading={bootLoading}
         emptyMessage={apiListEmptyMessage(apiStore.loading, apiStore.initialized, 'categories', { totalCount: categories.length, filteredCount: filtered.length })}
         renderActions={(cat) => (
-          <>
-            <TableIconAction variant="edit" onClick={() => openEdit(cat)} />
+          <InventoryEditActions canEdit={canEdit}>
+            <TableIconAction variant="edit" onClick={() => { if (!guardEdit()) return; openEdit(cat); }} />
             <TableIconAction variant="delete" onClick={() => handleDelete(String(cat.id))} />
-          </>
+          </InventoryEditActions>
         )}
       />
     </InventoryListLayout>

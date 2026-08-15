@@ -6,6 +6,8 @@ import { useMemo, useState } from 'react';
 import { ChevronDown, Calculator, Download, Info, Layers, Package, Settings2 } from 'lucide-react';
 import { Footer } from '@/components/layout/Footer';
 import { useChromeSuppressed, useRegisterModuleActions } from '@/components/layout/ModuleActionsContext';
+import { useInventoryEditAccess } from '@/hooks/use-inventory-edit-access';
+import { InventoryEditActions } from '@/components/modules/inventory/shared/inventory-ui';
 import { AppFormFields, AppFormModal, FORM_GRID_CLS, FORM_LABEL_CLS } from '@/components/shared/AppForm';
 import { AppTable, type AppTableColumn } from '@/components/shared/AppTable';
 import { FilterTabs } from '@/components/shared/FilterTabs';
@@ -108,6 +110,7 @@ function ProductThumb({ category }: { category: string }) {
 }
 
 export function FinishedGoodsPage() {
+  const { canEdit, guardEdit } = useInventoryEditAccess();
   const appState = useAppStore((s) => s.appState);
   const saveAppState = useAppStore((s) => s.saveAppState);
   const apiMode = isModuleApiMode('finishedGoods');
@@ -344,11 +347,13 @@ export function FinishedGoodsPage() {
   };
 
   const openCreate = () => {
+    if (!guardEdit()) return;
     resetForm();
     setView('form');
   };
 
   const openEdit = (row: Record<string, unknown>) => {
+    if (!guardEdit()) return;
     setForm({
       catalogProductId: String(row.catalogProductId ?? ''),
       recipeId: String(row.recipeId ?? ''),
@@ -424,6 +429,7 @@ export function FinishedGoodsPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!guardEdit()) return;
     const payload = {
       ...form,
       catalogProductId: form.catalogProductId || undefined,
@@ -516,7 +522,7 @@ export function FinishedGoodsPage() {
   useChromeSuppressed(view !== 'main');
 
   useRegisterModuleActions(
-    view === 'main' ? (
+    view === 'main' && canEdit ? (
       <div className="relative self-start">
         <div className="flex">
           <button
@@ -555,7 +561,7 @@ export function FinishedGoodsPage() {
         ) : null}
       </div>
     ) : null,
-    [view, showAddMenu, openCreate],
+    [view, showAddMenu, openCreate, canEdit],
   );
 
   if (view === 'detail' && detailRow) {
@@ -750,7 +756,7 @@ export function FinishedGoodsPage() {
               >
                 <Calculator className="w-4 h-4" />
               </button>
-              <TableIconAction variant="edit" onClick={() => openEdit(row)} />
+              {canEdit ? <TableIconAction variant="edit" onClick={() => openEdit(row)} /> : null}
             </>
           )}
         />
