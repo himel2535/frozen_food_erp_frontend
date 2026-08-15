@@ -1,29 +1,28 @@
-# Toys Factory ERP — Next.js App
+# Toys Factory ERP — Next.js app
 
-The Next.js application lives in this directory. For the full project overview, architecture, module coverage, and setup guide, see the **[root README](../README.md)**.
+The UI lives in this directory (`web/`). Full project overview (frontend + backend, Socket.io, multi-tenant, Vercel, Railway, local Docker): **[repository README](../README.md)**.
 
 ## Quick start
 
 ```bash
-# From repository root
 npm install
+cp .env.example .env.local
 npm run dev
 ```
 
-Open [http://localhost:3000/login](http://localhost:3000/login)
+Open [http://localhost:3000/login](http://localhost:3000/login). The API must be running on port 5000 ([backend repo](https://github.com/himel2535/toys_factory_erp_backend)), or use the hosted API at [https://toysfactoryerpbackend-production.up.railway.app](https://toysfactoryerpbackend-production.up.railway.app).
 
-## App-specific paths
+## Layout
 
 | Path | Purpose |
-|------|---------|
+| --- | --- |
 | `app/(tenant)/` | Authenticated module routes |
-| `app/login/` | Login and signup |
-| `app/api/` | Admin API routes (firebase-admin) |
-| `components/modules/` | Feature page components |
-| `lib/services/` | Domain business logic |
-| `lib/state/app-store.ts` | Zustand store + Firebase sync |
-| `styles/globals.css` | Global styles and design tokens |
+| `app/login/` | Login and first-admin register |
+| `components/modules/` | Feature pages |
+| `components/providers/SocketProvider.tsx` | Socket.io inbox (`notification:new`) |
+| `lib/socket/` | Shared Socket.io client |
+| `lib/services/` | Domain API clients |
+| `lib/state/` | Zustand stores |
+| `styles/globals.css` | Global styles and tokens |
 
-## Firebase bootstrap
-
-See [docs/FIREBASE_AUTH_BOOTSTRAP.md](../docs/FIREBASE_AUTH_BOOTSTRAP.md).
+Env template: [`.env.example`](.env.example) (`NEXT_PUBLIC_API_URL`, `NEXT_PUBLIC_SOCKET_URL`).
