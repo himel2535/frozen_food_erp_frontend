@@ -116,6 +116,13 @@ function payloadToRecord(payload: InvoicePayload, id?: string) {
   };
 }
 
+type InvoiceDateStats = {
+  count: number;
+  totalAmount: number;
+  collected: number;
+  due: number;
+};
+
 export function InvoicesPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -179,10 +186,10 @@ export function InvoicesPage() {
     return data;
   }, [allInvoiceRows, appState, apiMode, apiStore.search, localSearch, statusFilter, dateFilter]);
 
-  const dateSummaryStats = useMemo(() => {
+  const dateSummaryStats = useMemo((): InvoiceDateStats | null => {
     if (!dateFilter) return null;
     const matched = allInvoiceRows.filter((row) => matchesInvoiceDate(row, dateFilter));
-    return matched.reduce(
+    return matched.reduce<InvoiceDateStats>(
       (acc, row) => {
         const total = Number(row.amount ?? row.total ?? 0);
         const paid = Number(row.paid ?? 0);
