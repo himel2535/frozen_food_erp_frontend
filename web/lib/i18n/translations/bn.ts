@@ -277,6 +277,8 @@ export const bn = {
     "alerts.header_dropdown_title": "ব্যবসায়িক সতর্কতা",
     "alerts.header_view_all": "সব সতর্কতা দেখুন",
     "alerts.dropdown_title": "নোটিফিকেশন",
+    "alerts.live_section_title": "লাইভ আপডেট",
+    "alerts.live_empty": "এখন কোনো লাইভ নোটিফিকেশন নেই।",
     "alerts.dropdown_tab_all": "সব",
     "alerts.dropdown_tab_unread": "অপঠিত",
     "alerts.dropdown_tab_mentions": "উল্লেখ",

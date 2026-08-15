@@ -10,12 +10,30 @@ const AUTH_TOKEN_KEY = 'hookerp_jwt_token';
 const AUTH_PROFILE_CACHE_KEY = 'hookerp_auth_profile_cache';
 
 export function getJwtToken(): string | null {
-  // Not used directly anymore, token is in HttpOnly cookie.
-  return null;
+  if (typeof window === 'undefined') return null;
+  try {
+    return sessionStorage.getItem(AUTH_TOKEN_KEY);
+  } catch {
+    return null;
+  }
+}
+
+function writeJwtToken(token: string) {
+  if (typeof window === 'undefined') return;
+  try {
+    sessionStorage.setItem(AUTH_TOKEN_KEY, token);
+  } catch {
+    // ignore quota / private mode
+  }
 }
 
 function clearJwtToken() {
-  // No-op for localStorage
+  if (typeof window === 'undefined') return;
+  try {
+    sessionStorage.removeItem(AUTH_TOKEN_KEY);
+  } catch {
+    // ignore
+  }
 }
 
 function readCachedAuthProfile(): AuthUserRecord | null {
@@ -54,6 +72,7 @@ export async function signIn(email: string, password: string): Promise<AuthSessi
   const res = await fetch(`${getApiUrl()}/auth/login`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',
     body: JSON.stringify({ email, password }),
   });
 
@@ -76,6 +95,9 @@ export async function signIn(email: string, password: string): Promise<AuthSessi
   }
 
   writeCachedAuthProfile(authUser);
+  if (typeof token === 'string' && token) {
+    writeJwtToken(token);
+  }
 
   return { token, authUser };
 }

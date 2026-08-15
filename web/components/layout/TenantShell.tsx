@@ -8,6 +8,7 @@ import { ToysLoader } from '@/components/shared/ToysLoader';
 import { ModuleActionsProvider } from '@/components/layout/ModuleActionsContext';
 import { ModuleShell } from '@/components/layout/ModuleShell';
 import { ApiStateHydrator } from '@/components/providers/ApiStateHydrator';
+import { SocketProvider } from '@/components/providers/SocketProvider';
 import { useAppStore } from '@/lib/state/app-store';
 import { useEffect } from 'react';
 import { loadIcons } from '@iconify/react';
@@ -24,7 +25,7 @@ export function TenantShell({ children }: { children: React.ReactNode }) {
   }, []);
 
   return (
-    <>
+    <SocketProvider>
       <ApiStateHydrator />
       <BengaliFontLoader />
       {showBootLoader ? <ToysLoader label="Loading Workspace..." /> : null}
@@ -41,6 +42,6 @@ export function TenantShell({ children }: { children: React.ReactNode }) {
           </div>
         </main>
       </div>
-    </>
+    </SocketProvider>
   );
 }

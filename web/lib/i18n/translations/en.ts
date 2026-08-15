@@ -276,6 +276,8 @@ export const en = {
     "alerts.header_dropdown_title": "Business Alerts",
     "alerts.header_view_all": "View all alerts",
     "alerts.dropdown_title": "Notifications",
+    "alerts.live_section_title": "Live updates",
+    "alerts.live_empty": "No live notifications yet.",
     "alerts.dropdown_tab_all": "All",
     "alerts.dropdown_tab_unread": "Unread",
     "alerts.dropdown_tab_mentions": "Mentions",

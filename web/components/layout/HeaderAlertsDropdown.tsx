@@ -16,6 +16,11 @@ import {
   type NotificationTab,
 } from '@/components/layout/notification-dropdown-utils';
 import { useClickOutside } from '@/hooks/useClickOutside';
+import { useNotificationInboxStore } from '@/lib/state/notification-inbox-store';
+import {
+  formatNotificationTime,
+  notificationHref,
+} from '@/lib/services/notification-api';
 
 interface HeaderAlertsDropdownProps {
   open: boolean;
@@ -25,11 +30,19 @@ interface HeaderAlertsDropdownProps {
 export function HeaderAlertsDropdown({ open, onOpenChange }: HeaderAlertsDropdownProps) {
   const t = useAppStore((s) => s.t);
   const { alerts, totalCount } = useBusinessAlerts();
+  const liveItems = useNotificationInboxStore((s) => s.items);
+  const markLiveRead = useNotificationInboxStore((s) => s.markRead);
+  const markAllLiveRead = useNotificationInboxStore((s) => s.markAllRead);
   const [activeTab, setActiveTab] = useState<NotificationTab>('all');
   const [readIds, setReadIds] = useState<Set<string>>(() => new Set());
   const menuRef = useRef<HTMLDivElement>(null);
 
   const unreadCount = useMemo(() => countUnread(alerts, readIds), [alerts, readIds]);
+  const liveUnreadCount = useMemo(
+    () => liveItems.filter((item) => !item.read).length,
+    [liveItems],
+  );
+  const combinedUnread = unreadCount + liveUnreadCount;
   const displayedAlerts = useMemo(
     () => filterAlertsByTab(alerts, activeTab, readIds),
     [alerts, activeTab, readIds],
@@ -47,11 +60,12 @@ export function HeaderAlertsDropdown({ open, onOpenChange }: HeaderAlertsDropdow
     return () => document.removeEventListener('keydown', onKey);
   }, [open, onOpenChange]);
 
-  const badgeLabel = unreadCount > 99 ? '99+' : String(unreadCount || totalCount);
-  const showBadge = unreadCount > 0 || totalCount > 0;
+  const badgeLabel = combinedUnread > 99 ? '99+' : String(combinedUnread || totalCount);
+  const showBadge = combinedUnread > 0 || totalCount > 0;
 
   const markAllRead = () => {
     setReadIds(new Set(alerts.map((a) => a.id)));
+    markAllLiveRead();
   };
 
   const markRead = (id: string) => {
@@ -127,7 +141,7 @@ export function HeaderAlertsDropdown({ open, onOpenChange }: HeaderAlertsDropdow
                     );
                   })}
                 </div>
-                {unreadCount > 0 ? (
+                {combinedUnread > 0 ? (
                   <button
                     type="button"
                     onClick={markAllRead}
@@ -144,6 +158,57 @@ export function HeaderAlertsDropdown({ open, onOpenChange }: HeaderAlertsDropdow
             </div>
 
             <div className="max-h-[420px] overflow-y-auto">
+              <div className="border-b border-slate-100">
+                <p className="px-4 pt-3 pb-1 text-[10px] font-extrabold uppercase tracking-wide text-slate-400">
+                  {t('alerts.live_section_title')}
+                </p>
+                {liveItems.length ? (
+                  liveItems.slice(0, 8).map((item) => {
+                    const unread = !item.read;
+                    return (
+                      <Link
+                        key={item.id}
+                        href={notificationHref(item)}
+                        onClick={() => {
+                          markLiveRead(item.id);
+                          closeMenu();
+                        }}
+                        className={`flex items-start gap-3 px-4 py-3.5 border-b border-slate-100 last:border-b-0 transition-colors cursor-pointer ${
+                          unread ? 'bg-blue-50/70 hover:bg-blue-50' : 'bg-white hover:bg-slate-50/80'
+                        }`}
+                      >
+                        <div className="w-10 h-10 rounded-full flex items-center justify-center shrink-0 bg-amber-100">
+                          <Icon icon="fluent-color:alert-badge-24" width={22} height={22} className="shrink-0" />
+                        </div>
+                        <div className="flex-1 min-w-0 pr-1">
+                          <p className="text-[13px] leading-snug text-slate-800 font-extrabold">
+                            {item.message}
+                          </p>
+                          <p className="text-[11px] text-slate-400 mt-1">
+                            {formatNotificationTime(item.createdAt)}
+                          </p>
+                        </div>
+                        {unread ? (
+                          <span
+                            className="w-2 h-2 rounded-full bg-blue-500 shrink-0 mt-2"
+                            aria-label="Unread"
+                          />
+                        ) : (
+                          <span className="w-2 shrink-0" aria-hidden />
+                        )}
+                      </Link>
+                    );
+                  })
+                ) : (
+                  <p className="px-4 py-3 text-xs font-medium text-slate-400">
+                    {t('alerts.live_empty')}
+                  </p>
+                )}
+              </div>
+
+              <p className="px-4 pt-3 pb-1 text-[10px] font-extrabold uppercase tracking-wide text-slate-400">
+                {t('alerts.header_dropdown_title')}
+              </p>
               {displayedAlerts.length ? (
                 displayedAlerts.map((alert, index) => {
                   const unread = isDefaultUnread(alert) && !readIds.has(alert.id);
