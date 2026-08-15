@@ -36,7 +36,6 @@ import {
   INV_PRINT_SIGNATURE_BOX,
   INV_PRINT_SIGNATURE_LINE,
   INV_PRINT_STATUS_DRAFT,
-  INV_PRINT_STATUS_PARTIAL,
   INV_PRINT_STATUS_PAID,
   INV_PRINT_STATUS_UNPAID,
   INV_PRINT_SUMMARY_CARD,
@@ -67,20 +66,16 @@ function lifecycleLabel(status: string) {
   return (match?.label ?? status).toUpperCase();
 }
 
-function paymentStatusLabel(paid: number, total: number) {
-  if (total <= 0) return { label: 'UNPAID', cls: INV_PRINT_STATUS_UNPAID };
-  if (paid >= total) return { label: 'PAID', cls: INV_PRINT_STATUS_PAID };
-  if (paid > 0) return { label: 'PARTIAL', cls: INV_PRINT_STATUS_PARTIAL };
-  return { label: 'UNPAID', cls: INV_PRINT_STATUS_UNPAID };
+function paymentStatusLabel() {
+  return { label: 'CASH / PAID', cls: INV_PRINT_STATUS_PAID };
 }
 
 function statusBadgeClass(status: string) {
   const s = status.toLowerCase();
-  if (s === 'paid') return INV_PRINT_STATUS_PAID;
-  if (s === 'partially-paid' || s === 'partial') return INV_PRINT_STATUS_PARTIAL;
+  if (s === 'paid' || s === 'sent') return INV_PRINT_STATUS_PAID;
   if (s === 'draft') return INV_PRINT_STATUS_DRAFT;
-  if (s === 'overdue') return INV_PRINT_STATUS_UNPAID;
-  return INV_PRINT_STATUS_PARTIAL;
+  if (s === 'cancelled') return INV_PRINT_STATUS_UNPAID;
+  return INV_PRINT_STATUS_PAID;
 }
 
 export function InvoicePrint({
@@ -96,11 +91,10 @@ export function InvoicePrint({
   const money = (n: number) => formatMoney(n, { decimals: 2 });
   const activeItems = data.items.filter((item) => item.description.trim() || item.productId);
   const total = data.totals.total;
-  const paid = Number(data.paidAmount ?? 0);
-  const balance = Number(data.balanceDue ?? Math.max(0, total - paid));
-  const paymentStatus = paymentStatusLabel(paid, total);
+  const cancelled = data.status.toLowerCase() === 'cancelled';
+  const paid = cancelled ? 0 : total;
+  const paymentStatus = paymentStatusLabel();
   const issueDate = formatDisplayDate(data.issueDate);
-  const dueDate = formatDisplayDate(data.dueDate);
   const shipTo = data.shippingAddress || data.billingAddress || '—';
 
   return (
@@ -148,20 +142,12 @@ export function InvoicePrint({
                 <td className={INV_PRINT_META_VALUE}>{issueDate}</td>
               </tr>
               <tr>
-                <td className={INV_PRINT_META_LABEL}>Due Date</td>
-                <td className={INV_PRINT_META_VALUE}>{dueDate}</td>
-              </tr>
-              <tr>
                 <td className={INV_PRINT_META_LABEL}>Status</td>
                 <td><span className={statusBadgeClass(data.status)}>{lifecycleLabel(data.status)}</span></td>
               </tr>
               <tr>
-                <td className={INV_PRINT_META_LABEL}>Payment Status</td>
-                <td><span className={paymentStatus.cls}>{paymentStatus.label}</span></td>
-              </tr>
-              <tr>
-                <td className={INV_PRINT_META_LABEL}>Balance Due</td>
-                <td className="font-extrabold text-rose-600">{money(balance)}</td>
+                <td className={INV_PRINT_META_LABEL}>Payment</td>
+                <td><span className={paymentStatus.cls}>{cancelled ? 'CANCELLED' : paymentStatus.label}</span></td>
               </tr>
               {data.approvalStatus ? (
                 <tr>
@@ -179,12 +165,8 @@ export function InvoicePrint({
             <span className="font-extrabold text-blue-700 text-sm">{money(total)}</span>
           </div>
           <div className="flex justify-between text-[10px] mb-1">
-            <span className="text-slate-500 font-medium">Paid Amount</span>
+            <span className="text-slate-500 font-medium">Paid (Cash)</span>
             <span className="font-extrabold text-emerald-600">{money(paid)}</span>
-          </div>
-          <div className="flex justify-between text-[10px] pt-2 border-t border-slate-200">
-            <span className="font-bold text-slate-700">Balance Due</span>
-            <span className="font-extrabold text-rose-600">{money(balance)}</span>
           </div>
         </div>
       </div>
@@ -297,12 +279,8 @@ export function InvoicePrint({
               <span>{money(total)}</span>
             </div>
             <div className="flex justify-between text-[10px] mt-2">
-              <span className="text-emerald-700 font-bold">Paid Amount</span>
-              <span className="font-extrabold text-emerald-600">- {money(paid)}</span>
-            </div>
-            <div className="flex justify-between text-[11px] mt-1 pt-1 border-t border-slate-200">
-              <span className="font-extrabold text-rose-700">BALANCE DUE</span>
-              <span className="font-extrabold text-rose-600">{money(balance)}</span>
+              <span className="text-emerald-700 font-bold">Paid (Cash)</span>
+              <span className="font-extrabold text-emerald-600">{money(paid)}</span>
             </div>
           </div>
 

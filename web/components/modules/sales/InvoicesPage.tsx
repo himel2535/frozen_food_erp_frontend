@@ -34,11 +34,11 @@ import type { InvoiceFormValues, InvoiceLineItem } from '@/components/modules/sa
 import { createEmptyLineItem, recalcLineItem } from '@/components/modules/sales/invoice-form/inv-form-types';
 import { InvoicePrintPreview } from '@/components/modules/sales/invoice-form/InvoicePrintPreview';
 import { InvoiceDashboardMetrics } from '@/components/modules/sales/invoice-list/InvoiceDashboardMetrics';
-import { InvoiceAgingSnapshot } from '@/components/modules/sales/invoice-list/InvoiceAgingSnapshot';
 import { InvoiceDateSummary } from '@/components/modules/sales/invoice-list/InvoiceDateSummary';
 import { InvoiceFilterBar } from '@/components/modules/sales/invoice-list/InvoiceFilterBar';
 import {
   buildPrintPayloadFromRow,
+  displayInvoiceAsCash,
   enrichPrintPayload,
   exportInvoicesCsv,
   matchesInvoiceDate,
@@ -75,15 +75,17 @@ function recordToFormValues(record: Record<string, unknown>): InvoiceFormValues 
     customerName: String(record.customerName ?? record.customer ?? ''),
     billingAddress: String(record.billingAddress ?? ''),
     issueDate: String(record.issueDate ?? record.date ?? new Date().toISOString().slice(0, 10)),
-    dueDate: String(record.dueDate ?? ''),
-    status: String(record.status ?? 'draft'),
+    dueDate: String(record.issueDate ?? record.date ?? record.dueDate ?? ''),
+    status: String(displayInvoiceAsCash(record).status ?? 'paid'),
     notes: String(record.notes ?? ''),
     terms: String(record.terms ?? record.paymentTerms ?? ''),
     docDiscountOverride: record.discountAmount != null ? Number(record.discountAmount) : null,
     docTaxOverride: record.taxAmount != null ? Number(record.taxAmount) : null,
     includeSignature: Boolean(record.includeSignature),
     signatureId: record.signatureId ? String(record.signatureId) : null,
-    paidAmount: Number(record.paid ?? 0),
+    paidAmount: String(record.status ?? '').toLowerCase() === 'cancelled'
+      ? 0
+      : Number(record.total ?? record.amount ?? record.paid ?? 0),
     items,
   };
 }
@@ -97,7 +99,7 @@ function payloadToRecord(payload: InvoicePayload, id?: string) {
     billingAddress: payload.billingAddress,
     issueDate: payload.issueDate,
     date: payload.issueDate,
-    dueDate: payload.dueDate,
+    dueDate: payload.issueDate,
     status: payload.status,
     notes: payload.notes,
     terms: payload.terms,
@@ -111,8 +113,8 @@ function payloadToRecord(payload: InvoicePayload, id?: string) {
     discountAmount: payload.totals.discountAmount,
     taxAmount: payload.totals.taxAmount,
     total: payload.totals.total,
-    paid: Number(payload.paidAmount ?? 0),
-    due: Math.max(0, Number(payload.totals.total) - Number(payload.paidAmount ?? 0)),
+    paid: String(payload.status).toLowerCase() === 'cancelled' ? 0 : Number(payload.totals.total),
+    due: 0,
   };
 }
 
@@ -120,7 +122,6 @@ type InvoiceDateStats = {
   count: number;
   totalAmount: number;
   collected: number;
-  due: number;
 };
 
 export function InvoicesPage() {
@@ -165,8 +166,9 @@ export function InvoicesPage() {
   );
 
   const allInvoiceRows = useMemo(() => {
-    const local = listInvoices(appState);
-    return pickApiListRows(apiMode, apiStore.initialized, apiStore.rows, local);
+    const local = listInvoices(appState).map(displayInvoiceAsCash);
+    const apiRows = apiStore.rows.map(displayInvoiceAsCash);
+    return pickApiListRows(apiMode, apiStore.initialized, apiRows, local);
   }, [apiMode, apiStore.initialized, apiStore.rows, appState]);
 
   const rows = useMemo(() => {
@@ -192,38 +194,36 @@ export function InvoicesPage() {
     return matched.reduce<InvoiceDateStats>(
       (acc, row) => {
         const total = Number(row.amount ?? row.total ?? 0);
-        const paid = Number(row.paid ?? 0);
-        const due = Number(row.due ?? Math.max(0, total - paid));
         acc.count += 1;
         acc.totalAmount += total;
-        acc.collected += paid;
-        acc.due += due;
+        acc.collected += total;
         return acc;
       },
-      { count: 0, totalAmount: 0, collected: 0, due: 0 },
+      { count: 0, totalAmount: 0, collected: 0 },
     );
   }, [allInvoiceRows, dateFilter]);
 
   const dashboardSummary = useMemo(() => {
     if (apiMode) {
       const invoices = allInvoiceRows;
-      const totalDue = invoices.reduce((s, r) => s + Number(r.due ?? 0), 0);
-      const overdueReceivables = invoices
-        .filter((r) => String(r.status).toLowerCase() === 'overdue')
-        .reduce((s, r) => s + Number(r.due ?? 0), 0);
       const totalAmount = invoices.reduce((s, r) => s + Number(r.amount ?? r.total ?? 0), 0);
-      const collected = invoices.reduce((s, r) => s + Number(r.paid ?? 0), 0);
       return {
         monthlySales: totalAmount,
-        collectedThisMonth: collected,
-        openReceivables: totalDue,
-        overdueReceivables,
+        collectedThisMonth: totalAmount,
+        openReceivables: 0,
+        overdueReceivables: 0,
         averageInvoiceValue: invoices.length ? totalAmount / invoices.length : 0,
-        collectionRate: totalAmount > 0 ? (collected / totalAmount) * 100 : 0,
-        aging: { current: totalDue, days1_30: 0, days31_60: 0, days61_90: 0, over90: overdueReceivables },
+        collectionRate: 100,
       };
     }
-    return getSalesDashboardSummary(appState);
+    const local = getSalesDashboardSummary(appState);
+    return {
+      ...local,
+      collectedThisMonth: local.monthlySales,
+      openReceivables: 0,
+      overdueReceivables: 0,
+      collectionRate: 100,
+    };
   }, [apiMode, allInvoiceRows, appState]);
 
   const invoicePreviewNo = useMemo(
@@ -239,26 +239,9 @@ export function InvoicesPage() {
       render: (row) => (apiMode ? String(row.customerName ?? row.customer ?? '—') : resolveInvoiceCustomerLabel(appState, row)),
     },
     { key: 'date', label: 'Date', render: (row) => <DateDisplay value={resolveInvoiceIssueDate(row)} variant="slash" /> },
-    {
-      key: 'amount',
-      label: 'Amount / Balance',
-      render: (row) => {
-        const total = Number(row.amount ?? row.total ?? 0);
-        const paid = Number(row.paid ?? 0);
-        const due = Number(row.due ?? Math.max(0, total - paid));
-        return (
-          <div className="flex flex-col text-xs leading-normal">
-            <span className="font-bold text-slate-950">{formatMoney(total)}</span>
-            {paid > 0 ? (
-              <span className="text-[10px] text-emerald-600 font-semibold">Paid: {formatMoney(paid)}</span>
-            ) : null}
-            {due > 0 && paid > 0 ? (
-              <span className="text-[10px] text-rose-600 font-semibold">Due: {formatMoney(due)}</span>
-            ) : null}
-          </div>
-        );
-      },
-    },
+    { key: 'amount', label: 'Amount', render: (row) => (
+      <span className="font-bold text-slate-950">{formatMoney(Number(row.amount ?? row.total ?? 0))}</span>
+    ) },
     { key: 'status', label: 'Status', render: (row) => <StatusBadge status={String(row.status)} /> },
   ], [appState, formatMoney]);
 
@@ -323,7 +306,7 @@ export function InvoicesPage() {
         ...prev,
         customerId,
         customerName,
-        dueDate: prev.dueDate || issueDate,
+        dueDate: issueDate,
       }));
       return;
     }
@@ -333,8 +316,7 @@ export function InvoicesPage() {
       customerId,
       customerName,
       billingAddress: defaults.billingAddress,
-      dueDate: defaults.dueDate,
-      terms: prev.terms || defaults.paymentTerms,
+      dueDate: issueDate,
     }));
   };
 
@@ -475,7 +457,6 @@ export function InvoicesPage() {
         {apiMode ? <ApiModeBanner module="invoices" error={apiStore.error} /> : null}
 
         <InvoiceDashboardMetrics summary={dashboardSummary} loading={kpiLoading} />
-        <InvoiceAgingSnapshot aging={dashboardSummary.aging} />
 
         <InvoiceFilterBar
           search={apiMode ? apiStore.search : localSearch}
@@ -498,7 +479,6 @@ export function InvoicesPage() {
                 count={dateSummaryStats.count}
                 totalAmount={dateSummaryStats.totalAmount}
                 collected={dateSummaryStats.collected}
-                due={dateSummaryStats.due}
                 formatMoney={formatMoney}
                 formatCount={formatCount}
               />

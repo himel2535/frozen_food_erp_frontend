@@ -1,5 +1,6 @@
 /** Sales domain — quotations, orders, deliveries, dispatch, returns */
 import type { AppState } from '@/lib/state/types';
+import { validateSignatureSelection } from '@/lib/services/settings-service';
 import {
   ensureCrmState,
   getCustomerList,
@@ -584,6 +585,12 @@ function normalizeInvoiceItems(items: InvoiceLineItem[]) {
 
 export function createInvoice(state: AppState, payload: Row) {
   ensureCrmState(state);
+  const sigCheck = validateSignatureSelection(
+    state,
+    Boolean(payload.includeSignature),
+    payload.signatureId as string | null | undefined,
+  );
+  if (!sigCheck.ok) return { ok: false as const, error: sigCheck.error };
   const items = normalizeInvoiceItems((payload.items ?? []) as InvoiceLineItem[]);
   const id = String(payload.id ?? previewInvoiceNumber(state, String(payload.issueDate ?? payload.date ?? '')));
   const totals = computeInvoiceTotalsFromItems((payload.items ?? []) as InvoiceLineItem[], {
@@ -603,12 +610,15 @@ export function createInvoice(state: AppState, payload: Row) {
     tax: totals.taxAmount,
     total: totals.total,
     amount: totals.total,
-    status: payload.status || 'draft',
+    status: payload.status || 'paid',
     billingAddress: payload.billingAddress ?? '',
     notes: payload.notes ?? '',
-    terms: payload.terms ?? payload.paymentTerms ?? 'Net 30',
+    terms: payload.terms ?? payload.paymentTerms ?? 'Cash',
     includeSignature: Boolean(payload.includeSignature),
     signatureId: payload.signatureId ?? null,
+    dueDate: payload.issueDate ?? payload.date,
+    paid: String(payload.status).toLowerCase() === 'cancelled' ? 0 : totals.total,
+    due: 0,
   };
   state.invoices = [...listInvoices(state), record];
   syncInvoiceBalances(state);
@@ -620,6 +630,11 @@ export function updateInvoice(state: AppState, id: string, payload: Row) {
   const rows = listInvoices(state);
   const idx = rows.findIndex((r) => String(r.id) === id);
   if (idx < 0) return { ok: false as const, error: 'Not found' };
+
+  const includeSignature = payload.includeSignature ?? rows[idx].includeSignature ?? false;
+  const signatureId = payload.signatureId ?? rows[idx].signatureId ?? null;
+  const sigCheck = validateSignatureSelection(state, Boolean(includeSignature), signatureId as string | null);
+  if (!sigCheck.ok) return { ok: false as const, error: sigCheck.error };
   const items = normalizeInvoiceItems((payload.items ?? rows[idx].items ?? []) as InvoiceLineItem[]);
   const totals = computeInvoiceTotalsFromItems((payload.items ?? []) as InvoiceLineItem[], {
     docDiscountOverride: payload.docDiscountOverride as number | null | undefined,
@@ -644,6 +659,9 @@ export function updateInvoice(state: AppState, id: string, payload: Row) {
     terms: payload.terms ?? rows[idx].terms,
     includeSignature: payload.includeSignature ?? rows[idx].includeSignature ?? false,
     signatureId: payload.signatureId ?? rows[idx].signatureId ?? null,
+    dueDate: payload.issueDate ?? payload.date ?? rows[idx].issueDate,
+    paid: String(payload.status ?? rows[idx].status).toLowerCase() === 'cancelled' ? 0 : totals.total,
+    due: 0,
   };
   state.invoices = rows;
   syncInvoiceBalances(state);

@@ -19,6 +19,7 @@ import { applyApiDataToAppState } from '@/lib/services/api-app-state-mapper';
 import { getDashboardMetrics } from '@/lib/services/dashboard-metrics';
 import { buildDashboardMetricValues, summaryLowStock } from '@/lib/services/dashboard-summary-metrics';
 import { fetchDashboardSummary, type DashboardSummary } from '@/lib/services/api-resource-service';
+import { onApiMutation } from '@/lib/services/api-sync-events';
 import type { DashboardServerPayload } from '@/lib/server/dashboard-snapshot';
 
 const SalesTrendChart = dynamic(
@@ -41,6 +42,8 @@ const DashboardProjectProgress = dynamic(
   () => import('@/components/modules/dashboard/DashboardProjectProgress').then((m) => m.DashboardProjectProgress),
   { ssr: false, loading: () => <DashboardProjectProgressSkeleton /> },
 );
+
+const SUMMARY_MUTATION_MODULES = new Set(['invoices', 'salesOrders', 'payments']);
 
 const KPI_CARDS: { key: string; labelKey: string; icon: string; alert?: boolean }[] = [
   { key: 'month-revenue', labelKey: 'dashboard.total_revenue', icon: 'flat-color-icons:currency-exchange' },
@@ -83,18 +86,26 @@ export function DashboardView({ serverPayload = null }: DashboardViewProps) {
 
   useEffect(() => {
     let active = true;
-    void (async () => {
+
+    const loadSummary = async () => {
       try {
         const data = await fetchDashboardSummary();
-        if (active && data) {
-          setLiveSummary(data);
-        }
+        if (active && data) setLiveSummary(data);
       } catch (err) {
         console.error('Failed to fetch live dashboard summary:', err);
       }
-    })();
+    };
+
+    void loadSummary();
+    const unsubscribe = onApiMutation((modules) => {
+      if (!modules || modules.some((mod) => SUMMARY_MUTATION_MODULES.has(mod))) {
+        void loadSummary();
+      }
+    });
+
     return () => {
       active = false;
+      unsubscribe();
     };
   }, []);
 

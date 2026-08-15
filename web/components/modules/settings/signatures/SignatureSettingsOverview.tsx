@@ -11,6 +11,7 @@ type SignatureSettingsOverviewProps = {
   signatures: CompanySignature[];
   metrics: { total: number; hasDefault: boolean; defaultName: string };
   labels: Record<string, string>;
+  accountName: string;
   onAdd: () => void;
   onEdit: (id: string) => void;
   onDelete: (id: string) => void;
@@ -23,6 +24,7 @@ export function SignatureSettingsOverview({
   signatures,
   metrics,
   labels,
+  accountName,
   onAdd,
   onEdit,
   onDelete,
@@ -32,6 +34,15 @@ export function SignatureSettingsOverview({
 }: SignatureSettingsOverviewProps) {
   return (
     <div className={ST_STACK}>
+      <div className={`${ST_CARD_COMPACT} border border-violet-200/70 bg-violet-50/45`}>
+        <p className={`${ST_BODY} text-sm font-semibold text-violet-900`}>
+          {labels.personalNote}
+        </p>
+        <p className={`${ST_CAPTION} mt-1 text-violet-800/80`}>
+          Signed as <span className="font-bold">{accountName}</span> — only you can use signatures saved here.
+        </p>
+      </div>
+
       <SignatureSettingsHeader
         subtitle={labels.subtitle}
         addLabel={labels.add}

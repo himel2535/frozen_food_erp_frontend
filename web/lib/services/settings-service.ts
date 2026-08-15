@@ -308,19 +308,71 @@ export function getCompanySignatures(state: AppState): CompanySignature[] {
   return clone(ensureCompanySignatures(state));
 }
 
+export function getCurrentUserId(state: AppState): string {
+  return ensureCurrentUser(state).id;
+}
+
+export function getCurrentUserName(state: AppState): string {
+  return ensureCurrentUser(state).name;
+}
+
+export function ownsSignature(state: AppState, signature: CompanySignature): boolean {
+  const userId = getCurrentUserId(state);
+  if (!signature.ownerUserId) return false;
+  return signature.ownerUserId === userId;
+}
+
+export function getSignaturesForUser(state: AppState, userId?: string): CompanySignature[] {
+  const uid = userId ?? getCurrentUserId(state);
+  return clone(ensureCompanySignatures(state).filter((row) => row.ownerUserId === uid));
+}
+
+export function getSignaturesForCurrentUser(state: AppState): CompanySignature[] {
+  return getSignaturesForUser(state);
+}
+
+export function getDefaultSignatureForUser(state: AppState, userId?: string): CompanySignature | null {
+  const rows = getSignaturesForUser(state, userId);
+  const match = rows.find((row) => row.isDefault) ?? rows[0] ?? null;
+  return match ? clone(match) : null;
+}
+
+export function canUseSignature(state: AppState, signature: CompanySignature | null | undefined): boolean {
+  if (!signature) return false;
+  return ownsSignature(state, signature);
+}
+
+export function validateSignatureSelection(
+  state: AppState,
+  includeSignature?: boolean,
+  signatureId?: string | null,
+): { ok: true } | { ok: false; error: string } {
+  if (!includeSignature) return { ok: true };
+
+  const signature = signatureId
+    ? getSignatureById(state, signatureId)
+    : getDefaultSignatureForUser(state);
+
+  if (!signature) {
+    return { ok: false, error: 'No personal signature found. Add your signature in Settings first.' };
+  }
+  if (!canUseSignature(state, signature)) {
+    return { ok: false, error: 'You can only use your own signature on documents.' };
+  }
+  return { ok: true };
+}
+
 export function getSignatureById(state: AppState, id: string): CompanySignature | null {
   const match = ensureCompanySignatures(state).find((row) => row.id === id);
   return match ? clone(match) : null;
 }
 
 export function getDefaultSignature(state: AppState): CompanySignature | null {
-  const rows = ensureCompanySignatures(state);
-  const match = rows.find((row) => row.isDefault) ?? rows[0] ?? null;
-  return match ? clone(match) : null;
+  return getDefaultSignatureForUser(state);
 }
 
 export function getSignatureMetrics(state: AppState) {
-  const rows = ensureCompanySignatures(state);
+  const rows = getSignaturesForCurrentUser(state);
   const defaultSignature = rows.find((row) => row.isDefault);
   return {
     total: rows.length,
@@ -333,27 +385,34 @@ export function createCompanySignature(state: AppState, input: SignatureInput) {
   if (!input.imageDataUrl.trim()) {
     return { ok: false as const, error: 'Image is required.' };
   }
-  if (!input.signerName.trim()) {
-    return { ok: false as const, error: 'Signer name is required.' };
+
+  const ownerUserId = getCurrentUserId(state);
+  const ownerName = getCurrentUserName(state);
+  const signerName = ownerName.trim();
+  if (!signerName) {
+    return { ok: false as const, error: 'Your account name is required for the signature.' };
   }
 
   const rows = ensureCompanySignatures(state);
   const now = stampNow();
-  const shouldDefault = input.isDefault || rows.length === 0;
+  const userRows = rows.filter((row) => row.ownerUserId === ownerUserId);
+  const shouldDefault = input.isDefault || userRows.length === 0;
 
   if (shouldDefault) {
     rows.forEach((row) => {
-      row.isDefault = false;
+      if (row.ownerUserId === ownerUserId) row.isDefault = false;
     });
   }
 
   const record: CompanySignature = {
     id: newSignatureId(),
     label: input.label.trim() || 'Authorized Signatory',
-    signerName: input.signerName.trim(),
+    signerName,
     designation: input.designation?.trim() || undefined,
     imageDataUrl: input.imageDataUrl,
     isDefault: shouldDefault,
+    ownerUserId,
+    ownerName,
     createdAt: now,
     updatedAt: now,
   };
@@ -364,7 +423,7 @@ export function createCompanySignature(state: AppState, input: SignatureInput) {
     module: 'Settings',
     entityType: 'signature',
     entityId: record.id,
-    description: `Added signature for ${record.signerName}`,
+    description: `Added personal signature for ${record.signerName}`,
   });
   return { ok: true as const, id: record.id };
 }
@@ -373,26 +432,28 @@ export function updateCompanySignature(state: AppState, id: string, input: Signa
   const rows = ensureCompanySignatures(state);
   const idx = rows.findIndex((row) => row.id === id);
   if (idx < 0) return { ok: false as const, error: 'Signature not found.' };
-  if (!input.signerName.trim()) {
-    return { ok: false as const, error: 'Signer name is required.' };
+  if (!ownsSignature(state, rows[idx])) {
+    return { ok: false as const, error: 'You can only edit your own signature.' };
   }
   if (!input.imageDataUrl.trim()) {
     return { ok: false as const, error: 'Image is required.' };
   }
 
+  const ownerUserId = rows[idx].ownerUserId ?? getCurrentUserId(state);
   if (input.isDefault) {
     rows.forEach((row) => {
-      row.isDefault = false;
+      if (row.ownerUserId === ownerUserId) row.isDefault = false;
     });
   }
 
   rows[idx] = {
     ...rows[idx],
     label: input.label.trim() || 'Authorized Signatory',
-    signerName: input.signerName.trim(),
+    signerName: getCurrentUserName(state).trim() || rows[idx].signerName,
     designation: input.designation?.trim() || undefined,
     imageDataUrl: input.imageDataUrl,
     isDefault: input.isDefault ?? rows[idx].isDefault ?? false,
+    ownerName: getCurrentUserName(state),
     updatedAt: stampNow(),
   };
 
@@ -401,7 +462,7 @@ export function updateCompanySignature(state: AppState, id: string, input: Signa
     module: 'Settings',
     entityType: 'signature',
     entityId: id,
-    description: `Updated signature for ${rows[idx].signerName}`,
+    description: `Updated personal signature for ${rows[idx].signerName}`,
   });
 
   return { ok: true as const };
@@ -411,13 +472,18 @@ export function deleteCompanySignature(state: AppState, id: string) {
   const rows = ensureCompanySignatures(state);
   const idx = rows.findIndex((row) => row.id === id);
   if (idx < 0) return { ok: false as const, error: 'Signature not found.' };
+  if (!ownsSignature(state, rows[idx])) {
+    return { ok: false as const, error: 'You can only delete your own signature.' };
+  }
 
   const removed = rows[idx];
+  const ownerUserId = removed.ownerUserId;
   const wasDefault = rows[idx].isDefault;
   rows.splice(idx, 1);
 
-  if (wasDefault && rows.length > 0) {
-    rows[0].isDefault = true;
+  if (wasDefault && ownerUserId) {
+    const nextDefault = rows.find((row) => row.ownerUserId === ownerUserId);
+    if (nextDefault) nextDefault.isDefault = true;
   }
 
   logSystemAudit(state, {
@@ -425,7 +491,7 @@ export function deleteCompanySignature(state: AppState, id: string) {
     module: 'Settings',
     entityType: 'signature',
     entityId: id,
-    description: `Deleted signature for ${removed.signerName}`,
+    description: `Deleted personal signature for ${removed.signerName}`,
   });
 
   return { ok: true as const };
@@ -435,10 +501,16 @@ export function setDefaultCompanySignature(state: AppState, id: string) {
   const rows = ensureCompanySignatures(state);
   const match = rows.find((row) => row.id === id);
   if (!match) return { ok: false as const, error: 'Signature not found.' };
+  if (!ownsSignature(state, match)) {
+    return { ok: false as const, error: 'You can only set your own signature as default.' };
+  }
 
+  const ownerUserId = match.ownerUserId;
   rows.forEach((row) => {
-    row.isDefault = row.id === id;
-    if (row.id === id) row.updatedAt = stampNow();
+    if (row.ownerUserId === ownerUserId) {
+      row.isDefault = row.id === id;
+      if (row.id === id) row.updatedAt = stampNow();
+    }
   });
 
   logSystemAudit(state, {
@@ -446,7 +518,7 @@ export function setDefaultCompanySignature(state: AppState, id: string) {
     module: 'Settings',
     entityType: 'signature',
     entityId: id,
-    description: `Set default signature to ${match.signerName}`,
+    description: `Set default personal signature to ${match.signerName}`,
   });
 
   return { ok: true as const };
@@ -459,11 +531,14 @@ export function resolveInvoiceSignature(
 ): SignaturePrintData | null {
   if (!includeSignature) return null;
 
+  const validation = validateSignatureSelection(state, includeSignature, signatureId);
+  if (!validation.ok) return null;
+
   const signature = signatureId
     ? getSignatureById(state, signatureId)
-    : getDefaultSignature(state);
+    : getDefaultSignatureForUser(state);
 
-  if (!signature) return null;
+  if (!signature || !canUseSignature(state, signature)) return null;
 
   return {
     imageDataUrl: signature.imageDataUrl,

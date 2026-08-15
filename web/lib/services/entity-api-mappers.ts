@@ -212,22 +212,28 @@ export function mapApiSalesOrderRow(doc: Record<string, unknown>): Record<string
   };
 }
 
+function invoiceCashAmounts(total: number, status: string) {
+  if (status.toLowerCase() === 'cancelled') return { paid: 0, due: 0 };
+  return { paid: total, due: 0 };
+}
+
 export function mapApiInvoiceRow(doc: Record<string, unknown>): Record<string, unknown> {
   const id = String(doc.legacyId ?? apiDocId(doc));
   const total = Number(doc.amount ?? doc.total ?? 0);
-  const paid = Number(doc.paid ?? 0);
-  const due = Number(doc.due ?? Math.max(0, total - paid));
+  const rawStatus = normalizeInvoiceApiStatus({ status: doc.status ?? 'paid' });
+  const { paid, due } = invoiceCashAmounts(total, rawStatus);
   const customerId = String(doc.customerId ?? doc.customer ?? '');
+  const issueDate = doc.issueDate ?? doc.date ?? '';
   return {
     id,
     legacyId: doc.legacyId ?? id,
     customerId,
     customerName: doc.customerName ?? '',
     customer: doc.customerName ?? doc.customer ?? '',
-    issueDate: doc.issueDate ?? doc.date ?? '',
+    issueDate,
     date: doc.date ?? doc.issueDate ?? '',
-    dueDate: doc.dueDate ?? '',
-    status: doc.status ?? 'pending',
+    dueDate: issueDate,
+    status: rawStatus,
     items: doc.items ?? [],
     amount: total,
     paid,
@@ -242,22 +248,16 @@ export function mapApiInvoiceRow(doc: Record<string, unknown>): Record<string, u
   };
 }
 
-const INVOICE_API_STATUSES = new Set(['draft', 'pending', 'paid', 'overdue', 'cancelled']);
+const INVOICE_API_STATUSES = new Set(['draft', 'pending', 'sent', 'paid', 'cancelled']);
 
 function normalizeInvoiceApiStatus(record: Record<string, unknown>): string {
-  const total = Number(record.total ?? record.amount ?? 0);
-  const paid = Number(record.paid ?? 0);
-  const due = Number(record.due ?? Math.max(total - paid, 0));
-  const raw = String(record.status ?? 'pending').toLowerCase();
-  const dueDate = String(record.dueDate ?? '');
-  const today = new Date().toISOString().slice(0, 10);
-
+  const raw = String(record.status ?? 'paid').toLowerCase();
   if (raw === 'cancelled') return 'cancelled';
-  if (due <= 0 && total > 0) return 'paid';
   if (raw === 'draft') return 'draft';
-  if (due > 0 && dueDate && dueDate < today) return 'overdue';
+  if (raw === 'sent') return 'sent';
+  if (raw === 'overdue' || raw === 'pending') return 'paid';
   if (INVOICE_API_STATUSES.has(raw)) return raw;
-  return 'pending';
+  return 'paid';
 }
 
 function mapInvoiceItemsToApi(items: unknown[]) {
@@ -276,16 +276,16 @@ function mapInvoiceItemsToApi(items: unknown[]) {
 export function mapInvoiceRecordToApi(record: Record<string, unknown>, existingLegacyId?: string): Record<string, unknown> {
   const items = mapInvoiceItemsToApi(Array.isArray(record.items) ? record.items : []);
   const total = Number(record.total ?? record.amount ?? 0);
-  const status = String(record.status ?? '').toLowerCase();
-  const paid = status === 'paid' ? total : Number(record.paid ?? 0);
-  const due = status === 'paid' ? 0 : Number(record.due ?? Math.max(total - paid, 0));
+  const status = normalizeInvoiceApiStatus(record);
+  const issueDate = record.issueDate ?? record.date;
+  const { paid, due } = invoiceCashAmounts(total, status);
   const body: Record<string, unknown> = {
     customerId: record.customerId,
     customerName: record.customerName ?? record.customer,
-    issueDate: record.issueDate ?? record.date,
+    issueDate,
     date: record.date ?? record.issueDate,
-    dueDate: record.dueDate,
-    status: normalizeInvoiceApiStatus({ ...record, status, total, paid, due }),
+    dueDate: issueDate,
+    status,
     items,
     amount: total,
     paid,

@@ -36,7 +36,11 @@ export function SignatureCard({ signature, labels, onEdit, onDelete, onSetDefaul
             <Star className="w-3 h-3 fill-current" />
             {labels.default}
           </span>
-        ) : null}
+        ) : (
+          <span className="inline-flex items-center px-2 py-1 rounded-lg bg-violet-50 text-violet-700 border border-violet-100 text-[10px] font-bold shrink-0">
+            Personal
+          </span>
+        )}
       </div>
 
       <div

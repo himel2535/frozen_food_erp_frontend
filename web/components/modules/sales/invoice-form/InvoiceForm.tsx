@@ -50,7 +50,7 @@ import {
 } from '@/components/modules/sales/invoice-form/inv-form-types';
 import type { AppState } from '@/lib/state/types';
 import { listInventoryProductOptions } from '@/lib/services/sales-service';
-import { getCompanySignatures, getDefaultSignature } from '@/lib/services/settings-service';
+import { getDefaultSignatureForUser, getSignaturesForCurrentUser } from '@/lib/services/settings-service';
 import { useAppStore } from '@/lib/state/app-store';
 
 export type InvoiceSaveAction = 'draft' | 'sent';
@@ -83,8 +83,8 @@ export function InvoiceForm({
   const formRef = useRef<HTMLFormElement>(null);
   const t = useAppStore((s) => s.t);
 
-  const signatures = useMemo(() => getCompanySignatures(appState), [appState]);
-  const defaultSignature = useMemo(() => getDefaultSignature(appState), [appState]);
+  const signatures = useMemo(() => getSignaturesForCurrentUser(appState), [appState]);
+  const defaultSignature = useMemo(() => getDefaultSignatureForUser(appState), [appState]);
 
   const productOptions = useMemo(() => listInventoryProductOptions(appState), [appState]);
 
@@ -111,9 +111,12 @@ export function InvoiceForm({
 
   const toPayload = (): InvoicePayload => ({
     ...form,
+    dueDate: form.issueDate,
+    paidAmount: form.status === 'cancelled' ? 0 : totals.total,
     invoiceNo: invoicePreviewNo,
     totals,
     items: form.items.map(recalcLineItem),
+    balanceDue: 0,
   });
 
   const handleSubmit = (e: FormEvent) => {
@@ -155,18 +158,6 @@ export function InvoiceForm({
     if (raw === null) return;
     const value = Math.max(0, Number(raw) || 0);
     updateForm({ docTaxOverride: value });
-  };
-
-  const handlePaidAmountChange = (val: number) => {
-    let nextStatus = form.status;
-    if (val >= totals.total && totals.total > 0) {
-      nextStatus = 'paid';
-    } else if (val > 0 && val < totals.total) {
-      nextStatus = 'pending';
-    } else if (val === 0 && (form.status === 'paid' || form.status === 'draft')) {
-      nextStatus = 'pending';
-    }
-    updateForm({ paidAmount: val, status: nextStatus });
   };
 
   const addInvoiceItem = () => {
@@ -246,14 +237,7 @@ export function InvoiceForm({
                   fieldId="inv-field-issueDate"
                   error={errors.issueDate}
                   value={form.issueDate}
-                  onChange={(e) => updateForm({ issueDate: e.target.value })}
-                />
-                <IconInput
-                  label="Due Date"
-                  icon={Calendar}
-                  type="date"
-                  value={form.dueDate}
-                  onChange={(e) => updateForm({ dueDate: e.target.value })}
+                  onChange={(e) => updateForm({ issueDate: e.target.value, dueDate: e.target.value })}
                 />
                 <div>
                   <label className={INV_LABEL_CLS}>Invoice No.</label>
@@ -270,16 +254,7 @@ export function InvoiceForm({
                     <span className={`absolute left-3 top-1/2 -translate-y-1/2 w-2.5 h-2.5 rounded-full ${statusMeta.dotClass}`} />
                     <select
                       value={form.status}
-                      onChange={(e) => {
-                        const newStatus = e.target.value;
-                        if (newStatus === 'paid') {
-                          updateForm({ status: newStatus, paidAmount: totals.total });
-                        } else if (newStatus === 'pending' && form.paidAmount === totals.total) {
-                          updateForm({ status: newStatus, paidAmount: 0 });
-                        } else {
-                          updateForm({ status: newStatus });
-                        }
-                      }}
+                      onChange={(e) => updateForm({ status: e.target.value })}
                       className={`${INV_INPUT_CLS} pl-8 font-semibold cursor-pointer appearance-none`}
                     >
                       {INVOICE_STATUS_OPTIONS.map((status) => (
@@ -344,8 +319,6 @@ export function InvoiceForm({
 
             <InvoiceSummary
               totals={totals}
-              paidAmount={form.paidAmount}
-              onPaidAmountChange={handlePaidAmountChange}
               onEditDiscount={handleEditDiscount}
               onEditTax={handleEditTax}
             />
@@ -380,7 +353,7 @@ export function InvoiceForm({
               {signatures.length === 0 ? (
                 <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50/70 p-4">
                   <p className="text-xs font-medium text-slate-500">
-                    {t('settings.signatures_no_signatures')}
+                    {t('settings.signatures_no_personal_signatures')}
                   </p>
                   <Link
                     href="/settings/signatures"
@@ -392,6 +365,9 @@ export function InvoiceForm({
               ) : (
                 <div className={`space-y-3 ${form.includeSignature ? '' : 'opacity-60 pointer-events-none'}`}>
                   <label className={`${INV_LABEL_CLS} block`}>{t('settings.signatures_select_signature')}</label>
+                  <p className="text-[11px] font-medium text-slate-500 mb-2">
+                    {t('settings.signatures_personal_only_hint')}
+                  </p>
                   <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-2">
                     {signatures.map((signature) => {
                       const selected = form.signatureId === signature.id;

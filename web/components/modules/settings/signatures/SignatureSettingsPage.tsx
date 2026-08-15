@@ -21,7 +21,9 @@ import {
   createCompanySignature,
   deleteCompanySignature,
   getCompanySignatures,
+  getCurrentUserName,
   getSignatureById,
+  getSignaturesForCurrentUser,
   getSignatureMetrics,
   setDefaultCompanySignature,
   updateCompanySignature,
@@ -40,8 +42,9 @@ export function SignatureSettingsPage() {
   const [, bump] = useState(0);
   const [form, setForm] = useState<SignatureFormState>(EMPTY_SIGNATURE_FORM);
 
-  const signatures = useMemo(() => getCompanySignatures(appState), [appState, bump]);
+  const signatures = useMemo(() => getSignaturesForCurrentUser(appState), [appState, bump]);
   const metrics = useMemo(() => getSignatureMetrics(appState), [appState, bump]);
+  const accountName = useMemo(() => getCurrentUserName(appState), [appState]);
 
   useChromeSuppressed(view === 'form');
 
@@ -72,6 +75,9 @@ export function SignatureSettingsPage() {
       uploadRemove: t('settings.signatures_upload_remove'),
       uploadInvalid: t('settings.signatures_upload_invalid'),
       uploadTooLarge: t('settings.signatures_upload_too_large'),
+      uploadProcessing: t('settings.signatures_upload_processing'),
+      uploadFailed: t('settings.signatures_upload_failed'),
+      uploadCompressFailed: t('settings.signatures_upload_compress_failed'),
       labelField: t('settings.signatures_label'),
       labelPlaceholder: t('settings.signatures_label_placeholder'),
       signerName: t('settings.signatures_signer_name'),
@@ -88,6 +94,8 @@ export function SignatureSettingsPage() {
       goInvoiceToast: t('settings.signatures_go_invoice_toast'),
       goInvoiceToastDesc: t('settings.signatures_go_invoice_toast_desc'),
       goInvoiceDisabled: t('settings.signatures_go_invoice_disabled'),
+      personalNote: t('settings.signatures_personal_note'),
+      accountNameHint: t('settings.signatures_account_name_hint'),
     }),
     [t],
   );
@@ -103,13 +111,20 @@ export function SignatureSettingsPage() {
 
   const openCreate = () => {
     setEditingId(null);
-    setForm(EMPTY_SIGNATURE_FORM);
+    setForm({
+      ...EMPTY_SIGNATURE_FORM,
+      signerName: accountName,
+    });
     setView('form');
   };
 
   const openEdit = (id: string) => {
     const signature = getSignatureById(appState, id);
     if (!signature) return;
+    if (signature.ownerUserId && signature.ownerUserId !== appState.currentUser?.id) {
+      toast.error('Access denied', { module: 'Signatures', description: 'You can only edit your own signature.' });
+      return;
+    }
     setEditingId(id);
     setForm(signatureToForm(signature));
     setView('form');
@@ -205,7 +220,12 @@ export function SignatureSettingsPage() {
               backLabel={labels.back}
             />
           </div>
-          <SignatureSettingsForm form={form} onChange={onChange} labels={labels} />
+          <SignatureSettingsForm
+            form={form}
+            onChange={onChange}
+            labels={labels}
+            accountName={accountName}
+          />
           <div className={ST_FORM_FOOTER}>
             <button type="button" onClick={closeForm} className={FORM_BTN_SECONDARY}>
               {labels.cancel}
@@ -226,6 +246,7 @@ export function SignatureSettingsPage() {
         signatures={signatures}
         metrics={metrics}
         labels={labels}
+        accountName={accountName}
         onAdd={openCreate}
         onEdit={openEdit}
         onDelete={handleDelete}

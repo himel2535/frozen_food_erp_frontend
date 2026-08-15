@@ -10,9 +10,8 @@ import { MODULE_FILTER_INPUT } from '@/lib/ui/module-chrome-styles';
 const STATUS_TABS = [
   { id: 'all', label: 'All' },
   { id: 'draft', label: 'Draft' },
-  { id: 'pending', label: 'Pending' },
+  { id: 'sent', label: 'Sent' },
   { id: 'paid', label: 'Paid' },
-  { id: 'overdue', label: 'Overdue' },
 ];
 
 export function InvoiceFilterBar({

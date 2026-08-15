@@ -24,9 +24,15 @@ export function getDashboardMetrics(appState: AppState) {
   const pendingProdQty = pendingProd.reduce((s, p) => s + Number(p.plannedQuantity || 0), 0);
   const customersWithDue = customers.filter((c) => Number(c.due ?? c.totalDue ?? 0) > 0);
   const suppliersWithDue = suppliers.filter((s) => Number(s.due ?? s.totalDue ?? s.balance ?? 0) > 0);
-  const currentMonth = new Date().toISOString().slice(0, 7);
-  const monthSales = sales.filter((s) => String(s.date ?? s.createdAt ?? '').startsWith(currentMonth));
-  const monthRevenue = monthSales.reduce((s, o) => s + Number(o.total || 0), 0);
+  const now = new Date();
+  const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+  const invoices = Array.isArray(appState.invoices) ? appState.invoices : [];
+  const monthInvoices = invoices.filter((inv) => {
+    const status = String(inv.status ?? '').toLowerCase();
+    if (status === 'cancelled' || status === 'draft') return false;
+    return String(inv.issueDate ?? inv.date ?? '').startsWith(currentMonth);
+  });
+  const monthRevenue = monthInvoices.reduce((s, inv) => s + Number(inv.amount ?? inv.total ?? 0), 0);
   const openLeads = getLeadList(appState).filter((lead) => {
     const status = String((lead as Record<string, unknown>).status ?? '').toLowerCase();
     return status !== 'won' && status !== 'lost' && status !== 'closed';
@@ -53,7 +59,7 @@ export function getDashboardMetrics(appState: AppState) {
     purchaseSummary: { count: purchases.length, total: purchases.reduce((s, o) => s + Number(o.total || 0), 0) },
     salesSummary: { count: sales.length, total: sales.reduce((s, o) => s + Number(o.total || 0), 0) },
     monthRevenue,
-    monthSalesCount: monthSales.length,
+    monthSalesCount: monthInvoices.length,
     openLeadsCount: openLeads.length,
     openLeadsValue: openLeads.reduce((s: number, l) => s + Number((l as Record<string, unknown>).expectedValue || 0), 0),
   };

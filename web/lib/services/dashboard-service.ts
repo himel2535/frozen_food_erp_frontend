@@ -47,8 +47,10 @@ function collectRevenueRows(state: AppState) {
   const rows: { date: Date; amount: number }[] = [];
 
   for (const inv of invoices) {
-    const d = parseDate(inv.date);
-    if (d) rows.push({ date: d, amount: Number(inv.amount ?? 0) });
+    const status = String(inv.status ?? '').toLowerCase();
+    if (status === 'cancelled' || status === 'draft') continue;
+    const d = parseDate(inv.issueDate ?? inv.date);
+    if (d) rows.push({ date: d, amount: Number(inv.amount ?? inv.total ?? 0) });
   }
   for (const receipt of posReceipts) {
     const d = parseDate(receipt.date ?? receipt.createdAt);
@@ -257,10 +259,12 @@ export function getRevenueByMonth(state: AppState, months = 10): { month: number
   }
 
   for (const inv of invoices) {
-    const d = parseDate(inv.date);
+    const status = String(inv.status ?? '').toLowerCase();
+    if (status === 'cancelled' || status === 'draft') continue;
+    const d = parseDate(inv.issueDate ?? inv.date);
     if (!d) continue;
     const slot = result.find((r) => r.month === d.getMonth() + 1 && r.year === d.getFullYear());
-    if (slot) slot.value += Number(inv.amount ?? 0);
+    if (slot) slot.value += Number(inv.amount ?? inv.total ?? 0);
   }
 
   return result;

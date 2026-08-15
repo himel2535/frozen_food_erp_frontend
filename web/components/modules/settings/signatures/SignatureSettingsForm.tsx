@@ -16,9 +16,10 @@ type SignatureSettingsFormProps = {
   form: SignatureFormState;
   onChange: (key: keyof SignatureFormState, value: string | boolean) => void;
   labels: Record<string, string>;
+  accountName: string;
 };
 
-export function SignatureSettingsForm({ form, onChange, labels }: SignatureSettingsFormProps) {
+export function SignatureSettingsForm({ form, onChange, labels, accountName }: SignatureSettingsFormProps) {
   return (
     <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_min(420px,38%)] gap-3">
       <div className={`${ST_CARD_COMPACT} space-y-4`}>
@@ -32,6 +33,9 @@ export function SignatureSettingsForm({ form, onChange, labels }: SignatureSetti
             remove: labels.uploadRemove,
             invalid: labels.uploadInvalid,
             tooLarge: labels.uploadTooLarge,
+            processing: labels.uploadProcessing,
+            uploadFailed: labels.uploadFailed,
+            compressFailed: labels.uploadCompressFailed,
           }}
         />
 
@@ -52,12 +56,11 @@ export function SignatureSettingsForm({ form, onChange, labels }: SignatureSetti
           </label>
           <input
             type="text"
-            required
-            value={form.signerName}
-            onChange={(e) => onChange('signerName', e.target.value)}
-            className={INPUT_CLS}
-            placeholder={labels.signerNamePlaceholder}
+            readOnly
+            value={accountName || form.signerName}
+            className={`${INPUT_CLS} bg-slate-50 text-slate-600 cursor-not-allowed`}
           />
+          <p className="text-[11px] font-medium text-slate-500 mt-1.5">{labels.accountNameHint}</p>
         </div>
 
         <div>
@@ -87,7 +90,7 @@ export function SignatureSettingsForm({ form, onChange, labels }: SignatureSetti
 
       <SignatureInvoicePreview
         imageDataUrl={form.imageDataUrl}
-        signerName={form.signerName}
+        signerName={accountName || form.signerName}
         designation={form.designation}
         label={form.label}
         labels={{

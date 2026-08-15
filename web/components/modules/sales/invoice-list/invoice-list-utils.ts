@@ -15,6 +15,23 @@ export function matchesInvoiceDate(row: Record<string, unknown>, isoDate: string
   return resolveInvoiceIssueDate(row) === isoDate;
 }
 
+export function displayInvoiceAsCash(row: Record<string, unknown>): Record<string, unknown> {
+  const rawStatus = String(row.status ?? 'paid').toLowerCase();
+  const status = rawStatus === 'cancelled'
+    ? 'cancelled'
+    : rawStatus === 'draft' || rawStatus === 'sent'
+      ? rawStatus
+      : 'paid';
+  const total = Number(row.amount ?? row.total ?? 0);
+  const cancelled = status === 'cancelled';
+  return {
+    ...row,
+    status,
+    paid: cancelled ? 0 : total,
+    due: 0,
+  };
+}
+
 function formatAddress(address: Record<string, unknown> | undefined) {
   if (!address) return '';
   const line1 = String(address.line1 ?? '');
@@ -32,15 +49,12 @@ export function enrichPrintPayload(appState: AppState, payload: InvoicePayload):
   const primary = contacts.find((c) => c.primary) ?? contacts[0];
   const shipping = addresses.find((a) => a.type === 'shipping') ?? addresses[0];
 
-  const paidAmount = Number(payload.paidAmount ?? 0);
-  const balanceDue = Number(
-    payload.balanceDue ?? Math.max(0, payload.totals.total - paidAmount),
-  );
+  const paidAmount = payload.status.toLowerCase() === 'cancelled' ? 0 : Number(payload.totals.total);
 
   return {
     ...payload,
     paidAmount,
-    balanceDue,
+    balanceDue: 0,
     approvalStatus: payload.approvalStatus ?? 'pending',
     shippingAddress: payload.shippingAddress || formatAddress(shipping) || payload.billingAddress,
     customerEmail: payload.customerEmail || String(primary?.email ?? ''),
@@ -53,7 +67,8 @@ export function buildPrintPayloadFromRow(
   appState: AppState,
   row: Record<string, unknown>,
 ): { id: string; data: InvoicePayload } {
-  const items = (Array.isArray(row.items) ? row.items : []) as Record<string, unknown>[];
+  const cashRow = displayInvoiceAsCash(row);
+  const items = (Array.isArray(cashRow.items) ? cashRow.items : []) as Record<string, unknown>[];
   const lineItems = items.length
     ? items.map((item, index) =>
         recalcLineItem({
@@ -79,19 +94,19 @@ export function buildPrintPayloadFromRow(
     customerName: String(row.customerName ?? row.customer ?? ''),
     billingAddress: String(row.billingAddress ?? ''),
     issueDate: String(row.issueDate ?? row.date ?? ''),
-    dueDate: String(row.dueDate ?? ''),
-    status: String(row.status ?? 'draft'),
-    notes: String(row.notes ?? ''),
-    terms: String(row.terms ?? row.paymentTerms ?? ''),
+    dueDate: String(cashRow.issueDate ?? cashRow.date ?? ''),
+    status: String(cashRow.status ?? 'paid'),
+    notes: String(cashRow.notes ?? ''),
+    terms: String(cashRow.terms ?? cashRow.paymentTerms ?? ''),
     docDiscountOverride: null,
     docTaxOverride: null,
-    includeSignature: Boolean(row.includeSignature),
-    signatureId: row.signatureId ? String(row.signatureId) : null,
+    includeSignature: Boolean(cashRow.includeSignature),
+    signatureId: cashRow.signatureId ? String(cashRow.signatureId) : null,
     items: lineItems.length ? lineItems : [createEmptyLineItem()],
-    invoiceNo: String(row.id),
+    invoiceNo: String(cashRow.id),
     totals,
-    paidAmount: Number(row.paidAmount ?? row.paid ?? 0),
-    balanceDue: Number(row.dueAmount ?? row.due ?? Math.max(0, totals.total - Number(row.paidAmount ?? row.paid ?? 0))),
+    paidAmount: String(cashRow.status ?? '').toLowerCase() === 'cancelled' ? 0 : totals.total,
+    balanceDue: 0,
     approvalStatus: String(row.approvalStatus ?? 'pending'),
   };
 
@@ -105,15 +120,13 @@ export function exportInvoicesCsv(
   rows: Record<string, unknown>[],
   resolveCustomer: (row: Record<string, unknown>) => string,
 ) {
-  const headers = ['Invoice', 'Customer', 'Issue Date', 'Due Date', 'Total', 'Paid', 'Due', 'Status'];
+  const headers = ['Invoice', 'Customer', 'Issue Date', 'Total', 'Paid', 'Status'];
   const lines = rows.map((row) => [
     String(row.id ?? ''),
     resolveCustomer(row),
     String(row.issueDate ?? row.date ?? ''),
-    String(row.dueDate ?? ''),
     String(row.total ?? row.amount ?? 0),
-    String(row.paidAmount ?? row.paid ?? 0),
-    String(row.dueAmount ?? row.due ?? 0),
+    String(row.total ?? row.amount ?? 0),
     String(row.status ?? ''),
   ]);
   return [headers, ...lines]

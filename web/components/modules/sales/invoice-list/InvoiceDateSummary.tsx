@@ -8,7 +8,6 @@ type InvoiceDateSummaryProps = {
   count: number;
   totalAmount: number;
   collected: number;
-  due: number;
   formatMoney: (value: number, options?: { decimals?: number }) => string;
   formatCount: (value: number) => string;
 };
@@ -18,7 +17,6 @@ export function InvoiceDateSummary({
   count,
   totalAmount,
   collected,
-  due,
   formatMoney,
   formatCount,
 }: InvoiceDateSummaryProps) {
@@ -45,7 +43,6 @@ export function InvoiceDateSummary({
         <span>Total: {formatMoney(totalAmount, { decimals: 2 })}</span>
       </div>
       <span className="font-semibold text-emerald-700">Collected: {formatMoney(collected, { decimals: 2 })}</span>
-      <span className="font-semibold text-rose-700">Due: {formatMoney(due, { decimals: 2 })}</span>
     </div>
   );
 }

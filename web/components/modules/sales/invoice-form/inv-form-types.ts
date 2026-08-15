@@ -62,7 +62,7 @@ export const EMPTY_INVOICE_FORM: InvoiceFormValues = {
   billingAddress: '',
   issueDate: new Date().toISOString().slice(0, 10),
   dueDate: '',
-  status: 'draft',
+  status: 'paid',
   notes: '',
   terms: '',
   docDiscountOverride: null,

@@ -117,6 +117,8 @@ export interface CompanySignature {
   designation?: string;
   imageDataUrl: string;
   isDefault?: boolean;
+  ownerUserId?: string;
+  ownerName?: string;
   createdAt: string;
   updatedAt: string;
 }
