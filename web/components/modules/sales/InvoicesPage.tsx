@@ -336,7 +336,7 @@ export function InvoicesPage() {
         toast.error('Operation failed', { module: 'Invoices', description: 'error' in result ? String(result.error) : 'Save failed' });
         return null;
       }
-      return editingId ?? ('id' in result ? result.id : payload.invoiceNo);
+      return String(editingId ?? payload.invoiceNo);
     }
 
     const result = editingId
@@ -348,7 +348,7 @@ export function InvoicesPage() {
       return null;
     }
 
-    const savedId = editingId ?? ('id' in result ? result.id : payload.invoiceNo);
+    const savedId = String(editingId ?? payload.invoiceNo);
 
     if (action === 'sent' && savedId) {
       approveInvoice(appState, savedId);
