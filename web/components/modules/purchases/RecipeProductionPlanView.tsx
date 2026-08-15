@@ -8,7 +8,12 @@ import { Download } from 'lucide-react';
 import { FormHeader } from '@/components/layout/FormHeader';
 import { Footer } from '@/components/layout/Footer';
 import { AppTable, type AppTableColumn } from '@/components/shared/AppTable';
-import { downloadProductionPlanPdf } from '@/lib/services/export-production-plan-pdf';
+import { ProductionPlanExportModal } from '@/components/modules/purchases/ProductionPlanExportModal';
+import {
+  downloadProductionPlanPdf,
+  type ProductionPlanPdfOptions,
+} from '@/lib/services/export-production-plan-pdf';
+import { formatAmount } from '@/lib/services/domain-service';
 import {
   formatMoney,
   getProductionPlan,
@@ -89,11 +94,13 @@ export function RecipeProductionPlanView({
   const plan = useMemo(() => getProductionPlan(appState, recipe, batchQty), [appState, recipe, batchQty]);
   const { lines, summary } = plan;
   const [exporting, setExporting] = useState(false);
+  const [exportModalOpen, setExportModalOpen] = useState(false);
 
-  const handleExportPdf = async () => {
+  const handleExportPdf = async (options: ProductionPlanPdfOptions) => {
     setExporting(true);
     try {
-      await downloadProductionPlanPdf(recipe, batchQty, plan);
+      await downloadProductionPlanPdf(recipe, batchQty, plan, options);
+      setExportModalOpen(false);
     } catch {
       toast.error('Action required', { module: 'Purchases', description: "Failed to generate PDF. Please try again." });
     } finally {
@@ -124,13 +131,17 @@ export function RecipeProductionPlanView({
       },
       {
         key: 'unitCost',
-        label: 'Unit Cost',
-        render: (row) => formatMoney(row.unitCost),
+        label: 'Unit Cost (tk)',
+        render: (row) => (
+          <span className="font-semibold text-slate-800 tabular-nums">{formatAmount(row.unitCost)}</span>
+        ),
       },
       {
         key: 'lineCost',
-        label: 'Line Cost',
-        render: (row) => <span className="font-bold text-slate-800">{formatMoney(row.lineCost)}</span>,
+        label: 'Total Cost (tk)',
+        render: (row) => (
+          <span className="font-bold text-slate-800 tabular-nums">{formatAmount(row.lineCost)}</span>
+        ),
       },
       {
         key: 'inStock',
@@ -178,9 +189,9 @@ export function RecipeProductionPlanView({
       <section className="grid grid-cols-2 md:grid-cols-4 gap-2">
         <div className="premium-card premium-shadow p-3.5 flex items-center justify-between gap-3 transition-all hover:border-slate-300 min-h-[72px]">
           <div className="min-w-0">
-            <span className="text-xs font-bold text-slate-500 tracking-wide block">Total Material Cost</span>
-            <span className="text-lg font-extrabold text-slate-900 leading-tight truncate">
-              {formatMoney(summary.totalLineCost)}
+            <span className="text-xs font-bold text-slate-500 tracking-wide block">Total Material Cost (tk)</span>
+            <span className="text-lg font-extrabold text-slate-900 leading-tight truncate tabular-nums">
+              {formatAmount(summary.totalLineCost)}
             </span>
           </div>
           <Icon icon="flat-color-icons:currency-exchange" width={38} height={38} className="shrink-0" />
@@ -201,9 +212,9 @@ export function RecipeProductionPlanView({
         </div>
         <div className="premium-card premium-shadow p-3.5 flex items-center justify-between gap-3 transition-all hover:border-slate-300 min-h-[72px]">
           <div className="min-w-0">
-            <span className="text-xs font-bold text-slate-500 tracking-wide block">Est. Purchase (Shortfall)</span>
-            <span className="text-lg font-extrabold text-slate-900 leading-tight truncate">
-              {formatMoney(summary.estimatedPurchaseForShortfall)}
+            <span className="text-xs font-bold text-slate-500 tracking-wide block">Est. Purchase (Shortfall) (tk)</span>
+            <span className="text-lg font-extrabold text-slate-900 leading-tight truncate tabular-nums">
+              {formatAmount(summary.estimatedPurchaseForShortfall)}
             </span>
           </div>
           <Icon icon="flat-color-icons:paid" width={38} height={38} className="shrink-0" />
@@ -220,7 +231,7 @@ export function RecipeProductionPlanView({
       <div className="flex flex-wrap justify-end gap-2 pt-1">
         <button
           type="button"
-          onClick={handleExportPdf}
+          onClick={() => setExportModalOpen(true)}
           disabled={exporting}
           className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl border border-blue-200 bg-blue-50 hover:bg-blue-100 text-blue-800 text-xs font-bold cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
         >
@@ -235,6 +246,13 @@ export function RecipeProductionPlanView({
           Edit Quantity
         </button>
       </div>
+
+      <ProductionPlanExportModal
+        open={exportModalOpen}
+        onClose={() => setExportModalOpen(false)}
+        onExport={handleExportPdf}
+        exporting={exporting}
+      />
 
       <Footer />
     </div>
