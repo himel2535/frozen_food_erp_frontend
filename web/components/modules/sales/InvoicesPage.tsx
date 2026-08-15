@@ -7,9 +7,8 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { Download, Plus } from 'lucide-react';
 import { Footer } from '@/components/layout/Footer';
 import { useChromeSuppressed, useRegisterModuleActions } from '@/components/layout/ModuleActionsContext';
-import { FilterTabs } from '@/components/shared/FilterTabs';
-import { ModuleFilterBar } from '@/components/shared/ModuleFilterBar';
 import { AppTable, type AppTableColumn } from '@/components/shared/AppTable';
+import { DateDisplay } from '@/components/shared/DateDisplay';
 import { StatusBadge } from '@/components/shared/StatusBadge';
 import { TableIconAction } from '@/components/shared/TableIconAction';
 import { useAppStore } from '@/lib/state/app-store';
@@ -36,10 +35,14 @@ import { createEmptyLineItem, recalcLineItem } from '@/components/modules/sales/
 import { InvoicePrintPreview } from '@/components/modules/sales/invoice-form/InvoicePrintPreview';
 import { InvoiceDashboardMetrics } from '@/components/modules/sales/invoice-list/InvoiceDashboardMetrics';
 import { InvoiceAgingSnapshot } from '@/components/modules/sales/invoice-list/InvoiceAgingSnapshot';
+import { InvoiceDateSummary } from '@/components/modules/sales/invoice-list/InvoiceDateSummary';
+import { InvoiceFilterBar } from '@/components/modules/sales/invoice-list/InvoiceFilterBar';
 import {
   buildPrintPayloadFromRow,
   enrichPrintPayload,
   exportInvoicesCsv,
+  matchesInvoiceDate,
+  resolveInvoiceIssueDate,
 } from '@/components/modules/sales/invoice-list/invoice-list-utils';
 import { getDefaultSignature, getCompanySignatures } from '@/lib/services/settings-service';
 import { isModuleApiMode } from '@/lib/config/data-source';
@@ -49,14 +52,6 @@ import { ListPagination } from '@/components/shared/ListPagination';
 import { useCustomersApiStore } from '@/hooks/use-customers-module';
 import { ApiModeBanner } from '@/components/shared/ApiModeBanner';
 import { mapApiInvoiceRow, mapInvoiceRecordToApi, resolveApiRowId } from '@/lib/services/entity-api-mappers';
-
-const STATUS_TABS = [
-  { id: 'all', label: 'All' },
-  { id: 'draft', label: 'Draft' },
-  { id: 'pending', label: 'Pending' },
-  { id: 'paid', label: 'Paid' },
-  { id: 'overdue', label: 'Overdue' },
-];
 
 function recordToFormValues(record: Record<string, unknown>): InvoiceFormValues {
   const rawItems = (Array.isArray(record.items) ? record.items : []) as Record<string, unknown>[];
@@ -131,10 +126,11 @@ export function InvoicesPage() {
   const apiStore = usePaginatedApiResource('invoices', mapApiInvoiceRow, { pageSize: 25 });
   const customersApiStore = useCustomersApiStore();
   const t = useAppStore((s) => s.t);
-  const { formatMoney } = useLocaleFormat();
+  const { formatMoney, formatCount } = useLocaleFormat();
   const [view, setView] = useState<'main' | 'form'>('main');
   const [localSearch, setLocalSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
+  const [dateFilter, setDateFilter] = useState('');
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingMongoId, setEditingMongoId] = useState<string | null>(null);
   const [formKey, setFormKey] = useState(0);
@@ -177,8 +173,29 @@ export function InvoicesPage() {
     if (statusFilter !== 'all') {
       data = data.filter((row) => String(row.status).toLowerCase() === statusFilter);
     }
+    if (dateFilter) {
+      data = data.filter((row) => matchesInvoiceDate(row, dateFilter));
+    }
     return data;
-  }, [allInvoiceRows, appState, apiMode, apiStore.search, localSearch, statusFilter]);
+  }, [allInvoiceRows, appState, apiMode, apiStore.search, localSearch, statusFilter, dateFilter]);
+
+  const dateSummaryStats = useMemo(() => {
+    if (!dateFilter) return null;
+    const matched = allInvoiceRows.filter((row) => matchesInvoiceDate(row, dateFilter));
+    return matched.reduce(
+      (acc, row) => {
+        const total = Number(row.amount ?? row.total ?? 0);
+        const paid = Number(row.paid ?? 0);
+        const due = Number(row.due ?? Math.max(0, total - paid));
+        acc.count += 1;
+        acc.totalAmount += total;
+        acc.collected += paid;
+        acc.due += due;
+        return acc;
+      },
+      { count: 0, totalAmount: 0, collected: 0, due: 0 },
+    );
+  }, [allInvoiceRows, dateFilter]);
 
   const dashboardSummary = useMemo(() => {
     if (apiMode) {
@@ -214,7 +231,7 @@ export function InvoicesPage() {
       label: 'Customer',
       render: (row) => (apiMode ? String(row.customerName ?? row.customer ?? '—') : resolveInvoiceCustomerLabel(appState, row)),
     },
-    { key: 'date', label: 'Date', render: (row) => String(row.issueDate ?? row.date ?? '—') },
+    { key: 'date', label: 'Date', render: (row) => <DateDisplay value={resolveInvoiceIssueDate(row)} variant="slash" /> },
     {
       key: 'amount',
       label: 'Amount / Balance',
@@ -453,22 +470,48 @@ export function InvoicesPage() {
         <InvoiceDashboardMetrics summary={dashboardSummary} loading={kpiLoading} />
         <InvoiceAgingSnapshot aging={dashboardSummary.aging} />
 
-        <ModuleFilterBar
+        <InvoiceFilterBar
           search={apiMode ? apiStore.search : localSearch}
           onSearchChange={(v) => {
             if (apiMode) apiStore.setSearchTerm(v);
             else setLocalSearch(v);
             if (apiMode) apiStore.setPage(1);
           }}
-          searchPlaceholder="Search invoice, customer..."
-          filters={<FilterTabs tabs={STATUS_TABS} active={statusFilter} onChange={setStatusFilter} />}
+          statusFilter={statusFilter}
+          onStatusChange={setStatusFilter}
+          dateFilter={dateFilter}
+          onDateFilterChange={(value) => {
+            setDateFilter(value);
+            if (apiMode) apiStore.setPage(1);
+          }}
+          dateSummary={
+            dateFilter && dateSummaryStats ? (
+              <InvoiceDateSummary
+                date={dateFilter}
+                count={dateSummaryStats.count}
+                totalAmount={dateSummaryStats.totalAmount}
+                collected={dateSummaryStats.collected}
+                due={dateSummaryStats.due}
+                formatMoney={formatMoney}
+                formatCount={formatCount}
+              />
+            ) : undefined
+          }
         />
 
         <AppTable
           columns={columns}
           rows={rows}
           loading={kpiLoading}
-          emptyMessage={apiStore.loading ? 'Loading invoices…' : 'No invoices found.'}
+          emptyMessage={
+            dateFilter
+              ? apiStore.loading
+                ? 'Loading invoices…'
+                : 'No invoices found for this date.'
+              : apiStore.loading
+                ? 'Loading invoices…'
+                : 'No invoices found.'
+          }
           renderActions={(row) => (
             <>
               <TableIconAction variant="edit" onClick={() => openEdit(row)} />

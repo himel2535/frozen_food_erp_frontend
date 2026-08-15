@@ -146,10 +146,10 @@ export const CONFIGS: Record<string, DedicatedModuleConfig> = {
       { key: 'status', label: 'Status' },
     ],
     fields: [
-      { key: 'supplier', label: 'Supplier', type: 'text', required: true },
+      { key: 'supplier', label: 'Supplier', type: 'text' },
       { key: 'product', label: 'Product', type: 'text', required: true },
       { key: 'qty', label: 'Quantity', type: 'number', required: true },
-      { key: 'date', label: 'Received Date', type: 'date' },
+      { key: 'date', label: 'Received Date', type: 'date', required: true },
       { key: 'status', label: 'Status', type: 'select', options: ['open', 'closed', 'pending'] },
       { key: 'ref', label: 'PO Reference', type: 'text', advanced: true },
       { key: 'notes', label: 'Notes', type: 'textarea', advanced: true },
@@ -158,8 +158,15 @@ export const CONFIGS: Record<string, DedicatedModuleConfig> = {
       kpiCount('count', 'Total GRNs', rows.length),
       kpiCount('open', 'Open', countStatus(rows, 'open')),
       kpiCount('closed', 'Closed', countStatus(rows, 'closed')),
-      kpiCount('qty', 'Total Qty Received', sumField(rows, 'qty')),
+      kpiCount('qty', 'Total Qty Received', sumField(rows, 'qty') || sumField(rows, 'total')),
     ],
+    columnRender: {
+      product: (row) => String(row.product ?? row.productName ?? '—'),
+      qty: (row) => {
+        const qty = row.qty ?? row.quantity ?? row.total;
+        return qty != null && qty !== '' ? String(qty) : '—';
+      },
+    },
     adapter: adapter({
       list: listGoodsReceived,
       create: createGoodsReceived,

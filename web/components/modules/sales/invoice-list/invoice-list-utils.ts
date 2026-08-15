@@ -4,6 +4,17 @@ import { resolveInvoiceSignature } from '@/lib/services/settings-service';
 import type { InvoicePayload } from '@/components/modules/sales/invoice-form/inv-form-types';
 import { computeInvoiceTotalsFromItems, createEmptyLineItem, recalcLineItem } from '@/components/modules/sales/invoice-form/inv-form-types';
 
+export function resolveInvoiceIssueDate(row: Record<string, unknown>): string {
+  const raw = String(row.issueDate ?? row.date ?? '').trim();
+  if (!raw) return '';
+  return raw.split('T')[0];
+}
+
+export function matchesInvoiceDate(row: Record<string, unknown>, isoDate: string): boolean {
+  if (!isoDate) return true;
+  return resolveInvoiceIssueDate(row) === isoDate;
+}
+
 function formatAddress(address: Record<string, unknown> | undefined) {
   if (!address) return '';
   const line1 = String(address.line1 ?? '');

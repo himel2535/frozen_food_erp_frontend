@@ -86,7 +86,7 @@ export const PORT_CONFIGS: Record<string, PortModuleConfig> = {
   ]),
 
   'purchases-goods-received': stateModule('purchases-goods-received', 'goodsReceived', 'GRN', [
-    { key: 'supplier', label: 'Supplier', type: 'text', required: true },
+    { key: 'supplier', label: 'Supplier', type: 'text' },
     { key: 'status', label: 'Status', type: 'select', options: OPEN_CLOSED },
     { key: 'notes', label: 'Notes', type: 'textarea', advanced: true },
   ]),
