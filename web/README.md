@@ -25,4 +25,4 @@ Open [http://localhost:3000/login](http://localhost:3000/login). The API must be
 | `lib/state/` | Zustand stores |
 | `styles/globals.css` | Global styles and tokens |
 
-Env template: [`.env.example`](.env.example) (`NEXT_PUBLIC_API_URL`, `NEXT_PUBLIC_SOCKET_URL`).
+Env template: [`.env.example`](.env.example) (`NEXT_PUBLIC_API_URL`, `NEXT_PUBLIC_SOCKET_URL`, Cloudinary). Production builds also read [`.env.production`](.env.production) for Cloudinary.
