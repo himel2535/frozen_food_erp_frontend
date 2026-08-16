@@ -54,6 +54,10 @@ export function ApiStateHydrator() {
     let cancelled = false;
 
     void (async () => {
+      await new Promise<void>((resolve) => {
+        window.setTimeout(resolve, 0);
+      });
+      if (cancelled) return;
       try {
         const boot = await fetchModulesPageSafe([...API_BOOT_MODULES]);
         if (cancelled) return;
@@ -74,9 +78,10 @@ export function ApiStateHydrator() {
   useEffect(() => {
     if (!USE_API || !authUser) return;
     return onApiMutation((modules) => {
-      const targets = (modules?.length
-        ? modules.filter((mod) => API_BOOT_MODULES.includes(mod as ApiModule))
-        : [...API_BOOT_MODULES]) as ApiModule[];
+      if (!modules?.length) return;
+      const targets = modules.filter((mod) =>
+        API_BOOT_MODULES.includes(mod as ApiModule),
+      ) as ApiModule[];
       if (!targets.length) return;
       void fetchModulesPageSafe(targets).then((partial) => mergeApiSnapshot(partial));
     });

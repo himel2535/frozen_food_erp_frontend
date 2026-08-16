@@ -173,6 +173,7 @@ export function authUserToCurrentProfile(authUser: AuthUserRecord): CurrentUserP
     role: authUser.isMainAdmin ? 'admin' : 'user',
     branch: 'Main',
     imageUrl: authUser.imageUrl ?? '',
+    imagePublicId: authUser.imagePublicId ?? '',
   };
 }
 

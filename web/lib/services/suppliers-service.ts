@@ -29,6 +29,7 @@ export type EnrichedSupplier = {
   notes?: string;
   leadTime?: string;
   imageUrl?: string;
+  imagePublicId?: string;
   totalPurchase: number;
   lastPurchaseDate: string;
   paymentTerms: string;
@@ -234,6 +235,7 @@ function buildEnrichedSupplier(state: AppState, row: Row): EnrichedSupplier {
     notes: row.notes ? String(row.notes) : undefined,
     leadTime: row.lead ? String(row.lead) : row.leadTime ? String(row.leadTime) : undefined,
     imageUrl: row.imageUrl ? String(row.imageUrl) : undefined,
+    imagePublicId: row.imagePublicId ? String(row.imagePublicId) : undefined,
     totalPurchase: purchaseTotal,
     lastPurchaseDate: overlay?.lastPurchaseDate ?? purchaseLast,
     paymentTerms,

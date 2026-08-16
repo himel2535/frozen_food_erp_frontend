@@ -1,3 +1,5 @@
+import { compressImageFile } from '@/lib/utils/compress-image';
+
 const MAX_BYTES = 5 * 1024 * 1024; // 5MB
 const ALLOWED_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp']);
 
@@ -5,6 +7,17 @@ export type CloudinaryUploadResult = {
   url: string;
   publicId?: string;
 };
+
+export type PendingImageUpload = {
+  url: string;
+  publicId: string;
+};
+
+/** `imageUrl` → `imagePublicId`, `logoUrl` → `logoPublicId`. */
+export function publicIdFieldKey(urlKey: string): string {
+  if (urlKey.endsWith('Url')) return `${urlKey.slice(0, -3)}PublicId`;
+  return `${urlKey}PublicId`;
+}
 
 export class CloudinaryUploadError extends Error {
   constructor(message: string) {
@@ -36,8 +49,10 @@ export async function uploadImageToCloudinary(file: File): Promise<CloudinaryUpl
     );
   }
 
+  const compressed = await compressImageFile(file);
+
   const formData = new FormData();
-  formData.append('file', file);
+  formData.append('file', compressed);
   formData.append('upload_preset', uploadPreset);
 
   let response: Response;

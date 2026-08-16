@@ -16,7 +16,7 @@ import {
   readCachedResourceList,
   updateResource,
 } from '@/lib/services/api-resource-service';
-import { notifyApiMutation, onApiMutation, consumeModuleMutation } from '@/lib/services/api-sync-events';
+import { onApiMutation, consumeModuleMutation } from '@/lib/services/api-sync-events';
 import { invalidateApiListCache, setApiListCache } from '@/lib/services/api-list-cache';
 import { DEFAULT_LIST_PAGE_SIZE } from '@/lib/services/api-pagination-types';
 import { useModuleInitialRows } from '@/components/providers/ModuleInitialDataProvider';
@@ -142,7 +142,7 @@ export function useApiResourceStore(
   useEffect(() => {
     if (!enabled) return;
     return onApiMutation((modules) => {
-      if (!modules || modules.includes(module)) {
+      if (modules?.includes(module)) {
         void reload();
       }
     });
@@ -154,7 +154,6 @@ export function useApiResourceStore(
       recordApiAudit(module, 'CREATE', result.id, body);
       invalidateApiListCache(path);
       await reload();
-      notifyApiMutation([module]);
     }
     return result;
   }, [path, reload, module]);
@@ -165,7 +164,6 @@ export function useApiResourceStore(
       recordApiAudit(module, 'UPDATE', id, body);
       invalidateApiListCache(path);
       await reload();
-      notifyApiMutation([module]);
     }
     return result;
   }, [path, reload, module]);
@@ -176,7 +174,6 @@ export function useApiResourceStore(
       recordApiAudit(module, 'DELETE', id);
       invalidateApiListCache(path);
       await reload();
-      notifyApiMutation([module]);
     }
     return result;
   }, [path, reload, module]);

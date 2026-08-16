@@ -20,6 +20,7 @@ export type SoFormValues = {
   notes: string;
   terms: string;
   attachmentUrl: string;
+  attachmentPublicId: string;
   attachmentName: string;
   paymentStatus: 'unpaid' | 'partial' | 'paid';
   paidAmount: string;
@@ -47,6 +48,7 @@ export const EMPTY_SO_FORM: SoFormValues = {
   notes: '',
   terms: 'Net 30 - Payment due within 30 days',
   attachmentUrl: '',
+  attachmentPublicId: '',
   attachmentName: '',
   paymentStatus: 'unpaid',
   paidAmount: '0',
@@ -124,6 +126,7 @@ export function recordToSoFormValues(record: Record<string, unknown>): SoFormVal
     notes: String(record.notes ?? ''),
     terms: String(record.terms ?? 'Net 30 - Payment due within 30 days'),
     attachmentUrl: String(record.attachmentUrl ?? ''),
+    attachmentPublicId: String(record.attachmentPublicId ?? ''),
     attachmentName: String(record.attachmentName ?? ''),
     paymentStatus: (record.paymentStatus as SoFormValues['paymentStatus']) ?? 'unpaid',
     paidAmount: String(record.paidAmount ?? 0),
@@ -153,6 +156,7 @@ export function payloadToRecord(payload: SoFormPayload) {
     notes: payload.notes,
     terms: payload.terms,
     attachmentUrl: payload.attachmentUrl,
+    attachmentPublicId: payload.attachmentPublicId,
     attachmentName: payload.attachmentName,
     paymentStatus: payload.paymentStatus,
     paidAmount,

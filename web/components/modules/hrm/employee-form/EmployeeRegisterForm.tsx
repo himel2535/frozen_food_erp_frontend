@@ -73,7 +73,10 @@ export function EmployeeRegisterForm({
               <ImageUploadField
                 label="Employee Photo"
                 value={form.imageUrl ?? ''}
-                onChange={(url) => setField('imageUrl', url)}
+                onChange={(url, publicId) => {
+                  setField('imageUrl', url);
+                  setField('imagePublicId', publicId ?? '');
+                }}
               />
             </div>
             <IconInput

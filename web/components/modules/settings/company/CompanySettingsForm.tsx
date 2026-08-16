@@ -24,6 +24,7 @@ export type CompanyFormState = {
   industry: string;
   registrationNo: string;
   logoUrl: string;
+  logoPublicId: string;
   phone: string;
   email: string;
   website: string;
@@ -338,7 +339,10 @@ function BrandingFields({
         <ImageUploadField
           label="Company Logo"
           value={form.logoUrl}
-          onChange={(url) => onChange('logoUrl', url)}
+          onChange={(url, publicId) => {
+            onChange('logoUrl', url);
+            onChange('logoPublicId', publicId ?? '');
+          }}
         />
         <div>
           <label htmlFor="company-invoice-prefix" className={FORM_LABEL_CLS}>{labels.invoicePrefix}</label>

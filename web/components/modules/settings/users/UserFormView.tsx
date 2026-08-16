@@ -29,6 +29,7 @@ export type UserFormState = {
   email: string;
   password: string;
   imageUrl: string;
+  imagePublicId: string;
   status: 'active' | 'disabled';
   isMainAdmin: boolean;
   roleId: string;
@@ -109,7 +110,7 @@ export function UserFormView({
                 <ImageUploadField
                   label="Profile Photo"
                   value={form.imageUrl}
-                  onChange={(url) => setForm((f) => ({ ...f, imageUrl: url }))}
+                  onChange={(url, publicId) => setForm((f) => ({ ...f, imageUrl: url, imagePublicId: publicId ?? '' }))}
                 />
               </div>
               <div>

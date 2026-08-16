@@ -144,9 +144,9 @@ export function useApiAggregate(modules: readonly ApiModule[]): AggregateResult 
   useEffect(() => {
     return onApiMutation((modules) => {
       const active = modulesRef.current;
-      const targets = !modules?.length
-        ? [...active]
-        : active.filter((mod) => modules.includes(mod));
+      const targets = modules?.length
+        ? active.filter((mod) => modules.includes(mod))
+        : [];
       if (!targets.length) return;
       for (const mod of targets) {
         invalidateApiListCache(API_RESOURCE_PATHS[mod]);

@@ -227,7 +227,7 @@ export function ProductForm({
                   <ImageUploadField
                     label="Product Image"
                     value={form.imageUrl}
-                    onChange={(url) => updateForm({ imageUrl: url })}
+                    onChange={(url, publicId) => updateForm({ imageUrl: url, imagePublicId: publicId ?? '' })}
                   />
                 </div>
               </div>

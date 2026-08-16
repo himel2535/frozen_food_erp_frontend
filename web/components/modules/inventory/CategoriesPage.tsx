@@ -93,7 +93,7 @@ export function CategoriesPage() {
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [form, setForm] = useState({
     name: '', code: '', type: 'Finished Goods', description: '', parentId: '', status: 'Active',
-    defaultTaxRate: '', defaultUnitType: '', stockPolicy: 'FIFO', imageUrl: '',
+    defaultTaxRate: '', defaultUnitType: '', stockPolicy: 'FIFO', imageUrl: '', imagePublicId: '',
   });
 
   const { categories, activeCategories, emptyCategories, topCategory, totalCount } = useMemo(() => {
@@ -138,7 +138,7 @@ export function CategoriesPage() {
   };
 
   const resetForm = () => {
-    setForm({ name: '', code: '', type: 'Finished Goods', description: '', parentId: '', status: 'Active', defaultTaxRate: '', defaultUnitType: '', stockPolicy: 'FIFO', imageUrl: '' });
+    setForm({ name: '', code: '', type: 'Finished Goods', description: '', parentId: '', status: 'Active', defaultTaxRate: '', defaultUnitType: '', stockPolicy: 'FIFO', imageUrl: '', imagePublicId: '' });
     setEditingId(null);
     setShowAdvanced(false);
   };
@@ -149,6 +149,7 @@ export function CategoriesPage() {
       description: String(row.description ?? ''), parentId: String(row.parentId ?? ''), status: String(row.status ?? 'Active'),
       defaultTaxRate: String(row.defaultTaxRate ?? ''), defaultUnitType: String(row.defaultUnitType ?? ''), stockPolicy: String(row.stockPolicy ?? 'FIFO'),
       imageUrl: String(row.imageUrl ?? ''),
+      imagePublicId: String(row.imagePublicId ?? ''),
     });
     setEditingId(String(row.id));
     setView('form');
@@ -283,7 +284,7 @@ export function CategoriesPage() {
         <ImageUploadField
           label="Category Photo"
           value={form.imageUrl}
-          onChange={(url) => setForm({ ...form, imageUrl: url })}
+          onChange={(url, publicId) => setForm({ ...form, imageUrl: url, imagePublicId: publicId ?? '' })}
         />
       </div>
       <AppFormFields

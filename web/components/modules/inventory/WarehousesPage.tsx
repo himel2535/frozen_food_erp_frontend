@@ -65,7 +65,7 @@ export function WarehousesPage() {
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [form, setForm] = useState({
     name: '', location: '', capacity: '', type: 'Main Warehouse', manager: '', contact: '', status: 'Active',
-    allowedProductTypes: '', storageRules: '', imageUrl: '',
+    allowedProductTypes: '', storageRules: '', imageUrl: '', imagePublicId: '',
   });
 
   const metrics = useMemo(() => {
@@ -122,7 +122,7 @@ export function WarehousesPage() {
   };
 
   const resetForm = () => {
-    setForm({ name: '', location: '', capacity: '', type: 'Main Warehouse', manager: '', contact: '', status: 'Active', allowedProductTypes: '', storageRules: '', imageUrl: '' });
+    setForm({ name: '', location: '', capacity: '', type: 'Main Warehouse', manager: '', contact: '', status: 'Active', allowedProductTypes: '', storageRules: '', imageUrl: '', imagePublicId: '' });
     setEditingId(null);
     setShowAdvanced(false);
   };
@@ -133,6 +133,7 @@ export function WarehousesPage() {
       type: String(row.type ?? 'Main Warehouse'), manager: String(row.manager ?? ''), contact: String(row.contact ?? ''),
       status: String(row.status ?? 'Active'), allowedProductTypes: String(row.allowedProductTypes ?? ''), storageRules: String(row.storageRules ?? ''),
       imageUrl: String(row.imageUrl ?? ''),
+      imagePublicId: String(row.imagePublicId ?? ''),
     });
     setEditingId(String(row.id));
     setView('form');
@@ -262,7 +263,7 @@ export function WarehousesPage() {
         <ImageUploadField
           label="Warehouse Photo"
           value={form.imageUrl}
-          onChange={(url) => setForm({ ...form, imageUrl: url })}
+          onChange={(url, publicId) => setForm({ ...form, imageUrl: url, imagePublicId: publicId ?? '' })}
         />
       </div>
       <AppFormFields

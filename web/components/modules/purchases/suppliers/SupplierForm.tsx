@@ -29,6 +29,7 @@ export type SupplierFormValues = {
   notes: string;
   rating: string;
   imageUrl: string;
+  imagePublicId: string;
 };
 
 export const EMPTY_SUPPLIER_FORM: SupplierFormValues = {
@@ -44,6 +45,7 @@ export const EMPTY_SUPPLIER_FORM: SupplierFormValues = {
   notes: '',
   rating: '',
   imageUrl: '',
+  imagePublicId: '',
 };
 
 const CATEGORY_OPTIONS = ['Raw Materials', 'Chemicals', 'Packaging', 'Components', 'Metals', 'Electronics', 'Hardware', 'General'];
@@ -105,7 +107,7 @@ export function SupplierForm({
                 <ImageUploadField
                   label="Supplier Logo"
                   value={values.imageUrl}
-                  onChange={(url) => update({ imageUrl: url })}
+                  onChange={(url, publicId) => update({ imageUrl: url, imagePublicId: publicId ?? '' })}
                 />
               </div>
               <label className="block sm:col-span-2 lg:col-span-2 xl:col-span-2">
@@ -284,6 +286,7 @@ export function supplierToFormValues(supplier: {
   notes?: string;
   rating?: number;
   imageUrl?: string;
+  imagePublicId?: string;
 }): SupplierFormValues {
   return {
     name: supplier.name,
@@ -298,5 +301,6 @@ export function supplierToFormValues(supplier: {
     notes: supplier.notes ?? '',
     rating: supplier.rating != null ? String(supplier.rating) : '',
     imageUrl: supplier.imageUrl ?? '',
+    imagePublicId: supplier.imagePublicId ?? '',
   };
 }

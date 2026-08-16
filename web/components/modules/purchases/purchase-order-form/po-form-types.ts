@@ -20,6 +20,7 @@ export type PoFormValues = {
   notes: string;
   terms: string;
   attachmentUrl: string;
+  attachmentPublicId: string;
   attachmentName: string;
   paymentStatus: 'unpaid' | 'partial' | 'paid';
   paidAmount: string;
@@ -47,6 +48,7 @@ export const EMPTY_PO_FORM: PoFormValues = {
   notes: '',
   terms: 'Net 30 - Payment due within 30 days',
   attachmentUrl: '',
+  attachmentPublicId: '',
   attachmentName: '',
   paymentStatus: 'unpaid',
   paidAmount: '0',
@@ -139,6 +141,7 @@ export function recordToPoFormValues(record: Record<string, unknown>): PoFormVal
     notes: String(record.notes ?? ''),
     terms: String(record.terms ?? 'Net 30 - Payment due within 30 days'),
     attachmentUrl: String(record.attachmentUrl ?? ''),
+    attachmentPublicId: String(record.attachmentPublicId ?? ''),
     attachmentName: String(record.attachmentName ?? ''),
     paymentStatus: (record.paymentStatus as PoFormValues['paymentStatus']) ?? 'unpaid',
     paidAmount: String(record.paidAmount ?? 0),
@@ -169,6 +172,7 @@ export function payloadToRecord(payload: PoFormPayload) {
     notes: payload.notes,
     terms: payload.terms,
     attachmentUrl: payload.attachmentUrl,
+    attachmentPublicId: payload.attachmentPublicId,
     attachmentName: payload.attachmentName,
     paymentStatus: payload.paymentStatus,
     paidAmount,

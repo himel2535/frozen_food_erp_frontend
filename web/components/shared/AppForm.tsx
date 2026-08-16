@@ -7,6 +7,7 @@ import { FormHeader } from '@/components/layout/FormHeader';
 import { AdvancedDetailsToggle } from '@/components/shared/AdvancedDetailsToggle';
 import { DateInput } from '@/components/shared/DateInput';
 import { ImageUploadField } from '@/components/shared/ImageUploadField';
+import { publicIdFieldKey } from '@/lib/services/cloudinary-service';
 import type { PortField } from '@/lib/modules/port-types';
 import { MODULE_FORM_SHELL } from '@/lib/ui/module-layout';
 import {
@@ -243,7 +244,7 @@ export function AppFormFieldInput({
 }: {
   field: PortField;
   value: string;
-  onChange: (v: string) => void;
+  onChange: (v: string, publicId?: string) => void;
 }) {
   const isRequired = field.required && field.type !== 'email';
 
@@ -357,7 +358,10 @@ export function AppFormFields({
       <AppFormFieldInput
         field={field}
         value={values[field.key] ?? ''}
-        onChange={(v) => onChange(field.key, v)}
+        onChange={(v, publicId) => {
+          onChange(field.key, v);
+          if (field.type === 'image') onChange(publicIdFieldKey(field.key), publicId ?? '');
+        }}
       />
     </div>
   );

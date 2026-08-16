@@ -132,6 +132,7 @@ export function SemiFinishedProductsPage() {
     notes: '',
     recipeId: '',
     imageUrl: '',
+    imagePublicId: '',
   });
 
   const warehouses = useMemo(
@@ -318,6 +319,7 @@ export function SemiFinishedProductsPage() {
       notes: '',
       recipeId: '',
       imageUrl: '',
+      imagePublicId: '',
     });
     setEditingId(null);
     setShowAdvanced(false);
@@ -342,6 +344,7 @@ export function SemiFinishedProductsPage() {
       notes: String(row.notes ?? ''),
       recipeId: String(row.recipeId ?? ''),
       imageUrl: String(row.imageUrl ?? ''),
+      imagePublicId: String(row.imagePublicId ?? ''),
     });
     setEditingId(String(row.id));
     setView('form');
@@ -742,7 +745,7 @@ export function SemiFinishedProductsPage() {
           <ImageUploadField
             label="Product Image"
             value={form.imageUrl}
-            onChange={(url) => setForm({ ...form, imageUrl: url })}
+            onChange={(url, publicId) => setForm({ ...form, imageUrl: url, imagePublicId: publicId ?? '' })}
           />
         </div>
         <AppFormFields

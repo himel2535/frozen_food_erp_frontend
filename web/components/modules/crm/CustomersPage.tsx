@@ -18,6 +18,7 @@ import { AppTable, type AppTableColumn } from '@/components/shared/AppTable';
 import { StatusBadge } from '@/components/shared/StatusBadge';
 import { TableIconAction } from '@/components/shared/TableIconAction';
 import { InventoryItemThumb } from '@/components/shared/InventoryItemThumb';
+import type { PendingImageUpload } from '@/components/shared/ImageUploadField';
 import {
   CustomerForm,
   EMPTY_CUSTOMER_FORM,
@@ -46,6 +47,7 @@ import {
   exportCustomersCsvFromRows,
   fetchCustomerFromApi,
   mapApiCustomerToFormValues,
+  patchCustomerImageUrl,
 } from '@/lib/services/customers-api-service';
 
 const AVATAR_COLORS = [
@@ -55,6 +57,26 @@ const AVATAR_COLORS = [
   'bg-amber-100 text-amber-700',
   'bg-rose-100 text-rose-700',
 ];
+
+function attachCustomerPhotoLater(
+  customerId: string,
+  savedImageUrl: string,
+  pending: Promise<PendingImageUpload | null>,
+  reload: (opts?: { silent?: boolean }) => Promise<void>,
+) {
+  void pending.then(async (uploaded) => {
+    if (!uploaded?.url || uploaded.url === savedImageUrl) return;
+    const patched = await patchCustomerImageUrl(customerId, uploaded.url, uploaded.publicId);
+    if (!patched.ok) {
+      toast.error('Customer saved', {
+        module: 'Customers',
+        description: 'The photo could not be attached.',
+      });
+      return;
+    }
+    await reload({ silent: true });
+  });
+}
 
 function initials(name: string) {
   const parts = String(name || '').trim().split(/\s+/).filter(Boolean);
@@ -107,6 +129,7 @@ function buildFormValuesFromProfile(
     status: String(customer.status ?? 'active'),
     email: String(primary?.email ?? ''),
     imageUrl: String(customer.imageUrl ?? ''),
+    imagePublicId: String(customer.imagePublicId ?? ''),
     billingAddress,
     billingArea,
     billingCity,
@@ -309,7 +332,11 @@ function CustomersPageContent() {
     });
   };
 
-  const handleSave = async (payload: CustomerFormPayload, action: CustomerSaveAction) => {
+  const handleSave = async (
+    payload: CustomerFormPayload,
+    action: CustomerSaveAction,
+    pendingImageUpload?: Promise<PendingImageUpload | null> | null,
+  ) => {
     if (apiMode) {
       const result = editingId
         ? await apiStore.update(editingId, payload)
@@ -320,6 +347,11 @@ function CustomersPageContent() {
           description: 'error' in result && result.error ? String(result.error) : 'API save failed',
         });
         return;
+      }
+      const customerId = editingId
+        || (result.ok && 'id' in result && typeof result.id === 'string' ? result.id : '');
+      if (customerId && pendingImageUpload) {
+        attachCustomerPhotoLater(customerId, payload.imageUrl, pendingImageUpload, apiStore.reload);
       }
       if (action === 'save-and-add') {
         setEditingId(null);

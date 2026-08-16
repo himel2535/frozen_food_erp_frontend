@@ -23,6 +23,7 @@ export type ApiCustomerDoc = {
   shippingAddress?: string;
   shippingCity?: string;
   imageUrl?: string;
+  imagePublicId?: string;
   notes?: string;
   totalSales?: number;
   totalDue?: number;
@@ -57,6 +58,7 @@ export function mapApiCustomerToListRow(doc: ApiCustomerDoc): Record<string, unk
     ownerName: doc.ownerName ?? '',
     salesRepName: doc.ownerName ?? '',
     imageUrl: doc.imageUrl ?? '',
+    imagePublicId: doc.imagePublicId ?? '',
     notes: doc.notes ?? '',
     totalSales: doc.totalSales ?? 0,
     totalDue: doc.totalDue ?? 0,
@@ -93,6 +95,7 @@ export function mapPayloadToApiBody(payload: CustomerFormPayload) {
     shippingAddress: payload.shippingAddress,
     shippingCity: payload.shippingCity,
     imageUrl: payload.imageUrl,
+    imagePublicId: payload.imagePublicId ?? '',
     notes: payload.notes,
     meta: {
       contactName: payload.contactName,
@@ -133,6 +136,7 @@ export function mapApiCustomerToFormValues(
     status: String(doc.status ?? 'active'),
     email: String(doc.email ?? ''),
     imageUrl: String(doc.imageUrl ?? ''),
+    imagePublicId: String(doc.imagePublicId ?? ''),
     billingAddress,
     billingArea,
     billingCity,
@@ -199,6 +203,22 @@ export async function updateCustomerViaApi(
     return { ok: true };
   } catch (err) {
     return { ok: false, error: err instanceof Error ? err.message : 'Update failed' };
+  }
+}
+
+export async function patchCustomerImageUrl(
+  id: string,
+  imageUrl: string,
+  imagePublicId = '',
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  try {
+    await apiRequest<ApiCustomerDoc>(`/customers/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify({ imageUrl, imagePublicId }),
+    });
+    return { ok: true };
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : 'Image update failed' };
   }
 }
 

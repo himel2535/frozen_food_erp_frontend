@@ -21,6 +21,7 @@ export const EMPLOYEE_FORM_KEYS = [
   'email',
   'nid',
   'imageUrl',
+  'imagePublicId',
   'department',
   'designation',
   'joiningDate',

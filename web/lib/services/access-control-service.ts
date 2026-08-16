@@ -38,6 +38,8 @@ export function normalizeAuthUser(
     roleId: raw.roleId ? String(raw.roleId) : undefined,
     roleName: raw.roleName ? String(raw.roleName) : undefined,
     status,
+    imageUrl: raw.imageUrl ? String(raw.imageUrl) : undefined,
+    imagePublicId: raw.imagePublicId ? String(raw.imagePublicId) : undefined,
     createdAt: String(raw.createdAt ?? ''),
     createdBy: raw.createdBy ? String(raw.createdBy) : undefined,
   };

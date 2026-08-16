@@ -125,6 +125,7 @@ export function ProfileSettingsPage() {
 
     const profilePayload = {
       imageUrl: form.imageUrl.trim(),
+      imagePublicId: form.imagePublicId.trim(),
       name: form.name.trim(),
       phone: form.phone.trim(),
       email: form.email.trim(),

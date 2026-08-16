@@ -1,17 +1,15 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useMemo } from 'react';
+import { useMemo } from 'react';
 import { Icon } from '@iconify/react';
 import { useAppStore } from '@/lib/state/app-store';
 import { useDashboardAppState } from '@/hooks/use-dashboard-api-data';
-import { useApiAppState } from '@/hooks/use-api-app-state';
 import type { AppState } from '@/lib/state/types';
 import { useLocaleFormat } from '@/hooks/useLocaleFormat';
 import { listSystemAuditLogRecords } from '@/lib/services/audit-log-service';
 import { formatRelativeTime, getTopProducts } from '@/lib/services/dashboard-service';
 import { InventoryItemThumb } from '@/components/shared/InventoryItemThumb';
-import { onApiMutation } from '@/lib/services/api-sync-events';
 
 function customerName(state: AppState, customerId: unknown) {
   const customers = Array.isArray(state.crmCustomers) ? state.crmCustomers : [];
@@ -33,35 +31,15 @@ function moduleInitial(module: string) {
 
 export function DashboardBottomPanels() {
   const appState = useDashboardAppState();
-  const salesLookup = useApiAppState(['salesOrders', 'invoices', 'pos', 'products']);
-  const rankingState = salesLookup.initialized ? salesLookup.state : appState;
   const t = useAppStore((s) => s.t);
   const { formatNumber, formatMoney } = useLocaleFormat();
-
-  useEffect(() => {
-    void salesLookup.reload();
-  }, [salesLookup.reload]);
-
-  useEffect(() => {
-    return onApiMutation((modules) => {
-      if (
-        !modules
-        || modules.includes('products')
-        || modules.includes('salesOrders')
-        || modules.includes('invoices')
-        || modules.includes('pos')
-      ) {
-        void salesLookup.reload();
-      }
-    });
-  }, [salesLookup.reload]);
 
   const recentInvoices = useMemo(() => {
     const rows = Array.isArray(appState.invoices) ? [...appState.invoices] : [];
     return rows.slice(0, 5);
   }, [appState.invoices]);
 
-  const topProducts = useMemo(() => getTopProducts(rankingState, 5), [rankingState]);
+  const topProducts = useMemo(() => getTopProducts(appState, 5), [appState]);
 
   const activityItems = useMemo(
     () => listSystemAuditLogRecords(appState).slice(0, 5),

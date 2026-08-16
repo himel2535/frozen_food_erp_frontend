@@ -148,6 +148,7 @@ export function FinishedGoodsPage() {
     barcode: '',
     notes: '',
     imageUrl: '',
+    imagePublicId: '',
   });
 
   const warehouses = useMemo(
@@ -341,6 +342,7 @@ export function FinishedGoodsPage() {
       barcode: '',
       notes: '',
       imageUrl: '',
+      imagePublicId: '',
     });
     setEditingId(null);
     setShowAdvanced(false);
@@ -368,6 +370,7 @@ export function FinishedGoodsPage() {
       barcode: String(row.barcode ?? ''),
       notes: String(row.notes ?? ''),
       imageUrl: String(row.imageUrl ?? ''),
+      imagePublicId: String(row.imagePublicId ?? ''),
     });
     setEditingId(String(row.id));
     setView('form');
@@ -402,6 +405,7 @@ export function FinishedGoodsPage() {
       minStock: product.minStock != null ? String(product.minStock) : prev.minStock,
       barcode: String(product.barcode ?? prev.barcode),
       imageUrl: String(product.imageUrl ?? prev.imageUrl),
+      imagePublicId: String(product.imagePublicId ?? prev.imagePublicId),
       warehouseId: product.defaultWarehouse
         ? String(product.defaultWarehouse)
         : prev.warehouseId,
@@ -809,7 +813,7 @@ export function FinishedGoodsPage() {
           <ImageUploadField
             label="Product Image"
             value={form.imageUrl}
-            onChange={(url) => setForm({ ...form, imageUrl: url })}
+            onChange={(url, publicId) => setForm({ ...form, imageUrl: url, imagePublicId: publicId ?? '' })}
           />
         </div>
         <div className={FORM_GRID_CLS}>

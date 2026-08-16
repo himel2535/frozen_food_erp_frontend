@@ -21,6 +21,7 @@ import {
 
 export type ProfileFormState = {
   imageUrl: string;
+  imagePublicId: string;
   name: string;
   phone: string;
   email: string;
@@ -125,7 +126,10 @@ export function ProfileSettingsForm({
               <ImageUploadField
                 label="Profile Photo"
                 value={form.imageUrl}
-                onChange={(url) => onChange('imageUrl', url)}
+                onChange={(url, publicId) => {
+                  onChange('imageUrl', url);
+                  onChange('imagePublicId', publicId ?? '');
+                }}
               />
             </div>
             <div>

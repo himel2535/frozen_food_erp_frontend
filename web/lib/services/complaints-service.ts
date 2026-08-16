@@ -31,6 +31,7 @@ export type ComplaintRecord = {
   slaDueAt: string;
   resolutionNotes?: string;
   evidenceImageUrl?: string;
+  evidenceImagePublicId?: string;
 };
 
 export type ComplaintMetrics = {
@@ -108,6 +109,7 @@ function ticketToComplaint(ticket: Record<string, unknown>, customers: Record<st
     slaDueAt: String(ticket.slaDueAt ?? ticket.dueDate ?? ''),
     resolutionNotes: ticket.resolutionNotes ? String(ticket.resolutionNotes) : undefined,
     evidenceImageUrl: ticket.evidenceImageUrl ? String(ticket.evidenceImageUrl) : undefined,
+    evidenceImagePublicId: ticket.evidenceImagePublicId ? String(ticket.evidenceImagePublicId) : undefined,
   };
 }
 
@@ -251,6 +253,7 @@ export function createComplaint(
     sku?: string;
     slaDueAt?: string;
     evidenceImageUrl?: string;
+    evidenceImagePublicId?: string;
   },
 ) {
   ensureCrmState(state);
@@ -277,6 +280,7 @@ export function createComplaint(
     slaDueAt: due,
     resolutionNotes: '',
     evidenceImageUrl: payload.evidenceImageUrl ?? '',
+    evidenceImagePublicId: payload.evidenceImagePublicId ?? '',
   };
 
   logSystemAudit(state, {

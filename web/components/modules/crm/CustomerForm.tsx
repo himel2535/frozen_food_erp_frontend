@@ -36,7 +36,7 @@ import {
   getShippingAddressErrors,
   type CustomerFormFieldError,
 } from '@/components/modules/crm/customer-form/customer-form-validation';
-import { ImageUploadField } from '@/components/shared/ImageUploadField';
+import { ImageUploadField, type PendingImageUpload } from '@/components/shared/ImageUploadField';
 
 export type CustomerFormValues = {
   companyName: string;
@@ -47,6 +47,7 @@ export type CustomerFormValues = {
   status: string;
   email: string;
   imageUrl: string;
+  imagePublicId: string;
   billingAddress: string;
   billingArea: string;
   billingCity: string;
@@ -78,6 +79,7 @@ export type CustomerFormPayload = {
   email: string;
   status: string;
   imageUrl: string;
+  imagePublicId: string;
   taxVatNumber: string;
   tinNumber: string;
   tradeLicenseNumber: string;
@@ -108,6 +110,7 @@ export const EMPTY_CUSTOMER_FORM: CustomerFormValues = {
   status: 'active',
   email: '',
   imageUrl: '',
+  imagePublicId: '',
   billingAddress: '',
   billingArea: '',
   billingCity: '',
@@ -175,6 +178,7 @@ function toPayload(form: CustomerFormValues, ownerName: string): CustomerFormPay
     email: form.email,
     status: form.status,
     imageUrl: form.imageUrl,
+    imagePublicId: form.imagePublicId,
     taxVatNumber: form.binVat,
     tinNumber: form.tin,
     tradeLicenseNumber: form.tradeLicense,
@@ -208,11 +212,16 @@ export function CustomerForm({
   initialValues: CustomerFormValues;
   owners: Array<{ id: string; name: string }>;
   onCancel: () => void;
-  onSave: (payload: CustomerFormPayload, action: CustomerSaveAction) => void;
+  onSave: (
+    payload: CustomerFormPayload,
+    action: CustomerSaveAction,
+    pendingImageUpload?: Promise<PendingImageUpload | null> | null,
+  ) => void;
 }) {
   const [form, setForm] = useState<CustomerFormValues>(initialValues);
   const [errors, setErrors] = useState<CustomerFormFieldError>({});
   const formRef = useRef<HTMLFormElement>(null);
+  const pendingImageUploadRef = useRef<Promise<PendingImageUpload | null> | null>(null);
   const { setSaveAction, readSaveAction } = useCustomerSaveAction();
 
   useEffect(() => {
@@ -246,7 +255,7 @@ export function CustomerForm({
       return;
     }
     setErrors({});
-    onSave(toPayload(form, ownerName), readSaveAction());
+    onSave(toPayload(form, ownerName), readSaveAction(), pendingImageUploadRef.current);
   };
 
   const syncShippingFromBilling = (next: CustomerFormValues) => {
@@ -374,7 +383,10 @@ export function CustomerForm({
                 <ImageUploadField
                   label="Customer Photo"
                   value={form.imageUrl}
-                  onChange={(url) => updateForm({ imageUrl: url })}
+                  onChange={(url, publicId) => updateForm({ imageUrl: url, imagePublicId: publicId ?? '' })}
+                  onPendingUpload={(promise) => {
+                    pendingImageUploadRef.current = promise;
+                  }}
                 />
               </div>
             </div>

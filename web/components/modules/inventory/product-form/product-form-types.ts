@@ -14,6 +14,7 @@ export type ProductFormValues = {
   barcode: string;
   productTypeId: ProductTypeCardId;
   imageUrl: string;
+  imagePublicId: string;
   cost: string;
   price: string;
   taxLabel: string;
@@ -37,6 +38,7 @@ export type ProductFormPayload = {
   barcode: string;
   productType: string;
   imageUrl: string;
+  imagePublicId: string;
   cost: number;
   price: number;
   taxRate: number;
@@ -93,6 +95,7 @@ export function formValuesToPayload(
     barcode: values.barcode.trim(),
     productType: productTypeCardIdToBackend(values.productTypeId),
     imageUrl: values.imageUrl.trim(),
+    imagePublicId: values.imagePublicId.trim(),
     cost: Number(values.cost || 0),
     price: Number(values.price || 0),
     taxRate: getProductTaxRateByLabel(values.taxLabel) * 100,
@@ -124,6 +127,7 @@ export function rowToProductFormValues(
     barcode: String(row.barcode ?? ''),
     productTypeId: backendToProductTypeCardId(String(row.productType ?? 'Finished Goods')),
     imageUrl: String(row.imageUrl ?? ''),
+    imagePublicId: String(row.imagePublicId ?? ''),
     cost: String(row.cost ?? ''),
     price: String(row.price ?? ''),
     taxLabel: taxRateToLabel(Number(row.taxRate ?? 0)),

@@ -77,7 +77,8 @@ export function DashboardView({ serverPayload = null }: DashboardViewProps) {
     return emptyDashboardShell(baseState);
   }, [ready, baseState, serverSnapshot]);
 
-  const hasInitialData = ready || Boolean(serverSummary) || Boolean(serverSnapshot && Object.keys(serverSnapshot).length > 0);
+  const hasKpi = Boolean(liveSummary || serverSummary);
+  const hasInitialData = hasKpi || ready || Boolean(serverSnapshot && Object.keys(serverSnapshot).length > 0);
 
   useEffect(() => {
     document.body.classList.add('dashboard-page');
@@ -97,9 +98,12 @@ export function DashboardView({ serverPayload = null }: DashboardViewProps) {
       }
     };
 
-    void loadSummary();
+    if (!serverSummary) {
+      void loadSummary();
+    }
+
     const unsubscribe = onApiMutation((modules) => {
-      if (!modules || modules.some((mod) => SUMMARY_MUTATION_MODULES.has(mod))) {
+      if (modules?.some((mod) => SUMMARY_MUTATION_MODULES.has(mod))) {
         void loadSummary();
       }
     });
@@ -108,7 +112,7 @@ export function DashboardView({ serverPayload = null }: DashboardViewProps) {
       active = false;
       unsubscribe();
     };
-  }, []);
+  }, [serverSummary]);
 
   const metrics = useMemo(
     () => getDashboardMetrics(dashboardState),

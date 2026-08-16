@@ -15,6 +15,7 @@ import {
   isApiListCacheFresh,
   invalidateApiListCache,
 } from '@/lib/services/api-list-cache';
+import { moduleFromApiPath } from '@/lib/config/data-source';
 import { notifyApiMutation } from '@/lib/services/api-sync-events';
 
 export function apiDocId(doc: { id?: string; _id?: string; legacyId?: string }): string {
@@ -35,6 +36,12 @@ export function sanitizeApiCreateBody(body: Record<string, unknown>): Record<str
 
 function normalizeListPath(path: string): string {
   return path.startsWith('/') ? path : `/${path}`;
+}
+
+function notifyMutationForPath(path: string) {
+  const module = moduleFromApiPath(path);
+  if (!module) return;
+  notifyApiMutation([module]);
 }
 
 export type ApiPageResult = {
@@ -126,7 +133,7 @@ export async function createResource(
     if (!id) return { ok: false, error: 'Missing id from API response' };
     invalidateApiListCache(path);
     if (!path.includes('/audit-logs')) {
-      notifyApiMutation();
+      notifyMutationForPath(path);
     }
     return { ok: true, id };
   } catch (err) {
@@ -145,7 +152,7 @@ export async function updateResource(
       body: JSON.stringify(body),
     });
     invalidateApiListCache(path);
-    notifyApiMutation();
+    notifyMutationForPath(path);
     return { ok: true };
   } catch (err) {
     return { ok: false, error: err instanceof Error ? err.message : 'Update failed' };
@@ -159,7 +166,7 @@ export async function deleteResource(
   try {
     await apiRequest<null>(`${path}/${id}`, { method: 'DELETE' });
     invalidateApiListCache(path);
-    notifyApiMutation();
+    notifyMutationForPath(path);
     return { ok: true };
   } catch (err) {
     return { ok: false, error: err instanceof Error ? err.message : 'Delete failed' };

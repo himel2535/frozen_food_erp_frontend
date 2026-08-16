@@ -105,6 +105,7 @@ function buildCustomerPayloadFromLead(lead: Record<string, unknown>): CustomerFo
     email: String(lead.email ?? ''),
     status: 'active',
     imageUrl: '',
+    imagePublicId: '',
     taxVatNumber: '',
     tinNumber: '',
     tradeLicenseNumber: '',

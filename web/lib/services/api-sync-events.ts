@@ -8,11 +8,8 @@ const mutatedModules = new Set<string>();
 
 export function notifyApiMutation(modules?: ApiModule[]) {
   if (typeof window === 'undefined') return;
-  if (modules) {
-    modules.forEach((mod) => mutatedModules.add(mod));
-  } else {
-    mutatedModules.add('*');
-  }
+  if (!modules?.length) return;
+  modules.forEach((mod) => mutatedModules.add(mod));
   window.dispatchEvent(new CustomEvent(API_MUTATION_EVENT, { detail: { modules } }));
 }
 

@@ -130,6 +130,7 @@ export function SupplierDetailPage({ supplierId }: { supplierId: string }) {
         lead: String(profile.supplier.leadTime ?? ''),
         rating: String(profile.supplier.rating ?? ''),
         imageUrl: String(profile.supplier.imageUrl ?? ''),
+        imagePublicId: String(profile.supplier.imagePublicId ?? ''),
       });
       const result = await updateResource(API_RESOURCE_PATHS.suppliers, supplierId, body);
       if (!result.ok) {

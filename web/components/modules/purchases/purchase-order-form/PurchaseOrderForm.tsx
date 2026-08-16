@@ -315,8 +315,9 @@ export function PurchaseOrderForm({
                 <ImageUploadField
                   label="Attachment Image (Optional)"
                   value={form.attachmentUrl}
-                  onChange={(url) => updateForm({
+                  onChange={(url, publicId) => updateForm({
                     attachmentUrl: url,
+                    attachmentPublicId: publicId ?? '',
                     attachmentName: url ? (url.split('/').pop()?.split('?')[0] || 'image') : '',
                   })}
                 />

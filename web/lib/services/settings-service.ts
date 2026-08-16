@@ -27,6 +27,7 @@ export const DEFAULT_CURRENT_USER: CurrentUserProfile = {
   logins30Days: 28,
   sessionDetail: 'Chrome on Windows',
   imageUrl: '',
+  imagePublicId: '',
 };
 
 export const DEFAULT_COMPANY_PROFILE: CompanyProfile = {
@@ -35,6 +36,7 @@ export const DEFAULT_COMPANY_PROFILE: CompanyProfile = {
   industry: 'Toy Manufacturing',
   registrationNo: 'TRAD/DSCC/2020/10482',
   logoUrl: '/images/logo-toys.png',
+  logoPublicId: '',
   phone: '+880 2-55001234',
   email: 'info@toysfactory.com',
   website: 'www.toysfactory.com',

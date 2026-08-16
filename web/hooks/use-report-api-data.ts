@@ -67,7 +67,7 @@ export function useProductSalesReportApiRows(): ReportHookResult<Record<string, 
 
   useEffect(() => {
     return onApiMutation((modules) => {
-      if (!modules || modules.includes('invoices') || modules.includes('salesOrders')) {
+      if (modules?.includes('invoices') || modules?.includes('salesOrders')) {
         void reload();
       }
     });

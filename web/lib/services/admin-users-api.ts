@@ -16,6 +16,7 @@ export async function createAdminUser(payload: {
   email: string;
   password?: string;
   imageUrl?: string;
+  imagePublicId?: string;
   allowedSections: SectionId[];
   allowedPermissions?: string[];
   roleId?: string;
@@ -42,6 +43,7 @@ export async function createAdminUser(payload: {
       email,
       password,
       imageUrl: payload.imageUrl,
+      imagePublicId: payload.imagePublicId,
       allowedSections: payload.allowedSections,
       allowedPermissions: payload.allowedPermissions ?? [],
       isMainAdmin: payload.isMainAdmin,
@@ -56,6 +58,7 @@ export async function updateAdminUser(payload: {
   uid: string;
   name?: string;
   imageUrl?: string;
+  imagePublicId?: string;
   allowedSections?: SectionId[];
   allowedPermissions?: string[];
   roleId?: string | null;
@@ -71,6 +74,7 @@ export async function updateAdminUser(payload: {
     body: JSON.stringify({
       name: payload.name,
       imageUrl: payload.imageUrl,
+      imagePublicId: payload.imagePublicId,
       allowedSections: payload.allowedSections,
       allowedPermissions: payload.allowedPermissions,
       roleId: payload.roleId,

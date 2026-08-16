@@ -1,36 +1,21 @@
 import { ModuleInitialDataProvider, type ModuleInitialRows } from '@/components/providers/ModuleInitialDataProvider';
-import { ServerSnapshotHydrator } from '@/components/providers/ServerSnapshotHydrator';
-import {
-  isModuleApiMode,
-  isMongoDbBackend,
-  type ApiModule,
-} from '@/lib/config/data-source';
-import { fetchModulesSnapshot } from '@/lib/server/fetch-modules';
+import type { ApiModule } from '@/lib/config/data-source';
 
-/** Server-side prefetch wrapper — seeds client cache before interactive module mounts. */
+/**
+ * Tenant list pages — do not await Railway before HTML.
+ * `usePaginatedApiResource` is the source of truth on the client.
+ */
 export async function prefetchModulePage(
-  modules: ApiModule | ApiModule[],
+  _modules: ApiModule | ApiModule[],
   children: React.ReactNode,
-  revalidateSeconds = 30,
-  limit?: number,
+  _revalidateSeconds = 30,
+  _limit?: number,
 ) {
-  const modList = Array.isArray(modules) ? modules : [modules];
-  const shouldFetch = isMongoDbBackend() && modList.some((mod) => isModuleApiMode(mod));
-
-  let snapshot: ModuleInitialRows | null = null;
-  if (shouldFetch) {
-    const active = modList.filter((mod) => isModuleApiMode(mod));
-    snapshot = await fetchModulesSnapshot(active, revalidateSeconds, limit);
-  }
+  const snapshot: ModuleInitialRows | null = null;
 
   return (
-    <>
-      {snapshot && Object.keys(snapshot).length > 0 ? (
-        <ServerSnapshotHydrator snapshot={snapshot} />
-      ) : null}
-      <ModuleInitialDataProvider rows={snapshot}>
-        {children}
-      </ModuleInitialDataProvider>
-    </>
+    <ModuleInitialDataProvider rows={snapshot}>
+      {children}
+    </ModuleInitialDataProvider>
   );
 }

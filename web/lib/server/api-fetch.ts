@@ -10,22 +10,23 @@ type ApiEnvelope<T> = {
 
 export async function serverApiRequest<T>(
   path: string,
-  revalidateSeconds = 30,
+  _revalidateSeconds = 30,
 ): Promise<{ data: T; meta?: Record<string, unknown> } | null> {
   const url = `${dataSourceConfig.apiBaseUrl}${path.startsWith('/') ? path : `/${path}`}`;
-  
+
   const cookieStore = await cookies();
   const token = cookieStore.get('token')?.value;
-  
+
   const headers: HeadersInit = {};
   if (token) {
-    headers['Cookie'] = `token=${token}`;
+    headers.Cookie = `token=${token}`;
+    headers.Authorization = `Bearer ${token}`;
   }
 
   try {
-    const res = await fetch(url, { 
+    const res = await fetch(url, {
       headers,
-      cache: 'no-store'
+      cache: 'no-store',
     });
     let body: ApiEnvelope<T> | null = null;
     try {

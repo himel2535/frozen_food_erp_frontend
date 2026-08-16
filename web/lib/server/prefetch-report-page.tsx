@@ -1,28 +1,14 @@
 import { ReportInitialDataProvider } from '@/components/providers/ReportInitialDataProvider';
-import { isMongoDbBackend } from '@/lib/config/data-source';
-import type { ReportType, ReportPayload } from '@/lib/services/report-api-service';
-import { serverApiRequest } from '@/lib/server/api-fetch';
+import type { ReportType } from '@/lib/services/report-api-service';
 
-export async function fetchServerReportData(
-  type: ReportType,
-  revalidateSeconds = 30,
-): Promise<ReportPayload | null> {
-  const result = await serverApiRequest<ReportPayload>(`/reports/${type}`, revalidateSeconds);
-  return result?.data ?? null;
-}
-/** Server-side report prefetch — one aggregate API call instead of multi-module full lists. */
+/** Client `use-report-api-data` fetches the report — do not block navigation on Railway. */
 export async function prefetchReportPage(
-  reportType: ReportType,
+  _reportType: ReportType,
   children: React.ReactNode,
-  revalidateSeconds = 30,
+  _revalidateSeconds = 30,
 ) {
-  let payload = null;
-  if (isMongoDbBackend()) {
-    payload = await fetchServerReportData(reportType, revalidateSeconds);
-  }
-
   return (
-    <ReportInitialDataProvider data={payload ? { [reportType]: payload } : null}>
+    <ReportInitialDataProvider data={null}>
       {children}
     </ReportInitialDataProvider>
   );

@@ -26,6 +26,7 @@ export function mapApiCategoryRow(doc: Record<string, unknown>): Record<string, 
     defaultUnitType: doc.defaultUnitType ?? '',
     stockPolicy: doc.stockPolicy ?? 'FIFO',
     imageUrl: doc.imageUrl ?? '',
+    imagePublicId: doc.imagePublicId ?? '',
   };
 }
 
@@ -40,6 +41,7 @@ export function mapCategoryPayloadToApi(body: Record<string, unknown>): Record<s
     defaultUnitType: body.defaultUnitType ?? '',
     stockPolicy: body.stockPolicy ?? 'FIFO',
     imageUrl: body.imageUrl ?? '',
+    imagePublicId: body.imagePublicId ?? '',
     ...(body.code && String(body.code).trim() ? { code: String(body.code).trim() } : {}),
   };
 }
@@ -83,6 +85,7 @@ export function mapApiWarehouseRow(doc: Record<string, unknown>): Record<string,
     allowedProductTypes: doc.allowedProductTypes ?? '',
     storageRules: doc.storageRules ?? '',
     imageUrl: doc.imageUrl ?? '',
+    imagePublicId: doc.imagePublicId ?? '',
   };
 }
 
@@ -98,6 +101,7 @@ export function mapWarehousePayloadToApi(body: Record<string, unknown>): Record<
     allowedProductTypes: body.allowedProductTypes ?? '',
     storageRules: body.storageRules ?? '',
     imageUrl: body.imageUrl ?? '',
+    imagePublicId: body.imagePublicId ?? '',
   };
 }
 
@@ -119,6 +123,7 @@ export function mapApiRawMaterialRow(doc: Record<string, unknown>): Record<strin
     supplierPrice: doc.supplierPrice ?? 0,
     notes: doc.notes ?? '',
     imageUrl: doc.imageUrl ?? '',
+    imagePublicId: doc.imagePublicId ?? '',
     status: doc.status ?? 'active',
   };
 }
@@ -138,6 +143,7 @@ export function mapRawMaterialPayloadToApi(body: Record<string, unknown>): Recor
     supplierPrice: Number(body.supplierPrice ?? 0),
     notes: body.notes ?? '',
     imageUrl: body.imageUrl ?? '',
+    imagePublicId: body.imagePublicId ?? '',
     status: body.status ?? 'active',
   };
 }
@@ -156,6 +162,7 @@ export function mapApiSemiFinishedRow(doc: Record<string, unknown>): Record<stri
     recipeId: doc.recipeId ?? '',
     notes: doc.notes ?? '',
     imageUrl: doc.imageUrl ?? '',
+    imagePublicId: doc.imagePublicId ?? '',
     status: doc.status ?? 'active',
   };
 }
@@ -173,6 +180,7 @@ export function mapSemiFinishedPayloadToApi(body: Record<string, unknown>): Reco
     recipeId: body.recipeId ?? '',
     notes: body.notes ?? '',
     imageUrl: body.imageUrl ?? '',
+    imagePublicId: body.imagePublicId ?? '',
     status: body.status ?? 'active',
   };
 }
@@ -191,6 +199,7 @@ export function mapApiFinishedGoodRow(doc: Record<string, unknown>): Record<stri
     location: doc.location ?? '',
     notes: doc.notes ?? '',
     imageUrl: doc.imageUrl ?? '',
+    imagePublicId: doc.imagePublicId ?? '',
     status: doc.status ?? 'active',
   };
 }
@@ -208,6 +217,7 @@ export function mapFinishedGoodPayloadToApi(body: Record<string, unknown>): Reco
     location: body.location ?? '',
     notes: body.notes ?? '',
     imageUrl: body.imageUrl ?? '',
+    imagePublicId: body.imagePublicId ?? '',
     status: body.status ?? 'active',
   };
 }

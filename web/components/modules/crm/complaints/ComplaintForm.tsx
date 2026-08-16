@@ -27,6 +27,7 @@ export type ComplaintFormValues = {
   sku: string;
   description: string;
   evidenceImageUrl: string;
+  evidenceImagePublicId: string;
   slaDueAt: string;
 };
 
@@ -40,6 +41,7 @@ export const EMPTY_COMPLAINT_FORM: ComplaintFormValues = {
   sku: '',
   description: '',
   evidenceImageUrl: '',
+  evidenceImagePublicId: '',
   slaDueAt: '',
 };
 
@@ -186,7 +188,11 @@ export function ComplaintForm({
               <ImageUploadField
                 label="Evidence Image (Optional)"
                 value={values.evidenceImageUrl}
-                onChange={(evidenceImageUrl) => setValues({ ...values, evidenceImageUrl })}
+                onChange={(url, publicId) => setValues({
+                  ...values,
+                  evidenceImageUrl: url,
+                  evidenceImagePublicId: publicId ?? '',
+                })}
               />
             </div>
           </div>

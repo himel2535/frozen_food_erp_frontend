@@ -119,6 +119,7 @@ export function RawMaterialsPage() {
     location: '',
     notes: '',
     imageUrl: '',
+    imagePublicId: '',
   });
 
   const warehouses = useMemo(
@@ -305,6 +306,7 @@ export function RawMaterialsPage() {
       location: '',
       notes: '',
       imageUrl: '',
+      imagePublicId: '',
     });
     setEditingId(null);
     setShowAdvanced(false);
@@ -328,6 +330,7 @@ export function RawMaterialsPage() {
       location: String(row.location ?? ''),
       notes: String(row.notes ?? ''),
       imageUrl: String(row.imageUrl ?? ''),
+      imagePublicId: String(row.imagePublicId ?? ''),
     });
     setEditingId(String(row.id));
     setView('form');
@@ -533,7 +536,7 @@ export function RawMaterialsPage() {
           <ImageUploadField
             label="Material Image"
             value={form.imageUrl}
-            onChange={(url) => setForm({ ...form, imageUrl: url })}
+            onChange={(url, publicId) => setForm({ ...form, imageUrl: url, imagePublicId: publicId ?? '' })}
           />
         </div>
         <AppFormFields

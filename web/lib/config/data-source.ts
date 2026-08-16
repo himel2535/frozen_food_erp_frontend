@@ -343,6 +343,17 @@ export const API_RESOURCE_PATHS: Record<ApiModule, string> = {
   ...EXTENDED_API_PATHS,
 };
 
+const PATH_TO_API_MODULE = Object.fromEntries(
+  (Object.entries(API_RESOURCE_PATHS) as [ApiModule, string][]).map(([mod, p]) => [p, mod]),
+) as Record<string, ApiModule>;
+
+/** Resolve an API path (e.g. `/leads`) to its module. Unknown paths return null. */
+export function moduleFromApiPath(path: string): ApiModule | null {
+  const trimmed = path.split('?')[0]?.replace(/\/+$/, '') || '/';
+  const withSlash = trimmed.startsWith('/') ? trimmed : `/${trimmed}`;
+  return PATH_TO_API_MODULE[withSlash] ?? null;
+}
+
 export const API_MODULE_LABELS: Record<ApiModule, string> = {
   customers: 'Customers',
   products: 'Products',

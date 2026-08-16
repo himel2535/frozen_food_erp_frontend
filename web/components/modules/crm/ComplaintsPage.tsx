@@ -181,6 +181,7 @@ export function ComplaintsPage() {
       sku: values.sku.trim() || undefined,
       slaDueAt: values.slaDueAt ? new Date(values.slaDueAt).toISOString() : undefined,
       evidenceImageUrl: values.evidenceImageUrl.trim() || undefined,
+      evidenceImagePublicId: values.evidenceImagePublicId.trim() || undefined,
     };
     if (apiMode) {
       const result = await apiStore.create(mapComplaintToApi(payload as unknown as Record<string, unknown>));
