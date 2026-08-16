@@ -19,6 +19,7 @@ export type ProductFormValues = {
   taxLabel: string;
   openingStock: string;
   minStock: string;
+  stockDurationDays: string;
   allocateAcrossWarehouses: boolean;
   reserved: string;
   wholesalePrice: string;
@@ -40,6 +41,7 @@ export type ProductFormPayload = {
   price: number;
   taxRate: number;
   minStock: number;
+  stockDurationDays: number;
   reserved: number;
   wholesalePrice: number;
   reorderLevel: number;
@@ -95,6 +97,7 @@ export function formValuesToPayload(
     price: Number(values.price || 0),
     taxRate: getProductTaxRateByLabel(values.taxLabel) * 100,
     minStock: Number(values.minStock || 0),
+    stockDurationDays: Number(values.stockDurationDays || 0),
     reserved: Number(values.reserved || 0),
     wholesalePrice: Number(values.wholesalePrice || 0),
     reorderLevel: Number(values.reorderLevel || 0),
@@ -126,6 +129,9 @@ export function rowToProductFormValues(
     taxLabel: taxRateToLabel(Number(row.taxRate ?? 0)),
     openingStock: String(openingStock),
     minStock: String(row.minStock ?? '10'),
+    stockDurationDays: row.stockDurationDays != null && Number(row.stockDurationDays) > 0
+      ? String(row.stockDurationDays)
+      : '',
     allocateAcrossWarehouses: usedWarehouses.length > 1,
     reserved: String(row.reserved ?? 0),
     wholesalePrice: String(row.wholesalePrice ?? ''),

@@ -70,6 +70,7 @@ function buildEmptyFormValues(
     taxLabel: 'No Tax',
     openingStock: '0',
     minStock: '10',
+    stockDurationDays: '',
     allocateAcrossWarehouses: false,
     reserved: '0',
     wholesalePrice: '',

@@ -43,6 +43,7 @@ export const TENANT_SIDEBAR_SECTIONS: SidebarSection[] = [
     id: 'inventory', label: 'Inventory', href: '/inventory/products', imageIcon: '/images/sidebar/inventory.png', iconifyIcon: 'flat-color-icons:package', color: 'text-blue-600',
     items: [
       { label: 'Products', href: '/inventory/products', view: 'products', imageIcon: '/images/sidebar/inventory/products.png', iconifyIcon: 'flat-color-icons:filing-cabinet' },
+      { label: 'Low Stock Alerts', href: '/inventory/low-stock-alerts', view: 'low-stock-alerts', iconifyIcon: 'fluent-color:alert-badge-24' },
       { label: 'Raw Materials', href: '/inventory/raw-materials', view: 'raw-materials', imageIcon: '/images/sidebar/inventory/products.png', iconifyIcon: 'flat-color-icons:tree-structure' },
       { label: 'Semi-Finished Products', href: '/inventory/semi-finished-products', view: 'semi-finished-products', imageIcon: '/images/sidebar/inventory/products.png', iconifyIcon: 'flat-color-icons:puzzle' },
       { label: 'Finished Goods', href: '/inventory/finished-goods', view: 'finished-goods', imageIcon: '/images/sidebar/inventory/products.png', iconifyIcon: 'flat-color-icons:approval' },

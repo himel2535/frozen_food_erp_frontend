@@ -1,6 +1,7 @@
 'use client';
 
 import dynamic from 'next/dynamic';
+import Link from 'next/link';
 import { useMemo, useEffect, useState } from 'react';
 import { loadIcons } from '@iconify/react';
 import { Icon } from '@iconify/react';
@@ -45,10 +46,10 @@ const DashboardProjectProgress = dynamic(
 
 const SUMMARY_MUTATION_MODULES = new Set(['invoices', 'salesOrders', 'payments']);
 
-const KPI_CARDS: { key: string; labelKey: string; icon: string; alert?: boolean }[] = [
+const KPI_CARDS: { key: string; labelKey: string; icon: string; alert?: boolean; href?: string }[] = [
   { key: 'month-revenue', labelKey: 'dashboard.total_revenue', icon: 'flat-color-icons:currency-exchange' },
   { key: 'customer-due', labelKey: 'dashboard.customer_due', icon: 'fluent-color:person-24' },
-  { key: 'low-stock', labelKey: 'dashboard.low_stock', icon: 'fluent-color:alert-badge-24', alert: true },
+  { key: 'low-stock', labelKey: 'dashboard.low_stock', icon: 'fluent-color:alert-badge-24', alert: true, href: '/inventory/low-stock-alerts' },
   { key: 'pending-sales', labelKey: 'dashboard.pending_sales', icon: 'flat-color-icons:shipped' },
   { key: 'open-leads', labelKey: 'dashboard.open_leads', icon: 'fluent-color:people-interwoven-24' },
   { key: 'pending-production', labelKey: 'dashboard.pending_production', icon: 'fluent-color:clock-24' },
@@ -187,12 +188,9 @@ export function DashboardView({ serverPayload = null }: DashboardViewProps) {
       <section className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-1 shrink-0">
         {KPI_CARDS.map((card) => {
           const data = metricValues[card.key];
-          return (
-            <div
-              key={card.key}
-              className="premium-card premium-shadow px-4 py-2.5 flex items-center justify-between gap-3 transition-[border-color,box-shadow] hover:border-slate-300 hover:shadow-md min-h-[84px]"
-              data-metric={card.key}
-            >
+          const className = `premium-card premium-shadow px-4 py-2.5 flex items-center justify-between gap-3 transition-[border-color,box-shadow] hover:border-slate-300 hover:shadow-md min-h-[84px]${card.href ? ' cursor-pointer' : ''}`;
+          const body = (
+            <>
               <div className="flex flex-col justify-center gap-0.5 min-w-0 flex-1 my-auto">
                 <span className="text-xs font-bold text-slate-500 tracking-wide leading-tight block">{t(card.labelKey)}</span>
                 <span className="text-lg font-extrabold tracking-tight text-slate-900 mt-0.5 tabular-nums">{data?.value ?? '—'}</span>
@@ -209,6 +207,15 @@ export function DashboardView({ serverPayload = null }: DashboardViewProps) {
               <div className="shrink-0 my-auto self-center">
                 <Icon icon={card.icon} width={40} height={40} className="shrink-0" />
               </div>
+            </>
+          );
+          return card.href ? (
+            <Link key={card.key} href={card.href} className={className} data-metric={card.key}>
+              {body}
+            </Link>
+          ) : (
+            <div key={card.key} className={className} data-metric={card.key}>
+              {body}
             </div>
           );
         })}

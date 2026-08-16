@@ -24,6 +24,7 @@ const ROUTE_LAYOUTS: Record<string, ModuleKpiLayout> = {
   '/purchases/orders': { count: 6, gridClassName: GRID_6, tableColumns: 6 },
   '/purchases/purchase-rm': { count: 4, gridClassName: GRID_4, tableColumns: 6 },
   '/inventory/products': { count: 5, gridClassName: 'grid grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-2', tableColumns: 6 },
+  '/inventory/low-stock-alerts': { count: 4, gridClassName: GRID_4, tableColumns: 7 },
   '/inventory/categories': { count: 3, gridClassName: GRID_3, tableColumns: 5 },
   '/inventory/units': { count: 3, gridClassName: GRID_3, tableColumns: 5 },
   '/inventory/warehouses': { count: 3, gridClassName: GRID_3, tableColumns: 5 },

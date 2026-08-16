@@ -119,6 +119,8 @@ export function createProduct(state: AppState, payload: Row) {
     taxRate: Number(payload.taxRate ?? 0),
     minStock: Number(payload.minStock ?? 0),
     reorderLevel: Number(payload.reorderLevel ?? 0),
+    stockDurationDays: Number(payload.stockDurationDays ?? 0),
+    stockDurationStartedAt: payload.stockDurationStartedAt ?? new Date().toISOString(),
     lastUpdated: new Date().toISOString(),
   }, 'SKU');
 }
@@ -127,6 +129,19 @@ export function updateProduct(state: AppState, id: string, payload: Row) {
   const patch = { ...payload };
   if (payload.warehouseStock) {
     Object.assign(patch, syncWarehouseStock(payload.warehouseStock as Record<string, number>));
+  }
+  if ('stockDurationDays' in payload) {
+    patch.stockDurationDays = Number(payload.stockDurationDays ?? 0);
+  }
+  const current = listFromState(state, 'inventory').find((r) => String(r.id) === id);
+  if (current) {
+    const prevQty = computeTotalStock(current);
+    const nextQty = patch.warehouseStock || patch.stock != null
+      ? computeTotalStock({ ...current, ...patch })
+      : prevQty;
+    if (nextQty > prevQty) {
+      patch.stockDurationStartedAt = new Date().toISOString();
+    }
   }
   return updateInState(state, 'inventory', id, patch);
 }
@@ -170,6 +185,7 @@ function applyStockChange(state: AppState, productId: string, warehouseId: strin
   }
   const synced = syncWarehouseStock(ws);
   Object.assign(item, synced);
+  if (delta > 0) item.stockDurationStartedAt = new Date().toISOString();
   const next = [...rows];
   next[idx] = item;
   (state as Record<string, unknown>).inventory = next;
@@ -531,6 +547,8 @@ export function createRawMaterial(state: AppState, payload: Row) {
     quantity: Number(payload.quantity ?? 0),
     price: Number(payload.price ?? 0),
     threshold: Number(payload.threshold ?? 0),
+    stockDurationDays: Number(payload.stockDurationDays ?? 0),
+    stockDurationStartedAt: payload.stockDurationStartedAt ?? new Date().toISOString(),
     supplierPrice: Number(payload.supplierPrice ?? 0),
     status: payload.status ?? 'active',
     lastUpdated: new Date().toISOString(),
@@ -538,7 +556,15 @@ export function createRawMaterial(state: AppState, payload: Row) {
 }
 
 export function updateRawMaterial(state: AppState, id: string, payload: Row) {
-  return updateInState(state, 'rawMaterials', id, { ...payload, lastUpdated: new Date().toISOString() });
+  const patch = { ...payload, lastUpdated: new Date().toISOString() };
+  if ('stockDurationDays' in payload) {
+    patch.stockDurationDays = Number(payload.stockDurationDays ?? 0);
+  }
+  const current = listFromState(state, 'rawMaterials').find((r) => String(r.id) === id);
+  if (current && payload.quantity != null && Number(payload.quantity) > Number(current.quantity ?? 0)) {
+    patch.stockDurationStartedAt = new Date().toISOString();
+  }
+  return updateInState(state, 'rawMaterials', id, patch);
 }
 
 export function deleteRawMaterial(state: AppState, id: string) {

@@ -22,6 +22,8 @@ export const salesCrmEn = {
   'status.cancelled': 'Cancelled',
   'status.rejected': 'Rejected',
   'status.overdue': 'Overdue',
+  'status.on-track': 'On track',
+  'status.low-stock': 'Low Stock',
   'status.sent': 'Sent',
   'status.accepted': 'Accepted',
   'status.confirmed': 'Confirmed',

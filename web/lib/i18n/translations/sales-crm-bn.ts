@@ -21,6 +21,8 @@ export const salesCrmBn = {
   'status.cancelled': 'বাতিল',
   'status.rejected': 'প্রত্যাখ্যাত',
   'status.overdue': 'মেয়াদোত্তীর্ণ',
+  'status.on-track': 'সময়মতো',
+  'status.low-stock': 'কম মজুদ',
   'status.sent': 'প্রেরিত',
   'status.accepted': 'গৃহীত',
   'status.confirmed': 'নিশ্চিত',

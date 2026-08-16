@@ -56,6 +56,7 @@ const RAW_MATERIAL_BASIC_FIELDS: PortField[] = [
   { key: 'quantity', label: 'Quantity', type: 'number', required: true },
   { key: 'price', label: 'Unit Price (BDT)', type: 'number', required: true },
   { key: 'threshold', label: 'Min. Stock Level', type: 'number' },
+  { key: 'stockDurationDays', label: 'Typical duration (days)', type: 'number', placeholder: 'e.g. 10' },
 ];
 
 const RAW_MATERIAL_ADVANCED_FIELDS: PortField[] = [
@@ -113,6 +114,7 @@ export function RawMaterialsPage() {
     supplierId: '',
     supplierPrice: '',
     threshold: '0',
+    stockDurationDays: '',
     warehouseId: '',
     location: '',
     notes: '',
@@ -298,6 +300,7 @@ export function RawMaterialsPage() {
       supplierId: '',
       supplierPrice: '',
       threshold: '0',
+      stockDurationDays: '',
       warehouseId: warehouses[0]?.id ? String(warehouses[0].id) : '',
       location: '',
       notes: '',
@@ -318,6 +321,9 @@ export function RawMaterialsPage() {
       supplierId: String(row.supplierId ?? ''),
       supplierPrice: String(row.supplierPrice ?? ''),
       threshold: String(row.threshold ?? 0),
+      stockDurationDays: row.stockDurationDays != null && Number(row.stockDurationDays) > 0
+        ? String(row.stockDurationDays)
+        : '',
       warehouseId: String(row.warehouseId ?? warehouses[0]?.id ?? ''),
       location: String(row.location ?? ''),
       notes: String(row.notes ?? ''),
@@ -335,6 +341,7 @@ export function RawMaterialsPage() {
       quantity: Number(form.quantity || 0),
       price: Number(form.price || 0),
       threshold: Number(form.threshold || 0),
+      stockDurationDays: Number(form.stockDurationDays || 0),
       supplierPrice: Number(form.supplierPrice || 0),
       status: 'active',
     };

@@ -7,6 +7,7 @@ import { getPageIcon } from '@/lib/ui/page-icons';
 
 const INVENTORY_ROUTES = [
   '/inventory/products',
+  '/inventory/low-stock-alerts',
   '/inventory/raw-materials',
   '/inventory/semi-finished-products',
   '/inventory/finished-goods',

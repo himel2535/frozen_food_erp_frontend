@@ -110,6 +110,7 @@ const CUSTOM_PAGE_META: Record<string, MetaSource> = {
     subtitle: 'Manage semi-finished product catalog and BOM.',
   },
   '/inventory/finished-goods': { title: 'Finished Goods', subtitle: 'Manage finished goods catalog and stock.' },
+  '/inventory/low-stock-alerts': { titleKey: 'inventory.low_alerts', subtitleKey: 'inventory.low_alerts_subtitle' },
   '/accounting/cashbox': { title: 'Cashbox', subtitle: 'Track cash inflows and outflows.' },
   '/manufacturing/orders': { title: 'Production', subtitle: 'Production order management.' },
   '/messages': { titleKey: 'messages.title', subtitleKey: 'messages.subtitle' },

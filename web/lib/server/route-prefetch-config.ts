@@ -86,5 +86,6 @@ export function shouldSkipPrefetch(route: string): boolean {
   if (route.startsWith('/reports/')) return false;
   if (route === '/design-system' || route === '/super-admin') return true;
   if (route === '/messages' || route === '/alerts') return true;
+  if (route === '/inventory/low-stock-alerts') return true;
   return false;
 }

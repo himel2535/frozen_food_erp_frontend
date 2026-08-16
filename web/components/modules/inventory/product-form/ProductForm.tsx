@@ -307,26 +307,26 @@ export function ProductForm({
           <FormSectionCard number={4} title="Opening Inventory" subtitle="Set initial stock for this product.">
             <div className="grid grid-cols-1 lg:grid-cols-[1fr_auto] gap-4 items-start">
               <div className="space-y-3">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <div id="pf-field-openingStock">
-                    <label className={CF_LABEL_CLS}>
-                      Opening Stock <span className="text-rose-500">*</span>
-                    </label>
-                    <div className="flex gap-2">
-                      <input
-                        type="number"
-                        min="0"
-                        value={form.openingStock}
-                        onChange={(e) => updateForm({ openingStock: e.target.value })}
-                        className={`${CF_INPUT_CLS} pl-4 flex-1 ${errors.openingStock ? 'border-rose-400' : ''}`}
-                      />
-                      <span className="inline-flex items-center px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 text-xs font-bold text-slate-600 shrink-0">
-                        {uomLabel}
-                      </span>
-                    </div>
-                    {errors.openingStock ? <p className={CF_FIELD_ERROR_CLS}>{errors.openingStock}</p> : null}
+                <div id="pf-field-openingStock">
+                  <label className={CF_LABEL_CLS}>
+                    Opening Stock <span className="text-rose-500">*</span>
+                  </label>
+                  <div className="flex gap-2">
+                    <input
+                      type="number"
+                      min="0"
+                      value={form.openingStock}
+                      onChange={(e) => updateForm({ openingStock: e.target.value })}
+                      className={`${CF_INPUT_CLS} pl-4 flex-1 ${errors.openingStock ? 'border-rose-400' : ''}`}
+                    />
+                    <span className="inline-flex items-center px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 text-xs font-bold text-slate-600 shrink-0">
+                      {uomLabel}
+                    </span>
                   </div>
+                  {errors.openingStock ? <p className={CF_FIELD_ERROR_CLS}>{errors.openingStock}</p> : null}
+                </div>
 
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
                     <label className={CF_LABEL_CLS}>Minimum Stock (Alert)</label>
                     <input
@@ -336,6 +336,20 @@ export function ProductForm({
                       onChange={(e) => updateForm({ minStock: e.target.value })}
                       className={`${CF_INPUT_CLS} pl-4`}
                     />
+                  </div>
+                  <div>
+                    <label className={CF_LABEL_CLS}>Typical duration (days)</label>
+                    <input
+                      type="number"
+                      min="0"
+                      placeholder="e.g. 10"
+                      value={form.stockDurationDays}
+                      onChange={(e) => updateForm({ stockDurationDays: e.target.value })}
+                      className={`${CF_INPUT_CLS} pl-4`}
+                    />
+                    <p className="text-[11px] font-medium text-slate-500 mt-1">
+                      How many days this stock usually lasts.
+                    </p>
                   </div>
                 </div>
 
