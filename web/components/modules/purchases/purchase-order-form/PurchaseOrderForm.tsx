@@ -11,9 +11,9 @@ import {
   MapPin,
   Package,
   Plus,
-  Upload,
   User,
 } from 'lucide-react';
+import { ImageUploadField } from '@/components/shared/ImageUploadField';
 import { FormHeader } from '@/components/layout/FormHeader';
 import { MODULE_LIST_SHELL } from '@/lib/ui/module-layout';
 import { IconInput, IconSelect, IconTextarea } from '@/components/modules/crm/customer-form/IconField';
@@ -312,13 +312,14 @@ export function PurchaseOrderForm({
                     onChange={(e) => updateForm({ terms: e.target.value })}
                   />
                 </div>
-                <div>
-                  <label className={PO_LABEL_CLS}>Attachments</label>
-                  <div className="flex items-center justify-center gap-2 p-3 rounded-xl border border-dashed border-slate-200 bg-slate-50/80 text-center cursor-pointer">
-                    <Upload className="w-4 h-4 text-slate-400 shrink-0" />
-                    <p className="text-[11px] font-semibold text-slate-500">Drop files or click to upload · PDF, JPG, PNG up to 10MB</p>
-                  </div>
-                </div>
+                <ImageUploadField
+                  label="Attachment Image (Optional)"
+                  value={form.attachmentUrl}
+                  onChange={(url) => updateForm({
+                    attachmentUrl: url,
+                    attachmentName: url ? (url.split('/').pop()?.split('?')[0] || 'image') : '',
+                  })}
+                />
               </div>
             </section>
           </div>

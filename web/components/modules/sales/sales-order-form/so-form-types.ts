@@ -19,6 +19,8 @@ export type SoFormValues = {
   deliveryAddress: string;
   notes: string;
   terms: string;
+  attachmentUrl: string;
+  attachmentName: string;
   paymentStatus: 'unpaid' | 'partial' | 'paid';
   paidAmount: string;
   docDiscountOverride: number | null;
@@ -44,6 +46,8 @@ export const EMPTY_SO_FORM: SoFormValues = {
   deliveryAddress: '',
   notes: '',
   terms: 'Net 30 - Payment due within 30 days',
+  attachmentUrl: '',
+  attachmentName: '',
   paymentStatus: 'unpaid',
   paidAmount: '0',
   docDiscountOverride: null,
@@ -118,6 +122,8 @@ export function recordToSoFormValues(record: Record<string, unknown>): SoFormVal
     deliveryAddress: String(record.deliveryAddress ?? record.shippingAddress ?? ''),
     notes: String(record.notes ?? ''),
     terms: String(record.terms ?? 'Net 30 - Payment due within 30 days'),
+    attachmentUrl: String(record.attachmentUrl ?? ''),
+    attachmentName: String(record.attachmentName ?? ''),
     paymentStatus: (record.paymentStatus as SoFormValues['paymentStatus']) ?? 'unpaid',
     paidAmount: String(record.paidAmount ?? 0),
     docDiscountOverride: record.discountAmount != null ? Number(record.discountAmount) : null,
@@ -145,6 +151,8 @@ export function payloadToRecord(payload: SoFormPayload) {
     shippingAddress: payload.deliveryAddress,
     notes: payload.notes,
     terms: payload.terms,
+    attachmentUrl: payload.attachmentUrl,
+    attachmentName: payload.attachmentName,
     paymentStatus: payload.paymentStatus,
     paidAmount,
     balanceDue,
