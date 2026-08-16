@@ -25,8 +25,6 @@ export type DeliveryChallanFormValues = {
   driverName: string;
   driverPhone: string;
   warehouseId: string;
-  attachmentName: string;
-  attachmentUrl: string;
   notes: string;
   status: string;
   items: DeliveryChallanLineItem[];
@@ -55,8 +53,6 @@ export const EMPTY_DELIVERY_CHALLAN_FORM: DeliveryChallanFormValues = {
   driverName: '',
   driverPhone: '',
   warehouseId: '',
-  attachmentName: '',
-  attachmentUrl: '',
   notes: '',
   status: 'draft',
   items: [],

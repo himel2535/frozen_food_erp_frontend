@@ -3,7 +3,9 @@
 import { toast, confirmAction } from '@/lib/ui/feedback';
 import { useMemo } from 'react';
 import { useRouter } from 'next/navigation';
+import { ImagePlus } from 'lucide-react';
 import { AppTable, type AppTableColumn } from '@/components/shared/AppTable';
+import { InventoryItemThumb } from '@/components/shared/InventoryItemThumb';
 import { StatusBadge } from '@/components/shared/StatusBadge';
 import { TableIconAction } from '@/components/shared/TableIconAction';
 import {
@@ -58,6 +60,22 @@ export function PurchaseOrdersTable({
 
   const columns = useMemo<AppTableColumn<Record<string, unknown>>[]>(() => [
     {
+      key: 'attachment',
+      label: '',
+      className: 'w-12',
+      render: (row) => (
+        <InventoryItemThumb
+          imageUrl={String(row.attachmentUrl ?? (row.meta as Record<string, unknown> | undefined)?.attachmentUrl ?? '')}
+          alt=""
+          fallback={(
+            <span className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0 bg-slate-100 text-slate-400">
+              <ImagePlus className="w-4 h-4" />
+            </span>
+          )}
+        />
+      ),
+    },
+    {
       key: 'id',
       label: 'PO ID',
       align: 'left',
@@ -101,12 +119,15 @@ export function PurchaseOrdersTable({
     {
       key: 'expectedDelivery',
       label: 'Expected Delivery',
-      render: (row) => (
-        <>
-          <div>{String(row.expectedDelivery ?? '—')}</div>
-          {poDeliveryBadge(String(row.expectedDelivery ?? ''))}
-        </>
-      ),
+      render: (row) => {
+        const expected = String(row.expectedDelivery ?? row.deliveryDate ?? '').trim();
+        return (
+          <>
+            <div>{expected || '—'}</div>
+            {poDeliveryBadge(expected)}
+          </>
+        );
+      },
     },
     {
       key: 'progress',

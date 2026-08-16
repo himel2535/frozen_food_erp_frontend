@@ -72,8 +72,6 @@ function recordToFormValues(record: Record<string, unknown>, warehouseFallback: 
     driverName: String(record.driverName ?? ''),
     driverPhone: String(record.driverPhone ?? ''),
     warehouseId: String(record.warehouseId ?? warehouseFallback),
-    attachmentName: String(record.attachmentName ?? ''),
-    attachmentUrl: String(record.attachmentUrl ?? ''),
     notes: String(record.notes ?? ''),
     status: String(record.status ?? 'draft'),
     items,
@@ -148,7 +146,7 @@ export function DeliveriesPage() {
   const columns = useMemo<AppTableColumn<Record<string, unknown>>[]>(() => [
     { key: 'id', label: t('sales.col_challan_number'), render: (row) => <span className="font-bold text-slate-900">{String(row.id)}</span> },
     { key: 'customer', label: t('sales.col_customer'), render: (row) => resolveChallanCustomerLabel(appState, row) },
-    { key: 'orderId', label: t('sales.col_order'), render: (row) => String(row.orderId ?? '—') },
+    { key: 'orderId', label: t('sales.col_order'), render: (row) => String(row.orderId ?? (row.meta as Record<string, unknown> | undefined)?.orderId ?? '—') || '—' },
     { key: 'status', label: t('sales.col_status'), render: (row) => <StatusBadge status={String(row.status)} /> },
   ], [appState, t]);
 

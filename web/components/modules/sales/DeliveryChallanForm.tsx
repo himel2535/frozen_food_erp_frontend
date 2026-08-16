@@ -14,7 +14,6 @@ import {
   Warehouse,
 } from 'lucide-react';
 import { FormHeader } from '@/components/layout/FormHeader';
-import { ImageUploadField } from '@/components/shared/ImageUploadField';
 import { MODULE_LIST_SHELL } from '@/lib/ui/module-layout';
 import { IconInput, IconSelect, IconTextarea } from '@/components/modules/crm/customer-form/IconField';
 import { DcFormSectionCard } from '@/components/modules/sales/delivery-challan-form/DcFormSectionCard';
@@ -352,14 +351,6 @@ export function DeliveryChallanForm({
                     <option key={warehouse.id} value={warehouse.id}>{warehouse.name}</option>
                   ))}
                 </IconSelect>
-                <ImageUploadField
-                  label="Attachment Image (Optional)"
-                  value={form.attachmentUrl}
-                  onChange={(url) => updateForm({
-                    attachmentUrl: url,
-                    attachmentName: url ? (url.split('/').pop()?.split('?')[0] || 'image') : '',
-                  })}
-                />
                 <IconTextarea
                   label="Notes"
                   icon={Package}

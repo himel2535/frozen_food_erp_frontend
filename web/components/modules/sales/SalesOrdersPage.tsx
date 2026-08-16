@@ -4,7 +4,8 @@ import { confirmAction } from '@/lib/ui/feedback';
 
 import { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Plus } from 'lucide-react';
+import { ImagePlus, Plus } from 'lucide-react';
+import { InventoryItemThumb } from '@/components/shared/InventoryItemThumb';
 import { Footer } from '@/components/layout/Footer';
 import { useRegisterModuleActions } from '@/components/layout/ModuleActionsContext';
 import { ModuleFilterBar } from '@/components/shared/ModuleFilterBar';
@@ -108,6 +109,22 @@ export function SalesOrdersPage() {
   const kpis = useMemo(() => orderKpis(allRows, t, formatMoney, formatCount), [allRows, t, formatMoney, formatCount]);
 
   const columns = useMemo<AppTableColumn<Record<string, unknown>>[]>(() => [
+    {
+      key: 'attachment',
+      label: '',
+      className: 'w-12',
+      render: (row) => (
+        <InventoryItemThumb
+          imageUrl={String(row.attachmentUrl ?? (row.meta as Record<string, unknown> | undefined)?.attachmentUrl ?? '')}
+          alt=""
+          fallback={(
+            <span className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0 bg-slate-100 text-slate-400">
+              <ImagePlus className="w-4 h-4" />
+            </span>
+          )}
+        />
+      ),
+    },
     {
       key: 'id',
       label: t('sales.col_order_number'),

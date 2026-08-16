@@ -375,6 +375,8 @@ export function mapSalesOrderRecordToApi(record: Record<string, unknown>, existi
     tax: Number(record.taxAmount ?? record.tax ?? 0),
     total: Number(record.total ?? 0),
     notes: record.notes,
+    attachmentUrl: record.attachmentUrl ?? '',
+    attachmentName: record.attachmentName ?? '',
     meta: {
       expectedDelivery: record.expectedDelivery ?? record.deliveryDate,
       reference: record.reference,
@@ -577,8 +579,6 @@ export function mapApiSalesDocRow(doc: Record<string, unknown>): Record<string, 
     driverName: doc.driverName ?? m.driverName ?? '',
     driverPhone: doc.driverPhone ?? m.driverPhone ?? '',
     contactPhone: doc.contactPhone ?? m.contactPhone ?? '',
-    attachmentUrl: doc.attachmentUrl ?? m.attachmentUrl ?? '',
-    attachmentName: doc.attachmentName ?? m.attachmentName ?? '',
     createdAt: doc.createdAt,
     updatedAt: doc.updatedAt,
     _mongoId: apiDocId(doc),
@@ -745,8 +745,6 @@ export function mapDeliveryToApi(record: Record<string, unknown>, existingLegacy
       driverName: record.driverName,
       driverPhone: record.driverPhone,
       contactPhone: record.contactPhone,
-      attachmentUrl: record.attachmentUrl,
-      attachmentName: record.attachmentName,
     },
   };
 }
