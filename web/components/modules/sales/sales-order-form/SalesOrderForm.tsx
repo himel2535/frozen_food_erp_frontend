@@ -13,7 +13,8 @@ import {
   Plus,
   User,
 } from 'lucide-react';
-import { ImageUploadField } from '@/components/shared/ImageUploadField';
+import { ImageUploadField, type PendingImageUpload } from '@/components/shared/ImageUploadField';
+import { useSubmitGuard } from '@/hooks/use-submit-guard';
 import { FormHeader } from '@/components/layout/FormHeader';
 import { useChromeSuppressed } from '@/components/layout/ModuleActionsContext';
 import { MODULE_FORM_SHELL } from '@/lib/ui/module-layout';
@@ -69,12 +70,18 @@ export function SalesOrderForm({
   customers: Array<{ id: string; name: string; company?: string }>;
   salesPersons: Array<{ id: string; name: string }>;
   onCancel: () => void;
-  onSave: (payload: SoFormPayload, action: SoSaveAction) => void;
+  onSave: (
+    payload: SoFormPayload,
+    action: SoSaveAction,
+    pendingImageUpload?: Promise<PendingImageUpload | null> | null,
+  ) => void | Promise<void>;
 }) {
   const [form, setForm] = useState<SoFormValues>(initialValues);
   const [errors, setErrors] = useState<SoFieldError>({});
+  const { isSubmitting, guardSubmit } = useSubmitGuard();
   const saveActionRef = useRef<SoSaveAction>('draft');
   const formRef = useRef<HTMLFormElement>(null);
+  const pendingImageUploadRef = useRef<Promise<PendingImageUpload | null> | null>(null);
 
   useChromeSuppressed(true);
 
@@ -118,8 +125,9 @@ export function SalesOrderForm({
     totals,
   });
 
-  const handleSubmit = (e: FormEvent) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
+    if (isSubmitting) return;
     const nextErrors = validateSoForm(form);
     if (Object.keys(nextErrors).length > 0) {
       setErrors(nextErrors);
@@ -128,7 +136,9 @@ export function SalesOrderForm({
     setErrors({});
     const action = saveActionRef.current;
     saveActionRef.current = 'draft';
-    onSave(toPayload(), action);
+    await guardSubmit(async () => {
+      await Promise.resolve(onSave(toPayload(), action, pendingImageUploadRef.current));
+    });
   };
 
   const handleEditDiscount = async () => {
@@ -168,24 +178,28 @@ export function SalesOrderForm({
             <button type="button" onClick={onCancel} className={SO_BTN_GHOST}>Cancel</button>
             <button
               type="button"
+              disabled={isSubmitting}
               onClick={() => {
+                if (isSubmitting) return;
                 saveActionRef.current = 'draft';
                 formRef.current?.requestSubmit();
               }}
-              className={SO_BTN_OUTLINE}
+              className={`${SO_BTN_OUTLINE} disabled:opacity-50 disabled:cursor-not-allowed`}
             >
-              Save Draft
+              {isSubmitting ? 'Saving…' : 'Save Draft'}
             </button>
             <button
               type="button"
+              disabled={isSubmitting}
               onClick={() => {
+                if (isSubmitting) return;
                 saveActionRef.current = 'create';
                 updateForm({ status: form.status === 'draft' ? 'confirmed' : form.status });
                 formRef.current?.requestSubmit();
               }}
-              className={SO_BTN_PRIMARY}
+              className={`${SO_BTN_PRIMARY} disabled:opacity-50 disabled:cursor-not-allowed`}
             >
-              Create Order
+              {isSubmitting ? 'Saving…' : 'Create Order'}
             </button>
           </div>
         </div>
@@ -340,6 +354,9 @@ export function SalesOrderForm({
                     attachmentPublicId: publicId ?? '',
                     attachmentName: url ? (url.split('/').pop()?.split('?')[0] || 'image') : '',
                   })}
+                  onPendingUpload={(promise) => {
+                    pendingImageUploadRef.current = promise;
+                  }}
                 />
               </div>
             </section>

@@ -27,6 +27,9 @@ import {
   resolveApiRowId,
 } from '@/lib/services/entity-api-mappers';
 import { fetchResourceById } from '@/lib/services/api-resource-service';
+import { attachBackgroundImageLater } from '@/lib/services/background-image-attach';
+import { patchOrderAttachment } from '@/lib/services/sales-orders-api-service';
+import type { PendingImageUpload } from '@/components/shared/ImageUploadField';
 import { API_RESOURCE_PATHS } from '@/lib/config/data-source';
 
 export function SalesOrderFormPage({ mode, orderId }: { mode: 'create' | 'edit'; orderId?: string }) {
@@ -77,7 +80,11 @@ export function SalesOrderFormPage({ mode, orderId }: { mode: 'create' | 'edit';
     );
   }
 
-  const handleSave = async (payload: SoFormPayload, action: SoSaveAction) => {
+  const handleSave = async (
+    payload: SoFormPayload,
+    action: SoSaveAction,
+    pendingImageUpload?: Promise<PendingImageUpload | null> | null,
+  ) => {
     const record = payloadToRecord({
       ...payload,
       id: orderId ?? payload.id ?? payload.orderPreviewId,
@@ -93,6 +100,15 @@ export function SalesOrderFormPage({ mode, orderId }: { mode: 'create' | 'edit';
       if (!result.ok) {
         toast.error('Operation failed', { module: 'Sales', description: 'error' in result ? String(result.error) : 'Save failed' });
         return;
+      }
+      if (mode !== 'edit' && pendingImageUpload && result.ok && 'id' in result) {
+        attachBackgroundImageLater({
+          recordId: String(result.id),
+          savedImageUrl: payload.attachmentUrl,
+          pending: pendingImageUpload,
+          patchImage: patchOrderAttachment,
+          moduleName: 'Sales Order',
+        });
       }
       router.push('/sales/orders');
       return;
