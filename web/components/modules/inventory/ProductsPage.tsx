@@ -418,6 +418,7 @@ export function ProductsPage() {
                       price: Number(row.price ?? 0),
                       taxRate: Number(row.taxRate ?? 0),
                       minStock: Number(row.minStock ?? 0),
+                      stockDurationDays: Number(row.stockDurationDays ?? 0),
                       reserved: Number(row.reserved ?? 0),
                       wholesalePrice: Number(row.wholesalePrice ?? 0),
                       reorderLevel: Number(row.reorderLevel ?? 0),

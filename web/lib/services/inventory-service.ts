@@ -556,7 +556,7 @@ export function createRawMaterial(state: AppState, payload: Row) {
 }
 
 export function updateRawMaterial(state: AppState, id: string, payload: Row) {
-  const patch = { ...payload, lastUpdated: new Date().toISOString() };
+  const patch: Row = { ...payload, lastUpdated: new Date().toISOString() };
   if ('stockDurationDays' in payload) {
     patch.stockDurationDays = Number(payload.stockDurationDays ?? 0);
   }
