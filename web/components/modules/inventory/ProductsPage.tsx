@@ -26,11 +26,15 @@ import {
 } from '@/components/modules/inventory/product-form/product-form-types';
 import { isModuleApiMode } from '@/lib/config/data-source';
 import { usePaginatedApiResource } from '@/hooks/use-paginated-api-resource';
+import { useSubmitGuard } from '@/hooks/use-submit-guard';
 import { ListPagination } from '@/components/shared/ListPagination';
 import { useInventoryLookups } from '@/hooks/use-inventory-lookups';
 import { ApiModeBanner } from '@/components/shared/ApiModeBanner';
 import { isModuleBootLoading, pickApiListRows } from '@/lib/ui/kpi-loading';
 import { apiListEmptyMessage } from '@/lib/services/api-list-ui';
+import { attachBackgroundImageLater } from '@/lib/services/background-image-attach';
+import { fetchNextProductSku, patchProductImageUrl } from '@/lib/services/products-api-service';
+import type { PendingImageUpload } from '@/components/shared/ImageUploadField';
 import { mapApiProductRow, mapProductPayloadToApi } from '@/lib/services/entity-api-mappers';
 import {
   listInventory,
@@ -90,6 +94,10 @@ function emptyWarehouseStock(warehouseIds: string[]): Record<string, string> {
   return result;
 }
 
+function isDuplicateSkuError(message: string): boolean {
+  return /409|duplicate|conflict/i.test(message);
+}
+
 export function ProductsPage() {
   const { canEdit, guardEdit } = useInventoryEditAccess();
   const appState = useAppStore((s) => s.appState);
@@ -108,6 +116,7 @@ export function ProductsPage() {
   const [warehouseStock, setWarehouseStock] = useState<Record<string, string>>({});
   const [formKey, setFormKey] = useState(0);
   const [localPage, setLocalPage] = useState(1);
+  const { guardSubmit } = useSubmitGuard();
   const pageSize = 10;
 
   const categories = useMemo(
@@ -253,18 +262,26 @@ export function ProductsPage() {
     else setLocalPage(1);
   };
 
-  const resetForm = () => {
-    const sku = previewProductSku(appState);
+  const resetForm = useCallback((overrideSku?: string) => {
+    const sku = overrideSku ?? (apiMode ? '' : previewProductSku(appState));
     setFormValues(buildEmptyFormValues(categories, units, warehouses, sku));
     setWarehouseStock(emptyWarehouseStock(warehouseIds));
     setEditingId(null);
     setFormKey((k) => k + 1);
-  };
+  }, [apiMode, appState, categories, units, warehouses, warehouseIds]);
 
-  const openCreate = useCallback(() => {
-    resetForm();
-    setView('form');
-  }, []);
+  const openCreate = useCallback(async () => {
+    try {
+      const sku = apiMode ? await fetchNextProductSku() : previewProductSku(appState);
+      resetForm(sku);
+      setView('form');
+    } catch (err) {
+      toast.error('Could not load next SKU', {
+        module: 'Products',
+        description: err instanceof Error ? err.message : 'Please try again.',
+      });
+    }
+  }, [apiMode, appState, resetForm]);
 
   useChromeSuppressed(view !== 'main');
 
@@ -284,47 +301,72 @@ export function ProductsPage() {
     setView('form');
   };
 
-  const handleSave = async (payload: ProductFormPayload, action: 'save' | 'save-and-add') => {
-    if (editingId && !guardEdit()) return;
-    if (apiMode) {
-      const body = mapProductPayloadToApi(payload);
+  const handleSave = async (
+    payload: ProductFormPayload,
+    action: 'save' | 'save-and-add',
+    pendingImageUpload?: Promise<PendingImageUpload | null> | null,
+  ) => {
+    await guardSubmit(async () => {
+      if (editingId && !guardEdit()) return;
+      if (apiMode) {
+        const body = mapProductPayloadToApi(payload);
+        const result = editingId
+          ? await apiStore.update(editingId, body)
+          : await apiStore.create(body);
+        if (!result.ok) {
+          const errMsg = 'error' in result ? String(result.error) : 'Save failed';
+          if (isDuplicateSkuError(errMsg)) {
+            toast.error('SKU already exists', {
+              module: 'Products',
+              description: 'Generate a new SKU or edit the field, then try again.',
+            });
+          } else {
+            toast.error('Operation failed', { module: 'Products', description: errMsg });
+          }
+          return;
+        }
+        if (!editingId && pendingImageUpload && result.ok && 'id' in result) {
+          attachBackgroundImageLater({
+            recordId: String(result.id),
+            savedImageUrl: payload.imageUrl,
+            pending: pendingImageUpload,
+            patchImage: patchProductImageUrl,
+            onAttached: () => apiStore.reload({ silent: true }),
+            moduleName: 'Product',
+          });
+        }
+        if (!editingId) resetFilters();
+        if (action === 'save-and-add') {
+          if (!editingId) resetFilters();
+          const nextSku = apiMode ? await fetchNextProductSku() : undefined;
+          resetForm(nextSku);
+          return;
+        }
+        if (!editingId) resetFilters();
+        setView('main');
+        resetForm();
+        return;
+      }
+
       const result = editingId
-        ? await apiStore.update(editingId, body)
-        : await apiStore.create(body);
+        ? updateProduct(appState, editingId, payload)
+        : createProduct(appState, payload);
       if (!result.ok) {
         toast.error('Operation failed', { module: 'Products', description: 'error' in result ? String(result.error) : 'Save failed' });
         return;
       }
-      if (!editingId) resetFilters();
+      saveAppState();
+
       if (action === 'save-and-add') {
         if (!editingId) resetFilters();
         resetForm();
         return;
       }
+
       if (!editingId) resetFilters();
       setView('main');
       resetForm();
-      return;
-    }
-
-    const result = editingId
-      ? updateProduct(appState, editingId, payload)
-      : createProduct(appState, payload);
-    if (!result.ok) {
-      toast.error('Operation failed', { module: 'Products', description: 'error' in result ? String(result.error) : 'Save failed' });
-      return;
-    }
-    saveAppState();
-
-    if (action === 'save-and-add') {
-      if (!editingId) resetFilters();
-      resetForm();
-      return;
-    }
-
-    if (!editingId) resetFilters();
-    setView('main');
-    resetForm();
+    });
   };
 
   if (view === 'form' && formValues) {
@@ -337,7 +379,7 @@ export function ProductsPage() {
         categories={categories}
         units={units}
         warehouses={warehouses}
-        onGenerateSku={() => previewProductSku(appState)}
+        onGenerateSku={() => (apiMode ? fetchNextProductSku() : previewProductSku(appState))}
         onCancel={() => {
           setView('main');
           resetForm();

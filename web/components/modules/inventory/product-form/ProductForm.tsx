@@ -4,6 +4,7 @@ import { toast } from '@/lib/ui/feedback';
 
 import Link from 'next/link';
 import { useMemo, useRef, useState, type FormEvent } from 'react';
+import { useSubmitGuard } from '@/hooks/use-submit-guard';
 import {
   Barcode,
   ChevronDown,
@@ -23,7 +24,7 @@ import {
   CF_TEXTAREA_CLS,
 } from '@/components/modules/crm/customer-form/customer-form-styles';
 import { IconInput, IconSelect } from '@/components/modules/crm/customer-form/IconField';
-import { ImageUploadField } from '@/components/shared/ImageUploadField';
+import { ImageUploadField, type PendingImageUpload } from '@/components/shared/ImageUploadField';
 import { MODULE_LIST_SHELL } from '@/lib/ui/module-layout';
 import { formatMoney } from '@/lib/services/inventory-service';
 import { ProductFormFooter, useProductSaveAction } from '@/components/modules/inventory/product-form/ProductFormFooter';
@@ -57,15 +58,21 @@ export function ProductForm({
   categories: Array<Record<string, unknown>>;
   units: Array<Record<string, unknown>>;
   warehouses: Array<Record<string, unknown>>;
-  onGenerateSku: () => string;
+  onGenerateSku: () => string | Promise<string>;
   onCancel: () => void;
-  onSave: (payload: ProductFormPayload, action: 'save' | 'save-and-add') => void;
+  onSave: (
+    payload: ProductFormPayload,
+    action: 'save' | 'save-and-add',
+    pendingImageUpload?: Promise<PendingImageUpload | null> | null,
+  ) => void | Promise<void>;
 }) {
   const [form, setForm] = useState<ProductFormValues>(initialValues);
   const [warehouseStock, setWarehouseStock] = useState(initialWarehouseStock);
   const [errors, setErrors] = useState<ProductFieldError>({});
+  const { isSubmitting, guardSubmit } = useSubmitGuard();
   const [showAdvanced, setShowAdvanced] = useState(false);
   const formRef = useRef<HTMLFormElement>(null);
+  const pendingImageUploadRef = useRef<Promise<PendingImageUpload | null> | null>(null);
   const { setSaveAction, readSaveAction } = useProductSaveAction();
 
   const warehouseIds = useMemo(
@@ -94,8 +101,9 @@ export function ProductForm({
     });
   };
 
-  const handleSubmit = (e: FormEvent) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
+    if (isSubmitting) return;
     const nextErrors = validateProductForm(form);
     if (Object.keys(nextErrors).length > 0) {
       setErrors(nextErrors);
@@ -104,7 +112,13 @@ export function ProductForm({
       return;
     }
     setErrors({});
-    onSave(formValuesToPayload(form, warehouseStock, warehouseIds), readSaveAction());
+    await guardSubmit(async () => {
+      await Promise.resolve(onSave(
+        formValuesToPayload(form, warehouseStock, warehouseIds),
+        readSaveAction(),
+        pendingImageUploadRef.current,
+      ));
+    });
   };
 
   return (
@@ -158,8 +172,11 @@ export function ProductForm({
                     />
                     <button
                       type="button"
-                      onClick={() => updateForm({ sku: onGenerateSku() })}
-                      className="shrink-0 px-3 py-2 rounded-xl border border-blue-200 bg-blue-50 text-blue-700 text-xs font-bold hover:bg-blue-100 cursor-pointer transition-colors"
+                      disabled={isSubmitting}
+                      onClick={() => {
+                        void Promise.resolve(onGenerateSku()).then((sku) => updateForm({ sku }));
+                      }}
+                      className="shrink-0 px-3 py-2 rounded-xl border border-blue-200 bg-blue-50 text-blue-700 text-xs font-bold hover:bg-blue-100 cursor-pointer transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       Generate
                     </button>
@@ -228,6 +245,9 @@ export function ProductForm({
                     label="Product Image"
                     value={form.imageUrl}
                     onChange={(url, publicId) => updateForm({ imageUrl: url, imagePublicId: publicId ?? '' })}
+                    onPendingUpload={(promise) => {
+                      pendingImageUploadRef.current = promise;
+                    }}
                   />
                 </div>
               </div>
@@ -479,7 +499,9 @@ export function ProductForm({
 
         <ProductFormFooter
           onCancel={onCancel}
+          isSubmitting={isSubmitting}
           onSaveAndAdd={() => {
+            if (isSubmitting) return;
             setSaveAction('save-and-add');
             formRef.current?.requestSubmit();
           }}

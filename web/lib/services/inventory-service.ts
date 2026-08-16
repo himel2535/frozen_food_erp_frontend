@@ -94,8 +94,7 @@ export function buildDefaultWarehouseAllocations(state: AppState) {
   return allocations;
 }
 
-export function previewProductSku(state: AppState): string {
-  const rows = listInventory(state, { excludeRaw: false });
+export function nextToySkuFromRows(rows: Array<{ sku?: unknown }>): string {
   const nums = rows
     .map((r) => String(r.sku ?? ''))
     .filter((sku) => /^TOY-\d+$/i.test(sku))
@@ -103,6 +102,10 @@ export function previewProductSku(state: AppState): string {
     .filter((n) => !Number.isNaN(n));
   const max = nums.length ? Math.max(...nums) : 0;
   return `TOY-${String(max + 1).padStart(6, '0')}`;
+}
+
+export function previewProductSku(state: AppState): string {
+  return nextToySkuFromRows(listInventory(state, { excludeRaw: false }));
 }
 
 export function createProduct(state: AppState, payload: Row) {
