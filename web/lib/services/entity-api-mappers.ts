@@ -15,6 +15,8 @@ export function mapApiProductRow(doc: Record<string, unknown>): Record<string, u
     : Object.values(ws).reduce((s, v) => s + Number(v || 0), 0);
   return {
     id: apiDocId(doc),
+    legacyId: doc.legacyId ?? '',
+    _mongoId: apiDocId(doc),
     name: doc.name,
     sku: doc.sku ?? '',
     category: doc.category ?? '',
@@ -52,7 +54,7 @@ export function mapProductPayloadToApi(body: ProductFormPayload): Record<string,
     taxRate: body.taxRate,
     stock: stockTotal,
     minStock: body.minStock,
-    reorderLevel: body.reorderLevel,
+    reorderLevel: body.reorderLevel > 0 ? body.reorderLevel : body.minStock,
     uom: body.uom,
     defaultWarehouse: body.defaultWarehouse,
     warehouseStock: body.warehouseStock,
@@ -265,12 +267,18 @@ function normalizeInvoiceApiStatus(record: Record<string, unknown>): string {
 function mapInvoiceItemsToApi(items: unknown[]) {
   return items.map((item) => {
     const row = item as Record<string, unknown>;
+    const qty = Number(row.qty ?? row.quantity ?? 1);
+    const price = Number(row.price ?? row.rate ?? 0);
     return {
       name: row.name ?? row.description ?? 'Line item',
       description: row.description ?? row.name ?? 'Line item',
-      qty: Number(row.qty ?? row.quantity ?? 1),
-      price: Number(row.price ?? row.rate ?? 0),
-      total: Number(row.total ?? 0),
+      sku: row.sku ?? row.productId ?? '',
+      productId: row.productId ?? row.sku ?? '',
+      qty,
+      price,
+      rate: Number(row.rate ?? row.price ?? 0),
+      total: Number(row.total ?? row.amount ?? qty * price),
+      imageUrl: row.imageUrl ?? '',
     };
   });
 }
@@ -356,11 +364,13 @@ export function mapSalesOrderRecordToApi(record: Record<string, unknown>, existi
   const items = (Array.isArray(record.items) ? record.items : []).map((item: Record<string, unknown>) => ({
     description: item.description ?? item.name,
     name: item.name ?? item.description,
-    sku: item.productId ?? item.sku,
+    sku: item.sku ?? item.productId,
+    productId: item.productId ?? item.sku,
     qty: Number(item.qty ?? item.quantity ?? 1),
     rate: Number(item.rate ?? item.price ?? 0),
     price: Number(item.rate ?? item.price ?? 0),
     total: Number(item.amount ?? item.total ?? 0),
+    imageUrl: item.imageUrl ?? '',
   }));
 
   const body: Record<string, unknown> = {
@@ -705,10 +715,12 @@ export function mapPosToApi(record: Record<string, unknown>, existingLegacyId?: 
       description: item.description ?? item.name,
       name: item.name ?? item.description,
       sku: item.sku ?? item.productId,
+      productId: item.productId ?? item.sku,
       qty,
       rate,
       price: rate,
       total: Number(item.total ?? rate * qty),
+      imageUrl: item.imageUrl ?? '',
     };
   });
   const body: Record<string, unknown> = {

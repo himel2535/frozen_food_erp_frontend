@@ -1,5 +1,5 @@
 import type { AppState } from '@/lib/state/types';
-import { computeTotalStock, listInventory } from '@/lib/services/inventory-service';
+import { listInventory } from '@/lib/services/inventory-service';
 
 export type SalesTrendRange = 'day' | 'week' | 'month' | 'quarter' | 'year';
 
@@ -275,58 +275,182 @@ export type TopProductRow = {
   category: string;
   sold: number;
   revenue: number;
+  imageUrl: string;
 };
 
-function accumulateLineItem(map: Map<string, TopProductRow>, item: Record<string, unknown>) {
-  const name = String(item.name ?? item.productName ?? item.description ?? '').trim();
-  if (!name) return;
-  const existing = map.get(name) ?? { name, category: String(item.category ?? '—'), sold: 0, revenue: 0 };
-  const qty = Number(item.qty ?? item.quantity ?? 0);
-  const price = Number(item.price ?? item.unitPrice ?? item.rate ?? 0);
-  existing.sold += qty;
-  existing.revenue += qty * price;
-  map.set(name, existing);
+function isCancelledOrDraft(doc: Record<string, unknown>) {
+  const status = String(doc.status ?? '').toLowerCase();
+  return status === 'cancelled' || status === 'canceled' || status === 'draft';
 }
 
-function accumulateFromDocuments(map: Map<string, TopProductRow>, docs: Record<string, unknown>[]) {
+type CatalogEntry = {
+  identity: string;
+  name: string;
+  category: string;
+  imageUrl: string;
+};
+
+function uniqueKeys(...values: unknown[]) {
+  const keys: string[] = [];
+  const seen = new Set<string>();
+  for (const value of values) {
+    const key = String(value ?? '').trim().toLowerCase();
+    if (!key || seen.has(key)) continue;
+    seen.add(key);
+    keys.push(key);
+  }
+  return keys;
+}
+
+function lineName(item: Record<string, unknown>) {
+  return String(item.productName ?? item.name ?? item.description ?? '').trim();
+}
+
+function lineSku(item: Record<string, unknown>) {
+  return String(item.sku ?? item.productId ?? item.productSku ?? item.code ?? '').trim();
+}
+
+function salesDocuments(state: AppState) {
+  return [
+    ...(Array.isArray(state.salesOrders) ? state.salesOrders : []),
+    ...(Array.isArray(state.invoices) ? state.invoices : []),
+    ...(Array.isArray(state.posReceipts) ? state.posReceipts : []),
+  ] as Record<string, unknown>[];
+}
+
+function catalogLookup(state: AppState) {
+  const byKey = new Map<string, CatalogEntry>();
+  const set = (key: string, entry: CatalogEntry) => {
+    const normalized = key.trim().toLowerCase();
+    if (!normalized || byKey.has(normalized)) return;
+    byKey.set(normalized, entry);
+  };
+  const catalogRows = [
+    ...listInventory(state, { excludeRaw: true }),
+    ...(Array.isArray(state.finishedGoods) ? state.finishedGoods : []),
+  ];
+  catalogRows.forEach((product) => {
+    const name = String(product.name ?? 'Product').trim();
+    if (!name) return;
+    const identity = uniqueKeys(product.sku, product.legacyId, product.id, product._mongoId)[0] || name.toLowerCase();
+    const entry: CatalogEntry = {
+      identity,
+      name,
+      category: String(product.category ?? '').trim() || '—',
+      imageUrl: String(product.imageUrl ?? '').trim(),
+    };
+    for (const key of uniqueKeys(product.id, product.legacyId, product.sku, product._mongoId, name)) {
+      set(key, entry);
+    }
+  });
+  return byKey;
+}
+
+/** Lines that still have the old name can reuse SKU/productId from other docs. */
+function skuHintsFromDocuments(docs: Record<string, unknown>[]) {
+  const hints = new Map<string, string>();
   for (const doc of docs) {
+    if (isCancelledOrDraft(doc)) continue;
+    const items = Array.isArray(doc.items) ? doc.items : [];
+    for (const raw of items) {
+      if (!raw || typeof raw !== 'object') continue;
+      const item = raw as Record<string, unknown>;
+      const name = lineName(item).toLowerCase();
+      const sku = lineSku(item);
+      if (name && sku && !hints.has(name)) hints.set(name, sku);
+    }
+  }
+  return hints;
+}
+
+function catalogHitForLine(
+  item: Record<string, unknown>,
+  catalog: Map<string, CatalogEntry>,
+  skuHints: Map<string, string>,
+): CatalogEntry | undefined {
+  const hintedSku = skuHints.get(lineName(item).toLowerCase()) ?? '';
+  const keys = uniqueKeys(
+    item.sku,
+    item.productId,
+    item.productSku,
+    item.code,
+    item.id,
+    hintedSku,
+    item.productName,
+    item.name,
+    item.description,
+  );
+  for (const key of keys) {
+    const hit = catalog.get(key);
+    if (hit) return hit;
+  }
+  return undefined;
+}
+
+function lineRevenue(item: Record<string, unknown>, qty: number, unitPrice: number) {
+  const stored = Number(item.total ?? item.amount ?? item.lineTotal ?? NaN);
+  if (Number.isFinite(stored) && stored > 0) return stored;
+  return qty * unitPrice;
+}
+
+function accumulateLineItem(
+  map: Map<string, TopProductRow>,
+  item: Record<string, unknown>,
+  catalog: Map<string, CatalogEntry>,
+  skuHints: Map<string, string>,
+) {
+  const qty = Number(item.qty ?? item.quantity ?? 0);
+  const unitPrice = Number(item.price ?? item.unitPrice ?? item.rate ?? 0);
+  const revenue = lineRevenue(item, qty, unitPrice);
+  if (qty <= 0 && revenue <= 0) return;
+
+  const catalogHit = catalogHitForLine(item, catalog, skuHints);
+  // Skip names that only exist on old SO/invoice/POS lines (deleted or never in Products).
+  if (!catalogHit) return;
+
+  const existing = map.get(catalogHit.identity) ?? {
+    name: catalogHit.name,
+    category: catalogHit.category,
+    sold: 0,
+    revenue: 0,
+    imageUrl: catalogHit.imageUrl,
+  };
+  existing.sold += qty;
+  existing.revenue += revenue;
+  existing.name = catalogHit.name;
+  existing.category = catalogHit.category;
+  existing.imageUrl = catalogHit.imageUrl || existing.imageUrl;
+  map.set(catalogHit.identity, existing);
+}
+
+function accumulateFromDocuments(
+  map: Map<string, TopProductRow>,
+  docs: Record<string, unknown>[],
+  catalog: Map<string, CatalogEntry>,
+  skuHints: Map<string, string>,
+) {
+  for (const doc of docs) {
+    if (isCancelledOrDraft(doc)) continue;
     const items = Array.isArray(doc.items) ? doc.items : [];
     for (const item of items) {
       if (item && typeof item === 'object') {
-        accumulateLineItem(map, item as Record<string, unknown>);
+        accumulateLineItem(map, item as Record<string, unknown>, catalog, skuHints);
       }
     }
   }
 }
 
-function topProductsFromInventory(state: AppState, limit: number, exclude: Set<string>): TopProductRow[] {
-  return listInventory(state, { excludeRaw: true })
-    .map((product) => ({
-      name: String(product.name ?? 'Product'),
-      category: String(product.category ?? '—'),
-      sold: computeTotalStock(product),
-      revenue: computeTotalStock(product) * Number(product.price ?? 0),
-    }))
-    .filter((row) => row.name && !exclude.has(row.name) && (row.sold > 0 || row.revenue > 0))
+export function getTopProducts(state: AppState, limit = 3): TopProductRow[] {
+  const catalog = catalogLookup(state);
+  const docs = salesDocuments(state);
+  const skuHints = skuHintsFromDocuments(docs);
+  const map = new Map<string, TopProductRow>();
+  accumulateFromDocuments(map, docs, catalog, skuHints);
+
+  return Array.from(map.values())
+    .filter((row) => row.sold > 0 || row.revenue > 0)
     .sort((a, b) => b.revenue - a.revenue || b.sold - a.sold)
     .slice(0, limit);
-}
-
-export function getTopProducts(state: AppState, limit = 3): TopProductRow[] {
-  const map = new Map<string, TopProductRow>();
-  accumulateFromDocuments(map, Array.isArray(state.salesOrders) ? state.salesOrders : []);
-  accumulateFromDocuments(map, Array.isArray(state.invoices) ? state.invoices : []);
-  accumulateFromDocuments(map, Array.isArray(state.posReceipts) ? state.posReceipts : []);
-
-  const ranked = Array.from(map.values())
-    .filter((row) => row.sold > 0 || row.revenue > 0)
-    .sort((a, b) => b.revenue - a.revenue || b.sold - a.sold);
-
-  if (ranked.length >= limit) return ranked.slice(0, limit);
-
-  const seen = new Set(ranked.map((row) => row.name));
-  const inventoryFallback = topProductsFromInventory(state, limit - ranked.length, seen);
-  return [...ranked, ...inventoryFallback].slice(0, limit);
 }
 
 export function formatRelativeTime(iso: string): string {

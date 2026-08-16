@@ -12,12 +12,13 @@ import { Footer } from '@/components/layout/Footer';
 import { PageSkeleton } from '@/components/shared/PageSkeleton';
 import { ProjectFormStepper } from '@/components/modules/projects/project-form/ProjectFormStepper';
 import { ProjectSetupProgress } from '@/components/modules/projects/project-form/ProjectSetupProgress';
+import { ProjectTasksSection } from '@/components/modules/projects/project-form/ProjectTasksSection';
+import type { ProjectTask } from '@/components/modules/projects/project-form/project-form-types';
 import {
   PJ_BTN_GHOST,
   PJ_BTN_OUTLINE,
   PJ_BTN_PRIMARY,
 } from '@/components/modules/projects/project-form/project-form-styles';
-import { MODULE_SHELL_SUPPRESSED } from '@/lib/ui/module-layout';
 import { useAppStore } from '@/lib/state/app-store';
 import { isModuleApiMode } from '@/lib/config/data-source';
 import { API_RESOURCE_PATHS } from '@/lib/config/data-source';
@@ -29,6 +30,7 @@ import {
   advanceProjectSetup,
   formatProjectMoney,
   getProjectById,
+  projectBudget,
   projectSetupLabel,
 } from '@/lib/services/projects-service';
 import { resolveRecipeForInventoryRow, listRecipes } from '@/lib/services/recipes-service';
@@ -44,6 +46,10 @@ type ProjectItem = {
 
 function projectItems(project: ProjectRow): ProjectItem[] {
   return Array.isArray(project.items) ? project.items as ProjectItem[] : [];
+}
+
+function projectTasks(project: ProjectRow): ProjectTask[] {
+  return Array.isArray(project.tasks) ? (project.tasks as ProjectTask[]) : [];
 }
 
 export function ProjectSetupPage({ projectId }: { projectId: string }) {
@@ -188,6 +194,32 @@ export function ProjectSetupPage({ projectId }: { projectId: string }) {
     }
   };
 
+  const persistTasks = async (tasks: ProjectTask[]) => {
+    if (!project) return;
+    const updated = { ...project, tasks };
+    if (apiMode) {
+      const sync = await updateResource(
+        API_RESOURCE_PATHS.projects,
+        resolveApiRowId(project),
+        mapGenericPayloadToApi(updated),
+      );
+      if (!sync.ok) {
+        toast.error('Operation failed', { module: 'Projects', description: 'error' in sync ? String(sync.error) : 'Could not save tasks' });
+        return;
+      }
+      setApiProject(updated);
+      return;
+    }
+    const rowId = String(project.id);
+    const idx = appState.projects.findIndex((p) => String(p.id) === rowId);
+    if (idx >= 0) {
+      const nextProjects = [...appState.projects];
+      nextProjects[idx] = updated;
+      useAppStore.setState({ appState: { ...appState, projects: nextProjects } });
+      saveAppState();
+    }
+  };
+
   const startProduction = async () => {
     if (!allBomReady) {
       toast.error('Complete setup', { module: 'Projects', description: 'Finish BOM setup before starting production.' });
@@ -215,10 +247,10 @@ export function ProjectSetupPage({ projectId }: { projectId: string }) {
   }
 
   const projectName = String(project.name ?? project.projectId ?? 'Project');
-  const totalValue = Number(project.totalValue ?? project.budget ?? 0);
+  const totalValue = projectBudget(project);
 
   return (
-    <div className={`${MODULE_SHELL_SUPPRESSED} px-3 md:px-6 pb-4`}>
+    <div className="flex-1 min-h-0 overflow-y-auto px-3 md:px-6 pb-4">
       <div className="pt-3 md:pt-4 mb-2">
         <FormHeader
           compact
@@ -232,6 +264,7 @@ export function ProjectSetupPage({ projectId }: { projectId: string }) {
       <ProjectFormStepper activeStep={activeStep} />
 
       <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_340px] gap-3">
+        <div className="flex flex-col gap-3 min-w-0">
         <div className="premium-card premium-shadow p-4 space-y-4">
           {activeStep === 2 ? (
             <>
@@ -415,6 +448,19 @@ export function ProjectSetupPage({ projectId }: { projectId: string }) {
               </div>
             </>
           ) : null}
+        </div>
+
+        <section className="premium-card premium-shadow p-4 space-y-3">
+          <div>
+            <h3 className="text-sm font-extrabold text-slate-900">Project Tasks</h3>
+            <p className="text-xs text-slate-500 mt-1">Assign to-dos and deadlines for this project.</p>
+          </div>
+          <ProjectTasksSection
+            tasks={projectTasks(project)}
+            appState={projectState}
+            onChange={(tasks) => { void persistTasks(tasks); }}
+          />
+        </section>
         </div>
 
         <aside className="flex flex-col gap-3 xl:sticky xl:top-4 xl:self-start">

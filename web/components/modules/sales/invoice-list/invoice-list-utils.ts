@@ -73,13 +73,14 @@ export function buildPrintPayloadFromRow(
     ? items.map((item, index) =>
         recalcLineItem({
           id: String(item.id ?? `line-${index + 1}`),
-          productId: String(item.productId ?? ''),
+          productId: String(item.productId ?? item.sku ?? ''),
           description: String(item.description ?? item.name ?? ''),
           qty: Number(item.qty ?? item.quantity ?? 1),
           rate: Number(item.rate ?? item.price ?? 0),
           discountPct: Number(item.discountPct ?? 0),
           taxLabel: String(item.taxLabel ?? 'No Tax'),
           amount: Number(item.amount ?? item.total ?? 0),
+          imageUrl: String(item.imageUrl ?? ''),
         }),
       )
     : [];

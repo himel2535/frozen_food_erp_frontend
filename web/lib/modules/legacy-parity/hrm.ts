@@ -93,7 +93,17 @@ export const CONFIGS: Record<string, DedicatedModuleConfig> = {
       kpiCount('inactive', 'Inactive', countStatus(rows, 'inactive')),
       kpiCount('departments', 'Departments Covered', new Set(rows.map((r) => String(r.department ?? '')).filter(Boolean)).size),
     ],
-    adapter: adapter({ ...crudHrm('designations', 'DES') }),
+    transformRows: (rows) => rows.map((row) => ({
+      ...row,
+      title: String(row.title ?? row.name ?? '').trim(),
+    })),
+    adapter: adapter({
+      ...crudHrm('designations', 'DES'),
+      mapRowToForm: (row) => ({
+        ...row,
+        title: String(row.title ?? row.name ?? ''),
+      }),
+    }),
   },
   'hrm-attendance': {
     id: 'hrm-attendance',

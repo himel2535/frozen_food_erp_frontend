@@ -17,6 +17,7 @@ import {
   formatProjectDeadline,
   formatProjectMoney,
   isProjectOverdue,
+  normalizeProjectPriority,
   projectBudget,
   projectHealthClass,
   projectSetupLabel,
@@ -163,7 +164,7 @@ export function ProjectsPage() {
         );
       },
       priority: (row: Record<string, unknown>) => {
-        const priority = String(row.priority ?? '');
+        const priority = normalizeProjectPriority(row.priority);
         if (!priority) return <span className="text-slate-400">—</span>;
         return (
           <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-[11px] font-bold ${PRIORITY_BADGE_CLS[priority] ?? 'bg-slate-50 text-slate-600 border-slate-100'}`}>

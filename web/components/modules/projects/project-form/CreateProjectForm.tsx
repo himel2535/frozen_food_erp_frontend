@@ -79,8 +79,8 @@ export function CreateProjectForm({
   };
 
   return (
-    <div className={`${MODULE_SHELL_SUPPRESSED} px-3 md:px-6 pb-4`}>
-      <form ref={formRef} onSubmit={handleSubmit} noValidate className="w-full flex flex-col min-h-full pb-4">
+    <div className={`${MODULE_SHELL_SUPPRESSED} px-3 md:px-6`}>
+      <form ref={formRef} onSubmit={handleSubmit} noValidate className="w-full flex flex-col flex-1 min-h-0 overflow-y-auto pb-4">
         <div className="pt-3 md:pt-4 mb-2">
           <FormHeader
             compact
@@ -93,7 +93,7 @@ export function CreateProjectForm({
 
         <ProjectFormStepper activeStep={1} />
 
-        <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_340px] gap-3 flex-1">
+        <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_340px] gap-3 flex-1 pb-24">
           <div className="flex flex-col gap-3 min-w-0">
             <ProjectSectionCard
               letter="A"
@@ -145,7 +145,11 @@ export function CreateProjectForm({
               title="Project Tasks & Deadlines"
               subtitle="To-do list for tracking specific milestones and their deadlines"
             >
-              <ProjectTasksSection form={form} appState={appState} onChange={updateForm} />
+              <ProjectTasksSection
+                tasks={form.tasks ?? []}
+                appState={appState}
+                onChange={(tasks) => updateForm({ tasks })}
+              />
             </ProjectSectionCard>
           </div>
 

@@ -1,14 +1,17 @@
 'use client';
 
 import Link from 'next/link';
-import { useMemo } from 'react';
+import { useEffect, useMemo } from 'react';
 import { Icon } from '@iconify/react';
 import { useAppStore } from '@/lib/state/app-store';
 import { useDashboardAppState } from '@/hooks/use-dashboard-api-data';
+import { useApiAppState } from '@/hooks/use-api-app-state';
 import type { AppState } from '@/lib/state/types';
 import { useLocaleFormat } from '@/hooks/useLocaleFormat';
 import { listSystemAuditLogRecords } from '@/lib/services/audit-log-service';
 import { formatRelativeTime, getTopProducts } from '@/lib/services/dashboard-service';
+import { InventoryItemThumb } from '@/components/shared/InventoryItemThumb';
+import { onApiMutation } from '@/lib/services/api-sync-events';
 
 function customerName(state: AppState, customerId: unknown) {
   const customers = Array.isArray(state.crmCustomers) ? state.crmCustomers : [];
@@ -30,15 +33,35 @@ function moduleInitial(module: string) {
 
 export function DashboardBottomPanels() {
   const appState = useDashboardAppState();
+  const salesLookup = useApiAppState(['salesOrders', 'invoices', 'pos', 'products']);
+  const rankingState = salesLookup.initialized ? salesLookup.state : appState;
   const t = useAppStore((s) => s.t);
   const { formatNumber, formatMoney } = useLocaleFormat();
+
+  useEffect(() => {
+    void salesLookup.reload();
+  }, [salesLookup.reload]);
+
+  useEffect(() => {
+    return onApiMutation((modules) => {
+      if (
+        !modules
+        || modules.includes('products')
+        || modules.includes('salesOrders')
+        || modules.includes('invoices')
+        || modules.includes('pos')
+      ) {
+        void salesLookup.reload();
+      }
+    });
+  }, [salesLookup.reload]);
 
   const recentInvoices = useMemo(() => {
     const rows = Array.isArray(appState.invoices) ? [...appState.invoices] : [];
     return rows.slice(0, 5);
   }, [appState.invoices]);
 
-  const topProducts = useMemo(() => getTopProducts(appState, 5), [appState]);
+  const topProducts = useMemo(() => getTopProducts(rankingState, 5), [rankingState]);
 
   const activityItems = useMemo(
     () => listSystemAuditLogRecords(appState).slice(0, 5),
@@ -63,10 +86,15 @@ export function DashboardBottomPanels() {
         <div className="flex flex-col gap-1 flex-1 overflow-y-auto min-h-0 justify-between">
           {topProducts.length ? (
             topProducts.map((product, idx) => (
-              <div key={product.name} className="flex items-center justify-between text-xs min-h-[2rem] py-0.5">
+              <div key={`${product.name}-${idx}`} className="flex items-center justify-between text-xs min-h-[2rem] py-0.5">
                 <div className="flex items-center gap-2.5 min-w-0">
-                  <div className="h-6 w-6 rounded-md bg-slate-100 border border-slate-200 flex items-center justify-center shrink-0">
-                    <Icon icon="fluent-color:box-24" width={16} height={16} />
+                  <div className="h-8 w-8 rounded-md bg-slate-100 border border-slate-200 overflow-hidden flex items-center justify-center shrink-0">
+                    <InventoryItemThumb
+                      imageUrl={product.imageUrl}
+                      alt={product.name}
+                      className="h-8 w-8 rounded-md object-cover"
+                      fallback={<Icon icon="fluent-color:box-24" width={16} height={16} />}
+                    />
                   </div>
                   <div className="flex flex-col min-w-0">
                     <span className="font-bold text-slate-800 truncate">{product.name}</span>

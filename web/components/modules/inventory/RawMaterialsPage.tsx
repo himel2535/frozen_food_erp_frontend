@@ -148,7 +148,7 @@ export function RawMaterialsPage() {
 
   const filtered = useMemo(() => {
     let data = allMaterials;
-    const q = (apiMode ? apiStore.search : localSearch).toLowerCase().trim();
+    const q = apiMode ? '' : localSearch.toLowerCase().trim();
 
     if (stockTab === 'low') {
       data = data.filter((rm) => getRawMaterialStockStatus(rm) === 'Low Stock');

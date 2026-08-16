@@ -192,7 +192,7 @@ export function LeadsPage({ initialLeads }: { initialLeads?: Record<string, unkn
 
   const filtered = useMemo(() => {
     let data = allLeads;
-    const q = (apiMode ? apiStore.search : localSearch).toLowerCase().trim();
+    const q = apiMode ? '' : localSearch.toLowerCase().trim();
 
     if (listTab === 'mine') {
       data = data.filter((lead) => String(lead.assignedRepId) === currentUser.employeeId);

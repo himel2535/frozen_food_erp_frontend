@@ -106,6 +106,7 @@ export function recordToSoFormValues(record: Record<string, unknown>): SoFormVal
           discountPct: Number(item.discountPct ?? 0),
           taxLabel: String(item.taxLabel ?? 'No Tax'),
           amount: Number(item.amount ?? item.total ?? 0),
+          imageUrl: String(item.imageUrl ?? ''),
         });
       })
     : [createEmptySoLineItem()];

@@ -100,7 +100,7 @@ export function AdjustmentsPage() {
     let data = records;
     if (statusFilter !== 'all') data = data.filter((r) => String(r.status) === statusFilter);
     if (typeFilter !== 'all') data = data.filter((r) => String(r.type) === typeFilter);
-    const q = (apiMode ? apiStore.search : localSearch).toLowerCase().trim();
+    const q = apiMode ? '' : localSearch.toLowerCase().trim();
     if (q) {
       data = data.filter((r) => `${r.legacyId ?? ''} ${r.id} ${r.reason}`.toLowerCase().includes(q));
     }

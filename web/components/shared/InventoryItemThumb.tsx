@@ -1,6 +1,6 @@
 'use client';
 
-import type { ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
 
 export function InventoryItemThumb({
   imageUrl,
@@ -14,10 +14,11 @@ export function InventoryItemThumb({
   className?: string;
 }) {
   const src = String(imageUrl ?? '').trim();
-  if (src) {
+  const [failed, setFailed] = useState(false);
+  if (src && !failed) {
     return (
       // eslint-disable-next-line @next/next/no-img-element
-      <img src={src} alt={alt} className={className} />
+      <img src={src} alt={alt} className={className} onError={() => setFailed(true)} />
     );
   }
   return <>{fallback}</>;

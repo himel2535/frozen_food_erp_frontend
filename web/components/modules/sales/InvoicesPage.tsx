@@ -59,13 +59,14 @@ function recordToFormValues(record: Record<string, unknown>): InvoiceFormValues 
     ? rawItems.map((item, index) =>
         recalcLineItem({
           id: String(item.id ?? `line-${index + 1}`),
-          productId: String(item.productId ?? ''),
+          productId: String(item.productId ?? item.sku ?? ''),
           description: String(item.description ?? item.name ?? ''),
           qty: Number(item.qty ?? item.quantity ?? 1),
           rate: Number(item.rate ?? item.price ?? 0),
           discountPct: Number(item.discountPct ?? 0),
           taxLabel: String(item.taxLabel ?? 'No Tax'),
           amount: Number(item.amount ?? item.total ?? 0),
+          imageUrl: String(item.imageUrl ?? ''),
         }),
       )
     : [createEmptyLineItem()];
@@ -173,7 +174,7 @@ export function InvoicesPage() {
 
   const rows = useMemo(() => {
     let data = allInvoiceRows;
-    const q = (apiMode ? apiStore.search : localSearch).toLowerCase().trim();
+    const q = apiMode ? '' : localSearch.toLowerCase().trim();
     if (q) {
       data = data.filter((row) =>
         `${row.id} ${apiMode ? row.customerName : resolveInvoiceCustomerLabel(appState, row)}`.toLowerCase().includes(q),

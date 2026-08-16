@@ -170,6 +170,7 @@ export function projectFormToRecord(form: ProjectFormValues, action: ProjectSave
     progress: action === 'create' ? 5 : 0,
     health: priorityToHealth(form.priority),
     budget: totals.totalValue,
+    value: totals.totalValue,
     totalQty: totals.totalQty,
     totalValue: totals.totalValue,
   };
@@ -251,8 +252,26 @@ export function isProjectAtRisk(row: Row) {
   return String(row.priority ?? '').toLowerCase() === 'high';
 }
 
+export function normalizeProjectPriority(value: unknown): string {
+  const raw = String(value ?? '').trim();
+  if (!raw) return '';
+  const lower = raw.toLowerCase();
+  if (lower === 'high') return 'High';
+  if (lower === 'medium') return 'Medium';
+  if (lower === 'low') return 'Low';
+  return raw;
+}
+
 export function projectBudget(row: Row) {
-  return Number(row.budget ?? row.totalValue ?? 0);
+  const direct = Number(row.budget ?? row.totalValue ?? row.value ?? 0);
+  if (direct) return direct;
+  if (!Array.isArray(row.items)) return 0;
+  return row.items.reduce((sum, item) => {
+    const line = item as Record<string, unknown>;
+    const lineTotal = Number(line.lineTotal ?? 0);
+    if (lineTotal) return sum + lineTotal;
+    return sum + Number(line.qty ?? 0) * Number(line.unitPrice ?? 0);
+  }, 0);
 }
 
 export function summarizeProjects(rows: Row[]) {

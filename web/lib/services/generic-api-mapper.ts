@@ -18,5 +18,12 @@ export function mapGenericPayloadToApi(form: Record<string, unknown>): Record<st
   for (const key of ['id', '_id', '_mongoId', 'legacyId']) {
     delete payload[key];
   }
+  const name = String(payload.name ?? '').trim();
+  const title = String(payload.title ?? '').trim();
+  const asset = String(payload.asset ?? '').trim();
+  // List/search profiles key off `name`; UI forms use `title` / `asset`.
+  if (!name && (title || asset)) {
+    payload.name = title || asset;
+  }
   return payload;
 }

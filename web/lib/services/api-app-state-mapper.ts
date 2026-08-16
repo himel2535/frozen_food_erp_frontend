@@ -1,7 +1,7 @@
 import type { ApiModule } from '@/lib/config/data-source';
 import type { AppState, CompanyProfile, CompanySignature, CurrentUserProfile } from '@/lib/state/types';
 import { mapGenericApiRow, mapGenericPayloadToApi } from '@/lib/services/generic-api-mapper';
-import { mapApiInvoiceRow } from '@/lib/services/entity-api-mappers';
+import { mapApiInvoiceRow, mapApiProductRow } from '@/lib/services/entity-api-mappers';
 import { apiDocId } from '@/lib/services/api-resource-service';
 import { ensureCrmState } from '@/lib/services/crm-service';
 import { ensureSettingsState } from '@/lib/services/settings-service';
@@ -135,7 +135,15 @@ export function applyApiDataToAppState(
   for (const [mod, key] of arrayMap) {
     const rows = data[mod];
     if (rows && rows.length >= 0) {
-      assignArray(next, key, mod === 'invoices' ? rows.map(mapApiInvoiceRow) : rowsOf(data, mod));
+      assignArray(
+        next,
+        key,
+        mod === 'invoices'
+          ? rows.map(mapApiInvoiceRow)
+          : mod === 'products'
+            ? rows.map(mapApiProductRow)
+            : rowsOf(data, mod),
+      );
     }
   }
 

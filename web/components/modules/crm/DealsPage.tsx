@@ -129,7 +129,7 @@ export function DealsPage() {
   const topPerformers = useMemo(() => getTopDealPerformers(appState, allDeals), [appState, allDeals]);
 
   const deals = useMemo(() => {
-    const q = (apiMode ? apiStore.search : localSearch).trim().toLowerCase();
+    const q = apiMode ? '' : localSearch.trim().toLowerCase();
     return allDeals.filter((deal) => {
       if (stageFilter !== 'all' && deal.stage !== stageFilter) return false;
       if (!q) return true;

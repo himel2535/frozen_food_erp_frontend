@@ -2,5 +2,5 @@ import { RawMaterialsPage } from '@/components/modules/inventory/RawMaterialsPag
 import { prefetchModulePage } from '@/lib/server/prefetch-module-page';
 
 export default async function Page() {
-  return prefetchModulePage('rawMaterials', <RawMaterialsPage />);
+  return prefetchModulePage('rawMaterials', <RawMaterialsPage />, 30, 10);
 }

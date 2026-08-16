@@ -32,6 +32,16 @@ import { mapGenericApiRow, mapGenericPayloadToApi } from '@/lib/services/generic
 import { ApiModeBanner } from '@/components/shared/ApiModeBanner';
 import { apiListEmptyMessage } from '@/lib/services/api-list-ui';
 
+function displayRowField(row: Record<string, unknown>, key: string): string {
+  const direct = row[key];
+  if (direct != null && String(direct).trim()) return String(direct);
+  if (key === 'asset' || key === 'title' || key === 'name') {
+    const fallback = [row.asset, row.title, row.name].find((value) => value != null && String(value).trim());
+    if (fallback != null) return String(fallback);
+  }
+  return '—';
+}
+
 export interface DedicatedModuleConfig extends PortModuleConfig {
   kpi?: (rows: Record<string, unknown>[]) => KpiCardItem[];
   statusTabs?: { id: string; label: string }[];
@@ -360,7 +370,7 @@ function DedicatedModuleApiView({
             if (dateFieldKeys.has(col.key)) {
               return <DateDisplay value={row[col.key] as string} variant="slash" />;
             }
-            return String(row[col.key] ?? '—');
+            return displayRowField(row, col.key);
           },
         }))}
         rows={rows}
@@ -631,7 +641,7 @@ function DedicatedModuleView({ config, configId }: { config: DedicatedModuleConf
             if (dateFieldKeys.has(col.key)) {
               return <DateDisplay value={row[col.key] as string} variant="slash" />;
             }
-            return String(row[col.key] ?? '—');
+            return displayRowField(row, col.key);
           },
         }))}
         rows={displayRows}

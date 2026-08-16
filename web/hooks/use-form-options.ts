@@ -84,7 +84,7 @@ export function useHrmDesignationOptions(appState: AppState, department?: string
     const selectedDepartment = (department ?? '').trim();
 
     const toOption = (row: Record<string, unknown>): DesignationOption | null => {
-      const title = String(row.title ?? row.name ?? '').trim();
+      const title = String(row.title ?? row.name ?? row.designation ?? '').trim();
       if (!title) return null;
       const rowDepartment = String(row.department ?? '').trim();
       const label = rowDepartment && selectedDepartment && !departmentsMatch(rowDepartment, selectedDepartment)
@@ -93,24 +93,29 @@ export function useHrmDesignationOptions(appState: AppState, department?: string
       return { value: title, label };
     };
 
+    const uniqueOptions = (source: Record<string, unknown>[]) => {
+      const seen = new Set<string>();
+      return source
+        .map(toOption)
+        .filter((option): option is DesignationOption => Boolean(option))
+        .filter((option) => {
+          if (seen.has(option.value)) return false;
+          seen.add(option.value);
+          return true;
+        })
+        .sort((a, b) => a.label.localeCompare(b.label));
+    };
+
     let matched = active;
     if (selectedDepartment) {
       matched = active.filter((row) => {
         const rowDepartment = String(row.department ?? '').trim();
         return !rowDepartment || departmentsMatch(rowDepartment, selectedDepartment);
       });
-      if (matched.length === 0) matched = active;
     }
 
-    const seen = new Set<string>();
-    return matched
-      .map(toOption)
-      .filter((option): option is DesignationOption => Boolean(option))
-      .filter((option) => {
-        if (seen.has(option.value)) return false;
-        seen.add(option.value);
-        return true;
-      })
-      .sort((a, b) => a.label.localeCompare(b.label));
+    const options = uniqueOptions(matched);
+    if (options.length > 0) return options;
+    return uniqueOptions(active);
   }, [apiMode, desStore.initialized, desStore.rows, appState, department]);
 }

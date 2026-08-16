@@ -94,7 +94,7 @@ export function PurchaseOrdersPage() {
 
     let data = allRows;
 
-    const q = (apiMode ? apiStore.search : localSearch).toLowerCase();
+    const q = apiMode ? '' : localSearch.toLowerCase();
 
     if (q) {
 

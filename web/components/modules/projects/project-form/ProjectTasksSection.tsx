@@ -1,58 +1,77 @@
 'use client';
 
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Plus, Trash2, Calendar, CheckSquare, Square, User } from 'lucide-react';
-import { PJ_INPUT_CLS, PJ_ADD_ITEM_BTN_CLS } from '@/components/modules/projects/project-form/project-form-styles';
-import type { ProjectFormValues, ProjectTask } from '@/components/modules/projects/project-form/project-form-types';
+import { DateInput } from '@/components/shared/DateInput';
+import { PJ_BTN_PRIMARY, PJ_CELL_INPUT_CLS } from '@/components/modules/projects/project-form/project-form-styles';
+import type { ProjectTask } from '@/components/modules/projects/project-form/project-form-types';
+import { useApiResourceStore } from '@/hooks/use-api-resource-store';
+import { isModuleApiMode } from '@/lib/config/data-source';
+import { mapApiEmployeeRow } from '@/lib/services/entity-api-mappers';
 import { listEmployees } from '@/lib/services/hrm-service';
 import type { AppState } from '@/lib/state/types';
 
-export function ProjectTasksSection({
-  form,
-  appState,
-  onChange,
-}: {
-  form: ProjectFormValues;
-  appState: AppState;
-  onChange: (patch: Partial<ProjectFormValues>) => void;
-}) {
-  const tasks = form.tasks || [];
-  const [newTaskText, setNewTaskText] = useState('');
-  const [newTaskWorkerId, setNewTaskWorkerId] = useState('');
-  const [newTaskDeadline, setNewTaskDeadline] = useState('');
-
-  const workers = listEmployees(appState)
+function workerOptions(appState: AppState, apiRows: Record<string, unknown>[]) {
+  const fromState = listEmployees(appState);
+  const rows = fromState.length > 0 ? fromState : apiRows;
+  return rows
     .filter((e) => String(e.status ?? 'active').toLowerCase() === 'active')
     .map((e) => ({
       id: String(e.id),
       name: String(e.name ?? 'Employee'),
     }));
+}
+
+export function ProjectTasksSection({
+  tasks: tasksProp,
+  appState,
+  onChange,
+}: {
+  tasks: ProjectTask[];
+  appState: AppState;
+  onChange: (tasks: ProjectTask[]) => void;
+}) {
+  const tasks = Array.isArray(tasksProp) ? tasksProp : [];
+  const apiMode = isModuleApiMode('employees');
+  const employeesStore = useApiResourceStore('employees', mapApiEmployeeRow, { pageOnly: true, lookupLimit: 200 });
+  const workers = useMemo(
+    () => workerOptions(appState, apiMode ? employeesStore.rows : []),
+    [appState, apiMode, employeesStore.rows],
+  );
+
+  const [newTaskText, setNewTaskText] = useState('');
+  const [newTaskWorkerId, setNewTaskWorkerId] = useState('');
+  const [newTaskDeadline, setNewTaskDeadline] = useState('');
+  const [error, setError] = useState('');
 
   const addTask = () => {
-    if (!newTaskText.trim()) return;
+    const text = newTaskText.trim();
+    if (!text) {
+      setError('Enter a task description');
+      return;
+    }
     const worker = workers.find((w) => w.id === newTaskWorkerId);
     const newTask: ProjectTask = {
       id: `task-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
-      text: newTaskText.trim(),
+      text,
       deadline: newTaskDeadline || undefined,
       completed: false,
       assignedWorkerId: newTaskWorkerId || undefined,
       assignedWorkerName: worker ? worker.name : undefined,
     };
-    onChange({ tasks: [...tasks, newTask] });
+    onChange([...tasks, newTask]);
     setNewTaskText('');
     setNewTaskDeadline('');
     setNewTaskWorkerId('');
+    setError('');
   };
 
   const removeTask = (id: string) => {
-    onChange({ tasks: tasks.filter((t) => t.id !== id) });
+    onChange(tasks.filter((t) => t.id !== id));
   };
 
   const toggleTask = (id: string) => {
-    onChange({
-      tasks: tasks.map((t) => (t.id === id ? { ...t, completed: !t.completed } : t)),
-    });
+    onChange(tasks.map((t) => (t.id === id ? { ...t, completed: !t.completed } : t)));
   };
 
   return (
@@ -113,46 +132,60 @@ export function ProjectTasksSection({
         </div>
       )}
 
-      <div className="flex flex-col md:flex-row gap-2 items-stretch md:items-center">
-        <input
-          type="text"
-          placeholder="New task description..."
-          className={`${PJ_INPUT_CLS} flex-1`}
-          value={newTaskText}
-          onChange={(e) => setNewTaskText(e.target.value)}
+        <div className="flex flex-col gap-1.5">
+        <div
+          className="flex flex-col md:flex-row gap-2 items-stretch md:items-center"
           onKeyDown={(e) => {
-            if (e.key === 'Enter') {
-              e.preventDefault();
-              addTask();
-            }
+            if (e.key === 'Enter') e.preventDefault();
           }}
-        />
-        <select
-          value={newTaskWorkerId}
-          onChange={(e) => setNewTaskWorkerId(e.target.value)}
-          className={`${PJ_INPUT_CLS} w-full md:w-48`}
         >
-          <option value="">Assign Worker (Optional)</option>
-          {workers.map((w) => (
-            <option key={w.id} value={w.id}>
-              {w.name}
-            </option>
-          ))}
-        </select>
-        <input
-          type="date"
-          className={`${PJ_INPUT_CLS} w-full md:w-40`}
-          value={newTaskDeadline}
-          onChange={(e) => setNewTaskDeadline(e.target.value)}
-        />
-        <button
-          type="button"
-          onClick={addTask}
-          disabled={!newTaskText.trim()}
-          className={`${PJ_ADD_ITEM_BTN_CLS} self-stretch md:self-auto disabled:opacity-50 disabled:cursor-not-allowed h-9 !mt-0`}
-        >
-          <Plus className="w-4 h-4" /> Add
-        </button>
+          <input
+            type="text"
+            placeholder="New task description..."
+            className={`${PJ_CELL_INPUT_CLS} flex-1`}
+            value={newTaskText}
+            onChange={(e) => {
+              setNewTaskText(e.target.value);
+              if (error) setError('');
+            }}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                e.preventDefault();
+                e.stopPropagation();
+                addTask();
+              }
+            }}
+          />
+          <select
+            value={newTaskWorkerId}
+            onChange={(e) => setNewTaskWorkerId(e.target.value)}
+            className={`${PJ_CELL_INPUT_CLS} w-full md:w-48`}
+          >
+            <option value="">Assign Worker (Optional)</option>
+            {workers.map((w) => (
+              <option key={w.id} value={w.id}>
+                {w.name}
+              </option>
+            ))}
+          </select>
+          <div className="w-full md:w-40">
+            <DateInput
+              value={newTaskDeadline}
+              onChange={setNewTaskDeadline}
+              placeholder="dd/mm/yyyy"
+              className={PJ_CELL_INPUT_CLS}
+              aria-label="Task deadline"
+            />
+          </div>
+          <button
+            type="button"
+            onClick={addTask}
+            className={`${PJ_BTN_PRIMARY} !px-3 !py-2 h-9 shrink-0 justify-center`}
+          >
+            <Plus className="w-4 h-4" /> Add
+          </button>
+        </div>
+        {error ? <p className="text-[10px] font-semibold text-rose-600">{error}</p> : null}
       </div>
     </div>
   );

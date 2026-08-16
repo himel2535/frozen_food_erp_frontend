@@ -109,7 +109,7 @@ export function CategoriesPage() {
     let data = categories;
     if (statusFilter !== 'all') data = data.filter((c) => String(c.status) === statusFilter);
     if (typeFilter !== 'all') data = data.filter((c) => String(c.type) === typeFilter);
-    const q = (apiMode ? apiStore.search : localSearch).toLowerCase().trim();
+    const q = apiMode ? '' : localSearch.toLowerCase().trim();
     if (q) {
       data = data.filter((c) => `${c.name} ${c.code}`.toLowerCase().includes(q));
     }

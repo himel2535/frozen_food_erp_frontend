@@ -24,7 +24,7 @@ export function CreateProjectFormPage() {
   const apiDataReady = useAppStore((s) => s.apiDataReady);
   const saveAppState = useAppStore((s) => s.saveAppState);
   const apiMode = isModuleApiMode('projects');
-  const { state: formState, loading: formStateLoading } = useApiAppState(
+  const { state: formState } = useApiAppState(
     apiMode ? ['customers', 'products', 'employees', 'recipes'] : undefined,
   );
 
@@ -73,7 +73,7 @@ export function CreateProjectFormPage() {
     router.push('/projects');
   };
 
-  if (apiMode && (!apiDataReady || formStateLoading)) {
+  if (apiMode && !apiDataReady) {
     return <PageSkeleton variant="module-list" label="Loading project form" />;
   }
 

@@ -113,7 +113,7 @@ export function DeliveriesPage() {
 
   const rows = useMemo(() => {
     let data = allDeliveryRows;
-    const q = (apiMode ? apiStore.search : localSearch).toLowerCase();
+    const q = apiMode ? '' : localSearch.toLowerCase();
     if (q) {
       data = data.filter((row) =>
         `${row.id} ${apiMode ? row.customerName ?? row.customer : resolveChallanCustomerLabel(appState, row)} ${row.orderId}`.toLowerCase().includes(q),

@@ -5,7 +5,7 @@ import { API_RESOURCE_PATHS, type ApiModule } from '@/lib/config/data-source';
 import { fetchResourcePage, isCachedResourceList, isCachedResourceListFresh } from '@/lib/services/api-resource-service';
 import { LOOKUP_LIST_PAGE_SIZE } from '@/lib/services/api-pagination-types';
 import { setApiListCache, invalidateApiListCache } from '@/lib/services/api-list-cache';
-import { consumeModuleMutation } from '@/lib/services/api-sync-events';
+import { consumeModuleMutation, onApiMutation } from '@/lib/services/api-sync-events';
 import { useModuleInitialSnapshot } from '@/components/providers/ModuleInitialDataProvider';
 
 type AggregateResult = {
@@ -140,6 +140,20 @@ export function useApiAggregate(modules: readonly ApiModule[]): AggregateResult 
 
     void reload();
   }, [modulesKey, reload, reloadModules]);
+
+  useEffect(() => {
+    return onApiMutation((modules) => {
+      const active = modulesRef.current;
+      const targets = !modules?.length
+        ? [...active]
+        : active.filter((mod) => modules.includes(mod));
+      if (!targets.length) return;
+      for (const mod of targets) {
+        invalidateApiListCache(API_RESOURCE_PATHS[mod]);
+      }
+      void reloadModules(targets);
+    });
+  }, [reloadModules, modulesKey]);
 
   return { loading, initialized, error, reload, reloadModules, data };
 }

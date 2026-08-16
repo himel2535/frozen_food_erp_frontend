@@ -3,12 +3,13 @@ import type { SidebarSection } from '@/lib/navigation/tenant-sidebar';
 /**
  * Optional module toggles — keep code in place; flip to `true` to re-enable.
  *
- * Stock In / Stock Out are disabled per current client scope. Other inventory
- * flows (transfers, adjustments, purchase RM, goods received) remain active.
+ * Stock In / Stock Out / Leave Management are disabled per current client scope.
+ * Other inventory and HR flows remain active.
  */
 export const MODULE_FEATURE_FLAGS = {
   inventoryStockIn: false,
   inventoryStockOut: false,
+  hrmLeave: false,
 } as const;
 
 export type ModuleFeatureFlag = keyof typeof MODULE_FEATURE_FLAGS;
@@ -16,6 +17,7 @@ export type ModuleFeatureFlag = keyof typeof MODULE_FEATURE_FLAGS;
 const FEATURE_FLAG_ROUTES: Partial<Record<ModuleFeatureFlag, string>> = {
   inventoryStockIn: '/inventory/stock-in',
   inventoryStockOut: '/inventory/stock-out',
+  hrmLeave: '/hrm/leave',
 };
 
 function normalizePath(pathname: string): string {

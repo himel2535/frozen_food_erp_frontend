@@ -90,7 +90,7 @@ export function SalesOrdersPage() {
 
   const rows = useMemo(() => {
     let data = allRows;
-    const q = (apiMode ? apiStore.search : localSearch).toLowerCase().trim();
+    const q = apiMode ? '' : localSearch.toLowerCase().trim();
     if (q) {
       data = data.filter((row) =>
         `${row.id} ${row.customer} ${summarizeItems(row, t)}`.toLowerCase().includes(q),

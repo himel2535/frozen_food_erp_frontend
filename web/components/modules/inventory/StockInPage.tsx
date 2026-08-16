@@ -82,7 +82,7 @@ export function StockInPage() {
     let data = records;
     if (statusFilter !== 'all') data = data.filter((r) => String(r.status) === statusFilter);
     if (warehouseFilter !== 'all') data = data.filter((r) => String(r.warehouseId) === warehouseFilter);
-    const q = (apiMode ? apiStore.search : localSearch).toLowerCase().trim();
+    const q = apiMode ? '' : localSearch.toLowerCase().trim();
     if (q) {
       data = data.filter((r) => `${r.legacyId ?? ''} ${r.id} ${r.refDocId} ${r.supplier}`.toLowerCase().includes(q));
     }

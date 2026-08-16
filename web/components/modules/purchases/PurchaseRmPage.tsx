@@ -169,7 +169,7 @@ export function PurchaseRmPage() {
 
   const rows = useMemo(() => {
     let data = listPurchaseRmOrders(rmState);
-    const q = (apiMode ? apiStore.search : localSearch).toLowerCase();
+    const q = apiMode ? '' : localSearch.toLowerCase();
     if (q) {
       data = data.filter((row) => {
         const items = Array.isArray(row.items) ? row.items : [];

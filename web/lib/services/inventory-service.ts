@@ -49,10 +49,17 @@ export function computeAvailableStock(item: Row) {
   return Math.max(0, computeTotalStock(item) - Number(item.reserved ?? 0));
 }
 
+/** Reorder level if set; otherwise Minimum Stock (Alert). 0 means alerts are off. */
+export function resolveProductLowStockThreshold(item: Row): number {
+  const reorder = Number(item.reorderLevel ?? 0);
+  if (reorder > 0) return reorder;
+  return Number(item.minStock ?? 0);
+}
+
 export function getProductStockStatus(item: Row): 'In Stock' | 'Low Stock' | 'Out of Stock' | 'Discontinued' {
   if (item.discontinued) return 'Discontinued';
   const available = computeAvailableStock(item);
-  const min = Number(item.minStock ?? item.reorderLevel ?? 0);
+  const min = resolveProductLowStockThreshold(item);
   if (available <= 0) return 'Out of Stock';
   if (min > 0 && available <= min) return 'Low Stock';
   return 'In Stock';

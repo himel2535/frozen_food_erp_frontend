@@ -9,6 +9,7 @@ export type InvoiceLineItem = {
   discountPct: number;
   taxLabel: string;
   amount: number;
+  imageUrl?: string;
 };
 
 export type InvoiceFormValues = {

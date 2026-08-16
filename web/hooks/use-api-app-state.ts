@@ -23,6 +23,7 @@ export function useApiAppState(modules?: ApiModule[]) {
     state,
     apiActive: USE_API,
     loading: agg.loading,
+    initialized: agg.initialized,
     error: agg.error,
     reload: agg.reload,
   };

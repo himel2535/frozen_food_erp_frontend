@@ -110,6 +110,7 @@ export const TENANT_SIDEBAR_SECTIONS: SidebarSection[] = [
       { label: 'Departments', href: '/hrm/departments', view: 'departments', imageIcon: '/images/sidebar/hr/departments.png', iconifyIcon: 'fluent-color:org-24' },
       { label: 'Designations', href: '/hrm/designations', view: 'designations', imageIcon: '/images/sidebar/hr/designations.png', iconifyIcon: 'fluent-color:ribbon-24' },
       { label: 'Attendance', href: '/hrm/attendance', view: 'attendance', imageIcon: '/images/sidebar/hr/attendance.png', iconifyIcon: 'fluent-color:clock-24' },
+      // Disabled via MODULE_FEATURE_FLAGS.hrmLeave — see lib/config/module-feature-flags.ts
       { label: 'Leave Management', href: '/hrm/leave', view: 'leave', imageIcon: '/images/sidebar/hr/leave.png', iconifyIcon: 'fluent-color:calendar-cancel-24' },
     ],
   },

@@ -83,11 +83,13 @@ export function usePaginatedApiResource(
   );
 
   const isDefaultQuery = isDefaultListQuery(queryKey);
+  const seedFitsPage = Boolean(hasServerSeed && (initialRows?.length ?? 0) <= pageSize);
 
   const [rows, setRows] = useState<Record<string, unknown>[]>(() => {
     if (!enabled) return [];
     if (hasServerSeed && page === 1 && isDefaultQuery) {
-      return (initialRows ?? []).map((doc) => mapRow(doc));
+      const seeded = seedFitsPage ? initialRows ?? [] : (initialRows ?? []).slice(0, pageSize);
+      return seeded.map((doc) => mapRow(doc));
     }
     const cached = readCachedResourceList(path, queryKey);
     return cached ? cached.map((doc) => mapRow(doc)) : [];
@@ -95,14 +97,6 @@ export function usePaginatedApiResource(
 
   const [meta, setMeta] = useState<ApiPaginationMeta>(() => {
     if (options?.initialMeta) return options.initialMeta;
-    if (hasServerSeed) {
-      return {
-        total: initialRows?.length ?? 0,
-        page: 1,
-        limit: pageSize,
-        totalPages: 1,
-      };
-    }
     return getApiListCacheMeta(path, queryKey) ?? {
       total: 0,
       page: 1,
@@ -113,19 +107,19 @@ export function usePaginatedApiResource(
 
   const [loading, setLoading] = useState(() => {
     if (!enabled) return false;
-    if (hasServerSeed && page === 1 && !debouncedSearch && status === 'all') return false;
+    if (seedFitsPage && options?.initialMeta && page === 1 && !debouncedSearch && status === 'all') return false;
     return !isCachedResourceList(path, queryKey);
   });
 
   const [initialized, setInitialized] = useState(() => {
     if (!enabled) return true;
-    if (hasServerSeed && page === 1 && !debouncedSearch && status === 'all') return true;
+    if (seedFitsPage && options?.initialMeta && page === 1 && !debouncedSearch && status === 'all') return true;
     return isCachedResourceList(path, queryKey);
   });
 
   const [error, setError] = useState<string | null>(null);
   const fetchGenRef = useRef(0);
-  const skipFirstFetchRef = useRef(hasServerSeed);
+  const skipFirstFetchRef = useRef(Boolean(seedFitsPage && options?.initialMeta));
 
   const reload = useCallback(async (opts?: { silent?: boolean }) => {
     if (!enabled) return;
@@ -156,10 +150,10 @@ export function usePaginatedApiResource(
       skipFirstFetchRef.current = false;
       invalidateApiListCache(path);
     }
-    if (skipFirstFetchRef.current && page === 1 && isDefaultQuery) {
+    if (skipFirstFetchRef.current && page === 1 && isDefaultQuery && seedFitsPage) {
       skipFirstFetchRef.current = false;
-      if (initialRows) {
-        setApiListCache(path, initialRows, queryKey, meta);
+      if (initialRows && options?.initialMeta) {
+        setApiListCache(path, initialRows, queryKey, options.initialMeta);
       }
       return;
     }

@@ -65,6 +65,7 @@ export function InvoiceItemsTable({
       productId: product.id,
       description: product.name,
       rate: Number(product.price ?? 0),
+      imageUrl: product.imageUrl ?? '',
     });
   };
 

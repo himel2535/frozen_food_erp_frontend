@@ -94,7 +94,7 @@ export function WarehousesPage() {
   const filtered = useMemo(() => {
     let data = metrics.warehouses;
     if (statusFilter !== 'all') data = data.filter((w) => String(w.status) === statusFilter);
-    const q = (apiMode ? apiStore.search : localSearch).toLowerCase().trim();
+    const q = apiMode ? '' : localSearch.toLowerCase().trim();
     if (q) {
       data = data.filter((w) => `${w.name} ${w.location} ${w.manager}`.toLowerCase().includes(q));
     }

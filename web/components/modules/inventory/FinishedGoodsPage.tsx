@@ -187,7 +187,7 @@ export function FinishedGoodsPage() {
 
   const filtered = useMemo(() => {
     let data = allProducts;
-    const q = (apiMode ? apiStore.search : localSearch).toLowerCase().trim();
+    const q = apiMode ? '' : localSearch.toLowerCase().trim();
 
     if (stockTab === 'in') {
       data = data.filter((row) => getFinishedGoodsStockStatus(row) === 'In Stock');

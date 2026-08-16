@@ -230,7 +230,7 @@ export function RecipesPage({ variant = 'finished-goods' }: { variant?: RecipeVa
   const supplierOptions = useMemo(() => listSupplierOptions(recipeState), [recipeState]);
 
   const filteredRecipes = useMemo(() => {
-    const q = (apiMode ? apiStore.search : localSearch).trim().toLowerCase();
+    const q = apiMode ? '' : localSearch.trim().toLowerCase();
     if (!q) return recipes;
     return recipes.filter(
       (r) =>

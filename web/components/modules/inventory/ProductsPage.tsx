@@ -2,7 +2,7 @@
 
 import { toast, confirmAction } from '@/lib/ui/feedback';
 
-import { useMemo, useState, useCallback } from 'react';
+import { useMemo, useState, useCallback, useEffect, useRef } from 'react';
 import { Footer } from '@/components/layout/Footer';
 import { useChromeSuppressed, useRegisterModuleActions } from '@/components/layout/ModuleActionsContext';
 import { useInventoryEditAccess } from '@/hooks/use-inventory-edit-access';
@@ -100,6 +100,7 @@ export function ProductsPage() {
   const [localSearch, setLocalSearch] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('all');
   const [typeFilter, setTypeFilter] = useState('all');
+  const [stockFilter, setStockFilter] = useState('all');
   const [editingId, setEditingId] = useState<string | null>(null);
   const [formValues, setFormValues] = useState<ProductFormValues | null>(null);
   const [warehouseStock, setWarehouseStock] = useState<Record<string, string>>({});
@@ -121,6 +122,16 @@ export function ProductsPage() {
   );
   const warehouseIds = useMemo(() => warehouses.map((wh) => String(wh.id)), [warehouses]);
 
+  useEffect(() => {
+    if (!apiMode) return;
+    apiStore.setQueryFilter('category', categoryFilter);
+  }, [apiMode, categoryFilter, apiStore.setQueryFilter]);
+
+  useEffect(() => {
+    if (!apiMode) return;
+    apiStore.setQueryFilter('productType', typeFilter);
+  }, [apiMode, typeFilter, apiStore.setQueryFilter]);
+
   const allProducts = useMemo(() => {
     const local = listInventory(appState, { excludeRaw: true });
     return pickApiListRows(apiMode, apiStore.initialized, apiStore.rows, local);
@@ -128,30 +139,37 @@ export function ProductsPage() {
 
   const products = useMemo(() => {
     let data = allProducts;
-    const q = (apiMode ? apiStore.search : localSearch).toLowerCase().trim();
-    if (q) {
-      data = data.filter((p) => `${p.name} ${p.sku}`.toLowerCase().includes(q));
+    if (!apiMode) {
+      const q = localSearch.toLowerCase().trim();
+      if (q) {
+        data = data.filter((p) => `${p.name} ${p.sku}`.toLowerCase().includes(q));
+      }
+      if (categoryFilter !== 'all') data = data.filter((p) => String(p.category) === categoryFilter);
+      if (typeFilter !== 'all') data = data.filter((p) => String(p.productType) === typeFilter);
     }
-    if (categoryFilter !== 'all') data = data.filter((p) => String(p.category) === categoryFilter);
-    if (typeFilter !== 'all') data = data.filter((p) => String(p.productType) === typeFilter);
+    if (stockFilter !== 'all') {
+      data = data.filter((p) => {
+        const status = getProductStockStatus(p);
+        if (stockFilter === 'low-stock') return status === 'Low Stock';
+        if (stockFilter === 'out-of-stock') return status === 'Out of Stock';
+        if (stockFilter === 'in-stock') return status === 'In Stock';
+        return true;
+      });
+    }
     if (!apiMode) return sortInventoryRowsNewestFirst(data);
     return data;
-  }, [allProducts, apiMode, apiStore.search, localSearch, categoryFilter, typeFilter]);
+  }, [allProducts, apiMode, localSearch, categoryFilter, typeFilter, stockFilter]);
 
   const displayRows = apiMode ? products : products.slice((localPage - 1) * pageSize, localPage * pageSize);
   const listTotal = apiMode ? apiStore.meta.total : products.length;
   const listPage = apiMode ? apiStore.page : localPage;
 
-  const metrics = useMemo(() => {
+  const computedMetrics = useMemo(() => {
     if (apiMode) {
       const totalStock = allProducts.reduce((s, p) => s + computeTotalStock(p), 0);
       const inventoryValue = allProducts.reduce((s, p) => s + computeTotalStock(p) * Number(p.cost ?? 0), 0);
-      const lowStock = allProducts.filter((p) => {
-        const avail = computeAvailableStock(p);
-        const min = Number(p.minStock ?? 0);
-        return avail > 0 && avail <= min;
-      }).length;
-      const outOfStock = allProducts.filter((p) => computeAvailableStock(p) <= 0).length;
+      const lowStock = allProducts.filter((p) => getProductStockStatus(p) === 'Low Stock').length;
+      const outOfStock = allProducts.filter((p) => getProductStockStatus(p) === 'Out of Stock').length;
       return {
         totalSkus: apiStore.meta.total,
         totalStock,
@@ -162,6 +180,16 @@ export function ProductsPage() {
     }
     return getProductMetrics(appState, allProducts);
   }, [apiMode, allProducts, appState, apiStore.meta.total]);
+
+  const kpiFiltered = Boolean(
+    (apiMode ? apiStore.search : localSearch).trim()
+    || categoryFilter !== 'all'
+    || typeFilter !== 'all'
+    || stockFilter !== 'all',
+  );
+  const kpiSnapshotRef = useRef(computedMetrics);
+  if (!kpiFiltered) kpiSnapshotRef.current = computedMetrics;
+  const metrics = kpiFiltered ? kpiSnapshotRef.current : computedMetrics;
 
   const columns = useMemo<AppTableColumn<Record<string, unknown>>[]>(() => [
     {
@@ -352,6 +380,12 @@ export function ProductsPage() {
             <select value={typeFilter} onChange={(e) => { setTypeFilter(e.target.value); if (apiMode) apiStore.setPage(1); else setLocalPage(1); }} className={MODULE_FILTER_INPUT}>
               <option value="all">All Types</option>
               {PRODUCT_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
+            </select>
+            <select value={stockFilter} onChange={(e) => { setStockFilter(e.target.value); if (apiMode) apiStore.setPage(1); else setLocalPage(1); }} className={MODULE_FILTER_INPUT}>
+              <option value="all">All Stock</option>
+              <option value="in-stock">In Stock</option>
+              <option value="low-stock">Low Stock</option>
+              <option value="out-of-stock">Out of Stock</option>
             </select>
           </>
         }

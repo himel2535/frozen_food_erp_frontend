@@ -81,7 +81,7 @@ export function TransfersPage() {
   const filtered = useMemo(() => {
     let data = records;
     if (statusFilter !== 'all') data = data.filter((r) => String(r.status) === statusFilter);
-    const q = (apiMode ? apiStore.search : localSearch).toLowerCase().trim();
+    const q = apiMode ? '' : localSearch.toLowerCase().trim();
     if (q) {
       data = data.filter((r) => String(r.id).toLowerCase().includes(q) || String(r.legacyId ?? '').toLowerCase().includes(q));
     }

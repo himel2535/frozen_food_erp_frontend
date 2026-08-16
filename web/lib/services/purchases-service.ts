@@ -15,6 +15,7 @@ export type PoLineItem = {
   discountPct: number;
   taxLabel: string;
   amount: number;
+  imageUrl?: string;
 };
 
 export type PoOrderTotals = {

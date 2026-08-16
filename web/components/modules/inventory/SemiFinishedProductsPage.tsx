@@ -170,7 +170,7 @@ export function SemiFinishedProductsPage() {
 
   const filtered = useMemo(() => {
     let data = allProducts;
-    const q = (apiMode ? apiStore.search : localSearch).toLowerCase().trim();
+    const q = apiMode ? '' : localSearch.toLowerCase().trim();
 
     if (stockTab === 'low') {
       data = data.filter((row) => getSemiFinishedStockStatus(row) === 'Low Stock');

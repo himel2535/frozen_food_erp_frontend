@@ -9,18 +9,20 @@ export type ApiModuleSnapshot = Partial<Record<ApiModule, Record<string, unknown
 export async function fetchModuleList(
   module: ApiModule,
   revalidateSeconds = 30,
+  limit?: number,
 ): Promise<Record<string, unknown>[]> {
   const path = API_RESOURCE_PATHS[module];
-  return fetchServerResourceList(path, revalidateSeconds);
+  return fetchServerResourceList(path, revalidateSeconds, limit);
 }
 
 export async function fetchModulesSnapshot(
   modules: readonly ApiModule[],
   revalidateSeconds = 30,
+  limit?: number,
 ): Promise<ApiModuleSnapshot> {
   const results = await Promise.allSettled(
     modules.map(async (mod) => {
-      const docs = await fetchModuleList(mod, revalidateSeconds);
+      const docs = await fetchModuleList(mod, revalidateSeconds, limit);
       return [mod, docs] as const;
     }),
   );

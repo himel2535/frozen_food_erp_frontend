@@ -127,7 +127,7 @@ export function ComplaintsPage() {
   const pct = (n: number) => (metrics.total > 0 ? `${Math.round((n / metrics.total) * 1000) / 10}%` : '0%');
 
   const filtered = useMemo(() => {
-    const q = (apiMode ? apiStore.search : localSearch).trim().toLowerCase();
+    const q = apiMode ? '' : localSearch.trim().toLowerCase();
     return allRows.filter((row) => {
       if (statusFilter !== 'all' && row.status !== statusFilter) return false;
       if (priorityFilter !== 'all' && row.priority !== priorityFilter) return false;

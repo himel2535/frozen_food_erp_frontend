@@ -69,6 +69,7 @@ export function PoItemsTable({
       description: product.name,
       rate: Number(product.price ?? 0),
       unit: product.unit ?? 'pcs',
+      imageUrl: product.imageUrl ?? '',
     });
   };
 

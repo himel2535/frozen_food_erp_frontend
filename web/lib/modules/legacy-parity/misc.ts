@@ -1,7 +1,7 @@
 'use client';
 
 import { PORT_CONFIGS } from '@/lib/modules/port-configs';
-import { summarizeProjects } from '@/lib/services/projects-service';
+import { normalizeProjectPriority, projectBudget, summarizeProjects } from '@/lib/services/projects-service';
 import { listFromState, createInState, updateInState, deleteFromState } from '@/lib/services/domain-service';
 import { crudFactory } from '@/lib/services/manufacturing-service';
 import { crudHrm } from '@/lib/services/hrm-service';
@@ -209,6 +209,12 @@ export const CONFIGS: Record<string, DedicatedModuleConfig> = {
       { key: 'notes', label: 'Notes', type: 'textarea', advanced: true },
     ],
     kpi: (rows) => summarizeProjects(rows),
+    transformRows: (rows) => rows.map((row) => ({
+      ...row,
+      priority: normalizeProjectPriority(row.priority) || row.priority,
+      budget: projectBudget(row),
+      totalValue: Number(row.totalValue ?? row.budget ?? projectBudget(row)),
+    })),
     adapter: adapter({
       list: (s) => listFromState(s, 'projects').map((row) => ({
         ...row,
@@ -245,7 +251,19 @@ export const CONFIGS: Record<string, DedicatedModuleConfig> = {
       kpiCount('active', 'Active', countStatus(rows, 'active')),
       kpiCount('maintenance', 'In Maintenance', countStatus(rows, 'maintenance')),
     ],
-    adapter: adapter({ ...crudFactory('assets', 'AST') }),
+    transformRows: (rows) => rows.map((row) => ({
+      ...row,
+      asset: String(row.asset ?? row.name ?? '').trim(),
+    })),
+    adapter: adapter({
+      ...crudFactory('assets', 'AST'),
+      getInitialForm: () => ({ status: 'active' }),
+      mapRowToForm: (row) => ({
+        ...row,
+        asset: String(row.asset ?? row.name ?? ''),
+        status: String(row.status ?? 'active'),
+      }),
+    }),
   },
   'workflow-approvals': {
     id: 'workflow-approvals',

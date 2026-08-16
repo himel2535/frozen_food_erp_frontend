@@ -74,7 +74,7 @@ export function UnitsPage() {
   const filtered = useMemo(() => {
     let data = units;
     if (statusFilter !== 'all') data = data.filter((u) => String(u.status) === statusFilter);
-    const q = (apiMode ? apiStore.search : localSearch).toLowerCase().trim();
+    const q = apiMode ? '' : localSearch.toLowerCase().trim();
     if (q) {
       data = data.filter((u) => `${u.name} ${u.code} ${u.symbol}`.toLowerCase().includes(q));
     }

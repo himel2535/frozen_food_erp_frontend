@@ -12,6 +12,7 @@ export async function prefetchModulePage(
   modules: ApiModule | ApiModule[],
   children: React.ReactNode,
   revalidateSeconds = 30,
+  limit?: number,
 ) {
   const modList = Array.isArray(modules) ? modules : [modules];
   const shouldFetch = isMongoDbBackend() && modList.some((mod) => isModuleApiMode(mod));
@@ -19,7 +20,7 @@ export async function prefetchModulePage(
   let snapshot: ModuleInitialRows | null = null;
   if (shouldFetch) {
     const active = modList.filter((mod) => isModuleApiMode(mod));
-    snapshot = await fetchModulesSnapshot(active, revalidateSeconds);
+    snapshot = await fetchModulesSnapshot(active, revalidateSeconds, limit);
   }
 
   return (
