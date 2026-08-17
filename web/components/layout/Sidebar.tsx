@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import Image from 'next/image';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { useState, useEffect, useMemo } from 'react';
 import { ChevronDown, ChevronLeft, ChevronRight, X } from 'lucide-react';
 import {
@@ -86,6 +86,7 @@ function buildInitialNestedGroups(
 
 export function Sidebar() {
   const pathname = usePathname();
+  const router = useRouter();
   const collapsed = useAppStore((s) => s.appState.sidebarCollapsed);
   const toggleSidebar = useAppStore((s) => s.toggleSidebar);
   const t = useAppStore((s) => s.t);
@@ -141,6 +142,10 @@ export function Sidebar() {
     setOpenNestedGroups((prev) => ({ ...prev, [key]: !prev[key] }));
   };
 
+  const prefetchOnHover = (href: string) => {
+    router.prefetch(href);
+  };
+
   const renderSidebarItemLink = (
     item: SidebarItem,
     isActiveItem: boolean,
@@ -156,8 +161,9 @@ export function Sidebar() {
       <Link
         key={key}
         href={item.href}
-        prefetch
+        prefetch={false}
         onMouseEnter={() => {
+          prefetchOnHover(item.href);
           if (item.href.startsWith('/inventory/')) loadIcons([getPageIcon(item.href)]);
         }}
         className={`group/item relative rounded-2xl px-3 py-2.5 text-sm tracking-[0.01em] transition-all flex items-center gap-2.5 ${itemClasses} before:absolute before:-left-3.5 before:top-1/2 before:-translate-y-1/2 before:w-2.5 before:h-[2px] ${a.connector} before:rounded-full`}
@@ -236,6 +242,8 @@ export function Sidebar() {
                   >
                     <Link
                       href={section.href}
+                      prefetch={false}
+                      onMouseEnter={() => prefetchOnHover(section.href)}
                       id={`side-${section.id}`}
                       className={`side-btn sidebar-primary-link flex min-w-0 flex-1 items-center px-3.5 py-2.5 text-sm tracking-[0.01em] transition-all ${linkClasses}`}
                     >
@@ -281,6 +289,8 @@ export function Sidebar() {
                             <div className={`relative rounded-2xl transition-all flex items-center justify-between ${groupClasses} before:absolute before:-left-3.5 before:top-1/2 before:-translate-y-1/2 before:w-2.5 before:h-[2px] ${a.connector} before:rounded-full`}>
                               <Link
                                 href={item.href}
+                                prefetch={false}
+                                onMouseEnter={() => prefetchOnHover(item.href)}
                                 className="group/item flex min-w-0 flex-1 items-center gap-2.5 px-3 py-2.5 text-sm tracking-[0.01em]"
                               >
                                 <span className="flex items-center justify-center shrink-0">
