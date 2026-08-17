@@ -49,6 +49,7 @@ export function pathToSectionId(pathname: string): SectionId | null {
     hrm: 'hrm',
     payroll: 'payroll',
     projects: 'projects',
+    legacy: 'projects',
     'asset-management': 'assets',
     'workflow-approvals': 'approvals',
     reports: 'reports',

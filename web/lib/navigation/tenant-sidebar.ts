@@ -125,7 +125,20 @@ export const TENANT_SIDEBAR_SECTIONS: SidebarSection[] = [
       { label: 'Payslips', href: '/payroll/slips', view: 'slips', imageIcon: '/images/sidebar/payroll/slips.png', iconifyIcon: 'flat-color-icons:print' },
     ],
   },
-  { id: 'projects', label: 'Projects', href: '/projects', iconifyIcon: 'fluent-color:document-folder-24', color: 'text-orange-500', items: [] },
+  {
+    id: 'projects',
+    label: 'Projects',
+    href: '/projects',
+    iconifyIcon: 'fluent-color:document-folder-24',
+    color: 'text-orange-500',
+    items: [
+      { label: 'Overview', href: '/projects', view: 'overview', iconifyIcon: 'fluent-color:document-folder-24' },
+      { label: 'My Tasks', href: '/projects/my-tasks', view: 'my-tasks', iconifyIcon: 'fluent-color:clipboard-task-24' },
+      { label: 'Team Tasks', href: '/projects/team-tasks', view: 'team-tasks', iconifyIcon: 'fluent-color:people-team-24' },
+      // Disabled via MODULE_FEATURE_FLAGS.legacyProductionProjects — see lib/config/module-feature-flags.ts
+      { label: 'Production Projects', href: '/legacy/projects', view: 'production-projects', iconifyIcon: 'fluent-color:building-factory-24' },
+    ],
+  },
   { id: 'assets', label: 'Assets', href: '/asset-management', imageIcon: '/images/sidebar/assets.png', iconifyIcon: 'fluent-color:toolbox-24', color: 'text-fuchsia-600', items: [] },
   { id: 'approvals', label: 'Approvals', href: '/workflow-approvals', iconifyIcon: 'fluent-color:approvals-app-24', color: 'text-rose-500', items: [] },
   {
@@ -182,6 +195,7 @@ export function getActiveSidebarModule(pathname: string): string {
     hrm: 'hrm',
     payroll: 'payroll',
     projects: 'projects',
+    legacy: 'projects',
     'asset-management': 'assets',
     'workflow-approvals': 'approvals',
     reports: 'reports',
@@ -197,6 +211,8 @@ export function getActiveSidebarView(pathname: string): string | null {
   if (parts[0] === 'purchases' && parts[1] === 'recipes' && parts[2] === 'semi-finished') return 'semi-finished-bom';
   if (parts[0] === 'recipes' && parts[1] === 'finished-goods') return 'finished-goods-bom';
   if (parts[0] === 'recipes' && parts[1] === 'semi-finished') return 'semi-finished-bom';
+  if (parts[0] === 'projects' && parts.length === 1) return 'overview';
+  if (parts[0] === 'legacy' && parts[1] === 'projects') return 'production-projects';
   if (parts.length >= 2) return parts[1];
   return null;
 }

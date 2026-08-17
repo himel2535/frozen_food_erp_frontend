@@ -54,11 +54,11 @@ export function CreateProjectFormPage() {
         const savedId = 'id' in result ? String(result.id) : form.projectId;
         if (action === 'create') {
           toast.success('Project created', { module: 'Projects', description: 'Continue with BOM / Recipe setup.' });
-          router.push(`/projects/${savedId}/setup?step=2`);
+          router.push(`/legacy/projects/${savedId}/setup?step=2`);
           return true;
         }
         toast.success('Draft saved', { module: 'Projects', description: 'Project draft saved successfully.' });
-        router.push('/projects');
+        router.push('/legacy/projects');
         return true;
       }
 
@@ -72,11 +72,11 @@ export function CreateProjectFormPage() {
       const savedId = 'id' in result ? String(result.id) : form.projectId;
       if (action === 'create') {
         toast.success('Project created', { module: 'Projects', description: 'Continue with BOM / Recipe setup.' });
-        router.push(`/projects/${savedId}/setup?step=2`);
+        router.push(`/legacy/projects/${savedId}/setup?step=2`);
         return true;
       }
       toast.success('Draft saved', { module: 'Projects', description: 'Project draft saved successfully.' });
-      router.push('/projects');
+      router.push('/legacy/projects');
       return true;
     } catch (err) {
       submittedRef.current = false;
@@ -96,7 +96,7 @@ export function CreateProjectFormPage() {
     <CreateProjectForm
       initialValues={initialValues}
       appState={formState}
-      onCancel={() => router.push('/projects')}
+      onCancel={() => router.push('/legacy/projects')}
       onSave={handleSave}
     />
   );

@@ -11,6 +11,12 @@ export type InboxNotification = {
 };
 
 export function notificationHref(item: Pick<InboxNotification, 'type' | 'refId'>): string {
+  if (
+    (item.type === 'task_assigned' || item.type === 'task_overdue' || item.type === 'task_deadline_tomorrow')
+    && item.refId
+  ) {
+    return `/projects/tasks/${item.refId}`;
+  }
   if (item.type === 'sales_order' && item.refId) {
     return `/sales/orders/${item.refId}/edit`;
   }

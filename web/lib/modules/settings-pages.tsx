@@ -81,18 +81,18 @@ export function ProjectsPage() {
     ...base,
     kpiGridClassName: 'grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2',
     hideInlineForm: true,
-    onAdd: () => router.push('/projects/new'),
+    onAdd: () => router.push('/legacy/projects/new'),
     onRowClick: (row: Record<string, unknown>) => {
       const id = String(row._mongoId ?? row.id ?? row.projectId ?? '');
       if (!id) return;
       const step = Math.min(4, Math.max(2, Number(row.setupStep ?? 2)));
-      router.push(`/projects/${encodeURIComponent(id)}/setup?step=${step}`);
+      router.push(`/legacy/projects/${encodeURIComponent(id)}/setup?step=${step}`);
     },
     onEditRow: (row: Record<string, unknown>) => {
       const id = String(row._mongoId ?? row.id ?? row.projectId ?? '');
       if (!id) return;
       const step = Math.min(4, Math.max(2, Number(row.setupStep ?? 2)));
-      router.push(`/projects/${encodeURIComponent(id)}/setup?step=${step}`);
+      router.push(`/legacy/projects/${encodeURIComponent(id)}/setup?step=${step}`);
     },
     rowSort: (a: Record<string, unknown>, b: Record<string, unknown>) => {
       const statusOrder = (row: Record<string, unknown>) => {

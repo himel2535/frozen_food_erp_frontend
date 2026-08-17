@@ -1,5 +1,5 @@
-import { CreateProjectFormPage } from '@/components/modules/projects/project-form/CreateProjectFormPage';
+import { PmProjectFormPage } from '@/components/modules/project-management/PmProjectFormPage';
 
 export default function Page() {
-  return <CreateProjectFormPage />;
+  return <PmProjectFormPage mode="create" />;
 }

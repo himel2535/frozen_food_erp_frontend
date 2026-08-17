@@ -19,7 +19,7 @@ type MetaSource = {
 };
 
 const CONFIG_ID_HREF_OVERRIDES: Record<string, string> = {
-  projects: '/projects',
+  projects: '/legacy/projects',
   'asset-management': '/asset-management',
   'workflow-approvals': '/workflow-approvals',
   notifications: '/alerts',
@@ -50,6 +50,9 @@ export function isHeaderlessModulePath(pathname: string): boolean {
   const path = normalizePath(pathname);
   if (HEADERLESS_MODULE_PATHS.has(path)) return true;
   if (/^\/projects\/[^/]+\/setup$/.test(path)) return true;
+  if (/^\/legacy\/projects\/[^/]+\/setup$/.test(path)) return true;
+  if (/^\/projects\/tasks\//.test(path)) return true;
+  if (/^\/projects\/[^/]+$/.test(path) && !['my-tasks', 'team-tasks', 'new', 'tasks'].includes(path.split('/')[2] ?? '')) return true;
   if (path.endsWith('/new') || path.endsWith('/edit')) return true;
   if (/^\/crm\/customers\/[^/]+$/.test(path)) return true;
   if (/^\/hrm\/employees\/[^/]+$/.test(path)) return true;
@@ -132,7 +135,11 @@ const CUSTOM_PAGE_META: Record<string, MetaSource> = {
   '/sales/orders/new': { title: 'New Sales Order', subtitle: 'Create a confirmed sales order.' },
   '/purchases/orders/new': { title: 'New Purchase Order', subtitle: 'Create a purchase order for suppliers.' },
   '/payroll/structures/new': { title: 'New Salary Structure', subtitle: 'Define salary components and rules.' },
-  '/projects/new': { title: 'New Project', subtitle: 'Create a project with milestones.' },
+  '/projects': { title: 'Projects Overview', subtitle: 'Track and manage all your projects in one place.' },
+  '/projects/new': { title: 'Create Project', subtitle: 'Add project details to get started.' },
+  '/projects/my-tasks': { title: 'My Tasks', subtitle: 'View and manage tasks assigned to you.' },
+  '/projects/team-tasks': { title: 'Team Tasks', subtitle: 'Overview of tasks assigned to each team member.' },
+  '/legacy/projects/new': { title: 'New Production Project', subtitle: 'Create a production project with BOM setup.' },
 };
 
 Object.assign(HREF_META_SOURCES, CUSTOM_PAGE_META);

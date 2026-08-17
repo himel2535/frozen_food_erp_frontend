@@ -26,6 +26,9 @@ const EXTRA_PAGE_ICONS: Record<string, PageIconEntry> = {
   '/hrm/employees/new': { icon: 'fluent-color:person-add-24', sectionId: 'hrm' },
   '/payroll/structures/new': { icon: 'fluent-color:table-24', sectionId: 'payroll' },
   '/projects/new': { icon: 'fluent-color:document-add-24', sectionId: 'projects' },
+  '/projects/my-tasks': { icon: 'fluent-color:clipboard-task-24', sectionId: 'projects' },
+  '/projects/team-tasks': { icon: 'fluent-color:people-team-24', sectionId: 'projects' },
+  '/legacy/projects/new': { icon: 'fluent-color:document-add-24', sectionId: 'projects' },
   '/payroll/salary-sheet': { icon: 'flat-color-icons:calculator', sectionId: 'payroll' },
   '/accounting/receivables': { icon: 'flat-color-icons:positive-dynamic', sectionId: 'accounts' },
 };

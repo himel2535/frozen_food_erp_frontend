@@ -155,7 +155,7 @@ export function ProjectSetupPage({ projectId }: { projectId: string }) {
   const goToStep = async (nextStep: number, patch?: Record<string, unknown>) => {
     const ok = await persistStep(nextStep, patch);
     if (!ok) return;
-    router.push(`/projects/${projectId}/setup?step=${nextStep}`);
+    router.push(`/legacy/projects/${projectId}/setup?step=${nextStep}`);
   };
 
   const handleSelectRecipeId = async (itemIndex: number, recipeId: string) => {
@@ -228,7 +228,7 @@ export function ProjectSetupPage({ projectId }: { projectId: string }) {
     const ok = await persistStep(4, { status: 'active', productionStartedAt: new Date().toISOString() });
     if (!ok) return;
     toast.success('Production started', { module: 'Projects', description: 'Project is now active in the pipeline.' });
-    router.push('/projects');
+    router.push('/legacy/projects');
   };
 
   if (apiMode && (apiLoading || !recipeStore.initialized)) {
@@ -239,7 +239,7 @@ export function ProjectSetupPage({ projectId }: { projectId: string }) {
     return (
       <div className="p-8 text-center text-sm text-slate-500">
         Project not found.{' '}
-        <button type="button" onClick={() => router.push('/projects')} className="text-blue-600 font-bold cursor-pointer">
+        <button type="button" onClick={() => router.push('/legacy/projects')} className="text-blue-600 font-bold cursor-pointer">
           Back to Projects
         </button>
       </div>
@@ -256,7 +256,7 @@ export function ProjectSetupPage({ projectId }: { projectId: string }) {
           compact
           title={projectName}
           subtitle={`Step ${activeStep}: ${projectSetupLabel(activeStep)}`}
-          onBack={() => router.push('/projects')}
+          onBack={() => router.push('/legacy/projects')}
           backLabel="Back to Projects"
         />
       </div>
@@ -346,7 +346,7 @@ export function ProjectSetupPage({ projectId }: { projectId: string }) {
                 })}
               </div>
               <div className="flex justify-end gap-2 pt-2">
-                <button type="button" className={PJ_BTN_OUTLINE} onClick={() => router.push('/projects')}>
+                <button type="button" className={PJ_BTN_OUTLINE} onClick={() => router.push('/legacy/projects')}>
                   Save &amp; Exit
                 </button>
                 <button
@@ -396,7 +396,7 @@ export function ProjectSetupPage({ projectId }: { projectId: string }) {
                 ))}
               </div>
               <div className="flex justify-between gap-2 pt-2">
-                <button type="button" className={PJ_BTN_GHOST} onClick={() => router.push(`/projects/${projectId}/setup?step=2`)}>
+                <button type="button" className={PJ_BTN_GHOST} onClick={() => router.push(`/legacy/projects/${projectId}/setup?step=2`)}>
                   <ArrowLeft className="w-4 h-4" />
                   Back
                 </button>
@@ -433,7 +433,7 @@ export function ProjectSetupPage({ projectId }: { projectId: string }) {
                 <div><dt className="text-slate-500 font-semibold">BOM Status</dt><dd className="font-bold text-slate-800">{allBomReady ? 'Ready' : 'Incomplete'}</dd></div>
               </dl>
               <div className="flex justify-between gap-2 pt-2">
-                <button type="button" className={PJ_BTN_GHOST} onClick={() => router.push(`/projects/${projectId}/setup?step=3`)}>
+                <button type="button" className={PJ_BTN_GHOST} onClick={() => router.push(`/legacy/projects/${projectId}/setup?step=3`)}>
                   <ArrowLeft className="w-4 h-4" />
                   Back
                 </button>

@@ -1,26 +1,32 @@
 'use client';
 
 import Link from 'next/link';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Icon } from '@iconify/react';
 import { useAppStore } from '@/lib/state/app-store';
-import { useDashboardAppState } from '@/hooks/use-dashboard-api-data';
-import {
-  getDashboardProjectRows,
-  projectHealthClass,
-  projectProgressBarClass,
-} from '@/lib/services/projects-service';
+import { fetchResourcePage } from '@/lib/services/api-resource-service';
+import { API_RESOURCE_PATHS } from '@/lib/config/data-source';
+import { mapPmProjectRow, pmProgressBarClass } from '@/lib/services/pm-service';
+import { PM_STATUS_LABELS } from '@/lib/services/pm-types';
 
 const PREVIEW_COUNT = 4;
 
 export function DashboardProjectProgress() {
-  const appState = useDashboardAppState();
   const t = useAppStore((s) => s.t);
   const [expanded, setExpanded] = useState(false);
+  const [projects, setProjects] = useState<Record<string, unknown>[]>([]);
 
-  const allProjects = useMemo(() => getDashboardProjectRows(appState, 12), [appState]);
-  const visibleProjects = expanded ? allProjects : allProjects.slice(0, PREVIEW_COUNT);
-  const hasMore = allProjects.length > PREVIEW_COUNT;
+  useEffect(() => {
+    void fetchResourcePage(API_RESOURCE_PATHS.pmProjects, { page: 1, limit: 12, status: 'active' })
+      .then((result) => setProjects(result.rows.map(mapPmProjectRow)))
+      .catch(() => setProjects([]));
+  }, []);
+
+  const visibleProjects = useMemo(
+    () => (expanded ? projects : projects.slice(0, PREVIEW_COUNT)),
+    [expanded, projects],
+  );
+  const hasMore = projects.length > PREVIEW_COUNT;
 
   return (
     <section className="premium-card premium-shadow p-2.5 min-h-0 flex flex-col" style={{ flex: '1.2 1 0%' }}>
@@ -47,39 +53,41 @@ export function DashboardProjectProgress() {
 
       {visibleProjects.length ? (
         <div className={`grid gap-2 flex-1 overflow-y-auto min-h-0 ${expanded ? 'grid-cols-1 md:grid-cols-2 xl:grid-cols-3' : 'grid-cols-1 md:grid-cols-2'}`}>
-          {visibleProjects.map((project) => (
-            <Link
-              key={project.id}
-              href="/projects"
-              className="rounded-xl border border-slate-100 bg-white/80 p-3 hover:border-blue-200 hover:shadow-sm transition-all cursor-pointer"
-            >
-              <div className="flex items-start justify-between gap-2 mb-2">
-                <div className="min-w-0">
-                  <p className="text-xs font-bold text-slate-900 truncate">{project.name}</p>
-                  <p className="text-[10px] text-slate-500 mt-0.5 truncate">{project.lead}</p>
+          {visibleProjects.map((project) => {
+            const progress = Number(project.progress ?? 0);
+            const href = `/projects/${String(project.id ?? '')}`;
+            return (
+              <Link
+                key={String(project.id)}
+                href={href}
+                className="rounded-xl border border-slate-100 bg-white/80 p-3 hover:border-blue-200 hover:shadow-sm transition-all cursor-pointer"
+              >
+                <div className="flex items-start justify-between gap-2 mb-2">
+                  <div className="min-w-0">
+                    <p className="text-xs font-bold text-slate-900 truncate">{String(project.name ?? '—')}</p>
+                    <p className="text-[10px] text-slate-500 mt-0.5 truncate">{String(project.managerName ?? '')}</p>
+                  </div>
+                  <span className="inline-flex shrink-0 px-2 py-0.5 rounded-lg border text-[10px] font-bold bg-slate-50 text-slate-600 border-slate-200/60">
+                    {PM_STATUS_LABELS[String(project.status)] ?? String(project.status)}
+                  </span>
                 </div>
-                <span className={`inline-flex shrink-0 px-2 py-0.5 rounded-lg border text-[10px] font-bold ${projectHealthClass(project.health)}`}>
-                  {project.health}
-                </span>
-              </div>
 
-              <div className="flex items-center justify-between gap-2 mb-1.5">
-                <span className="text-[10px] font-semibold text-slate-500 truncate">{project.setupLabel}</span>
-                <span className="text-xs font-extrabold text-slate-800 tabular-nums shrink-0">{project.progress}%</span>
-              </div>
+                <div className="flex items-center justify-between gap-2 mb-1.5">
+                  <span className="text-[10px] font-semibold text-slate-500 truncate">
+                    {Number(project.completedTaskCount ?? 0)} / {Number(project.taskCount ?? 0)} tasks
+                  </span>
+                  <span className="text-xs font-extrabold text-slate-800 tabular-nums shrink-0">{progress}%</span>
+                </div>
 
-              <div className="h-2 rounded-full bg-slate-100 overflow-hidden">
-                <div
-                  className={`h-full rounded-full bg-gradient-to-r transition-all duration-500 ${projectProgressBarClass(project.health, project.progress)}`}
-                  style={{ width: `${project.progress}%` }}
-                />
-              </div>
-
-              <p className="text-[10px] text-slate-400 mt-2 font-medium">
-                {t('dashboard.project_deadline')}: {project.deadline}
-              </p>
-            </Link>
-          ))}
+                <div className="h-2 rounded-full bg-slate-100 overflow-hidden">
+                  <div
+                    className={`h-full rounded-full bg-gradient-to-r transition-all duration-500 ${pmProgressBarClass(progress)}`}
+                    style={{ width: `${progress}%` }}
+                  />
+                </div>
+              </Link>
+            );
+          })}
         </div>
       ) : (
         <p className="text-xs font-medium text-slate-400 text-center py-8">{t('dashboard.no_active_projects')}</p>

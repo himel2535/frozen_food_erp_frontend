@@ -17,6 +17,10 @@ export type ApiListQuery = {
   productType?: string;
   type?: string;
   posCategory?: string;
+  priority?: string;
+  managerId?: string;
+  assignedTo?: string;
+  projectId?: string;
 };
 
 export const DEFAULT_LIST_PAGE_SIZE = 25;
@@ -31,6 +35,10 @@ const FILTER_KEYS: (keyof ApiListQuery)[] = [
   'productType',
   'type',
   'posCategory',
+  'priority',
+  'managerId',
+  'assignedTo',
+  'projectId',
 ];
 
 export function buildListQueryString(query: ApiListQuery): string {

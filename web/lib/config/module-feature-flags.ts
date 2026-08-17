@@ -10,6 +10,8 @@ export const MODULE_FEATURE_FLAGS = {
   inventoryStockIn: false,
   inventoryStockOut: false,
   hrmLeave: false,
+  /** Production-order / BOM wizard previously at /projects. */
+  legacyProductionProjects: false,
 } as const;
 
 export type ModuleFeatureFlag = keyof typeof MODULE_FEATURE_FLAGS;
@@ -18,6 +20,7 @@ const FEATURE_FLAG_ROUTES: Partial<Record<ModuleFeatureFlag, string>> = {
   inventoryStockIn: '/inventory/stock-in',
   inventoryStockOut: '/inventory/stock-out',
   hrmLeave: '/hrm/leave',
+  legacyProductionProjects: '/legacy/projects',
 };
 
 function normalizePath(pathname: string): string {
