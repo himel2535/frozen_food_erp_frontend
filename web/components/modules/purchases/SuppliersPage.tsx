@@ -30,6 +30,9 @@ import { isKpiBootLoading, pickApiListRows } from '@/lib/ui/kpi-loading';
 import { usePaginatedApiResource } from '@/hooks/use-paginated-api-resource';
 import { ApiModeBanner } from '@/components/shared/ApiModeBanner';
 import { mapApiSupplierRow, mapSupplierFormToApi } from '@/lib/services/entity-api-mappers';
+import { attachBackgroundImageLater } from '@/lib/services/background-image-attach';
+import { patchSupplierImageUrl } from '@/lib/services/suppliers-api-service';
+import type { PendingImageUpload } from '@/components/shared/ImageUploadField';
 
 const PAGE_SIZE = 8;
 
@@ -133,7 +136,10 @@ export function SuppliersPage() {
     toast.success('Supplier deactivated', { module: 'Suppliers', description: `${supplier.name} marked as inactive.` });
   };
 
-  const handleSave = async (values: SupplierFormValues) => {
+  const handleSave = async (
+    values: SupplierFormValues,
+    pendingImageUpload?: Promise<PendingImageUpload | null> | null,
+  ) => {
     const payload = {
       name: values.name.trim(),
       contact: values.contact.trim(),
@@ -159,6 +165,16 @@ export function SuppliersPage() {
       if (!result.ok) {
         toast.error('Save failed', { module: 'Suppliers', description: 'error' in result ? result.error : 'API error' });
         return;
+      }
+      if (!editingId && pendingImageUpload && result.ok && 'id' in result) {
+        attachBackgroundImageLater({
+          recordId: String(result.id),
+          savedImageUrl: values.imageUrl,
+          pending: pendingImageUpload,
+          patchImage: patchSupplierImageUrl,
+          onAttached: () => apiStore.reload({ silent: true }),
+          moduleName: 'Supplier',
+        });
       }
       toast.success(editingId ? 'Supplier updated' : 'Supplier added', { module: 'Suppliers', description: `${values.name} saved.` });
       setView('main');

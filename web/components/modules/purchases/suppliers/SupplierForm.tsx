@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useRef, useState, type FormEvent } from 'react';
 import { FormHeader } from '@/components/layout/FormHeader';
 import { Footer } from '@/components/layout/Footer';
 import { FormSectionCard } from '@/components/modules/crm/customer-form/FormSectionCard';
@@ -13,7 +13,7 @@ import {
   CF_SELECT_CLS,
   CF_TEXTAREA_CLS,
 } from '@/components/modules/crm/customer-form/customer-form-styles';
-import { ImageUploadField } from '@/components/shared/ImageUploadField';
+import { ImageUploadField, type PendingImageUpload } from '@/components/shared/ImageUploadField';
 import { MODULE_LIST_SHELL } from '@/lib/ui/module-layout';
 
 export type SupplierFormValues = {
@@ -66,21 +66,27 @@ export function SupplierForm({
   mode: 'create' | 'edit';
   initialValues: SupplierFormValues;
   onCancel: () => void;
-  onSave: (values: SupplierFormValues) => void;
+  onSave: (
+    values: SupplierFormValues,
+    pendingImageUpload?: Promise<PendingImageUpload | null> | null,
+  ) => void | Promise<void>;
 }) {
   const [values, setValues] = useState<SupplierFormValues>(initialValues);
   const [showAdvanced, setShowAdvanced] = useState(false);
+  const pendingImageUploadRef = useRef<Promise<PendingImageUpload | null> | null>(null);
 
   const update = (patch: Partial<SupplierFormValues>) => setValues((prev) => ({ ...prev, ...patch }));
+
+  const handleSubmit = (e: FormEvent) => {
+    e.preventDefault();
+    void Promise.resolve(onSave(values, pendingImageUploadRef.current));
+  };
 
   return (
     <div className={MODULE_LIST_SHELL}>
       <form
         className="w-full flex flex-col min-h-full pb-4"
-        onSubmit={(e) => {
-          e.preventDefault();
-          onSave(values);
-        }}
+        onSubmit={handleSubmit}
       >
         <div className="pt-3 md:pt-4 mb-3">
           <FormHeader
@@ -108,6 +114,9 @@ export function SupplierForm({
                   label="Supplier Logo"
                   value={values.imageUrl}
                   onChange={(url, publicId) => update({ imageUrl: url, imagePublicId: publicId ?? '' })}
+                  onPendingUpload={(promise) => {
+                    pendingImageUploadRef.current = promise;
+                  }}
                 />
               </div>
               <label className="block sm:col-span-2 lg:col-span-2 xl:col-span-2">
