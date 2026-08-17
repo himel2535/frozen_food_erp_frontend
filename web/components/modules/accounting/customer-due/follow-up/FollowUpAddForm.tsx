@@ -1,6 +1,7 @@
 'use client';
 
 import { useMemo, useState } from 'react';
+import { useSubmitGuard } from '@/hooks/use-submit-guard';
 import { ArrowRight } from 'lucide-react';
 import type { CustomerReceivable } from '@/lib/services/customer-receivables-service';
 import { getCustomerContacts } from '@/lib/services/crm-service';
@@ -69,7 +70,7 @@ export function FollowUpAddForm({
 }: {
   customer: CustomerReceivable;
   onBack: () => void;
-  onSave: (values: FollowUpFormValues) => void;
+  onSave: (values: FollowUpFormValues) => void | Promise<void>;
 }) {
   const appState = useAppStore((s) => s.appState);
 
@@ -107,6 +108,7 @@ export function FollowUpAddForm({
 
   const [form, setForm] = useState<FollowUpFormValues>(() => buildDefaultForm(customer, contacts, staffOptions));
   const update = (patch: Partial<FollowUpFormValues>) => setForm((prev) => ({ ...prev, ...patch }));
+  const { isSubmitting, guardSubmit } = useSubmitGuard();
 
   return (
     <div className="space-y-4 min-w-0">
@@ -122,7 +124,10 @@ export function FollowUpAddForm({
         className="space-y-4"
         onSubmit={(e) => {
           e.preventDefault();
-          onSave(form);
+          if (isSubmitting) return;
+          void guardSubmit(async () => {
+            await Promise.resolve(onSave(form));
+          });
         }}
       >
         <FollowUpFormSection number={1} title="Follow-up Details" subtitle="Who was contacted and how">
@@ -297,8 +302,12 @@ export function FollowUpAddForm({
           <button type="button" className={FU_BTN_OUTLINE} onClick={onBack}>
             Cancel
           </button>
-          <button type="submit" className={`${FU_BTN_PRIMARY} py-2.5 px-5 text-sm`}>
-            Save &amp; Continue
+          <button
+            type="submit"
+            disabled={isSubmitting}
+            className={`${FU_BTN_PRIMARY} py-2.5 px-5 text-sm disabled:opacity-50 disabled:cursor-not-allowed`}
+          >
+            {isSubmitting ? 'Saving…' : 'Save & Continue'}
             <ArrowRight className="w-4 h-4" />
           </button>
         </div>

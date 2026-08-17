@@ -1,6 +1,7 @@
 'use client';
 
 import { useRef, useState, useMemo, type FormEvent } from 'react';
+import { useSubmitGuard } from '@/hooks/use-submit-guard';
 import {
   Calendar,
   Eye,
@@ -73,13 +74,14 @@ export function DeliveryChallanForm({
   onCustomerChange: (customerId: string) => void;
   onOrderChange: (orderId: string, customerId: string) => void;
   onCancel: () => void;
-  onSave: (payload: DeliveryChallanPayload, action: DeliveryChallanSaveAction) => void;
+  onSave: (payload: DeliveryChallanPayload, action: DeliveryChallanSaveAction) => void | Promise<void>;
   onPrint: (payload: DeliveryChallanPayload) => void;
 }) {
   const [form, setForm] = useState<DeliveryChallanFormValues>(initialValues);
   const [errors, setErrors] = useState<DeliveryChallanFieldError>({});
   const saveActionRef = useRef<DeliveryChallanSaveAction>('draft');
   const formRef = useRef<HTMLFormElement>(null);
+  const { isSubmitting, guardSubmit } = useSubmitGuard();
 
   const updateForm = (patch: Partial<DeliveryChallanFormValues>) => {
     setForm((prev) => ({ ...prev, ...patch }));
@@ -109,8 +111,9 @@ export function DeliveryChallanForm({
     };
   };
 
-  const handleSubmit = (e: FormEvent) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
+    if (isSubmitting) return;
     const nextErrors = validateDeliveryChallanForm(form);
     const errorKeys = Object.keys(nextErrors);
     if (errorKeys.length > 0) {
@@ -124,11 +127,13 @@ export function DeliveryChallanForm({
     saveActionRef.current = 'draft';
     const status = action === 'dispatch' ? 'dispatched' : form.status;
     const payload = toPayload(status);
-    if (action === 'print') {
-      onPrint(payload);
-      return;
-    }
-    onSave(payload, action);
+    await guardSubmit(async () => {
+      if (action === 'print') {
+        onPrint(payload);
+        return;
+      }
+      await Promise.resolve(onSave(payload, action));
+    });
   };
 
   const statusMeta = CHALLAN_STATUS_OPTIONS.find((s) => s.value === form.status) ?? CHALLAN_STATUS_OPTIONS[0];
@@ -391,10 +396,11 @@ export function DeliveryChallanForm({
         <div className={DC_FOOTER_CLS}>
           <button
             type="submit"
+            disabled={isSubmitting}
             onClick={() => { saveActionRef.current = 'draft'; }}
-            className={DC_BTN_DRAFT}
+            className={`${DC_BTN_DRAFT} disabled:opacity-50 disabled:cursor-not-allowed`}
           >
-            Save Draft
+            {isSubmitting ? 'Saving…' : 'Save Draft'}
           </button>
           <div className="flex flex-wrap items-center gap-2 sm:justify-end">
             <button type="button" onClick={onCancel} className={DC_BTN_GHOST}>
@@ -402,16 +408,18 @@ export function DeliveryChallanForm({
             </button>
             <button
               type="submit"
+              disabled={isSubmitting}
               onClick={() => { saveActionRef.current = 'dispatch'; }}
-              className={DC_BTN_PRIMARY}
+              className={`${DC_BTN_PRIMARY} disabled:opacity-50 disabled:cursor-not-allowed`}
             >
               <Send className="w-4 h-4" />
-              Create &amp; Dispatch
+              {isSubmitting ? 'Saving…' : 'Create & Dispatch'}
             </button>
             <button
               type="submit"
+              disabled={isSubmitting}
               onClick={() => { saveActionRef.current = 'print'; }}
-              className={DC_BTN_OUTLINE}
+              className={`${DC_BTN_OUTLINE} disabled:opacity-50 disabled:cursor-not-allowed`}
             >
               <Printer className="w-4 h-4" />
               Print Challan

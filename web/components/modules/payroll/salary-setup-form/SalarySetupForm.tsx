@@ -1,6 +1,7 @@
 'use client';
 
 import { useMemo, useRef, useState, type FormEvent } from 'react';
+import { useSubmitGuard } from '@/hooks/use-submit-guard';
 import { FormHeader } from '@/components/layout/FormHeader';
 import { FormSectionCard } from '@/components/modules/crm/customer-form/FormSectionCard';
 import { AssignedEmployeesCard } from '@/components/modules/payroll/salary-setup-form/AssignedEmployeesCard';
@@ -48,11 +49,12 @@ export function SalarySetupForm({
   previewId: string;
   appState: AppState;
   onCancel: () => void;
-  onSave: (payload: SalarySetupFormPayload) => void;
+  onSave: (payload: SalarySetupFormPayload) => void | Promise<void>;
 }) {
   const [form, setForm] = useState<SalarySetupFormValues>(initialValues);
   const [errors, setErrors] = useState<SalarySetupFieldError>({});
   const formRef = useRef<HTMLFormElement>(null);
+  const { isSubmitting, guardSubmit } = useSubmitGuard();
 
   const assignedEmployees = useMemo(
     () => getAssignedEmployees(appState, form.assignedEmployeeIds),
@@ -72,15 +74,18 @@ export function SalarySetupForm({
     });
   };
 
-  const handleSubmit = (e: FormEvent) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
+    if (isSubmitting) return;
     const nextErrors = validateSalarySetupForm(form);
     if (Object.keys(nextErrors).length > 0) {
       setErrors(nextErrors);
       return;
     }
     setErrors({});
-    onSave({ ...form, previewId });
+    await guardSubmit(async () => {
+      await Promise.resolve(onSave({ ...form, previewId }));
+    });
   };
 
   const pageTitle = mode === 'edit' ? 'Edit Salary Structure' : 'Create Salary Structure';
@@ -98,7 +103,13 @@ export function SalarySetupForm({
           />
           <div className="flex flex-wrap items-center gap-2 self-start">
             <button type="button" onClick={onCancel} className={SS_BTN_GHOST}>Cancel</button>
-            <button type="submit" className={SS_BTN_PRIMARY}>Save Structure</button>
+            <button
+              type="submit"
+              disabled={isSubmitting}
+              className={`${SS_BTN_PRIMARY} disabled:opacity-50 disabled:cursor-not-allowed`}
+            >
+              {isSubmitting ? 'Saving…' : 'Save Structure'}
+            </button>
           </div>
         </div>
 

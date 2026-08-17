@@ -13,7 +13,10 @@ import {
   recordToPoFormValues,
 } from '@/components/modules/purchases/purchase-order-form/po-form-types';
 import { usePurchaseOrderFormApi } from '@/hooks/use-purchase-order-api';
-import { isModuleApiMode } from '@/lib/config/data-source';
+import { isModuleApiMode, API_RESOURCE_PATHS } from '@/lib/config/data-source';
+import { attachBackgroundImageLater } from '@/lib/services/background-image-attach';
+import { patchResourceAttachment } from '@/lib/services/resource-image-patch';
+import type { PendingImageUpload } from '@/components/shared/ImageUploadField';
 import { useAppStore } from '@/lib/state/app-store';
 import {
   buildPurchaseOrderApproval,
@@ -71,7 +74,11 @@ export function PurchaseOrderFormPage({ mode, orderId }: { mode: 'create' | 'edi
     );
   }
 
-  const handleSave = async (payload: PoFormPayload, action: PoSaveAction) => {
+  const handleSave = async (
+    payload: PoFormPayload,
+    action: PoSaveAction,
+    pendingImageUpload?: Promise<PendingImageUpload | null> | null,
+  ) => {
     const userVisiblePoId = orderId ?? payload.id ?? payload.poPreviewId;
     const record = {
       ...payloadToRecord({
@@ -86,6 +93,16 @@ export function PurchaseOrderFormPage({ mode, orderId }: { mode: 'create' | 'edi
       if (!result.ok) {
         toast.error('Operation failed', { module: 'Purchases', description: 'error' in result ? String(result.error) : 'Save failed' });
         return;
+      }
+      const recordId = orderId || ('id' in result ? String(result.id) : '');
+      if (recordId && pendingImageUpload) {
+        attachBackgroundImageLater({
+          recordId,
+          savedImageUrl: String(record.attachmentUrl ?? ''),
+          pending: pendingImageUpload,
+          patchImage: (id, url, pid) => patchResourceAttachment(API_RESOURCE_PATHS.purchaseOrders, id, url, pid),
+          moduleName: 'Purchase Orders',
+        });
       }
       await syncPurchaseOrderApproval(record);
       router.push('/purchases/orders');

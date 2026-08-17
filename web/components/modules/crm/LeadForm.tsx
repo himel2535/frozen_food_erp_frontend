@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState, type FormEvent } from 'react';
+import { useSubmitGuard } from '@/hooks/use-submit-guard';
 import {
   Banknote,
   Building2,
@@ -157,13 +158,14 @@ export function LeadForm({
   initialValues: LeadFormValues;
   owners: Array<{ id: string; name: string }>;
   onCancel: () => void;
-  onSave: (payload: LeadFormPayload) => void;
+  onSave: (payload: LeadFormPayload) => void | Promise<void>;
 }) {
   const t = useAppStore((s) => s.t);
   const [form, setForm] = useState<LeadFormValues>(initialValues);
   const [errors, setErrors] = useState<LeadFormFieldError>({});
   const [showAdvanced, setShowAdvanced] = useState(false);
   const formRef = useRef<HTMLFormElement>(null);
+  const { isSubmitting, guardSubmit } = useSubmitGuard();
 
   useEffect(() => {
     setForm(initialValues);
@@ -201,8 +203,9 @@ export function LeadForm({
     });
   };
 
-  const handleSubmit = (e: FormEvent) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
+    if (isSubmitting) return;
     const nextErrors = validateLeadForm(form);
     const errorKeys = Object.keys(nextErrors) as Array<keyof LeadFormFieldError>;
     if (errorKeys.length > 0) {
@@ -215,7 +218,9 @@ export function LeadForm({
       return;
     }
     setErrors({});
-    onSave(toPayload(form, ownerName));
+    await guardSubmit(async () => {
+      await Promise.resolve(onSave(toPayload(form, ownerName)));
+    });
   };
 
   return (
@@ -470,9 +475,13 @@ export function LeadForm({
           <button type="button" onClick={onCancel} className={CF_BTN_GHOST}>
             Cancel
           </button>
-          <button type="submit" className={CF_BTN_PRIMARY}>
+          <button
+            type="submit"
+            disabled={isSubmitting}
+            className={`${CF_BTN_PRIMARY} disabled:opacity-50 disabled:cursor-not-allowed`}
+          >
             <Save className="w-4 h-4" />
-            Save Lead
+            {isSubmitting ? 'Saving…' : 'Save Lead'}
           </button>
         </div>
       </form>

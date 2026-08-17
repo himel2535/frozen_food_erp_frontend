@@ -2,6 +2,7 @@
 
 import { toast, confirmAction } from '@/lib/ui/feedback';
 import { useMemo, useState, type FormEvent } from 'react';
+import { useSubmitGuard } from '@/hooks/use-submit-guard';
 import { useRouter } from 'next/navigation';
 import { Footer } from '@/components/layout/Footer';
 import { useChromeSuppressed } from '@/components/layout/ModuleActionsContext';
@@ -41,6 +42,7 @@ export function SignatureSettingsPage() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [, bump] = useState(0);
   const [form, setForm] = useState<SignatureFormState>(EMPTY_SIGNATURE_FORM);
+  const { isSubmitting, guardSubmit } = useSubmitGuard();
 
   const signatures = useMemo(() => getSignaturesForCurrentUser(appState), [appState, bump]);
   const metrics = useMemo(() => getSignatureMetrics(appState), [appState, bump]);
@@ -150,23 +152,26 @@ export function SignatureSettingsPage() {
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    const input = formToSignatureInput(form);
-    const result = editingId
-      ? updateCompanySignature(appState, editingId, input)
-      : createCompanySignature(appState, input);
+    if (isSubmitting) return;
+    await guardSubmit(async () => {
+      const input = formToSignatureInput(form);
+      const result = editingId
+        ? updateCompanySignature(appState, editingId, input)
+        : createCompanySignature(appState, input);
 
-    if (!result.ok) {
-      toast.error('Validation failed', {
-        module: 'Signatures',
-        description: 'error' in result ? String(result.error) : 'Save failed',
-      });
-      return;
-    }
+      if (!result.ok) {
+        toast.error('Validation failed', {
+          module: 'Signatures',
+          description: 'error' in result ? String(result.error) : 'Save failed',
+        });
+        return;
+      }
 
-    await persistSignatures();
-    bump((n) => n + 1);
-    toast.success(labels.saved, { module: 'Signatures' });
-    closeForm();
+      await persistSignatures();
+      bump((n) => n + 1);
+      toast.success(labels.saved, { module: 'Signatures' });
+      closeForm();
+    });
   };
 
   const handleDelete = async (id: string) => {
@@ -230,8 +235,12 @@ export function SignatureSettingsPage() {
             <button type="button" onClick={closeForm} className={FORM_BTN_SECONDARY}>
               {labels.cancel}
             </button>
-            <button type="submit" className={FORM_BTN_PRIMARY}>
-              {labels.save}
+            <button
+              type="submit"
+              disabled={isSubmitting}
+              className={`${FORM_BTN_PRIMARY} disabled:opacity-50 disabled:cursor-not-allowed`}
+            >
+              {isSubmitting ? 'Saving…' : labels.save}
             </button>
           </div>
         </form>

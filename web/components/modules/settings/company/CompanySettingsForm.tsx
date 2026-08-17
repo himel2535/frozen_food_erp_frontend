@@ -9,7 +9,7 @@ import {
   ST_SECTION_HEADER_COMPACT,
   ST_TITLE,
 } from '@/components/modules/settings/settings-styles';
-import { ImageUploadField } from '@/components/shared/ImageUploadField';
+import { ImageUploadField, type PendingImageUpload } from '@/components/shared/ImageUploadField';
 import {
   FORM_GRID_CLS,
   FORM_INPUT_CLS,
@@ -60,6 +60,7 @@ type CompanySettingsFormProps = {
   form: CompanyFormState;
   onChange: (key: keyof CompanyFormState, value: string | boolean) => void;
   labels: Record<string, string>;
+  onPendingUpload?: (promise: Promise<PendingImageUpload | null> | null) => void;
 };
 
 function SectionCard({
@@ -328,10 +329,12 @@ function BrandingFields({
   form,
   onChange,
   labels,
+  onPendingUpload,
 }: {
   form: CompanyFormState;
   onChange: CompanySettingsFormProps['onChange'];
   labels: Record<string, string>;
+  onPendingUpload?: CompanySettingsFormProps['onPendingUpload'];
 }) {
   return (
     <SectionCard icon={<MapPin className="w-4 h-4 text-violet-500" />} title={labels.brandingSection}>
@@ -343,6 +346,7 @@ function BrandingFields({
             onChange('logoUrl', url);
             onChange('logoPublicId', publicId ?? '');
           }}
+          onPendingUpload={onPendingUpload}
         />
         <div>
           <label htmlFor="company-invoice-prefix" className={FORM_LABEL_CLS}>{labels.invoicePrefix}</label>
@@ -361,7 +365,7 @@ function BrandingFields({
   );
 }
 
-export function CompanySettingsForm({ section, form, onChange, labels }: CompanySettingsFormProps) {
+export function CompanySettingsForm({ section, form, onChange, labels, onPendingUpload }: CompanySettingsFormProps) {
   const showIdentity = section === 'all' || section === 'identity';
   const showBusiness = section === 'all' || section === 'business';
   const showTax = section === 'all' || section === 'tax';
@@ -375,7 +379,7 @@ export function CompanySettingsForm({ section, form, onChange, labels }: Company
         {showBusiness ? <BusinessFields form={form} onChange={onChange} labels={labels} /> : null}
         {showTax ? <TaxFields form={form} onChange={onChange} labels={labels} /> : null}
         {showPreferences ? <PreferencesFields form={form} onChange={onChange} labels={labels} /> : null}
-        {showBranding ? <BrandingFields form={form} onChange={onChange} labels={labels} /> : null}
+        {showBranding ? <BrandingFields form={form} onChange={onChange} labels={labels} onPendingUpload={onPendingUpload} /> : null}
       </div>
     </div>
   );

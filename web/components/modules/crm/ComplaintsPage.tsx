@@ -18,6 +18,7 @@ import { ModuleKpiSection } from '@/components/shared/ModuleKpiSection';
 import { StatusBadge } from '@/components/shared/StatusBadge';
 import { PaginationBar } from '@/components/modules/inventory/shared/inventory-ui';
 import { ComplaintForm, EMPTY_COMPLAINT_FORM, type ComplaintFormValues } from '@/components/modules/crm/complaints/ComplaintForm';
+import type { PendingImageUpload } from '@/components/shared/ImageUploadField';
 import { ComplaintKanbanView } from '@/components/modules/crm/complaints/ComplaintKanbanView';
 import { ComplaintOverviewDonut } from '@/components/modules/crm/complaints/ComplaintOverviewDonut';
 import { ComplaintTopCategories } from '@/components/modules/crm/complaints/ComplaintTopCategories';
@@ -44,7 +45,9 @@ import {
   type ComplaintRecord,
   updateComplaintStatus,
 } from '@/lib/services/complaints-service';
-import { isModuleApiMode } from '@/lib/config/data-source';
+import { isModuleApiMode, API_RESOURCE_PATHS } from '@/lib/config/data-source';
+import { attachBackgroundImageLater } from '@/lib/services/background-image-attach';
+import { patchResourceEvidenceImage } from '@/lib/services/resource-image-patch';
 import { usePaginatedApiResource } from '@/hooks/use-paginated-api-resource';
 import { mapApiComplaintRow, mapComplaintToApi, resolveApiRowId } from '@/lib/services/entity-api-mappers';
 import { ApiModeBanner } from '@/components/shared/ApiModeBanner';
@@ -164,7 +167,10 @@ export function ComplaintsPage() {
     });
   }, [paged]);
 
-  const handleCreate = async (values: ComplaintFormValues) => {
+  const handleCreate = async (
+    values: ComplaintFormValues,
+    pendingImageUpload?: Promise<PendingImageUpload | null> | null,
+  ) => {
     if (!values.subject.trim()) {
       toast.error('Subject is required', { module: 'Complaints' });
       return;
@@ -188,6 +194,15 @@ export function ComplaintsPage() {
       if (!result.ok) {
         toast.error('Operation failed', { module: 'Complaints', description: 'error' in result ? String(result.error) : 'Create failed' });
         return;
+      }
+      if (pendingImageUpload && 'id' in result) {
+        attachBackgroundImageLater({
+          recordId: String(result.id),
+          savedImageUrl: values.evidenceImageUrl,
+          pending: pendingImageUpload,
+          patchImage: (id, url, pid) => patchResourceEvidenceImage(API_RESOURCE_PATHS.complaints, id, url, pid),
+          moduleName: 'Complaints',
+        });
       }
       setView('main');
       toast.success('Complaint logged successfully', { module: 'Complaints' });

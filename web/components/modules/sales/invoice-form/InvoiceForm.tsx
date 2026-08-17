@@ -1,6 +1,7 @@
 'use client';
 
 import { useMemo, useRef, useState, type FormEvent } from 'react';
+import { useSubmitGuard } from '@/hooks/use-submit-guard';
 import Link from 'next/link';
 import {
   Calendar,
@@ -73,7 +74,7 @@ export function InvoiceForm({
   customers: Array<{ id: string; name: string; company?: string }>;
   onCustomerChange: (customerId: string, issueDate: string) => void;
   onCancel: () => void;
-  onSave: (payload: InvoicePayload, action: InvoiceSaveAction) => void;
+  onSave: (payload: InvoicePayload, action: InvoiceSaveAction) => void | Promise<void>;
   onPreview: (payload: InvoicePayload) => void;
 }) {
   const [form, setForm] = useState<InvoiceFormValues>(initialValues);
@@ -81,6 +82,7 @@ export function InvoiceForm({
   const [saveMenuOpen, setSaveMenuOpen] = useState(false);
   const saveActionRef = useRef<InvoiceSaveAction>('draft');
   const formRef = useRef<HTMLFormElement>(null);
+  const { isSubmitting, guardSubmit } = useSubmitGuard();
   const t = useAppStore((s) => s.t);
 
   const signatures = useMemo(() => getSignaturesForCurrentUser(appState), [appState]);
@@ -119,8 +121,9 @@ export function InvoiceForm({
     balanceDue: 0,
   });
 
-  const handleSubmit = (e: FormEvent) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
+    if (isSubmitting) return;
     const nextErrors = validateInvoiceForm(form);
     const errorKeys = Object.keys(nextErrors);
     if (errorKeys.length > 0) {
@@ -133,7 +136,9 @@ export function InvoiceForm({
     const action = saveActionRef.current;
     saveActionRef.current = 'draft';
     setSaveMenuOpen(false);
-    onSave(toPayload(), action);
+    await guardSubmit(async () => {
+      await Promise.resolve(onSave(toPayload(), action));
+    });
   };
 
   const statusMeta = INVOICE_STATUS_OPTIONS.find((s) => s.value === form.status) ?? INVOICE_STATUS_OPTIONS[0];
@@ -421,16 +426,18 @@ export function InvoiceForm({
           <div className="relative inline-flex">
             <button
               type="submit"
+              disabled={isSubmitting}
               onClick={() => { saveActionRef.current = 'draft'; }}
-              className={`${INV_BTN_PRIMARY} rounded-r-none pr-4`}
+              className={`${INV_BTN_PRIMARY} rounded-r-none pr-4 disabled:opacity-50 disabled:cursor-not-allowed`}
             >
-              <Save className="w-4 h-4" /> Save Invoice
+              <Save className="w-4 h-4" /> {isSubmitting ? 'Saving…' : 'Save Invoice'}
             </button>
             <button
               type="button"
+              disabled={isSubmitting}
               aria-label="More save options"
               onClick={() => setSaveMenuOpen((open) => !open)}
-              className={`${INV_BTN_PRIMARY} rounded-l-none border-l border-blue-500/40 px-2.5`}
+              className={`${INV_BTN_PRIMARY} rounded-l-none border-l border-blue-500/40 px-2.5 disabled:opacity-50 disabled:cursor-not-allowed`}
             >
               ▾
             </button>

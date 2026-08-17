@@ -17,6 +17,9 @@ import {
 import { isModuleApiMode } from '@/lib/config/data-source';
 import { API_RESOURCE_PATHS } from '@/lib/config/data-source';
 import { createResource, fetchResourceById, updateResource } from '@/lib/services/api-resource-service';
+import { attachBackgroundImageLater } from '@/lib/services/background-image-attach';
+import { patchResourceImageUrl } from '@/lib/services/resource-image-patch';
+import type { PendingImageUpload } from '@/components/shared/ImageUploadField';
 import { mapApiEmployeeRow, mapApiEmployeeToForm, mapEmployeeFormToApi } from '@/lib/services/entity-api-mappers';
 import { getSalaryStructureById, resolveBasicSalary } from '@/lib/services/payroll-service';
 import { PageSkeleton } from '@/components/shared/PageSkeleton';
@@ -71,7 +74,10 @@ export function EmployeeFormPage({ mode, employeeId }: { mode: 'create' | 'edit'
     );
   }
 
-  const handleSave = async (values: Record<string, string>) => {
+  const handleSave = async (
+    values: Record<string, string>,
+    pendingImageUpload?: Promise<PendingImageUpload | null> | null,
+  ) => {
     const structureId = values.salaryStructureId?.trim();
     let salary = Number(values.salary ?? 0);
     if ((!salary || salary <= 0) && structureId) {
@@ -91,6 +97,18 @@ export function EmployeeFormPage({ mode, employeeId }: { mode: 'create' | 'edit'
       if (!result.ok) {
         toast.error('Operation failed', { module: 'HRM', description: 'error' in result ? String(result.error) : 'Save failed' });
         return;
+      }
+      const recordId = mode === 'edit' && employeeId
+        ? employeeId
+        : ('id' in result ? String(result.id) : '');
+      if (recordId && pendingImageUpload) {
+        attachBackgroundImageLater({
+          recordId,
+          savedImageUrl: String(values.imageUrl ?? ''),
+          pending: pendingImageUpload,
+          patchImage: (id, url, pid) => patchResourceImageUrl(API_RESOURCE_PATHS.employees, id, url, pid),
+          moduleName: 'HRM',
+        });
       }
       toast.success('Saved', { module: 'HRM', description: mode === 'edit' ? 'Employee updated.' : 'Employee created.' });
       router.push(mode === 'edit' && employeeId ? `/hrm/employees/${employeeId}` : '/hrm/employees');

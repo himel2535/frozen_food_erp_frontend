@@ -1,12 +1,17 @@
 'use client';
 
 import { X } from 'lucide-react';
-import { useEffect, useMemo, useState, type FormEvent, type ReactNode } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from 'react';
 import { Footer } from '@/components/layout/Footer';
 import { FormHeader } from '@/components/layout/FormHeader';
 import { AdvancedDetailsToggle } from '@/components/shared/AdvancedDetailsToggle';
 import { DateInput } from '@/components/shared/DateInput';
 import { ImageUploadField } from '@/components/shared/ImageUploadField';
+import {
+  PendingImageUploadContext,
+  type PendingImageSetter,
+} from '@/components/shared/pending-image-upload-context';
+import { useSubmitGuard } from '@/hooks/use-submit-guard';
 import { publicIdFieldKey } from '@/lib/services/cloudinary-service';
 import type { PortField } from '@/lib/modules/port-types';
 import { MODULE_FORM_SHELL } from '@/lib/ui/module-layout';
@@ -41,13 +46,14 @@ export type AppFormShellProps = {
   subtitle?: string;
   titleId?: string;
   onCancel: () => void;
-  onSubmit: (e: FormEvent) => void;
+  onSubmit: (e: FormEvent) => void | Promise<void>;
   submitLabel?: string;
   cancelLabel?: string;
   children: ReactNode;
   footer?: ReactNode;
   hideFooter?: boolean;
   variant?: 'page' | 'modal';
+  onPendingUpload?: PendingImageSetter;
 };
 
 export function AppFormShell({
@@ -62,50 +68,78 @@ export function AppFormShell({
   footer,
   hideFooter = false,
   variant = 'page',
+  onPendingUpload,
 }: AppFormShellProps) {
+  const { isSubmitting, guardSubmit } = useSubmitGuard();
+  const onPendingUploadRef = useRef(onPendingUpload);
+  onPendingUploadRef.current = onPendingUpload;
+
+  const setPending = useCallback<PendingImageSetter>((promise) => {
+    onPendingUploadRef.current?.(promise);
+  }, []);
+
+  useEffect(() => () => {
+    onPendingUploadRef.current?.(null);
+  }, []);
+
+  const handleSubmit = (e: FormEvent) => {
+    e.preventDefault();
+    void guardSubmit(async () => {
+      await Promise.resolve(onSubmit(e));
+    });
+  };
+
   const defaultFooter = (
     <div className={variant === 'modal' ? FORM_MODAL_FOOTER_CLS : FORM_FOOTER_CLS}>
       <button type="button" onClick={onCancel} className={FORM_BTN_SECONDARY}>
         {cancelLabel}
       </button>
-      <button type="submit" className={FORM_BTN_PRIMARY}>
-        {submitLabel}
+      <button
+        type="submit"
+        disabled={isSubmitting}
+        className={`${FORM_BTN_PRIMARY} disabled:opacity-50 disabled:cursor-not-allowed`}
+      >
+        {isSubmitting ? 'Saving…' : submitLabel}
       </button>
     </div>
   );
 
   if (variant === 'modal') {
     return (
-      <form onSubmit={onSubmit} className="flex flex-col flex-1 min-h-0">
-        <div className={FORM_MODAL_HEADER_CLS}>
-          <div className="min-w-0">
-            <h2 id={titleId} className="text-base font-extrabold text-slate-900 tracking-tight">
-              {title}
-            </h2>
-            {subtitle ? (
-              <p className="text-xs font-semibold text-slate-500 mt-0.5">{subtitle}</p>
-            ) : null}
+      <PendingImageUploadContext.Provider value={setPending}>
+        <form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0">
+          <div className={FORM_MODAL_HEADER_CLS}>
+            <div className="min-w-0">
+              <h2 id={titleId} className="text-base font-extrabold text-slate-900 tracking-tight">
+                {title}
+              </h2>
+              {subtitle ? (
+                <p className="text-xs font-semibold text-slate-500 mt-0.5">{subtitle}</p>
+              ) : null}
+            </div>
+            <button
+              type="button"
+              onClick={onCancel}
+              className="p-2.5 bg-white/60 hover:bg-white/90 border border-white/80 rounded-2xl shadow-xs text-slate-700 hover:text-slate-900 cursor-pointer shrink-0 transition-all"
+              aria-label="Close"
+            >
+              <X className="w-4 h-4" />
+            </button>
           </div>
-          <button
-            type="button"
-            onClick={onCancel}
-            className="p-2.5 bg-white/60 hover:bg-white/90 border border-white/80 rounded-2xl shadow-xs text-slate-700 hover:text-slate-900 cursor-pointer shrink-0 transition-all"
-            aria-label="Close"
-          >
-            <X className="w-4 h-4" />
-          </button>
-        </div>
-        <div className={FORM_MODAL_BODY_CLS}>{children}</div>
-        {!hideFooter && (footer ?? defaultFooter)}
-      </form>
+          <div className={FORM_MODAL_BODY_CLS}>{children}</div>
+          {!hideFooter && (footer ?? defaultFooter)}
+        </form>
+      </PendingImageUploadContext.Provider>
     );
   }
 
   return (
-    <form onSubmit={onSubmit} className={FORM_CARD_CLS}>
-      {children}
-      {!hideFooter && (footer ?? defaultFooter)}
-    </form>
+    <PendingImageUploadContext.Provider value={setPending}>
+      <form onSubmit={handleSubmit} className={FORM_CARD_CLS}>
+        {children}
+        {!hideFooter && (footer ?? defaultFooter)}
+      </form>
+    </PendingImageUploadContext.Provider>
   );
 }
 
@@ -115,13 +149,14 @@ export type AppFormModalProps = {
   title: string;
   subtitle?: string;
   titleId?: string;
-  onSubmit: (e: FormEvent) => void;
+  onSubmit: (e: FormEvent) => void | Promise<void>;
   submitLabel?: string;
   cancelLabel?: string;
   size?: keyof typeof FORM_MODAL_SIZE_CLS;
   children: ReactNode;
   footer?: ReactNode;
   hideFooter?: boolean;
+  onPendingUpload?: PendingImageSetter;
 };
 
 export function AppFormModal({
@@ -137,6 +172,7 @@ export function AppFormModal({
   children,
   footer,
   hideFooter = false,
+  onPendingUpload,
 }: AppFormModalProps) {
   useEffect(() => {
     if (!open) return;
@@ -179,6 +215,7 @@ export function AppFormModal({
           footer={footer}
           hideFooter={hideFooter}
           variant="modal"
+          onPendingUpload={onPendingUpload}
         >
           {children}
         </AppFormShell>
@@ -192,13 +229,14 @@ export type AppFormPageProps = {
   subtitle?: string;
   titleId?: string;
   onBack: () => void;
-  onSubmit: (e: FormEvent) => void;
+  onSubmit: (e: FormEvent) => void | Promise<void>;
   submitLabel?: string;
   cancelLabel?: string;
   maxWidth?: keyof typeof MAX_WIDTH_CLS;
   children: ReactNode;
   footer?: ReactNode;
   hideFooter?: boolean;
+  onPendingUpload?: PendingImageSetter;
 };
 
 export function AppFormPage({
@@ -212,6 +250,7 @@ export function AppFormPage({
   children,
   footer,
   hideFooter = false,
+  onPendingUpload,
 }: AppFormPageProps) {
   return (
     <div className={MODULE_FORM_SHELL}>
@@ -228,6 +267,7 @@ export function AppFormPage({
           footer={footer}
           hideFooter={hideFooter}
           variant="page"
+          onPendingUpload={onPendingUpload}
         >
           {children}
         </AppFormShell>

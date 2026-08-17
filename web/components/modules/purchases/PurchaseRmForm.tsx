@@ -3,6 +3,7 @@
 import { toast } from '@/lib/ui/feedback';
 
 import { useMemo, useRef, useState, type FormEvent } from 'react';
+import { useSubmitGuard } from '@/hooks/use-submit-guard';
 import {
   Building2,
   Calendar,
@@ -57,11 +58,12 @@ export function PurchaseRmForm({
   suppliers: Array<{ id: string; name: string }>;
   warehouses: Array<{ id: string; name: string }>;
   onCancel: () => void;
-  onSave: (payload: PurchaseRmPayload, action: PurchaseRmSaveAction) => void;
+  onSave: (payload: PurchaseRmPayload, action: PurchaseRmSaveAction) => void | Promise<void>;
 }) {
   const [form, setForm] = useState<PurchaseRmFormValues>(initialValues);
   const saveActionRef = useRef<PurchaseRmSaveAction>('draft');
   const formRef = useRef<HTMLFormElement>(null);
+  const { isSubmitting, guardSubmit } = useSubmitGuard();
 
   const productOptions = useMemo(() => listRmProductOptions(appState), [appState]);
   const supplierProfile = useMemo(
@@ -84,8 +86,9 @@ export function PurchaseRmForm({
     createdBy: 'Sarah Connor',
   });
 
-  const handleSubmit = (e: FormEvent) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
+    if (isSubmitting) return;
     if (!form.supplierId) {
       toast.error('Action required', { module: 'Purchases', description: "Please select a supplier." });
       return;
@@ -101,7 +104,9 @@ export function PurchaseRmForm({
     const action = saveActionRef.current;
     saveActionRef.current = 'draft';
     const status = action === 'complete' ? 'pending_approval' : 'draft';
-    onSave(toPayload(status), action);
+    await guardSubmit(async () => {
+      await Promise.resolve(onSave(toPayload(status), action));
+    });
   };
 
   return (
@@ -201,19 +206,21 @@ export function PurchaseRmForm({
           <div className="flex flex-wrap items-center gap-2 sm:ml-auto">
             <button
               type="button"
+              disabled={isSubmitting}
               onClick={() => { saveActionRef.current = 'draft'; formRef.current?.requestSubmit(); }}
-              className={CF_BTN_OUTLINE}
+              className={`${CF_BTN_OUTLINE} disabled:opacity-50 disabled:cursor-not-allowed`}
             >
               <Save className="w-4 h-4" />
-              Save Draft
+              {isSubmitting ? 'Saving…' : 'Save Draft'}
             </button>
             <button
               type="button"
+              disabled={isSubmitting}
               onClick={() => { saveActionRef.current = 'complete'; formRef.current?.requestSubmit(); }}
-              className={CF_BTN_PRIMARY}
+              className={`${CF_BTN_PRIMARY} disabled:opacity-50 disabled:cursor-not-allowed`}
             >
               <ShoppingCart className="w-4 h-4" />
-              Complete RM Order
+              {isSubmitting ? 'Saving…' : 'Complete RM Order'}
             </button>
           </div>
         </div>

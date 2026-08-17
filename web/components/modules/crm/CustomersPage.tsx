@@ -43,6 +43,7 @@ import { isKpiBootLoading, pickApiListRows } from '@/lib/ui/kpi-loading';
 import { getKpiGridClassName } from '@/lib/ui/kpi-grid';
 import { ApiModeBanner } from '@/components/shared/ApiModeBanner';
 import { useCustomersApiStore } from '@/hooks/use-customers-module';
+import { attachBackgroundImageLater } from '@/lib/services/background-image-attach';
 import {
   exportCustomersCsvFromRows,
   fetchCustomerFromApi,
@@ -57,26 +58,6 @@ const AVATAR_COLORS = [
   'bg-amber-100 text-amber-700',
   'bg-rose-100 text-rose-700',
 ];
-
-function attachCustomerPhotoLater(
-  customerId: string,
-  savedImageUrl: string,
-  pending: Promise<PendingImageUpload | null>,
-  reload: (opts?: { silent?: boolean }) => Promise<void>,
-) {
-  void pending.then(async (uploaded) => {
-    if (!uploaded?.url || uploaded.url === savedImageUrl) return;
-    const patched = await patchCustomerImageUrl(customerId, uploaded.url, uploaded.publicId);
-    if (!patched.ok) {
-      toast.error('Customer saved', {
-        module: 'Customers',
-        description: 'The photo could not be attached.',
-      });
-      return;
-    }
-    await reload({ silent: true });
-  });
-}
 
 function initials(name: string) {
   const parts = String(name || '').trim().split(/\s+/).filter(Boolean);
@@ -351,7 +332,14 @@ function CustomersPageContent() {
       const customerId = editingId
         || (result.ok && 'id' in result && typeof result.id === 'string' ? result.id : '');
       if (customerId && pendingImageUpload) {
-        attachCustomerPhotoLater(customerId, payload.imageUrl, pendingImageUpload, apiStore.reload);
+        attachBackgroundImageLater({
+          recordId: customerId,
+          savedImageUrl: payload.imageUrl,
+          pending: pendingImageUpload,
+          patchImage: patchCustomerImageUrl,
+          onAttached: () => apiStore.reload({ silent: true }),
+          moduleName: 'Customers',
+        });
       }
       if (action === 'save-and-add') {
         setEditingId(null);

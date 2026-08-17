@@ -59,7 +59,7 @@ export function CashboxForm({
   editingEntry: CashboxEntry | null;
   partyOptions: string[];
   onClose: () => void;
-  onSave: (formType: CashboxTab, values: CashboxFormValues) => void;
+  onSave: (formType: CashboxTab, values: CashboxFormValues) => void | Promise<void>;
 }) {
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [form, setForm] = useState<FormRecord>(() => toFormRecord(defaultFormValues(formType)));
@@ -90,10 +90,10 @@ export function CashboxForm({
     setForm((prev) => ({ ...prev, [key]: value }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.amount || !form.datetime || !form.category || !form.party || !form.note) return;
-    onSave(formType, fromFormRecord(form));
+    await Promise.resolve(onSave(formType, fromFormRecord(form)));
   };
 
   return (

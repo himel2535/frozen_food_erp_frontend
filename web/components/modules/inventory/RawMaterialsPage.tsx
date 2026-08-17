@@ -20,7 +20,9 @@ import { SupplierSelect, WarehouseSelect } from '@/components/modules/inventory/
 import { useAppStore } from '@/lib/state/app-store';
 import type { PortField } from '@/lib/modules/port-types';
 import { INVENTORY_STANDARD_KPI_ICONS as KPI_ICON } from '@/lib/ui/kpi-icons';
-import { isModuleApiMode } from '@/lib/config/data-source';
+import { API_RESOURCE_PATHS, isModuleApiMode } from '@/lib/config/data-source';
+import { useCreateFirstImage } from '@/hooks/use-create-first-image';
+import { patchResourceImageUrl } from '@/lib/services/resource-image-patch';
 import { usePaginatedApiResource } from '@/hooks/use-paginated-api-resource';
 import { ListPagination } from '@/components/shared/ListPagination';
 import { useInventoryLookups, resolveWarehouseName } from '@/hooks/use-inventory-lookups';
@@ -92,6 +94,10 @@ export function RawMaterialsPage() {
   const saveAppState = useAppStore((s) => s.saveAppState);
   const apiMode = isModuleApiMode('rawMaterials');
   const apiStore = usePaginatedApiResource('rawMaterials', mapApiRawMaterialRow, { pageSize: 10 });
+  const { onPendingUpload, attachAfterSave } = useCreateFirstImage(
+    'Raw Materials',
+    (id, url, pid) => patchResourceImageUrl(API_RESOURCE_PATHS.rawMaterials, id, url, pid),
+  );
   const bootLoading = isModuleBootLoading(apiMode, apiStore.initialized);
   const lookups = useInventoryLookups();
   const [view, setView] = useState<'main' | 'form'>('main');
@@ -355,6 +361,7 @@ export function RawMaterialsPage() {
         toast.error('Operation failed', { module: 'Inventory', description: 'error' in result ? String(result.error) : 'Save failed' });
         return;
       }
+      attachAfterSave(editingId || ('id' in result ? String(result.id) : ''), String(payload.imageUrl ?? ''));
       if (!editingId) {
         resetFilters();
       } else {
@@ -531,6 +538,7 @@ export function RawMaterialsPage() {
         onSubmit={handleSubmit}
         submitLabel="Save Material"
         size="lg"
+        onPendingUpload={onPendingUpload}
       >
         <div className="mb-5">
           <ImageUploadField

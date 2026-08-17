@@ -1,6 +1,7 @@
 'use client';
 
 import { useMemo, useRef, useState, type FormEvent } from 'react';
+import { useSubmitGuard } from '@/hooks/use-submit-guard';
 import { ArrowRight, Plus, Save } from 'lucide-react';
 import { FormHeader } from '@/components/layout/FormHeader';
 import { MODULE_SHELL_SUPPRESSED } from '@/lib/ui/module-layout';
@@ -40,12 +41,13 @@ export function CreateProjectForm({
   initialValues: ProjectFormValues;
   appState: AppState;
   onCancel: () => void;
-  onSave: (form: ProjectFormValues, action: ProjectSaveAction) => void;
+  onSave: (form: ProjectFormValues, action: ProjectSaveAction) => void | Promise<void>;
 }) {
   const [form, setForm] = useState<ProjectFormValues>(initialValues);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const saveActionRef = useRef<ProjectSaveAction>('draft');
   const formRef = useRef<HTMLFormElement>(null);
+  const { isSubmitting, guardSubmit } = useSubmitGuard();
 
   const customers = useMemo(() => listProjectCustomerOptions(appState), [appState]);
   const productOptions = useMemo(() => listProjectProductOptions(appState), [appState]);
@@ -65,8 +67,9 @@ export function CreateProjectForm({
     });
   };
 
-  const handleSubmit = (e: FormEvent) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
+    if (isSubmitting) return;
     const action = saveActionRef.current;
     const nextErrors = validateProjectForm(form, action);
     if (Object.keys(nextErrors).length > 0) {
@@ -75,7 +78,9 @@ export function CreateProjectForm({
     }
     setErrors({});
     saveActionRef.current = 'draft';
-    onSave(form, action);
+    await guardSubmit(async () => {
+      await Promise.resolve(onSave(form, action));
+    });
   };
 
   return (
@@ -170,24 +175,26 @@ export function CreateProjectForm({
             </button>
             <button
               type="button"
+              disabled={isSubmitting}
               onClick={() => {
                 saveActionRef.current = 'draft';
                 formRef.current?.requestSubmit();
               }}
-              className={PJ_BTN_OUTLINE}
+              className={`${PJ_BTN_OUTLINE} disabled:opacity-50 disabled:cursor-not-allowed`}
             >
               <Save className="w-4 h-4" />
-              Save Draft
+              {isSubmitting ? 'Saving…' : 'Save Draft'}
             </button>
             <button
               type="button"
+              disabled={isSubmitting}
               onClick={() => {
                 saveActionRef.current = 'create';
                 formRef.current?.requestSubmit();
               }}
-              className={PJ_BTN_PRIMARY}
+              className={`${PJ_BTN_PRIMARY} disabled:opacity-50 disabled:cursor-not-allowed`}
             >
-              Create Project &amp; Continue
+              {isSubmitting ? 'Saving…' : 'Create Project & Continue'}
               <ArrowRight className="w-4 h-4" />
             </button>
           </div>

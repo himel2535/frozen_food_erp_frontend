@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState, type FormEvent } from 'react';
+import { useSubmitGuard } from '@/hooks/use-submit-guard';
 import {
   Building2,
   Calendar,
@@ -216,13 +217,14 @@ export function CustomerForm({
     payload: CustomerFormPayload,
     action: CustomerSaveAction,
     pendingImageUpload?: Promise<PendingImageUpload | null> | null,
-  ) => void;
+  ) => void | Promise<void>;
 }) {
   const [form, setForm] = useState<CustomerFormValues>(initialValues);
   const [errors, setErrors] = useState<CustomerFormFieldError>({});
   const formRef = useRef<HTMLFormElement>(null);
   const pendingImageUploadRef = useRef<Promise<PendingImageUpload | null> | null>(null);
   const { setSaveAction, readSaveAction } = useCustomerSaveAction();
+  const { isSubmitting, guardSubmit } = useSubmitGuard();
 
   useEffect(() => {
     setForm(initialValues);
@@ -241,8 +243,9 @@ export function CustomerForm({
       ? form.paymentTerms
       : null;
 
-  const handleSubmit = (e: FormEvent) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
+    if (isSubmitting) return;
     const nextErrors = validateCustomerForm(form);
     const errorKeys = Object.keys(nextErrors) as Array<keyof CustomerFormFieldError>;
     if (errorKeys.length > 0) {
@@ -255,7 +258,9 @@ export function CustomerForm({
       return;
     }
     setErrors({});
-    onSave(toPayload(form, ownerName), readSaveAction(), pendingImageUploadRef.current);
+    await guardSubmit(async () => {
+      await Promise.resolve(onSave(toPayload(form, ownerName), readSaveAction(), pendingImageUploadRef.current));
+    });
   };
 
   const syncShippingFromBilling = (next: CustomerFormValues) => {
@@ -548,6 +553,7 @@ export function CustomerForm({
             formRef.current?.requestSubmit();
           }}
           submitLabel={mode === 'edit' ? 'Update Customer' : 'Save Customer'}
+          isSubmitting={isSubmitting}
         />
       </form>
     </div>

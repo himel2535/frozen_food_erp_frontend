@@ -2,6 +2,8 @@
 
 import { toast } from '@/lib/ui/feedback';
 import { useMemo, useState, type FormEvent } from 'react';
+import { useSubmitGuard } from '@/hooks/use-submit-guard';
+import { useCreateFirstImage } from '@/hooks/use-create-first-image';
 import { Footer } from '@/components/layout/Footer';
 import { useChromeSuppressed } from '@/components/layout/ModuleActionsContext';
 import { FormHeader } from '@/components/layout/FormHeader';
@@ -33,6 +35,19 @@ export function ProfileSettingsPage() {
   const [, bump] = useState(0);
   const [form, setForm] = useState<ProfileFormState>(() =>
     profileToForm(getProfileView(appState), appState.lang ?? 'en'),
+  );
+  const { isSubmitting, guardSubmit } = useSubmitGuard();
+  const { onPendingUpload, attachAfterSave } = useCreateFirstImage(
+    'Profile',
+    async (_id, url, pid) => {
+      const state = useAppStore.getState();
+      updateProfile(state.appState, { imageUrl: url, imagePublicId: pid });
+      if (!isModuleApiMode('companySettings')) {
+        state.saveAppState();
+        return { ok: true };
+      }
+      return saveSettingsDoc('currentUser', getProfileView(state.appState));
+    },
   );
 
   const profile = useMemo(() => getProfileView(appState), [appState, bump]);
@@ -118,46 +133,51 @@ export function ProfileSettingsPage() {
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
+    if (isSubmitting) return;
     if (!form.name.trim()) {
       toast.error('Validation failed', { module: 'Profile', description: 'Name is required.' });
       return;
     }
 
-    const profilePayload = {
-      imageUrl: form.imageUrl.trim(),
-      imagePublicId: form.imagePublicId.trim(),
-      name: form.name.trim(),
-      phone: form.phone.trim(),
-      email: form.email.trim(),
-      branch: form.branch.trim(),
-      territory: form.territory.trim(),
-      timezone: form.timezone,
-      dateFormat: form.dateFormat,
-      bio: form.bio.trim(),
-      emergencyContact: form.emergencyContact.trim(),
-      emergencyPhone: form.emergencyPhone.trim(),
-      notifyEmail: form.notifyEmail,
-      notifyPush: form.notifyPush,
-    };
-    updateProfile(appState, profilePayload);
+    await guardSubmit(async () => {
+      const profilePayload = {
+        imageUrl: form.imageUrl.trim(),
+        imagePublicId: form.imagePublicId.trim(),
+        name: form.name.trim(),
+        phone: form.phone.trim(),
+        email: form.email.trim(),
+        branch: form.branch.trim(),
+        territory: form.territory.trim(),
+        timezone: form.timezone,
+        dateFormat: form.dateFormat,
+        bio: form.bio.trim(),
+        emergencyContact: form.emergencyContact.trim(),
+        emergencyPhone: form.emergencyPhone.trim(),
+        notifyEmail: form.notifyEmail,
+        notifyPush: form.notifyPush,
+      };
+      updateProfile(appState, profilePayload);
 
-    if (isModuleApiMode('companySettings')) {
-      const result = await saveSettingsDoc('currentUser', getProfileView(appState));
-      if (!result.ok) {
-        toast.error('Operation failed', { module: 'Profile', description: 'error' in result ? String(result.error) : 'Save failed' });
-        return;
+      if (isModuleApiMode('companySettings')) {
+        const result = await saveSettingsDoc('currentUser', getProfileView(appState));
+        if (!result.ok) {
+          toast.error('Operation failed', { module: 'Profile', description: 'error' in result ? String(result.error) : 'Save failed' });
+          return;
+        }
       }
-    }
 
-    if (form.lang !== appState.lang) {
-      replaceAppState({ lang: form.lang as Lang });
-    } else if (!isModuleApiMode('companySettings')) {
-      saveAppState();
-    }
+      attachAfterSave('currentUser', form.imageUrl);
 
-    bump((n) => n + 1);
-    toast.success(labels.saved, { module: 'Profile' });
-    closeForm();
+      if (form.lang !== appState.lang) {
+        replaceAppState({ lang: form.lang as Lang });
+      } else if (!isModuleApiMode('companySettings')) {
+        saveAppState();
+      }
+
+      bump((n) => n + 1);
+      toast.success(labels.saved, { module: 'Profile' });
+      closeForm();
+    });
   };
 
   if (view === 'form') {
@@ -185,13 +205,18 @@ export function ProfileSettingsPage() {
             onToggleAdvanced={() => setShowAdvanced((open) => !open)}
             onChange={onChange}
             labels={labels}
+            onPendingUpload={onPendingUpload}
           />
           <div className={ST_FORM_FOOTER}>
             <button type="button" onClick={closeForm} className={FORM_BTN_SECONDARY}>
               {labels.cancel}
             </button>
-            <button type="submit" className={FORM_BTN_PRIMARY}>
-              {labels.save}
+            <button
+              type="submit"
+              disabled={isSubmitting}
+              className={`${FORM_BTN_PRIMARY} disabled:opacity-50 disabled:cursor-not-allowed`}
+            >
+              {isSubmitting ? 'Saving…' : labels.save}
             </button>
           </div>
         </form>

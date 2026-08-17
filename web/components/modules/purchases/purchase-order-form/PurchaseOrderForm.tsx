@@ -13,7 +13,8 @@ import {
   Plus,
   User,
 } from 'lucide-react';
-import { ImageUploadField } from '@/components/shared/ImageUploadField';
+import { ImageUploadField, type PendingImageUpload } from '@/components/shared/ImageUploadField';
+import { useSubmitGuard } from '@/hooks/use-submit-guard';
 import { FormHeader } from '@/components/layout/FormHeader';
 import { MODULE_LIST_SHELL } from '@/lib/ui/module-layout';
 import { IconInput, IconSelect, IconTextarea } from '@/components/modules/crm/customer-form/IconField';
@@ -67,12 +68,18 @@ export function PurchaseOrderForm({
   suppliers: Array<{ id: string; name: string }>;
   purchasers: Array<{ id: string; name: string }>;
   onCancel: () => void;
-  onSave: (payload: PoFormPayload, action: PoSaveAction) => void;
+  onSave: (
+    payload: PoFormPayload,
+    action: PoSaveAction,
+    pendingImageUpload?: Promise<PendingImageUpload | null> | null,
+  ) => void | Promise<void>;
 }) {
   const [form, setForm] = useState<PoFormValues>(initialValues);
   const [errors, setErrors] = useState<PoFieldError>({});
   const saveActionRef = useRef<PoSaveAction>('draft');
   const formRef = useRef<HTMLFormElement>(null);
+  const pendingImageUploadRef = useRef<Promise<PendingImageUpload | null> | null>(null);
+  const { isSubmitting, guardSubmit } = useSubmitGuard();
 
   const productOptions = useMemo(() => listPoProductOptions(appState), [appState]);
   const supplierProfile = useMemo(
@@ -103,8 +110,9 @@ export function PurchaseOrderForm({
     totals,
   });
 
-  const handleSubmit = (e: FormEvent) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
+    if (isSubmitting) return;
     const nextErrors = validatePoForm(form);
     if (Object.keys(nextErrors).length > 0) {
       setErrors(nextErrors);
@@ -113,7 +121,9 @@ export function PurchaseOrderForm({
     setErrors({});
     const action = saveActionRef.current;
     saveActionRef.current = 'draft';
-    onSave(toPayload(), action);
+    await guardSubmit(async () => {
+      await Promise.resolve(onSave(toPayload(), action, pendingImageUploadRef.current));
+    });
   };
 
   const handleEditDiscount = async () => {
@@ -152,24 +162,26 @@ export function PurchaseOrderForm({
             <button type="button" onClick={onCancel} className={PO_BTN_GHOST}>Cancel</button>
             <button
               type="button"
+              disabled={isSubmitting}
               onClick={() => {
                 saveActionRef.current = 'draft';
                 formRef.current?.requestSubmit();
               }}
-              className={PO_BTN_OUTLINE}
+              className={`${PO_BTN_OUTLINE} disabled:opacity-50 disabled:cursor-not-allowed`}
             >
-              Save Draft
+              {isSubmitting ? 'Saving…' : 'Save Draft'}
             </button>
             <button
               type="button"
+              disabled={isSubmitting}
               onClick={() => {
                 saveActionRef.current = 'create';
                 updateForm({ status: form.status === 'Draft' ? 'Sent' : form.status });
                 formRef.current?.requestSubmit();
               }}
-              className={PO_BTN_PRIMARY}
+              className={`${PO_BTN_PRIMARY} disabled:opacity-50 disabled:cursor-not-allowed`}
             >
-              Create PO
+              {isSubmitting ? 'Saving…' : 'Create PO'}
             </button>
           </div>
         </div>
@@ -320,6 +332,9 @@ export function PurchaseOrderForm({
                     attachmentPublicId: publicId ?? '',
                     attachmentName: url ? (url.split('/').pop()?.split('?')[0] || 'image') : '',
                   })}
+                  onPendingUpload={(promise) => {
+                    pendingImageUploadRef.current = promise;
+                  }}
                 />
               </div>
             </section>

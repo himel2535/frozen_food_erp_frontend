@@ -2,6 +2,7 @@
 
 import { ImagePlus, Loader2, Trash2 } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
+import { usePendingImageUploadContext } from '@/components/shared/pending-image-upload-context';
 import { FORM_LABEL_CLS } from '@/lib/ui/form-styles';
 import { toast } from '@/lib/ui/feedback';
 import { CloudinaryUploadError, uploadImageToCloudinary, validateImageFile, type PendingImageUpload } from '@/lib/services/cloudinary-service';
@@ -24,6 +25,7 @@ export function ImageUploadField({
   const inputRef = useRef<HTMLInputElement>(null);
   const localPreviewRef = useRef('');
   const generationRef = useRef(0);
+  const setPendingFromContext = usePendingImageUploadContext();
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState('');
   const [localPreview, setLocalPreview] = useState('');
@@ -84,6 +86,7 @@ export function ImageUploadField({
     })();
 
     onPendingUpload?.(uploadPromise);
+    setPendingFromContext?.(uploadPromise);
   };
 
   const handleRemove = () => {
@@ -92,6 +95,7 @@ export function ImageUploadField({
     setUploading(false);
     setError('');
     onPendingUpload?.(null);
+    setPendingFromContext?.(null);
     onChange('', '');
     if (inputRef.current) inputRef.current.value = '';
   };

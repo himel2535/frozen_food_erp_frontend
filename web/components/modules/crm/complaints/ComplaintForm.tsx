@@ -1,9 +1,10 @@
 'use client';
 
-import { useMemo, useState, type FormEvent } from 'react';
+import { useMemo, useRef, useState, type FormEvent } from 'react';
 import { Save } from 'lucide-react';
 import { FormHeader } from '@/components/layout/FormHeader';
-import { ImageUploadField } from '@/components/shared/ImageUploadField';
+import { ImageUploadField, type PendingImageUpload } from '@/components/shared/ImageUploadField';
+import { useSubmitGuard } from '@/hooks/use-submit-guard';
 import { MODULE_LIST_SHELL } from '@/lib/ui/module-layout';
 import {
   FORM_BTN_PRIMARY,
@@ -56,9 +57,14 @@ export function ComplaintForm({
   initialValues: ComplaintFormValues;
   mode: 'create' | 'edit';
   onCancel: () => void;
-  onSubmit: (values: ComplaintFormValues) => void;
+  onSubmit: (
+    values: ComplaintFormValues,
+    pendingImageUpload?: Promise<PendingImageUpload | null> | null,
+  ) => void | Promise<void>;
 }) {
   const [values, setValues] = useState(initialValues);
+  const pendingImageUploadRef = useRef<Promise<PendingImageUpload | null> | null>(null);
+  const { isSubmitting, guardSubmit } = useSubmitGuard();
 
   const customerOptions = useMemo(
     () => [{ id: 'walk-in', name: 'Walk-in Customer' }, ...customers],
@@ -75,9 +81,12 @@ export function ComplaintForm({
     }));
   };
 
-  const handleSubmit = (e: FormEvent) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    onSubmit(values);
+    if (isSubmitting) return;
+    await guardSubmit(async () => {
+      await Promise.resolve(onSubmit(values, pendingImageUploadRef.current));
+    });
   };
 
   return (
@@ -193,15 +202,22 @@ export function ComplaintForm({
                   evidenceImageUrl: url,
                   evidenceImagePublicId: publicId ?? '',
                 })}
+                onPendingUpload={(promise) => {
+                  pendingImageUploadRef.current = promise;
+                }}
               />
             </div>
           </div>
 
           <div className="flex justify-end gap-3 pt-2">
             <button type="button" onClick={onCancel} className={FORM_BTN_SECONDARY}>Cancel</button>
-            <button type="submit" className={`${FORM_BTN_PRIMARY} inline-flex items-center gap-2`}>
+            <button
+              type="submit"
+              disabled={isSubmitting}
+              className={`${FORM_BTN_PRIMARY} inline-flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed`}
+            >
               <Save className="w-4 h-4" />
-              {mode === 'edit' ? 'Update Complaint' : 'Save Complaint'}
+              {isSubmitting ? 'Saving…' : mode === 'edit' ? 'Update Complaint' : 'Save Complaint'}
             </button>
           </div>
         </div>

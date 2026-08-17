@@ -1,6 +1,7 @@
 'use client';
 
 import { useRef, useState, type FormEvent } from 'react';
+import { useSubmitGuard } from '@/hooks/use-submit-guard';
 import { FormHeader } from '@/components/layout/FormHeader';
 import { Footer } from '@/components/layout/Footer';
 import { FormSectionCard } from '@/components/modules/crm/customer-form/FormSectionCard';
@@ -74,12 +75,16 @@ export function SupplierForm({
   const [values, setValues] = useState<SupplierFormValues>(initialValues);
   const [showAdvanced, setShowAdvanced] = useState(false);
   const pendingImageUploadRef = useRef<Promise<PendingImageUpload | null> | null>(null);
+  const { isSubmitting, guardSubmit } = useSubmitGuard();
 
   const update = (patch: Partial<SupplierFormValues>) => setValues((prev) => ({ ...prev, ...patch }));
 
-  const handleSubmit = (e: FormEvent) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    void Promise.resolve(onSave(values, pendingImageUploadRef.current));
+    if (isSubmitting) return;
+    await guardSubmit(async () => {
+      await Promise.resolve(onSave(values, pendingImageUploadRef.current));
+    });
   };
 
   return (
@@ -270,8 +275,12 @@ export function SupplierForm({
             <button type="button" onClick={onCancel} className={CF_BTN_GHOST}>
               Cancel
             </button>
-            <button type="submit" className={CF_BTN_PRIMARY}>
-              {mode === 'create' ? 'Save Supplier' : 'Update Supplier'}
+            <button
+              type="submit"
+              disabled={isSubmitting}
+              className={`${CF_BTN_PRIMARY} disabled:opacity-50 disabled:cursor-not-allowed`}
+            >
+              {isSubmitting ? 'Saving…' : mode === 'create' ? 'Save Supplier' : 'Update Supplier'}
             </button>
           </div>
         </div>

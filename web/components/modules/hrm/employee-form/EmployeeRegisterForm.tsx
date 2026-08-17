@@ -25,7 +25,7 @@ import {
   PAYMENT_METHOD_INFO,
   PAYMENT_METHOD_OPTIONS,
 } from '@/components/modules/hrm/employee-form/employee-form-types';
-import { ImageUploadField } from '@/components/shared/ImageUploadField';
+import { ImageUploadField, type PendingImageUpload } from '@/components/shared/ImageUploadField';
 import type { AppState } from '@/lib/state/types';
 import { useHrmDepartmentOptions, useHrmDesignationOptions } from '@/hooks/use-form-options';
 import { formatMoney, getSalaryStructureById, listSalaryStructures } from '@/lib/services/payroll-service';
@@ -43,10 +43,12 @@ export function EmployeeRegisterForm({
   form,
   setField,
   appState,
+  onPendingUpload,
 }: {
   form: Record<string, string>;
   setField: (key: string, value: string) => void;
   appState: AppState;
+  onPendingUpload?: (promise: Promise<PendingImageUpload | null> | null) => void;
 }) {
   const departments = useHrmDepartmentOptions(appState);
   const designations = useHrmDesignationOptions(appState, form.department);
@@ -77,6 +79,7 @@ export function EmployeeRegisterForm({
                   setField('imageUrl', url);
                   setField('imagePublicId', publicId ?? '');
                 }}
+                onPendingUpload={onPendingUpload}
               />
             </div>
             <IconInput

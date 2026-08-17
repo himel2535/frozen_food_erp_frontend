@@ -15,10 +15,12 @@ export function CustomerFormFooter({
   onCancel,
   onSaveAndAdd,
   submitLabel = 'Save Customer',
+  isSubmitting = false,
 }: {
   onCancel: () => void;
   onSaveAndAdd: () => void;
   submitLabel?: string;
+  isSubmitting?: boolean;
 }) {
   return (
     <div className={CF_FOOTER_CLS}>
@@ -26,12 +28,21 @@ export function CustomerFormFooter({
         Cancel
       </button>
       <div className="flex flex-wrap items-center gap-2 sm:justify-end">
-        <button type="button" onClick={onSaveAndAdd} className={CF_BTN_OUTLINE}>
+        <button
+          type="button"
+          onClick={onSaveAndAdd}
+          disabled={isSubmitting}
+          className={`${CF_BTN_OUTLINE} disabled:opacity-50 disabled:cursor-not-allowed`}
+        >
           Save &amp; Add Another
         </button>
-        <button type="submit" className={CF_BTN_PRIMARY}>
+        <button
+          type="submit"
+          disabled={isSubmitting}
+          className={`${CF_BTN_PRIMARY} disabled:opacity-50 disabled:cursor-not-allowed`}
+        >
           <Save className="w-4 h-4" />
-          {submitLabel}
+          {isSubmitting ? 'Saving…' : submitLabel}
         </button>
       </div>
     </div>

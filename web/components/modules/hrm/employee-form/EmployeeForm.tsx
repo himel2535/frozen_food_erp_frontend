@@ -12,6 +12,8 @@ import {
 import { validateEmployeeForm } from '@/components/modules/hrm/employee-form/employee-form-validation';
 import { MODULE_LIST_SHELL } from '@/lib/ui/module-layout';
 import type { AppState } from '@/lib/state/types';
+import { useSubmitGuard } from '@/hooks/use-submit-guard';
+import type { PendingImageUpload } from '@/components/shared/ImageUploadField';
 
 export function EmployeeForm({
   mode,
@@ -24,17 +26,23 @@ export function EmployeeForm({
   initialValues: Record<string, string>;
   appState: AppState;
   onCancel: () => void;
-  onSave: (values: Record<string, string>) => void;
+  onSave: (
+    values: Record<string, string>,
+    pendingImageUpload?: Promise<PendingImageUpload | null> | null,
+  ) => void | Promise<void>;
 }) {
   const [form, setForm] = useState<Record<string, string>>(initialValues);
   const formRef = useRef<HTMLFormElement>(null);
+  const pendingImageUploadRef = useRef<Promise<PendingImageUpload | null> | null>(null);
+  const { isSubmitting, guardSubmit } = useSubmitGuard();
 
   const setField = (key: string, value: string) => {
     setForm((prev) => ({ ...prev, [key]: value }));
   };
 
-  const handleSubmit = (e: FormEvent) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
+    if (isSubmitting) return;
     const nextErrors = validateEmployeeForm(form);
     if (Object.keys(nextErrors).length > 0) {
       toast.error('Please fill required fields', {
@@ -43,7 +51,9 @@ export function EmployeeForm({
       });
       return;
     }
-    onSave(form);
+    await guardSubmit(async () => {
+      await Promise.resolve(onSave(form, pendingImageUploadRef.current));
+    });
   };
 
   const title = mode === 'edit' ? 'Edit Employee' : 'Create Employee';
@@ -65,11 +75,24 @@ export function EmployeeForm({
           />
           <div className="flex flex-wrap items-center gap-2 self-start">
             <button type="button" onClick={onCancel} className={PO_BTN_GHOST}>Cancel</button>
-            <button type="submit" className={PO_BTN_PRIMARY}>{submitLabel}</button>
+            <button
+              type="submit"
+              disabled={isSubmitting}
+              className={`${PO_BTN_PRIMARY} disabled:opacity-50 disabled:cursor-not-allowed`}
+            >
+              {isSubmitting ? 'Saving…' : submitLabel}
+            </button>
           </div>
         </div>
 
-        <EmployeeRegisterForm form={form} setField={setField} appState={appState} />
+        <EmployeeRegisterForm
+          form={form}
+          setField={setField}
+          appState={appState}
+          onPendingUpload={(promise) => {
+            pendingImageUploadRef.current = promise;
+          }}
+        />
       </form>
     </div>
   );

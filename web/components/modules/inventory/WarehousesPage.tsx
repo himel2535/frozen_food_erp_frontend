@@ -14,7 +14,9 @@ import { InventoryListLayout, FilterBar, FilterSelect, InventoryEditActions } fr
 import { useInventoryEditAccess } from '@/hooks/use-inventory-edit-access';
 import { useAppStore } from '@/lib/state/app-store';
 import type { PortField } from '@/lib/modules/port-types';
-import { isModuleApiMode } from '@/lib/config/data-source';
+import { API_RESOURCE_PATHS, isModuleApiMode } from '@/lib/config/data-source';
+import { useCreateFirstImage } from '@/hooks/use-create-first-image';
+import { patchResourceImageUrl } from '@/lib/services/resource-image-patch';
 import { useApiResourceStore } from '@/hooks/use-api-resource-store';
 import { usePaginatedApiResource } from '@/hooks/use-paginated-api-resource';
 import { ListPagination } from '@/components/shared/ListPagination';
@@ -54,6 +56,10 @@ export function WarehousesPage() {
   const saveAppState = useAppStore((s) => s.saveAppState);
   const apiMode = isModuleApiMode('warehouses');
   const apiStore = usePaginatedApiResource('warehouses', mapApiWarehouseRow, { pageSize: 10 });
+  const { onPendingUpload, attachAfterSave } = useCreateFirstImage(
+    'Warehouses',
+    (id, url, pid) => patchResourceImageUrl(API_RESOURCE_PATHS.warehouses, id, url, pid),
+  );
   const productOptions = useApiResourceStore('products', mapApiProductRow, { pageOnly: true, lookupLimit: 100 });
   const bootLoading = isModuleBootLoading(apiMode, apiStore.initialized);
   const [view, setView] = useState<'main' | 'form'>('main');
@@ -150,6 +156,7 @@ export function WarehousesPage() {
         toast.error('Operation failed', { module: 'Warehouses', description: 'error' in result ? String(result.error) : 'Save failed' });
         return;
       }
+      attachAfterSave(editingId || ('id' in result ? String(result.id) : ''), String(payload.imageUrl ?? ''));
       if (!editingId) resetFilters();
       setView('main');
       resetForm();
@@ -258,6 +265,7 @@ export function WarehousesPage() {
       onSubmit={handleSubmit}
       submitLabel="Save Warehouse"
       size="md"
+      onPendingUpload={onPendingUpload}
     >
       <div className="mb-5">
         <ImageUploadField

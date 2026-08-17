@@ -30,7 +30,7 @@ export function PurchaseRmReceiveModal({
   open: boolean;
   order: Record<string, unknown> | null;
   onClose: () => void;
-  onSubmit: (payload: PurchaseRmReceiveSubmitPayload) => void;
+  onSubmit: (payload: PurchaseRmReceiveSubmitPayload) => void | Promise<void>;
 }) {
   const [proofType, setProofType] = useState('receipt');
   const [proofNote, setProofNote] = useState('');
@@ -83,17 +83,17 @@ export function PurchaseRmReceiveModal({
     }
   };
 
-  const handleSubmit = (e: FormEvent) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     if (!attachmentName || !attachmentDataUrl) {
       toast.error('Action required', { module: 'Purchase RM', description: "Please upload a proof file (receipt or bank transaction)." });
       return;
     }
-    onSubmit({
+    await Promise.resolve(onSubmit({
       proofType,
       proofNote: proofNote.trim(),
       attachments: [{ type: proofType, name: attachmentName, dataUrl: attachmentDataUrl }],
-    });
+    }));
   };
 
   if (!order) return null;

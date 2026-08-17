@@ -2,7 +2,7 @@
 
 import { Bell, Briefcase, Settings, User } from 'lucide-react';
 import { AdvancedDetailsToggle } from '@/components/shared/AdvancedDetailsToggle';
-import { ImageUploadField } from '@/components/shared/ImageUploadField';
+import { ImageUploadField, type PendingImageUpload } from '@/components/shared/ImageUploadField';
 import {
   ST_CARD_COMPACT,
   ST_FORM_GRID,
@@ -49,6 +49,7 @@ type ProfileSettingsFormProps = {
   onToggleAdvanced: () => void;
   onChange: (key: keyof ProfileFormState, value: string | boolean) => void;
   labels: Record<string, string>;
+  onPendingUpload?: (promise: Promise<PendingImageUpload | null> | null) => void;
 };
 
 function SectionCard({
@@ -116,6 +117,7 @@ export function ProfileSettingsForm({
   onToggleAdvanced,
   onChange,
   labels,
+  onPendingUpload,
 }: ProfileSettingsFormProps) {
   return (
     <div className={ST_FORM_STACK}>
@@ -130,6 +132,7 @@ export function ProfileSettingsForm({
                   onChange('imageUrl', url);
                   onChange('imagePublicId', publicId ?? '');
                 }}
+                onPendingUpload={onPendingUpload}
               />
             </div>
             <div>

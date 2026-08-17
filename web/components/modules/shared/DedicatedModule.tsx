@@ -3,6 +3,8 @@
 import { toast, confirmAction } from '@/lib/ui/feedback';
 
 import { useMemo, useState, useCallback, useEffect, type ReactNode } from 'react';
+import { useCreateFirstImage } from '@/hooks/use-create-first-image';
+import { patchResourceImageUrl } from '@/lib/services/resource-image-patch';
 import { Footer } from '@/components/layout/Footer';
 import { AppFormFields, AppFormModal } from '@/components/shared/AppForm';
 import { ListToolbar, ModuleToolbarActions } from '@/components/shared/ListToolbar';
@@ -26,7 +28,7 @@ import { DEDICATED_MODULE_I18N, resolveLabel, type TranslateFn } from '@/lib/i18
 import type { PortModuleConfig } from '@/lib/modules/port-types';
 import type { AppState } from '@/lib/state/types';
 import { getLegacyApiModule } from '@/lib/config/extended-api-modules';
-import { isModuleApiMode, type ApiModule } from '@/lib/config/data-source';
+import { API_RESOURCE_PATHS, isModuleApiMode, type ApiModule } from '@/lib/config/data-source';
 import { isKpiBootLoading, pickApiListRows, shouldShowModuleKpis } from '@/lib/ui/kpi-loading';
 import { mapGenericApiRow, mapGenericPayloadToApi } from '@/lib/services/generic-api-mapper';
 import { ApiModeBanner } from '@/components/shared/ApiModeBanner';
@@ -196,6 +198,10 @@ function DedicatedModuleApiView({
 
   const moduleTitle = resolveModuleText(t, configId, config, 'title');
   const moduleSubtitle = resolveModuleText(t, configId, config, 'subtitle');
+  const { onPendingUpload, attachAfterSave } = useCreateFirstImage(
+    moduleTitle,
+    (id, url, pid) => patchResourceImageUrl(API_RESOURCE_PATHS[apiModule], id, url, pid),
+  );
 
   const localizeKpiValue = (value: string): string => {
     const raw = String(value ?? '').trim();
@@ -285,6 +291,10 @@ function DedicatedModuleApiView({
       toast.error('Operation failed', { module: moduleTitle, description: 'error' in result ? String(result.error) : 'Save failed' });
       return;
     }
+    const imageField = config.fields.find((f) => f.type === 'image');
+    const savedUrl = String(form[imageField?.key ?? 'imageUrl'] ?? '');
+    const recordId = editingId || ('id' in result ? String(result.id) : '');
+    attachAfterSave(recordId, savedUrl);
     toast.success('Saved', { module: moduleTitle, description: editingId ? 'Record updated.' : 'Record added.' });
     if (!editingId) resetFilters();
     setView('main');
@@ -436,6 +446,7 @@ function DedicatedModuleApiView({
           onSubmit={handleSubmit}
           submitLabel={config.formSubmitLabel?.(editingId) ?? (editingId ? t('common.save') : t('common.create'))}
           size={config.formModalSize ?? 'md'}
+          onPendingUpload={onPendingUpload}
         >
           {config.customFormBody ? (
             config.customFormBody({ form, setField, editingId, appState })

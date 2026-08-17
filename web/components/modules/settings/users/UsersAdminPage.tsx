@@ -24,6 +24,7 @@ import type { GranularPermission } from '@/lib/config/granular-permissions';
 import type { AuthUserRecord, RoleRecord, SectionId } from '@/lib/state/types';
 import { toast, confirmAction } from '@/lib/ui/feedback';
 import { getKpiGridClassName } from '@/lib/ui/kpi-grid';
+import { useCreateFirstImage } from '@/hooks/use-create-first-image';
 
 type View = 'list' | 'form';
 
@@ -82,6 +83,19 @@ export function UsersAdminPage() {
   useEffect(() => {
     void loadUsers();
   }, [loadUsers]);
+
+  const { onPendingUpload, attachAfterSave } = useCreateFirstImage(
+    'Users',
+    async (id, url, pid) => {
+      try {
+        await updateAdminUser({ uid: id, imageUrl: url, imagePublicId: pid });
+        return { ok: true as const };
+      } catch (err) {
+        return { ok: false as const, error: err instanceof Error ? err.message : 'Image update failed' };
+      }
+    },
+    () => loadUsers(),
+  );
 
   const openCreate = useCallback(() => {
     setForm(EMPTY_FORM);
@@ -253,9 +267,10 @@ export function UsersAdminPage() {
           isMainAdmin: form.isMainAdmin,
           password: form.password.trim() || undefined,
         });
+        attachAfterSave(form.uid, form.imageUrl);
         toast.success('User updated');
       } else {
-        await createAdminUser({
+        const created = await createAdminUser({
           name: form.name.trim(),
           email: form.email.trim(),
           password: form.password,
@@ -266,6 +281,7 @@ export function UsersAdminPage() {
           roleId: form.isMainAdmin ? undefined : (form.roleId || undefined),
           isMainAdmin: form.isMainAdmin,
         });
+        attachAfterSave(created?.uid, form.imageUrl);
         toast.success('User created');
       }
       setView('list');
@@ -324,6 +340,7 @@ export function UsersAdminPage() {
         displaySections={displaySections}
         onBack={() => setView('list')}
         onSubmit={(e) => void handleSave(e)}
+        onPendingUpload={onPendingUpload}
         onRoleChange={handleRoleChange}
         onToggleSection={toggleSection}
         onSelectAllSections={handleSelectAllSections}

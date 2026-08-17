@@ -2,6 +2,8 @@
 
 import { toast } from '@/lib/ui/feedback';
 import { useMemo, useState, type FormEvent } from 'react';
+import { useSubmitGuard } from '@/hooks/use-submit-guard';
+import { useCreateFirstImage } from '@/hooks/use-create-first-image';
 import { Footer } from '@/components/layout/Footer';
 import { useChromeSuppressed } from '@/components/layout/ModuleActionsContext';
 import { FormHeader } from '@/components/layout/FormHeader';
@@ -40,6 +42,19 @@ export function CompanySettingsPage() {
   const [editSection, setEditSection] = useState<CompanyEditSection>('all');
   const [, bump] = useState(0);
   const [form, setForm] = useState<CompanyFormState>(() => companyToForm(getCompanyProfile(appState)));
+  const { isSubmitting, guardSubmit } = useSubmitGuard();
+  const { onPendingUpload, attachAfterSave } = useCreateFirstImage(
+    'Company Settings',
+    async (_id, url, pid) => {
+      const state = useAppStore.getState();
+      updateCompanyProfile(state.appState, { logoUrl: url, logoPublicId: pid });
+      if (!isModuleApiMode('companySettings')) {
+        state.saveAppState();
+        return { ok: true };
+      }
+      return saveSettingsDoc('companyProfile', getCompanyProfile(state.appState));
+    },
+  );
 
   const profile = useMemo(() => getCompanyProfile(appState), [appState, bump]);
   const documents = useMemo(() => getCompanyDocuments(appState), [appState, bump]);
@@ -129,25 +144,29 @@ export function CompanySettingsPage() {
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
+    if (isSubmitting) return;
     if ((editSection === 'all' || editSection === 'identity') && !form.name.trim()) {
       toast.error('Validation failed', { module: 'Company Settings', description: 'Company name is required.' });
       return;
     }
 
-    const payload = sectionPayload(editSection, form);
-    updateCompanyProfile(appState, payload);
-    if (isModuleApiMode('companySettings')) {
-      const result = await saveSettingsDoc('companyProfile', getCompanyProfile(appState));
-      if (!result.ok) {
-        toast.error('Operation failed', { module: 'Company Settings', description: 'error' in result ? String(result.error) : 'Save failed' });
-        return;
+    await guardSubmit(async () => {
+      const payload = sectionPayload(editSection, form);
+      updateCompanyProfile(appState, payload);
+      if (isModuleApiMode('companySettings')) {
+        const result = await saveSettingsDoc('companyProfile', getCompanyProfile(appState));
+        if (!result.ok) {
+          toast.error('Operation failed', { module: 'Company Settings', description: 'error' in result ? String(result.error) : 'Save failed' });
+          return;
+        }
+      } else {
+        saveAppState();
       }
-    } else {
-      saveAppState();
-    }
-    bump((n) => n + 1);
-    toast.success(labels.saved, { module: 'Company Settings' });
-    closeForm();
+      attachAfterSave('companyProfile', form.logoUrl);
+      bump((n) => n + 1);
+      toast.success(labels.saved, { module: 'Company Settings' });
+      closeForm();
+    });
   };
 
   if (view === 'form') {
@@ -163,13 +182,17 @@ export function CompanySettingsPage() {
               backLabel={labels.back}
             />
           </div>
-          <CompanySettingsForm section={editSection} form={form} onChange={onChange} labels={labels} />
+          <CompanySettingsForm section={editSection} form={form} onChange={onChange} labels={labels} onPendingUpload={onPendingUpload} />
           <div className={ST_FORM_FOOTER}>
             <button type="button" onClick={closeForm} className={FORM_BTN_SECONDARY}>
               {labels.cancel}
             </button>
-            <button type="submit" className={FORM_BTN_PRIMARY}>
-              {labels.save}
+            <button
+              type="submit"
+              disabled={isSubmitting}
+              className={`${FORM_BTN_PRIMARY} disabled:opacity-50 disabled:cursor-not-allowed`}
+            >
+              {isSubmitting ? 'Saving…' : labels.save}
             </button>
           </div>
         </form>

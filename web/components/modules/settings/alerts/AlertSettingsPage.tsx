@@ -1,6 +1,7 @@
 'use client';
 
 import { useMemo, useState, type FormEvent } from 'react';
+import { useSubmitGuard } from '@/hooks/use-submit-guard';
 import { useRouter } from 'next/navigation';
 import { Icon } from '@iconify/react';
 import { Footer } from '@/components/layout/Footer';
@@ -53,6 +54,7 @@ export function AlertSettingsPage() {
   const [, bump] = useState(0);
 
   const [form, setForm] = useState<AlertSettings>(() => cloneSettings(getAlertSettings(appState)));
+  const { isSubmitting, guardSubmit } = useSubmitGuard();
 
   useChromeSuppressed(true);
 
@@ -79,24 +81,27 @@ export function AlertSettingsPage() {
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    appState.alertSettings = cloneSettings(form);
-    logSystemAudit(appState, {
-      action: 'UPDATE',
-      module: 'Settings',
-      entityType: 'alertSettings',
-      description: 'Updated alert thresholds and role visibility',
-    });
-    if (isModuleApiMode('companySettings')) {
-      const result = await saveSettingsDoc('alertSettings', appState.alertSettings);
-      if (!result.ok) {
-        toast.error('Operation failed', { module: 'Alert Settings', description: 'error' in result ? String(result.error) : 'Save failed' });
-        return;
+    if (isSubmitting) return;
+    await guardSubmit(async () => {
+      appState.alertSettings = cloneSettings(form);
+      logSystemAudit(appState, {
+        action: 'UPDATE',
+        module: 'Settings',
+        entityType: 'alertSettings',
+        description: 'Updated alert thresholds and role visibility',
+      });
+      if (isModuleApiMode('companySettings')) {
+        const result = await saveSettingsDoc('alertSettings', appState.alertSettings);
+        if (!result.ok) {
+          toast.error('Operation failed', { module: 'Alert Settings', description: 'error' in result ? String(result.error) : 'Save failed' });
+          return;
+        }
+      } else {
+        saveAppState();
       }
-    } else {
-      saveAppState();
-    }
-    bump((n) => n + 1);
-    toast.success(labels.saved, { module: 'Alert Settings' });
+      bump((n) => n + 1);
+      toast.success(labels.saved, { module: 'Alert Settings' });
+    });
   };
 
   const toggleRoleCategory = (role: AlertRole, category: AlertCategory) => {
@@ -234,8 +239,12 @@ export function AlertSettingsPage() {
           <button type="button" onClick={handleReset} className={FORM_BTN_SECONDARY}>
             {labels.cancel}
           </button>
-          <button type="submit" className={FORM_BTN_PRIMARY}>
-            {labels.save}
+          <button
+            type="submit"
+            disabled={isSubmitting}
+            className={`${FORM_BTN_PRIMARY} disabled:opacity-50 disabled:cursor-not-allowed`}
+          >
+            {isSubmitting ? 'Saving…' : labels.save}
           </button>
         </div>
       </form>

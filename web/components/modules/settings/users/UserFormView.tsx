@@ -16,7 +16,7 @@ import {
 import { RoleSectionAccessGrid } from '@/components/modules/settings/roles/RoleSectionAccessGrid';
 import { GranularPermissionsPanel } from '@/components/modules/settings/roles/GranularPermissionsPanel';
 import type { GranularPermission } from '@/lib/config/granular-permissions';
-import { ImageUploadField } from '@/components/shared/ImageUploadField';
+import { ImageUploadField, type PendingImageUpload } from '@/components/shared/ImageUploadField';
 import { summarizeRoleSections } from '@/lib/services/access-control-service';
 import { MODULE_LIST_SHELL } from '@/lib/ui/module-layout';
 import type { RoleRecord, SectionId } from '@/lib/state/types';
@@ -53,6 +53,7 @@ export function UserFormView({
   displaySections,
   onBack,
   onSubmit,
+  onPendingUpload,
   onRoleChange,
   onToggleSection,
   onSelectAllSections,
@@ -73,6 +74,7 @@ export function UserFormView({
   displaySections: SectionId[];
   onBack: () => void;
   onSubmit: (e: React.FormEvent) => void;
+  onPendingUpload?: (promise: Promise<PendingImageUpload | null> | null) => void;
   onRoleChange: (roleId: string) => void;
   onToggleSection: (id: SectionId) => void;
   onSelectAllSections: () => void;
@@ -111,6 +113,7 @@ export function UserFormView({
                   label="Profile Photo"
                   value={form.imageUrl}
                   onChange={(url, publicId) => setForm((f) => ({ ...f, imageUrl: url, imagePublicId: publicId ?? '' }))}
+                  onPendingUpload={onPendingUpload}
                 />
               </div>
               <div>
