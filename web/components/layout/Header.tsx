@@ -13,6 +13,7 @@ import type { AppState } from '@/lib/state/types';
 import { getProfileView } from '@/lib/services/settings-service';
 import { employeeInitials } from '@/lib/services/hrm-service';
 import { useClickOutside } from '@/hooks/useClickOutside';
+import Image from 'next/image';
 
 interface HeaderProps {
   title?: string;
@@ -30,7 +31,8 @@ export function Header({ title }: HeaderProps) {
   const [openPanel, setOpenPanel] = useState<HeaderPanel>(null);
   const [navDate, setNavDate] = useState('');
   const profileMenuRef = useRef<HTMLDivElement>(null);
-  const displayTitle = title && title !== 'Enterprise Workspace' ? title : 'Toys Factory Operations Hub';
+  const showBrand = !title || title === 'Enterprise Workspace';
+  const displayTitle = showBrand ? '' : title;
 
   const profile = useMemo(
     () => getProfileView({ currentUser, employees } as AppState),
@@ -72,28 +74,34 @@ export function Header({ title }: HeaderProps) {
 
   return (
     <header className="h-16 glass-header px-5 flex items-center justify-between shrink-0 sticky top-0 z-20 border-b border-white/40 bg-white/20 backdrop-blur-2xl">
-      {/* Left: Title + Live Badge */}
+      {/* Left: Brand / page title */}
       <div className="flex items-center gap-3 min-w-0 flex-1 ml-3">
         <div className="min-w-0">
-          <div className="flex items-center gap-2">
-            <h2 className="text-sm md:text-[15px] font-black text-slate-900 tracking-tight truncate flex items-center gap-1.5">
-              {displayTitle.startsWith('Toys') ? (
-                <span>
-                  <span className="text-amber-600">T</span>
-                  {displayTitle.slice(1)}
+          {showBrand ? (
+            <h2 className="m-0 leading-none flex items-center gap-2 min-w-0 truncate">
+              <Image
+                src="/images/logo-toys.png"
+                alt="Toys Factory"
+                width={20}
+                height={20}
+                className="w-5 h-5 object-contain shrink-0 drop-shadow-xs"
+                unoptimized
+              />
+              <span className="inline-flex items-baseline min-w-0">
+                <span className="text-[15px] font-black tracking-tight">
+                  <span className="text-amber-700">Toys</span>
+                  <span className="text-cyan-600 ml-0.5">Factory</span>
                 </span>
-              ) : (
-                <span>{displayTitle}</span>
-              )}
-            </h2>
-            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-700 text-[10px] font-extrabold tracking-wide shrink-0">
-              <span className="relative flex h-1.5 w-1.5">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-                <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500" />
+                <span className="ml-1.5 text-xs font-black tracking-widest text-slate-400 uppercase">
+                  ERP
+                </span>
               </span>
-              System Active
-            </span>
-          </div>
+            </h2>
+          ) : (
+            <h2 className="text-sm md:text-[15px] font-black text-slate-900 tracking-tight truncate">
+              {displayTitle}
+            </h2>
+          )}
           <div className="flex items-center gap-1.5 text-[11px] font-medium text-slate-500 truncate max-md:hidden -mt-0.5">
             <Icon icon="fluent-color:database-24" width={13} height={13} className="shrink-0 opacity-80" />
             <span>Real-time manufacturing, sales, stock &amp; factory management</span>

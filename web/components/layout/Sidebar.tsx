@@ -1,8 +1,8 @@
 'use client';
 
 import Link from 'next/link';
-import Image from 'next/image';
 import { usePathname, useRouter } from 'next/navigation';
+import { BrandMark } from '@/components/layout/BrandMark';
 import { useState, useEffect, useMemo } from 'react';
 import { ChevronDown, ChevronLeft, ChevronRight, X } from 'lucide-react';
 import {
@@ -199,22 +199,9 @@ export function Sidebar() {
           )}
         </button>
 
-        <div className="h-16 pl-6.5 pr-3.5 border-b border-white/40 bg-white/10 flex items-center justify-between overflow-hidden shrink-0">
+        <div className="h-16 pl-5 pr-3.5 border-b border-white/40 bg-white/10 flex items-center justify-between overflow-hidden shrink-0">
           <div className="flex items-center min-w-0 flex-1">
-            <div className="w-[32px] h-[32px] flex items-center justify-center shrink-0">
-              <Image src="/images/logo-toys.png" alt="Toys Factory Logo" width={32} height={32} className="w-[32px] h-[32px] object-contain shrink-0 drop-shadow-xs" unoptimized />
-            </div>
-            {!collapsed && (
-              <div className="sidebar-label min-w-0 ml-3 flex items-baseline">
-                <span className="text-lg font-black tracking-tight">
-                  <span className="text-amber-700">Toys</span>
-                  <span className="text-cyan-600 ml-0.5">Factory</span>
-                </span>
-                <span className="ml-1.5 text-xs font-black tracking-widest text-slate-400 uppercase">
-                  ERP
-                </span>
-              </div>
-            )}
+            <BrandMark size="sidebar" showWordmark={!collapsed} />
           </div>
         </div>
 
