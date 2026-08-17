@@ -11,7 +11,7 @@ export type NotificationVisual = {
 const CATEGORY_VISUAL: Record<AlertCategory, NotificationVisual> = {
   customer_due: { icon: 'fluent-color:alert-24', iconBg: 'bg-blue-100' },
   lead_followup: { icon: 'fluent-color:person-24', iconBg: 'bg-violet-100' },
-  low_stock: { icon: 'fluent-color:box-24', iconBg: 'bg-rose-100' },
+  low_stock: { icon: 'fluent-color:toolbox-24', iconBg: 'bg-rose-100' },
   pending_purchase: { icon: 'fluent-color:warning-24', iconBg: 'bg-amber-100' },
   production: { icon: 'fluent-color:clock-24', iconBg: 'bg-slate-100' },
   payment_collection: { icon: 'fluent-color:checkmark-circle-24', iconBg: 'bg-emerald-100' },

@@ -153,7 +153,7 @@ export function Header({ title }: HeaderProps) {
           className="h-9 px-2.5 rounded-xl bg-white/50 hover:bg-white/90 border border-white/80 shadow-xs flex items-center gap-1.5 transition-all cursor-pointer"
           title="Switch Language"
         >
-          <Icon icon="fluent-color:globe-location-24" width={18} height={18} className="shrink-0" />
+          <Icon icon="fluent-color:globe-24" width={18} height={18} className="shrink-0" />
           <span className="uppercase text-[11px] font-extrabold text-slate-800">{lang === 'en' ? 'EN' : 'বাংলা'}</span>
         </button>
 

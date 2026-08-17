@@ -136,7 +136,7 @@ export const TENANT_SIDEBAR_SECTIONS: SidebarSection[] = [
       { label: 'My Tasks', href: '/projects/my-tasks', view: 'my-tasks', iconifyIcon: 'fluent-color:clipboard-task-24' },
       { label: 'Team Tasks', href: '/projects/team-tasks', view: 'team-tasks', iconifyIcon: 'fluent-color:people-team-24' },
       // Disabled via MODULE_FEATURE_FLAGS.legacyProductionProjects — see lib/config/module-feature-flags.ts
-      { label: 'Production Projects', href: '/legacy/projects', view: 'production-projects', iconifyIcon: 'fluent-color:building-factory-24' },
+      { label: 'Production Projects', href: '/legacy/projects', view: 'production-projects', iconifyIcon: 'fluent-color:building-24' },
     ],
   },
   { id: 'assets', label: 'Assets', href: '/asset-management', imageIcon: '/images/sidebar/assets.png', iconifyIcon: 'fluent-color:toolbox-24', color: 'text-fuchsia-600', items: [] },

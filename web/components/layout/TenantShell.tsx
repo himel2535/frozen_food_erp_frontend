@@ -10,19 +10,14 @@ import { ModuleShell } from '@/components/layout/ModuleShell';
 import { ApiStateHydrator } from '@/components/providers/ApiStateHydrator';
 import { SocketProvider } from '@/components/providers/SocketProvider';
 import { useAppStore } from '@/lib/state/app-store';
-import { useEffect } from 'react';
-import { loadIcons } from '@iconify/react';
+import { registerChromeIcons } from '@/lib/ui/register-chrome-icons';
+
+registerChromeIcons();
 
 export function TenantShell({ children }: { children: React.ReactNode }) {
   const hydrated = useAppStore((s) => s.hydrated);
   const ready = useAppStore((s) => s.ready);
   const showBootLoader = !hydrated || !ready;
-
-  useEffect(() => {
-    void import('@/lib/ui/page-icons').then(({ getPageIcon }) => {
-      loadIcons([getPageIcon(window.location.pathname)]);
-    });
-  }, []);
 
   return (
     <SocketProvider>

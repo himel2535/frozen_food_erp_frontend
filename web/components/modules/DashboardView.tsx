@@ -3,16 +3,15 @@
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { useMemo, useEffect, useState } from 'react';
-import { loadIcons } from '@iconify/react';
 import { Icon } from '@iconify/react';
 import {
   DashboardLoadingSkeleton,
-  DashboardSalesTrendChartSkeleton,
-  DashboardRevenueChartSkeleton,
-  DashboardBusinessAlertsSkeleton,
-  DashboardBottomPanelsSkeleton,
   DashboardProjectProgressSkeleton,
 } from '@/components/skeletons/DashboardLoadingSkeleton';
+import { SalesTrendChart } from '@/components/modules/dashboard/SalesTrendChart';
+import { RevenueAnalyticsChart } from '@/components/modules/dashboard/RevenueAnalyticsChart';
+import { DashboardBusinessAlerts } from '@/components/modules/dashboard/DashboardBusinessAlerts';
+import { DashboardBottomPanels } from '@/components/modules/dashboard/DashboardBottomPanels';
 import { useLocaleFormat } from '@/hooks/useLocaleFormat';
 import { emptyDashboardShell, useDashboardReady, DashboardStateProvider } from '@/hooks/use-dashboard-api-data';
 import { useAppStore } from '@/lib/state/app-store';
@@ -22,23 +21,9 @@ import { buildDashboardMetricValues, summaryLowStock } from '@/lib/services/dash
 import { fetchDashboardSummary, type DashboardSummary } from '@/lib/services/api-resource-service';
 import { onApiMutation } from '@/lib/services/api-sync-events';
 import type { DashboardServerPayload } from '@/lib/server/dashboard-snapshot';
+import { SkeletonText } from '@/components/skeletons/SkeletonText';
+import { isMongoDbBackend } from '@/lib/config/data-source';
 
-const SalesTrendChart = dynamic(
-  () => import('@/components/modules/dashboard/SalesTrendChart').then((m) => m.SalesTrendChart),
-  { ssr: false, loading: () => <DashboardSalesTrendChartSkeleton /> },
-);
-const RevenueAnalyticsChart = dynamic(
-  () => import('@/components/modules/dashboard/RevenueAnalyticsChart').then((m) => m.RevenueAnalyticsChart),
-  { ssr: false, loading: () => <DashboardRevenueChartSkeleton /> },
-);
-const DashboardBusinessAlerts = dynamic(
-  () => import('@/components/modules/dashboard/DashboardBusinessAlerts').then((m) => m.DashboardBusinessAlerts),
-  { ssr: false, loading: () => <DashboardBusinessAlertsSkeleton /> },
-);
-const DashboardBottomPanels = dynamic(
-  () => import('@/components/modules/dashboard/DashboardBottomPanels').then((m) => m.DashboardBottomPanels),
-  { ssr: false, loading: () => <DashboardBottomPanelsSkeleton /> },
-);
 const DashboardProjectProgress = dynamic(
   () => import('@/components/modules/dashboard/DashboardProjectProgress').then((m) => m.DashboardProjectProgress),
   { ssr: false, loading: () => <DashboardProjectProgressSkeleton /> },
@@ -68,6 +53,7 @@ export function DashboardView({ serverPayload = null }: DashboardViewProps) {
   const { formatMoney } = useLocaleFormat();
 
   const [liveSummary, setLiveSummary] = useState<DashboardSummary | null>(null);
+  const [summaryFailed, setSummaryFailed] = useState(false);
 
   const dashboardState = useMemo(() => {
     if (ready) return baseState;
@@ -77,34 +63,72 @@ export function DashboardView({ serverPayload = null }: DashboardViewProps) {
     return emptyDashboardShell(baseState);
   }, [ready, baseState, serverSnapshot]);
 
-  const hasKpi = Boolean(liveSummary || serverSummary);
-  const hasInitialData = hasKpi || ready || Boolean(serverSnapshot && Object.keys(serverSnapshot).length > 0);
+  const hasKpi = typeof (liveSummary ?? serverSummary)?.monthRevenue === 'number';
+  const hasInitialData = hasKpi || summaryFailed || !isMongoDbBackend();
 
   useEffect(() => {
     document.body.classList.add('dashboard-page');
-    loadIcons(KPI_CARDS.map((card) => card.icon));
     return () => document.body.classList.remove('dashboard-page');
   }, []);
 
   useEffect(() => {
+    if (!isMongoDbBackend()) return;
+
     let active = true;
 
-    const loadSummary = async () => {
-      try {
-        const data = await fetchDashboardSummary();
-        if (active && data) setLiveSummary(data);
-      } catch (err) {
-        console.error('Failed to fetch live dashboard summary:', err);
-      }
+    const mergeSummary = (next: DashboardSummary | null) => {
+      if (!active || !next) return;
+      setLiveSummary((prev) => {
+        const base = prev ?? serverSummary;
+        if (typeof next.monthRevenue === 'number') {
+          return { ...(base ?? {}), ...next } as DashboardSummary;
+        }
+        if (!base || typeof base.monthRevenue !== 'number') return prev;
+        return { ...base, ...next };
+      });
     };
 
-    if (!serverSummary) {
-      void loadSummary();
+    const loadKpi = async () => {
+      const data = await fetchDashboardSummary('kpi');
+      if (!active) return;
+      if (data) {
+        mergeSummary(data);
+        return true;
+      }
+      if (!serverSummary) setSummaryFailed(true);
+      return false;
+    };
+
+    const loadExtra = async () => {
+      const data = await fetchDashboardSummary('extra');
+      if (data) {
+        mergeSummary(data);
+        return;
+      }
+      mergeSummary({ lowStock: 0 } as DashboardSummary);
+    };
+
+    const refreshAll = async () => {
+      const [kpi, extra] = await Promise.all([
+        fetchDashboardSummary('kpi'),
+        fetchDashboardSummary('extra'),
+      ]);
+      mergeSummary(kpi);
+      mergeSummary(extra);
+    };
+
+    if (serverSummary) {
+      if (typeof serverSummary.lowStock !== 'number') void loadExtra();
+    } else {
+      void (async () => {
+        const ok = await loadKpi();
+        if (active && ok) await loadExtra();
+      })();
     }
 
     const unsubscribe = onApiMutation((modules) => {
       if (modules?.some((mod) => SUMMARY_MUTATION_MODULES.has(mod))) {
-        void loadSummary();
+        void refreshAll();
       }
     });
 
@@ -181,6 +205,10 @@ export function DashboardView({ serverPayload = null }: DashboardViewProps) {
   }, [t, formatMoney, metrics, activeSummary]);
 
   const lowStockCount = activeSummary ? summaryLowStock(activeSummary) : metrics.lowStock;
+  const extraReady =
+    !isMongoDbBackend() ||
+    summaryFailed ||
+    typeof activeSummary?.lowStock === 'number';
 
   if (!hasInitialData) {
     return <DashboardLoadingSkeleton />;
@@ -197,16 +225,25 @@ export function DashboardView({ serverPayload = null }: DashboardViewProps) {
             <>
               <div className="flex flex-col justify-center gap-0.5 min-w-0 flex-1 my-auto">
                 <span className="text-xs font-bold text-slate-500 tracking-wide leading-tight block">{t(card.labelKey)}</span>
-                <span className="text-lg font-extrabold tracking-tight text-slate-900 mt-0.5 tabular-nums">{data?.value ?? '—'}</span>
-                {card.alert && data?.sub ? (
-                  <span
-                    className={`text-[10px] font-bold block ${lowStockCount > 0 ? 'text-rose-600' : 'text-emerald-600'}`}
-                  >
-                    {data.sub}
-                  </span>
-                ) : data?.sub ? (
-                  <span className="text-[10px] text-slate-500 font-medium block truncate">{data.sub}</span>
-                ) : null}
+                {card.key === 'low-stock' && !extraReady ? (
+                  <>
+                    <SkeletonText className="h-5 w-[72px] max-w-[90%] mt-0.5" />
+                    <SkeletonText className="h-2.5 w-[96px] max-w-[95%]" />
+                  </>
+                ) : (
+                  <>
+                    <span className="text-lg font-extrabold tracking-tight text-slate-900 mt-0.5 tabular-nums">{data?.value ?? '—'}</span>
+                    {card.alert && data?.sub ? (
+                      <span
+                        className={`text-[10px] font-bold block ${lowStockCount > 0 ? 'text-rose-600' : 'text-emerald-600'}`}
+                      >
+                        {data.sub}
+                      </span>
+                    ) : data?.sub ? (
+                      <span className="text-[10px] text-slate-500 font-medium block truncate">{data.sub}</span>
+                    ) : null}
+                  </>
+                )}
               </div>
               <div className="shrink-0 my-auto self-center">
                 <Icon icon={card.icon} width={40} height={40} className="shrink-0" />

@@ -71,7 +71,7 @@ export function DashboardBottomPanels() {
                       imageUrl={product.imageUrl}
                       alt={product.name}
                       className="h-8 w-8 rounded-md object-cover"
-                      fallback={<Icon icon="fluent-color:box-24" width={16} height={16} />}
+                      fallback={<Icon icon="fluent-color:toolbox-24" width={16} height={16} />}
                     />
                   </div>
                   <div className="flex flex-col min-w-0">

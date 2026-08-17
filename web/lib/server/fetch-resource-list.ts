@@ -53,7 +53,15 @@ export async function fetchServerResourceList(
   return rows;
 }
 
-export async function fetchServerDashboardSummary(revalidateSeconds = 30): Promise<DashboardSummary | null> {
-  const result = await serverApiRequest<DashboardSummary>('/dashboard/summary', revalidateSeconds);
+export async function fetchServerDashboardSummary(options?: {
+  scope?: 'kpi' | 'extra' | 'full';
+  timeoutMs?: number;
+}): Promise<DashboardSummary | null> {
+  const scope = options?.scope ?? 'kpi';
+  const result = await serverApiRequest<DashboardSummary>(
+    `/dashboard/summary?scope=${scope}`,
+    30,
+    options?.timeoutMs != null ? { timeoutMs: options.timeoutMs } : undefined,
+  );
   return result?.data ?? null;
 }

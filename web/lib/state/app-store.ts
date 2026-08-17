@@ -356,6 +356,7 @@ export function bootstrapAppStore() {
 
 if (typeof window !== 'undefined') {
   useAppStore.getState().initFromStorage();
+  useAppStore.getState().startAuthListener();
   window.addEventListener('pagehide', () => {
     const store = useAppStore.getState();
     store.saveAppState({ immediate: true });

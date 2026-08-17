@@ -52,10 +52,17 @@ export function ApiStateHydrator() {
     if (!USE_API || !authReady || !authUser) return;
 
     let cancelled = false;
+    let idleId: number | undefined;
+    let timeoutId: ReturnType<typeof setTimeout> | undefined;
 
     void (async () => {
       await new Promise<void>((resolve) => {
-        window.setTimeout(resolve, 0);
+        const idle = window.requestIdleCallback;
+        if (typeof idle === 'function') {
+          idleId = idle(() => resolve(), { timeout: 2500 });
+        } else {
+          timeoutId = window.setTimeout(resolve, 200);
+        }
       });
       if (cancelled) return;
       try {
@@ -72,7 +79,13 @@ export function ApiStateHydrator() {
       }
     })();
 
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+      if (idleId != null && typeof window.cancelIdleCallback === 'function') {
+        window.cancelIdleCallback(idleId);
+      }
+      if (timeoutId != null) window.clearTimeout(timeoutId);
+    };
   }, [authReady, authUser, setApiDataReady]);
 
   useEffect(() => {

@@ -26,6 +26,8 @@
     "zustand": "^5.0.14"
   },
   "devDependencies": {
+    "@iconify-json/flat-color-icons": "^1.2.3",
+    "@iconify-json/fluent-color": "^1.2.21",
     "@next/bundle-analyzer": "^16.3.0",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",

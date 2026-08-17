@@ -174,8 +174,6 @@ export async function deleteResource(
 }
 
 export type DashboardSummary = {
-  salesSummary: { count: number; total: number };
-  purchaseSummary: { count: number; total: number };
   monthRevenue: number;
   monthSalesCount: number;
   pendingSales: number;
@@ -183,23 +181,29 @@ export type DashboardSummary = {
   openLeadsValue: number;
   customerDue: number;
   customerDueCount: number;
-  supplierDue: number;
-  supplierDueCount: number;
   pendingProduction: number;
   pendingProductionQty: number;
-  productionCompleted: number;
-  productionQty: number;
-  pendingPurchase: number;
-  lowStock: number;
-  rmStockValue: number;
-  sfStockValue: number;
-  fgStockValue: number;
-  totalInventoryValue: number;
+  salesSummary?: { count: number; total: number };
+  purchaseSummary?: { count: number; total: number };
+  supplierDue?: number;
+  supplierDueCount?: number;
+  productionCompleted?: number;
+  productionQty?: number;
+  pendingPurchase?: number;
+  lowStock?: number;
+  rmStockValue?: number;
+  sfStockValue?: number;
+  fgStockValue?: number;
+  totalInventoryValue?: number;
 };
 
-export async function fetchDashboardSummary(): Promise<DashboardSummary | null> {
+export type DashboardSummaryScope = 'kpi' | 'extra' | 'full';
+
+export async function fetchDashboardSummary(
+  scope: DashboardSummaryScope = 'kpi',
+): Promise<DashboardSummary | null> {
   try {
-    const { data } = await apiRequest<DashboardSummary>('/dashboard/summary');
+    const { data } = await apiRequest<DashboardSummary>(`/dashboard/summary?scope=${scope}`);
     return data ?? null;
   } catch {
     return null;
