@@ -2,7 +2,7 @@
 
 import { toast } from '@/lib/ui/feedback';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useChromeSuppressed } from '@/components/layout/ModuleActionsContext';
 import { EmployeeForm } from '@/components/modules/hrm/employee-form/EmployeeForm';
@@ -32,6 +32,7 @@ export function EmployeeFormPage({ mode, employeeId }: { mode: 'create' | 'edit'
   const apiMode = isModuleApiMode('employees');
   const [apiEmployee, setApiEmployee] = useState<Record<string, unknown> | null>(null);
   const [apiLoading, setApiLoading] = useState(apiMode && mode === 'edit' && Boolean(employeeId));
+  const submittedRef = useRef(false);
 
   useEffect(() => {
     if (!apiMode || mode !== 'edit' || !employeeId) return;
@@ -77,53 +78,68 @@ export function EmployeeFormPage({ mode, employeeId }: { mode: 'create' | 'edit'
   const handleSave = async (
     values: Record<string, string>,
     pendingImageUpload?: Promise<PendingImageUpload | null> | null,
-  ) => {
-    const structureId = values.salaryStructureId?.trim();
-    let salary = Number(values.salary ?? 0);
-    if ((!salary || salary <= 0) && structureId) {
-      const structure = getSalaryStructureById(appState, structureId);
-      if (structure) {
-        const basic = resolveBasicSalary(structure);
-        if (basic > 0) salary = basic;
-      }
-    }
-    const payload = { ...values, salary: salary > 0 ? String(salary) : values.salary };
+  ): Promise<boolean> => {
+    if (submittedRef.current) return true;
+    submittedRef.current = true;
 
-    if (apiMode) {
-      const body = mapEmployeeFormToApi(payload, { forCreate: mode === 'create' });
+    try {
+      const structureId = values.salaryStructureId?.trim();
+      let salary = Number(values.salary ?? 0);
+      if ((!salary || salary <= 0) && structureId) {
+        const structure = getSalaryStructureById(appState, structureId);
+        if (structure) {
+          const basic = resolveBasicSalary(structure);
+          if (basic > 0) salary = basic;
+        }
+      }
+      const payload = { ...values, salary: salary > 0 ? String(salary) : values.salary };
+
+      if (apiMode) {
+        const body = mapEmployeeFormToApi(payload, { forCreate: mode === 'create' });
+        const result = mode === 'edit' && employeeId
+          ? await updateResource(API_RESOURCE_PATHS.employees, employeeId, body)
+          : await createResource(API_RESOURCE_PATHS.employees, body);
+        if (!result.ok) {
+          submittedRef.current = false;
+          toast.error('Operation failed', { module: 'HRM', description: 'error' in result ? String(result.error) : 'Save failed' });
+          return false;
+        }
+        const recordId = mode === 'edit' && employeeId
+          ? employeeId
+          : ('id' in result ? String(result.id) : '');
+        if (recordId && pendingImageUpload) {
+          attachBackgroundImageLater({
+            recordId,
+            savedImageUrl: String(values.imageUrl ?? ''),
+            pending: pendingImageUpload,
+            patchImage: (id, url, pid) => patchResourceImageUrl(API_RESOURCE_PATHS.employees, id, url, pid),
+            moduleName: 'HRM',
+          });
+        }
+        toast.success('Saved', { module: 'HRM', description: mode === 'edit' ? 'Employee updated.' : 'Employee created.' });
+        router.push(mode === 'edit' && employeeId ? `/hrm/employees/${employeeId}` : '/hrm/employees');
+        return true;
+      }
+
       const result = mode === 'edit' && employeeId
-        ? await updateResource(API_RESOURCE_PATHS.employees, employeeId, body)
-        : await createResource(API_RESOURCE_PATHS.employees, body);
+        ? updateEmployee(appState, employeeId, payload)
+        : createEmployee(appState, payload);
       if (!result.ok) {
+        submittedRef.current = false;
         toast.error('Operation failed', { module: 'HRM', description: 'error' in result ? String(result.error) : 'Save failed' });
-        return;
+        return false;
       }
-      const recordId = mode === 'edit' && employeeId
-        ? employeeId
-        : ('id' in result ? String(result.id) : '');
-      if (recordId && pendingImageUpload) {
-        attachBackgroundImageLater({
-          recordId,
-          savedImageUrl: String(values.imageUrl ?? ''),
-          pending: pendingImageUpload,
-          patchImage: (id, url, pid) => patchResourceImageUrl(API_RESOURCE_PATHS.employees, id, url, pid),
-          moduleName: 'HRM',
-        });
-      }
-      toast.success('Saved', { module: 'HRM', description: mode === 'edit' ? 'Employee updated.' : 'Employee created.' });
+      saveAppState();
       router.push(mode === 'edit' && employeeId ? `/hrm/employees/${employeeId}` : '/hrm/employees');
-      return;
+      return true;
+    } catch (err) {
+      submittedRef.current = false;
+      toast.error('Operation failed', {
+        module: 'HRM',
+        description: err instanceof Error ? err.message : 'Save failed',
+      });
+      return false;
     }
-
-    const result = mode === 'edit' && employeeId
-      ? updateEmployee(appState, employeeId, payload)
-      : createEmployee(appState, payload);
-    if (!result.ok) {
-      toast.error('Operation failed', { module: 'HRM', description: 'error' in result ? String(result.error) : 'Save failed' });
-      return;
-    }
-    saveAppState();
-    router.push(mode === 'edit' && employeeId ? `/hrm/employees/${employeeId}` : '/hrm/employees');
   };
 
   return (

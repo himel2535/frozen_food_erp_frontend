@@ -12,7 +12,7 @@ import {
 import { validateEmployeeForm } from '@/components/modules/hrm/employee-form/employee-form-validation';
 import { MODULE_LIST_SHELL } from '@/lib/ui/module-layout';
 import type { AppState } from '@/lib/state/types';
-import { useSubmitGuard } from '@/hooks/use-submit-guard';
+import { SubmitBusyLabel, useSubmitGuard } from '@/hooks/use-submit-guard';
 import type { PendingImageUpload } from '@/components/shared/ImageUploadField';
 
 export function EmployeeForm({
@@ -29,30 +29,33 @@ export function EmployeeForm({
   onSave: (
     values: Record<string, string>,
     pendingImageUpload?: Promise<PendingImageUpload | null> | null,
-  ) => void | Promise<void>;
+  ) => boolean | Promise<boolean>;
 }) {
   const [form, setForm] = useState<Record<string, string>>(initialValues);
+  const [saveSucceeded, setSaveSucceeded] = useState(false);
   const formRef = useRef<HTMLFormElement>(null);
   const pendingImageUploadRef = useRef<Promise<PendingImageUpload | null> | null>(null);
-  const { isSubmitting, guardSubmit } = useSubmitGuard();
+  const { isSubmitting, guardSubmit, savingRef } = useSubmitGuard();
+  const busy = isSubmitting || saveSucceeded;
 
   const setField = (key: string, value: string) => {
     setForm((prev) => ({ ...prev, [key]: value }));
   };
 
-  const handleSubmit = async (e: FormEvent) => {
+  const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
-    if (isSubmitting) return;
-    const nextErrors = validateEmployeeForm(form);
-    if (Object.keys(nextErrors).length > 0) {
-      toast.error('Please fill required fields', {
-        module: 'HRM',
-        description: Object.values(nextErrors)[0] ?? 'Check the form and try again.',
-      });
-      return;
-    }
-    await guardSubmit(async () => {
-      await Promise.resolve(onSave(form, pendingImageUploadRef.current));
+    if (savingRef.current || saveSucceeded) return;
+    void guardSubmit(async () => {
+      const nextErrors = validateEmployeeForm(form);
+      if (Object.keys(nextErrors).length > 0) {
+        toast.error('Please fill required fields', {
+          module: 'HRM',
+          description: Object.values(nextErrors)[0] ?? 'Check the form and try again.',
+        });
+        return;
+      }
+      const ok = await Promise.resolve(onSave(form, pendingImageUploadRef.current));
+      if (ok) setSaveSucceeded(true);
     });
   };
 
@@ -77,10 +80,11 @@ export function EmployeeForm({
             <button type="button" onClick={onCancel} className={PO_BTN_GHOST}>Cancel</button>
             <button
               type="submit"
-              disabled={isSubmitting}
+              disabled={busy}
+              aria-busy={busy}
               className={`${PO_BTN_PRIMARY} disabled:opacity-50 disabled:cursor-not-allowed`}
             >
-              {isSubmitting ? 'Saving…' : submitLabel}
+              <SubmitBusyLabel busy={busy} idle={submitLabel} />
             </button>
           </div>
         </div>

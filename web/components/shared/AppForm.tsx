@@ -11,7 +11,7 @@ import {
   PendingImageUploadContext,
   type PendingImageSetter,
 } from '@/components/shared/pending-image-upload-context';
-import { useSubmitGuard } from '@/hooks/use-submit-guard';
+import { SubmitBusyLabel, useSubmitGuard } from '@/hooks/use-submit-guard';
 import { publicIdFieldKey } from '@/lib/services/cloudinary-service';
 import type { PortField } from '@/lib/modules/port-types';
 import { MODULE_FORM_SHELL } from '@/lib/ui/module-layout';
@@ -97,9 +97,10 @@ export function AppFormShell({
       <button
         type="submit"
         disabled={isSubmitting}
-        className={`${FORM_BTN_PRIMARY} disabled:opacity-50 disabled:cursor-not-allowed`}
+        aria-busy={isSubmitting}
+        className={`${FORM_BTN_PRIMARY} disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center`}
       >
-        {isSubmitting ? 'Saving…' : submitLabel}
+        <SubmitBusyLabel busy={isSubmitting} idle={submitLabel} />
       </button>
     </div>
   );
