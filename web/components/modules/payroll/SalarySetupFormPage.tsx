@@ -2,7 +2,7 @@
 
 import { toast } from '@/lib/ui/feedback';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useChromeSuppressed } from '@/components/layout/ModuleActionsContext';
 import { PageSkeleton } from '@/components/shared/PageSkeleton';
@@ -34,6 +34,7 @@ export function SalarySetupFormPage({ mode, structureId }: { mode: 'create' | 'e
   const apiMode = isModuleApiMode('salaryStructures');
   const [apiStructure, setApiStructure] = useState<Record<string, unknown> | null>(null);
   const [apiLoading, setApiLoading] = useState(apiMode && mode === 'edit' && Boolean(structureId));
+  const submittedRef = useRef(false);
 
   useEffect(() => {
     if (!apiMode || mode !== 'edit' || !structureId) return;
@@ -79,36 +80,50 @@ export function SalarySetupFormPage({ mode, structureId }: { mode: 'create' | 'e
     );
   }
 
-  const handleSave = async (payload: SalarySetupFormPayload) => {
-    const record = enrichSalaryStructureRecord(payloadToRecord({
-      ...payload,
-      id: structureId ?? payload.previewId,
-    }));
+  const handleSave = async (payload: SalarySetupFormPayload): Promise<boolean> => {
+    if (submittedRef.current) return true;
+    submittedRef.current = true;
+    try {
+      const record = enrichSalaryStructureRecord(payloadToRecord({
+        ...payload,
+        id: structureId ?? payload.previewId,
+      }));
 
-    if (apiMode) {
-      const body = mapGenericPayloadToApi(record);
-      const result = mode === 'edit' && structureId
-        ? await updateResource(API_RESOURCE_PATHS.salaryStructures, resolveApiRowId(existing ?? record), body)
-        : await createResource(API_RESOURCE_PATHS.salaryStructures, body);
-      if (!result.ok) {
-        toast.error('Operation failed', { module: 'Salary Setup', description: 'error' in result ? String(result.error) : 'Save failed' });
-        return;
+      if (apiMode) {
+        const body = mapGenericPayloadToApi(record);
+        const result = mode === 'edit' && structureId
+          ? await updateResource(API_RESOURCE_PATHS.salaryStructures, resolveApiRowId(existing ?? record), body)
+          : await createResource(API_RESOURCE_PATHS.salaryStructures, body);
+        if (!result.ok) {
+          submittedRef.current = false;
+          toast.error('Operation failed', { module: 'Salary Setup', description: 'error' in result ? String(result.error) : 'Save failed' });
+          return false;
+        }
+        toast.success('Saved', { module: 'Salary Setup', description: mode === 'edit' ? 'Structure updated.' : 'Structure created.' });
+        router.push('/payroll/structures');
+        return true;
       }
+
+      const result = mode === 'edit' && structureId
+        ? updateSalaryStructure(appState, structureId, record)
+        : createSalaryStructure(appState, record);
+      if (!result.ok) {
+        submittedRef.current = false;
+        toast.error('Operation failed', { module: 'Salary Setup', description: 'error' in result ? String(result.error) : 'Save failed' });
+        return false;
+      }
+      saveAppState();
       toast.success('Saved', { module: 'Salary Setup', description: mode === 'edit' ? 'Structure updated.' : 'Structure created.' });
       router.push('/payroll/structures');
-      return;
+      return true;
+    } catch (err) {
+      submittedRef.current = false;
+      toast.error('Operation failed', {
+        module: 'Salary Setup',
+        description: err instanceof Error ? err.message : 'Save failed',
+      });
+      return false;
     }
-
-    const result = mode === 'edit' && structureId
-      ? updateSalaryStructure(appState, structureId, record)
-      : createSalaryStructure(appState, record);
-    if (!result.ok) {
-      toast.error('Operation failed', { module: 'Salary Setup', description: 'error' in result ? String(result.error) : 'Save failed' });
-      return;
-    }
-    saveAppState();
-    toast.success('Saved', { module: 'Salary Setup', description: mode === 'edit' ? 'Structure updated.' : 'Structure created.' });
-    router.push('/payroll/structures');
   };
 
   return (

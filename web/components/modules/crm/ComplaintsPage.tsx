@@ -170,10 +170,10 @@ export function ComplaintsPage() {
   const handleCreate = async (
     values: ComplaintFormValues,
     pendingImageUpload?: Promise<PendingImageUpload | null> | null,
-  ) => {
+  ): Promise<boolean> => {
     if (!values.subject.trim()) {
       toast.error('Subject is required', { module: 'Complaints' });
-      return;
+      return false;
     }
     const customerId = values.customerId && values.customerId !== 'walk-in' ? values.customerId : undefined;
     const payload = {
@@ -193,7 +193,7 @@ export function ComplaintsPage() {
       const result = await apiStore.create(mapComplaintToApi(payload as unknown as Record<string, unknown>));
       if (!result.ok) {
         toast.error('Operation failed', { module: 'Complaints', description: 'error' in result ? String(result.error) : 'Create failed' });
-        return;
+        return false;
       }
       if (pendingImageUpload && 'id' in result) {
         attachBackgroundImageLater({
@@ -206,12 +206,13 @@ export function ComplaintsPage() {
       }
       setView('main');
       toast.success('Complaint logged successfully', { module: 'Complaints' });
-      return;
+      return true;
     }
     createComplaint(appState, payload);
     saveAppState();
     setView('main');
     toast.success('Complaint logged successfully', { module: 'Complaints' });
+    return true;
   };
 
   const setStatus = async (id: string, status: string) => {

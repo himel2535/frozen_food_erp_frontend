@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState, type FormEvent } from 'react';
-import { useSubmitGuard } from '@/hooks/use-submit-guard';
+import { SubmitBusyLabel, useSubmitGuard } from '@/hooks/use-submit-guard';
 import {
   Banknote,
   Building2,
@@ -158,14 +158,14 @@ export function LeadForm({
   initialValues: LeadFormValues;
   owners: Array<{ id: string; name: string }>;
   onCancel: () => void;
-  onSave: (payload: LeadFormPayload) => void | Promise<void>;
+  onSave: (payload: LeadFormPayload) => boolean | Promise<boolean>;
 }) {
   const t = useAppStore((s) => s.t);
   const [form, setForm] = useState<LeadFormValues>(initialValues);
   const [errors, setErrors] = useState<LeadFormFieldError>({});
   const [showAdvanced, setShowAdvanced] = useState(false);
   const formRef = useRef<HTMLFormElement>(null);
-  const { isSubmitting, guardSubmit } = useSubmitGuard();
+  const { isSubmitting, guardSubmit, savingRef, holdAfterSuccess } = useSubmitGuard();
 
   useEffect(() => {
     setForm(initialValues);
@@ -203,23 +203,24 @@ export function LeadForm({
     });
   };
 
-  const handleSubmit = async (e: FormEvent) => {
+  const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
-    if (isSubmitting) return;
-    const nextErrors = validateLeadForm(form);
-    const errorKeys = Object.keys(nextErrors) as Array<keyof LeadFormFieldError>;
-    if (errorKeys.length > 0) {
-      setErrors(nextErrors);
-      const firstKey = errorKeys[0];
-      document.getElementById(`lf-field-${String(firstKey)}`)?.scrollIntoView({
-        behavior: 'smooth',
-        block: 'center',
-      });
-      return;
-    }
-    setErrors({});
-    await guardSubmit(async () => {
-      await Promise.resolve(onSave(toPayload(form, ownerName)));
+    if (savingRef.current) return;
+    void guardSubmit(async () => {
+      const nextErrors = validateLeadForm(form);
+      const errorKeys = Object.keys(nextErrors) as Array<keyof LeadFormFieldError>;
+      if (errorKeys.length > 0) {
+        setErrors(nextErrors);
+        const firstKey = errorKeys[0];
+        document.getElementById(`lf-field-${String(firstKey)}`)?.scrollIntoView({
+          behavior: 'smooth',
+          block: 'center',
+        });
+        return;
+      }
+      setErrors({});
+      const ok = await Promise.resolve(onSave(toPayload(form, ownerName)));
+      if (ok) holdAfterSuccess();
     });
   };
 
@@ -478,10 +479,11 @@ export function LeadForm({
           <button
             type="submit"
             disabled={isSubmitting}
+            aria-busy={isSubmitting}
             className={`${CF_BTN_PRIMARY} disabled:opacity-50 disabled:cursor-not-allowed`}
           >
             <Save className="w-4 h-4" />
-            {isSubmitting ? 'Saving…' : 'Save Lead'}
+            <SubmitBusyLabel busy={isSubmitting} idle="Save Lead" />
           </button>
         </div>
       </form>

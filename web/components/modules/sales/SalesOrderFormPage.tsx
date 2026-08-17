@@ -2,7 +2,7 @@
 
 import { toast } from '@/lib/ui/feedback';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { SalesOrderForm, type SoSaveAction } from '@/components/modules/sales/sales-order-form/SalesOrderForm';
 import type { SoFormPayload } from '@/components/modules/sales/sales-order-form/so-form-types';
@@ -42,6 +42,7 @@ export function SalesOrderFormPage({ mode, orderId }: { mode: 'create' | 'edit';
   const salesPersons = useSalesPersonOptions();
   const [apiOrder, setApiOrder] = useState<Record<string, unknown> | null>(null);
   const [apiLoading, setApiLoading] = useState(apiMode && mode === 'edit' && Boolean(orderId));
+  const submittedRef = useRef(false);
 
   useEffect(() => {
     if (!apiMode || mode !== 'edit' || !orderId) return;
@@ -84,45 +85,59 @@ export function SalesOrderFormPage({ mode, orderId }: { mode: 'create' | 'edit';
     payload: SoFormPayload,
     action: SoSaveAction,
     pendingImageUpload?: Promise<PendingImageUpload | null> | null,
-  ) => {
-    const record = payloadToRecord({
-      ...payload,
-      id: orderId ?? payload.id ?? payload.orderPreviewId,
-      status: action === 'create' && payload.status === 'draft' ? 'confirmed' : payload.status,
-    });
+  ): Promise<boolean> => {
+    if (submittedRef.current) return true;
+    submittedRef.current = true;
+    try {
+      const record = payloadToRecord({
+        ...payload,
+        id: orderId ?? payload.id ?? payload.orderPreviewId,
+        status: action === 'create' && payload.status === 'draft' ? 'confirmed' : payload.status,
+      });
 
-    if (apiMode) {
-      const body = mapSalesOrderRecordToApi(record, mode === 'edit' ? orderId ?? undefined : undefined);
-      const mongoId = existing ? resolveApiRowId(existing) : '';
-      const result = mode === 'edit' && mongoId
-        ? await apiStore.update(mongoId, body)
-        : await apiStore.create(body);
+      if (apiMode) {
+        const body = mapSalesOrderRecordToApi(record, mode === 'edit' ? orderId ?? undefined : undefined);
+        const mongoId = existing ? resolveApiRowId(existing) : '';
+        const result = mode === 'edit' && mongoId
+          ? await apiStore.update(mongoId, body)
+          : await apiStore.create(body);
+        if (!result.ok) {
+          submittedRef.current = false;
+          toast.error('Operation failed', { module: 'Sales', description: 'error' in result ? String(result.error) : 'Save failed' });
+          return false;
+        }
+        if (mode !== 'edit' && pendingImageUpload && result.ok && 'id' in result) {
+          attachBackgroundImageLater({
+            recordId: String(result.id),
+            savedImageUrl: payload.attachmentUrl,
+            pending: pendingImageUpload,
+            patchImage: patchOrderAttachment,
+            moduleName: 'Sales Order',
+          });
+        }
+        router.push('/sales/orders');
+        return true;
+      }
+
+      const result = mode === 'edit' && orderId
+        ? updateSalesOrder(appState, orderId, record)
+        : createSalesOrder(appState, record);
       if (!result.ok) {
+        submittedRef.current = false;
         toast.error('Operation failed', { module: 'Sales', description: 'error' in result ? String(result.error) : 'Save failed' });
-        return;
+        return false;
       }
-      if (mode !== 'edit' && pendingImageUpload && result.ok && 'id' in result) {
-        attachBackgroundImageLater({
-          recordId: String(result.id),
-          savedImageUrl: payload.attachmentUrl,
-          pending: pendingImageUpload,
-          patchImage: patchOrderAttachment,
-          moduleName: 'Sales Order',
-        });
-      }
+      saveAppState();
       router.push('/sales/orders');
-      return;
+      return true;
+    } catch (err) {
+      submittedRef.current = false;
+      toast.error('Operation failed', {
+        module: 'Sales',
+        description: err instanceof Error ? err.message : 'Save failed',
+      });
+      return false;
     }
-
-    const result = mode === 'edit' && orderId
-      ? updateSalesOrder(appState, orderId, record)
-      : createSalesOrder(appState, record);
-    if (!result.ok) {
-      toast.error('Operation failed', { module: 'Sales', description: 'error' in result ? String(result.error) : 'Save failed' });
-      return;
-    }
-    saveAppState();
-    router.push('/sales/orders');
   };
 
   return (

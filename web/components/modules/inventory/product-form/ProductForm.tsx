@@ -64,12 +64,12 @@ export function ProductForm({
     payload: ProductFormPayload,
     action: 'save' | 'save-and-add',
     pendingImageUpload?: Promise<PendingImageUpload | null> | null,
-  ) => void | Promise<void>;
+  ) => boolean | Promise<boolean>;
 }) {
   const [form, setForm] = useState<ProductFormValues>(initialValues);
   const [warehouseStock, setWarehouseStock] = useState(initialWarehouseStock);
   const [errors, setErrors] = useState<ProductFieldError>({});
-  const { isSubmitting, guardSubmit } = useSubmitGuard();
+  const { isSubmitting, guardSubmit, savingRef, holdAfterSuccess } = useSubmitGuard();
   const [showAdvanced, setShowAdvanced] = useState(false);
   const formRef = useRef<HTMLFormElement>(null);
   const pendingImageUploadRef = useRef<Promise<PendingImageUpload | null> | null>(null);
@@ -101,23 +101,24 @@ export function ProductForm({
     });
   };
 
-  const handleSubmit = async (e: FormEvent) => {
+  const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
-    if (isSubmitting) return;
-    const nextErrors = validateProductForm(form);
-    if (Object.keys(nextErrors).length > 0) {
-      setErrors(nextErrors);
-      const firstKey = Object.keys(nextErrors)[0];
-      document.getElementById(`pf-field-${firstKey}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      return;
-    }
-    setErrors({});
-    await guardSubmit(async () => {
-      await Promise.resolve(onSave(
+    if (savingRef.current) return;
+    void guardSubmit(async () => {
+      const nextErrors = validateProductForm(form);
+      if (Object.keys(nextErrors).length > 0) {
+        setErrors(nextErrors);
+        const firstKey = Object.keys(nextErrors)[0];
+        document.getElementById(`pf-field-${firstKey}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        return;
+      }
+      setErrors({});
+      const ok = await Promise.resolve(onSave(
         formValuesToPayload(form, warehouseStock, warehouseIds),
         readSaveAction(),
         pendingImageUploadRef.current,
       ));
+      if (ok) holdAfterSuccess();
     });
   };
 
@@ -501,7 +502,7 @@ export function ProductForm({
           onCancel={onCancel}
           isSubmitting={isSubmitting}
           onSaveAndAdd={() => {
-            if (isSubmitting) return;
+            if (savingRef.current) return;
             setSaveAction('save-and-add');
             formRef.current?.requestSubmit();
           }}

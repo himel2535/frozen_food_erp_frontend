@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { useSubmitGuard } from '@/hooks/use-submit-guard';
+import { SubmitBusyLabel, useSubmitGuard } from '@/hooks/use-submit-guard';
 import { ArrowRight } from 'lucide-react';
 import type { CustomerReceivable } from '@/lib/services/customer-receivables-service';
 import { getCustomerContacts } from '@/lib/services/crm-service';
@@ -70,7 +70,7 @@ export function FollowUpAddForm({
 }: {
   customer: CustomerReceivable;
   onBack: () => void;
-  onSave: (values: FollowUpFormValues) => void | Promise<void>;
+  onSave: (values: FollowUpFormValues) => boolean | Promise<boolean>;
 }) {
   const appState = useAppStore((s) => s.appState);
 
@@ -108,7 +108,7 @@ export function FollowUpAddForm({
 
   const [form, setForm] = useState<FollowUpFormValues>(() => buildDefaultForm(customer, contacts, staffOptions));
   const update = (patch: Partial<FollowUpFormValues>) => setForm((prev) => ({ ...prev, ...patch }));
-  const { isSubmitting, guardSubmit } = useSubmitGuard();
+  const { isSubmitting, guardSubmit, savingRef, holdAfterSuccess } = useSubmitGuard();
 
   return (
     <div className="space-y-4 min-w-0">
@@ -124,9 +124,10 @@ export function FollowUpAddForm({
         className="space-y-4"
         onSubmit={(e) => {
           e.preventDefault();
-          if (isSubmitting) return;
+          if (savingRef.current) return;
           void guardSubmit(async () => {
-            await Promise.resolve(onSave(form));
+            const ok = await Promise.resolve(onSave(form));
+            if (ok) holdAfterSuccess();
           });
         }}
       >
@@ -305,9 +306,10 @@ export function FollowUpAddForm({
           <button
             type="submit"
             disabled={isSubmitting}
+            aria-busy={isSubmitting}
             className={`${FU_BTN_PRIMARY} py-2.5 px-5 text-sm disabled:opacity-50 disabled:cursor-not-allowed`}
           >
-            {isSubmitting ? 'Saving…' : 'Save & Continue'}
+            <SubmitBusyLabel busy={isSubmitting} idle="Save & Continue" />
             <ArrowRight className="w-4 h-4" />
           </button>
         </div>

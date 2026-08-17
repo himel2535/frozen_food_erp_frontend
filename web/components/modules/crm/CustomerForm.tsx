@@ -217,14 +217,14 @@ export function CustomerForm({
     payload: CustomerFormPayload,
     action: CustomerSaveAction,
     pendingImageUpload?: Promise<PendingImageUpload | null> | null,
-  ) => void | Promise<void>;
+  ) => boolean | Promise<boolean>;
 }) {
   const [form, setForm] = useState<CustomerFormValues>(initialValues);
   const [errors, setErrors] = useState<CustomerFormFieldError>({});
   const formRef = useRef<HTMLFormElement>(null);
   const pendingImageUploadRef = useRef<Promise<PendingImageUpload | null> | null>(null);
   const { setSaveAction, readSaveAction } = useCustomerSaveAction();
-  const { isSubmitting, guardSubmit } = useSubmitGuard();
+  const { isSubmitting, guardSubmit, savingRef, holdAfterSuccess } = useSubmitGuard();
 
   useEffect(() => {
     setForm(initialValues);
@@ -243,23 +243,24 @@ export function CustomerForm({
       ? form.paymentTerms
       : null;
 
-  const handleSubmit = async (e: FormEvent) => {
+  const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
-    if (isSubmitting) return;
-    const nextErrors = validateCustomerForm(form);
-    const errorKeys = Object.keys(nextErrors) as Array<keyof CustomerFormFieldError>;
-    if (errorKeys.length > 0) {
-      setErrors(nextErrors);
-      const firstKey = errorKeys[0];
-      document.getElementById(`cf-field-${String(firstKey)}`)?.scrollIntoView({
-        behavior: 'smooth',
-        block: 'center',
-      });
-      return;
-    }
-    setErrors({});
-    await guardSubmit(async () => {
-      await Promise.resolve(onSave(toPayload(form, ownerName), readSaveAction(), pendingImageUploadRef.current));
+    if (savingRef.current) return;
+    void guardSubmit(async () => {
+      const nextErrors = validateCustomerForm(form);
+      const errorKeys = Object.keys(nextErrors) as Array<keyof CustomerFormFieldError>;
+      if (errorKeys.length > 0) {
+        setErrors(nextErrors);
+        const firstKey = errorKeys[0];
+        document.getElementById(`cf-field-${String(firstKey)}`)?.scrollIntoView({
+          behavior: 'smooth',
+          block: 'center',
+        });
+        return;
+      }
+      setErrors({});
+      const ok = await Promise.resolve(onSave(toPayload(form, ownerName), readSaveAction(), pendingImageUploadRef.current));
+      if (ok) holdAfterSuccess();
     });
   };
 
@@ -549,6 +550,7 @@ export function CustomerForm({
         <CustomerFormFooter
           onCancel={onCancel}
           onSaveAndAdd={() => {
+            if (savingRef.current) return;
             setSaveAction('save-and-add');
             formRef.current?.requestSubmit();
           }}

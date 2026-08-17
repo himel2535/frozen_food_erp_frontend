@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo, useRef, useState, type FormEvent } from 'react';
-import { useSubmitGuard } from '@/hooks/use-submit-guard';
+import { SubmitBusyLabel, useSubmitGuard } from '@/hooks/use-submit-guard';
 import Link from 'next/link';
 import {
   Calendar,
@@ -74,7 +74,7 @@ export function InvoiceForm({
   customers: Array<{ id: string; name: string; company?: string }>;
   onCustomerChange: (customerId: string, issueDate: string) => void;
   onCancel: () => void;
-  onSave: (payload: InvoicePayload, action: InvoiceSaveAction) => void | Promise<void>;
+  onSave: (payload: InvoicePayload, action: InvoiceSaveAction) => boolean | Promise<boolean>;
   onPreview: (payload: InvoicePayload) => void;
 }) {
   const [form, setForm] = useState<InvoiceFormValues>(initialValues);
@@ -82,7 +82,7 @@ export function InvoiceForm({
   const [saveMenuOpen, setSaveMenuOpen] = useState(false);
   const saveActionRef = useRef<InvoiceSaveAction>('draft');
   const formRef = useRef<HTMLFormElement>(null);
-  const { isSubmitting, guardSubmit } = useSubmitGuard();
+  const { isSubmitting, guardSubmit, savingRef, holdAfterSuccess } = useSubmitGuard();
   const t = useAppStore((s) => s.t);
 
   const signatures = useMemo(() => getSignaturesForCurrentUser(appState), [appState]);
@@ -121,23 +121,24 @@ export function InvoiceForm({
     balanceDue: 0,
   });
 
-  const handleSubmit = async (e: FormEvent) => {
+  const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
-    if (isSubmitting) return;
-    const nextErrors = validateInvoiceForm(form);
-    const errorKeys = Object.keys(nextErrors);
-    if (errorKeys.length > 0) {
-      setErrors(nextErrors);
-      const firstKey = errorKeys[0];
-      document.getElementById(`inv-field-${firstKey}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      return;
-    }
-    setErrors({});
-    const action = saveActionRef.current;
-    saveActionRef.current = 'draft';
-    setSaveMenuOpen(false);
-    await guardSubmit(async () => {
-      await Promise.resolve(onSave(toPayload(), action));
+    if (savingRef.current) return;
+    void guardSubmit(async () => {
+      const nextErrors = validateInvoiceForm(form);
+      const errorKeys = Object.keys(nextErrors);
+      if (errorKeys.length > 0) {
+        setErrors(nextErrors);
+        const firstKey = errorKeys[0];
+        document.getElementById(`inv-field-${firstKey}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        return;
+      }
+      setErrors({});
+      const action = saveActionRef.current;
+      saveActionRef.current = 'draft';
+      setSaveMenuOpen(false);
+      const ok = await Promise.resolve(onSave(toPayload(), action));
+      if (ok) holdAfterSuccess();
     });
   };
 
@@ -427,10 +428,11 @@ export function InvoiceForm({
             <button
               type="submit"
               disabled={isSubmitting}
+              aria-busy={isSubmitting}
               onClick={() => { saveActionRef.current = 'draft'; }}
               className={`${INV_BTN_PRIMARY} rounded-r-none pr-4 disabled:opacity-50 disabled:cursor-not-allowed`}
             >
-              <Save className="w-4 h-4" /> {isSubmitting ? 'Saving…' : 'Save Invoice'}
+              <Save className="w-4 h-4" /> <SubmitBusyLabel busy={isSubmitting} idle="Save Invoice" />
             </button>
             <button
               type="button"

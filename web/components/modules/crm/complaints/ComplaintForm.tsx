@@ -4,7 +4,7 @@ import { useMemo, useRef, useState, type FormEvent } from 'react';
 import { Save } from 'lucide-react';
 import { FormHeader } from '@/components/layout/FormHeader';
 import { ImageUploadField, type PendingImageUpload } from '@/components/shared/ImageUploadField';
-import { useSubmitGuard } from '@/hooks/use-submit-guard';
+import { SubmitBusyLabel, useSubmitGuard } from '@/hooks/use-submit-guard';
 import { MODULE_LIST_SHELL } from '@/lib/ui/module-layout';
 import {
   FORM_BTN_PRIMARY,
@@ -60,11 +60,11 @@ export function ComplaintForm({
   onSubmit: (
     values: ComplaintFormValues,
     pendingImageUpload?: Promise<PendingImageUpload | null> | null,
-  ) => void | Promise<void>;
+  ) => boolean | Promise<boolean>;
 }) {
   const [values, setValues] = useState(initialValues);
   const pendingImageUploadRef = useRef<Promise<PendingImageUpload | null> | null>(null);
-  const { isSubmitting, guardSubmit } = useSubmitGuard();
+  const { isSubmitting, guardSubmit, savingRef, holdAfterSuccess } = useSubmitGuard();
 
   const customerOptions = useMemo(
     () => [{ id: 'walk-in', name: 'Walk-in Customer' }, ...customers],
@@ -81,11 +81,12 @@ export function ComplaintForm({
     }));
   };
 
-  const handleSubmit = async (e: FormEvent) => {
+  const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
-    if (isSubmitting) return;
-    await guardSubmit(async () => {
-      await Promise.resolve(onSubmit(values, pendingImageUploadRef.current));
+    if (savingRef.current) return;
+    void guardSubmit(async () => {
+      const ok = await Promise.resolve(onSubmit(values, pendingImageUploadRef.current));
+      if (ok) holdAfterSuccess();
     });
   };
 
@@ -214,10 +215,11 @@ export function ComplaintForm({
             <button
               type="submit"
               disabled={isSubmitting}
+              aria-busy={isSubmitting}
               className={`${FORM_BTN_PRIMARY} inline-flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed`}
             >
               <Save className="w-4 h-4" />
-              {isSubmitting ? 'Saving…' : mode === 'edit' ? 'Update Complaint' : 'Save Complaint'}
+              <SubmitBusyLabel busy={isSubmitting} idle={mode === 'edit' ? 'Update Complaint' : 'Save Complaint'} />
             </button>
           </div>
         </div>

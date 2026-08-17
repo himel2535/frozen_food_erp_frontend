@@ -279,7 +279,7 @@ function DedicatedModuleApiView({
     setForm(next);
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent): Promise<boolean> => {
     e.preventDefault();
     const payload: Record<string, unknown> = { ...form };
     config.fields.forEach((f) => { if (f.type === 'number') payload[f.key] = Number(form[f.key] || 0); });
@@ -289,7 +289,7 @@ function DedicatedModuleApiView({
       : await apiStore.create(body);
     if (!result.ok) {
       toast.error('Operation failed', { module: moduleTitle, description: 'error' in result ? String(result.error) : 'Save failed' });
-      return;
+      return false;
     }
     const imageField = config.fields.find((f) => f.type === 'image');
     const savedUrl = String(form[imageField?.key ?? 'imageUrl'] ?? '');
@@ -299,6 +299,7 @@ function DedicatedModuleApiView({
     if (!editingId) resetFilters();
     setView('main');
     resetForm();
+    return true;
   };
 
   const handleBack = () => {
@@ -564,14 +565,17 @@ function DedicatedModuleView({ config, configId }: { config: DedicatedModuleConf
     setForm(next);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent): boolean => {
     e.preventDefault();
     const payload: Record<string, unknown> = { ...form };
     config.fields.forEach((f) => { if (f.type === 'number') payload[f.key] = Number(form[f.key] || 0); });
     const result = editingId && config.adapter.update
       ? config.adapter.update(appState, editingId, payload)
       : config.adapter.create?.(appState, payload) ?? { ok: false, error: 'Create not supported' };
-    if (!result.ok) { toast.error('Operation failed', { module: 'Module', description: String(result.error ?? 'Save failed') }); return; }
+    if (!result.ok) {
+      toast.error('Operation failed', { module: 'Module', description: String(result.error ?? 'Save failed') });
+      return false;
+    }
     if (!editingId) {
       setSearch('');
       setStatusFilter('all');
@@ -582,6 +586,7 @@ function DedicatedModuleView({ config, configId }: { config: DedicatedModuleConf
     saveAppState();
     setView('main');
     resetForm();
+    return true;
   };
 
   const handleBack = () => {

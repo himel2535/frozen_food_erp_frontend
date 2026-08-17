@@ -14,7 +14,7 @@ import {
   User,
 } from 'lucide-react';
 import { ImageUploadField, type PendingImageUpload } from '@/components/shared/ImageUploadField';
-import { useSubmitGuard } from '@/hooks/use-submit-guard';
+import { SubmitBusyLabel, useSubmitGuard } from '@/hooks/use-submit-guard';
 import { FormHeader } from '@/components/layout/FormHeader';
 import { useChromeSuppressed } from '@/components/layout/ModuleActionsContext';
 import { MODULE_FORM_SHELL } from '@/lib/ui/module-layout';
@@ -74,11 +74,11 @@ export function SalesOrderForm({
     payload: SoFormPayload,
     action: SoSaveAction,
     pendingImageUpload?: Promise<PendingImageUpload | null> | null,
-  ) => void | Promise<void>;
+  ) => boolean | Promise<boolean>;
 }) {
   const [form, setForm] = useState<SoFormValues>(initialValues);
   const [errors, setErrors] = useState<SoFieldError>({});
-  const { isSubmitting, guardSubmit } = useSubmitGuard();
+  const { isSubmitting, guardSubmit, savingRef, holdAfterSuccess } = useSubmitGuard();
   const saveActionRef = useRef<SoSaveAction>('draft');
   const formRef = useRef<HTMLFormElement>(null);
   const pendingImageUploadRef = useRef<Promise<PendingImageUpload | null> | null>(null);
@@ -125,19 +125,20 @@ export function SalesOrderForm({
     totals,
   });
 
-  const handleSubmit = async (e: FormEvent) => {
+  const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
-    if (isSubmitting) return;
-    const nextErrors = validateSoForm(form);
-    if (Object.keys(nextErrors).length > 0) {
-      setErrors(nextErrors);
-      return;
-    }
-    setErrors({});
-    const action = saveActionRef.current;
-    saveActionRef.current = 'draft';
-    await guardSubmit(async () => {
-      await Promise.resolve(onSave(toPayload(), action, pendingImageUploadRef.current));
+    if (savingRef.current) return;
+    void guardSubmit(async () => {
+      const nextErrors = validateSoForm(form);
+      if (Object.keys(nextErrors).length > 0) {
+        setErrors(nextErrors);
+        return;
+      }
+      setErrors({});
+      const action = saveActionRef.current;
+      saveActionRef.current = 'draft';
+      const ok = await Promise.resolve(onSave(toPayload(), action, pendingImageUploadRef.current));
+      if (ok) holdAfterSuccess();
     });
   };
 
@@ -179,27 +180,29 @@ export function SalesOrderForm({
             <button
               type="button"
               disabled={isSubmitting}
+              aria-busy={isSubmitting}
               onClick={() => {
-                if (isSubmitting) return;
+                if (savingRef.current) return;
                 saveActionRef.current = 'draft';
                 formRef.current?.requestSubmit();
               }}
               className={`${SO_BTN_OUTLINE} disabled:opacity-50 disabled:cursor-not-allowed`}
             >
-              {isSubmitting ? 'Saving…' : 'Save Draft'}
+              <SubmitBusyLabel busy={isSubmitting} idle="Save Draft" />
             </button>
             <button
               type="button"
               disabled={isSubmitting}
+              aria-busy={isSubmitting}
               onClick={() => {
-                if (isSubmitting) return;
+                if (savingRef.current) return;
                 saveActionRef.current = 'create';
                 updateForm({ status: form.status === 'draft' ? 'confirmed' : form.status });
                 formRef.current?.requestSubmit();
               }}
               className={`${SO_BTN_PRIMARY} disabled:opacity-50 disabled:cursor-not-allowed`}
             >
-              {isSubmitting ? 'Saving…' : 'Create Order'}
+              <SubmitBusyLabel busy={isSubmitting} idle="Create Order" />
             </button>
           </div>
         </div>

@@ -2,7 +2,7 @@
 
 import { toast } from '@/lib/ui/feedback';
 import { useMemo, useState, type FormEvent } from 'react';
-import { useSubmitGuard } from '@/hooks/use-submit-guard';
+import { SubmitBusyLabel, useSubmitGuard } from '@/hooks/use-submit-guard';
 import { useCreateFirstImage } from '@/hooks/use-create-first-image';
 import { Footer } from '@/components/layout/Footer';
 import { useChromeSuppressed } from '@/components/layout/ModuleActionsContext';
@@ -42,7 +42,7 @@ export function CompanySettingsPage() {
   const [editSection, setEditSection] = useState<CompanyEditSection>('all');
   const [, bump] = useState(0);
   const [form, setForm] = useState<CompanyFormState>(() => companyToForm(getCompanyProfile(appState)));
-  const { isSubmitting, guardSubmit } = useSubmitGuard();
+  const { isSubmitting, guardSubmit, savingRef } = useSubmitGuard();
   const { onPendingUpload, attachAfterSave } = useCreateFirstImage(
     'Company Settings',
     async (_id, url, pid) => {
@@ -142,15 +142,15 @@ export function CompanySettingsPage() {
     setForm((prev) => ({ ...prev, [key]: value }));
   };
 
-  const handleSubmit = async (e: FormEvent) => {
+  const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
-    if (isSubmitting) return;
-    if ((editSection === 'all' || editSection === 'identity') && !form.name.trim()) {
-      toast.error('Validation failed', { module: 'Company Settings', description: 'Company name is required.' });
-      return;
-    }
+    if (savingRef.current) return;
+    void guardSubmit(async () => {
+      if ((editSection === 'all' || editSection === 'identity') && !form.name.trim()) {
+        toast.error('Validation failed', { module: 'Company Settings', description: 'Company name is required.' });
+        return;
+      }
 
-    await guardSubmit(async () => {
       const payload = sectionPayload(editSection, form);
       updateCompanyProfile(appState, payload);
       if (isModuleApiMode('companySettings')) {
@@ -190,9 +190,10 @@ export function CompanySettingsPage() {
             <button
               type="submit"
               disabled={isSubmitting}
+              aria-busy={isSubmitting}
               className={`${FORM_BTN_PRIMARY} disabled:opacity-50 disabled:cursor-not-allowed`}
             >
-              {isSubmitting ? 'Saving…' : labels.save}
+              <SubmitBusyLabel busy={isSubmitting} idle={labels.save} />
             </button>
           </div>
         </form>

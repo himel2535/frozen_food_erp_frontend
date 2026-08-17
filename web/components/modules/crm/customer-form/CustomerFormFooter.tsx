@@ -2,6 +2,7 @@
 
 import { useRef } from 'react';
 import { Save } from 'lucide-react';
+import { SubmitBusyLabel } from '@/hooks/use-submit-guard';
 import {
   CF_BTN_GHOST,
   CF_BTN_OUTLINE,
@@ -32,17 +33,19 @@ export function CustomerFormFooter({
           type="button"
           onClick={onSaveAndAdd}
           disabled={isSubmitting}
+          aria-busy={isSubmitting}
           className={`${CF_BTN_OUTLINE} disabled:opacity-50 disabled:cursor-not-allowed`}
         >
-          Save &amp; Add Another
+          <SubmitBusyLabel busy={isSubmitting} idle="Save & Add Another" />
         </button>
         <button
           type="submit"
           disabled={isSubmitting}
+          aria-busy={isSubmitting}
           className={`${CF_BTN_PRIMARY} disabled:opacity-50 disabled:cursor-not-allowed`}
         >
           <Save className="w-4 h-4" />
-          {isSubmitting ? 'Saving…' : submitLabel}
+          <SubmitBusyLabel busy={isSubmitting} idle={submitLabel} />
         </button>
       </div>
     </div>

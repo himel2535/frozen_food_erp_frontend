@@ -2,7 +2,7 @@
 
 import { toast } from '@/lib/ui/feedback';
 import { useMemo, useState, type FormEvent } from 'react';
-import { useSubmitGuard } from '@/hooks/use-submit-guard';
+import { SubmitBusyLabel, useSubmitGuard } from '@/hooks/use-submit-guard';
 import { useCreateFirstImage } from '@/hooks/use-create-first-image';
 import { Footer } from '@/components/layout/Footer';
 import { useChromeSuppressed } from '@/components/layout/ModuleActionsContext';
@@ -36,7 +36,7 @@ export function ProfileSettingsPage() {
   const [form, setForm] = useState<ProfileFormState>(() =>
     profileToForm(getProfileView(appState), appState.lang ?? 'en'),
   );
-  const { isSubmitting, guardSubmit } = useSubmitGuard();
+  const { isSubmitting, guardSubmit, savingRef } = useSubmitGuard();
   const { onPendingUpload, attachAfterSave } = useCreateFirstImage(
     'Profile',
     async (_id, url, pid) => {
@@ -131,15 +131,15 @@ export function ProfileSettingsPage() {
     setForm((prev) => ({ ...prev, [key]: value }));
   };
 
-  const handleSubmit = async (e: FormEvent) => {
+  const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
-    if (isSubmitting) return;
-    if (!form.name.trim()) {
-      toast.error('Validation failed', { module: 'Profile', description: 'Name is required.' });
-      return;
-    }
+    if (savingRef.current) return;
+    void guardSubmit(async () => {
+      if (!form.name.trim()) {
+        toast.error('Validation failed', { module: 'Profile', description: 'Name is required.' });
+        return;
+      }
 
-    await guardSubmit(async () => {
       const profilePayload = {
         imageUrl: form.imageUrl.trim(),
         imagePublicId: form.imagePublicId.trim(),
@@ -214,9 +214,10 @@ export function ProfileSettingsPage() {
             <button
               type="submit"
               disabled={isSubmitting}
+              aria-busy={isSubmitting}
               className={`${FORM_BTN_PRIMARY} disabled:opacity-50 disabled:cursor-not-allowed`}
             >
-              {isSubmitting ? 'Saving…' : labels.save}
+              <SubmitBusyLabel busy={isSubmitting} idle={labels.save} />
             </button>
           </div>
         </form>

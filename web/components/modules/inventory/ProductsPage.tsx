@@ -305,7 +305,8 @@ export function ProductsPage() {
     payload: ProductFormPayload,
     action: 'save' | 'save-and-add',
     pendingImageUpload?: Promise<PendingImageUpload | null> | null,
-  ) => {
+  ): Promise<boolean> => {
+    let leftForm = false;
     await guardSubmit(async () => {
       if (editingId && !guardEdit()) return;
       if (apiMode) {
@@ -345,6 +346,7 @@ export function ProductsPage() {
         if (!editingId) resetFilters();
         setView('main');
         resetForm();
+        leftForm = true;
         return;
       }
 
@@ -366,7 +368,9 @@ export function ProductsPage() {
       if (!editingId) resetFilters();
       setView('main');
       resetForm();
+      leftForm = true;
     });
+    return leftForm;
   };
 
   if (view === 'form' && formValues) {

@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo, useRef, useState, type FormEvent } from 'react';
-import { useSubmitGuard } from '@/hooks/use-submit-guard';
+import { SubmitBusyLabel, useSubmitGuard } from '@/hooks/use-submit-guard';
 import { FormHeader } from '@/components/layout/FormHeader';
 import { FormSectionCard } from '@/components/modules/crm/customer-form/FormSectionCard';
 import { AssignedEmployeesCard } from '@/components/modules/payroll/salary-setup-form/AssignedEmployeesCard';
@@ -49,12 +49,12 @@ export function SalarySetupForm({
   previewId: string;
   appState: AppState;
   onCancel: () => void;
-  onSave: (payload: SalarySetupFormPayload) => void | Promise<void>;
+  onSave: (payload: SalarySetupFormPayload) => boolean | Promise<boolean>;
 }) {
   const [form, setForm] = useState<SalarySetupFormValues>(initialValues);
   const [errors, setErrors] = useState<SalarySetupFieldError>({});
   const formRef = useRef<HTMLFormElement>(null);
-  const { isSubmitting, guardSubmit } = useSubmitGuard();
+  const { isSubmitting, guardSubmit, savingRef, holdAfterSuccess } = useSubmitGuard();
 
   const assignedEmployees = useMemo(
     () => getAssignedEmployees(appState, form.assignedEmployeeIds),
@@ -74,17 +74,18 @@ export function SalarySetupForm({
     });
   };
 
-  const handleSubmit = async (e: FormEvent) => {
+  const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
-    if (isSubmitting) return;
-    const nextErrors = validateSalarySetupForm(form);
-    if (Object.keys(nextErrors).length > 0) {
-      setErrors(nextErrors);
-      return;
-    }
-    setErrors({});
-    await guardSubmit(async () => {
-      await Promise.resolve(onSave({ ...form, previewId }));
+    if (savingRef.current) return;
+    void guardSubmit(async () => {
+      const nextErrors = validateSalarySetupForm(form);
+      if (Object.keys(nextErrors).length > 0) {
+        setErrors(nextErrors);
+        return;
+      }
+      setErrors({});
+      const ok = await Promise.resolve(onSave({ ...form, previewId }));
+      if (ok) holdAfterSuccess();
     });
   };
 
@@ -106,9 +107,10 @@ export function SalarySetupForm({
             <button
               type="submit"
               disabled={isSubmitting}
+              aria-busy={isSubmitting}
               className={`${SS_BTN_PRIMARY} disabled:opacity-50 disabled:cursor-not-allowed`}
             >
-              {isSubmitting ? 'Saving…' : 'Save Structure'}
+              <SubmitBusyLabel busy={isSubmitting} idle="Save Structure" />
             </button>
           </div>
         </div>

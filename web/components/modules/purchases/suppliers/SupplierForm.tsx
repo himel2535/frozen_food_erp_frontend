@@ -1,7 +1,7 @@
 'use client';
 
 import { useRef, useState, type FormEvent } from 'react';
-import { useSubmitGuard } from '@/hooks/use-submit-guard';
+import { SubmitBusyLabel, useSubmitGuard } from '@/hooks/use-submit-guard';
 import { FormHeader } from '@/components/layout/FormHeader';
 import { Footer } from '@/components/layout/Footer';
 import { FormSectionCard } from '@/components/modules/crm/customer-form/FormSectionCard';
@@ -70,20 +70,21 @@ export function SupplierForm({
   onSave: (
     values: SupplierFormValues,
     pendingImageUpload?: Promise<PendingImageUpload | null> | null,
-  ) => void | Promise<void>;
+  ) => boolean | Promise<boolean>;
 }) {
   const [values, setValues] = useState<SupplierFormValues>(initialValues);
   const [showAdvanced, setShowAdvanced] = useState(false);
   const pendingImageUploadRef = useRef<Promise<PendingImageUpload | null> | null>(null);
-  const { isSubmitting, guardSubmit } = useSubmitGuard();
+  const { isSubmitting, guardSubmit, savingRef, holdAfterSuccess } = useSubmitGuard();
 
   const update = (patch: Partial<SupplierFormValues>) => setValues((prev) => ({ ...prev, ...patch }));
 
-  const handleSubmit = async (e: FormEvent) => {
+  const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
-    if (isSubmitting) return;
-    await guardSubmit(async () => {
-      await Promise.resolve(onSave(values, pendingImageUploadRef.current));
+    if (savingRef.current) return;
+    void guardSubmit(async () => {
+      const ok = await Promise.resolve(onSave(values, pendingImageUploadRef.current));
+      if (ok) holdAfterSuccess();
     });
   };
 
@@ -278,9 +279,10 @@ export function SupplierForm({
             <button
               type="submit"
               disabled={isSubmitting}
+              aria-busy={isSubmitting}
               className={`${CF_BTN_PRIMARY} disabled:opacity-50 disabled:cursor-not-allowed`}
             >
-              {isSubmitting ? 'Saving…' : mode === 'create' ? 'Save Supplier' : 'Update Supplier'}
+              <SubmitBusyLabel busy={isSubmitting} idle={mode === 'create' ? 'Save Supplier' : 'Update Supplier'} />
             </button>
           </div>
         </div>

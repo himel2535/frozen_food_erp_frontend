@@ -1,7 +1,7 @@
 'use client';
 
 import { useRef, useState, useMemo, type FormEvent } from 'react';
-import { useSubmitGuard } from '@/hooks/use-submit-guard';
+import { SubmitBusyLabel, useSubmitGuard } from '@/hooks/use-submit-guard';
 import {
   Calendar,
   Eye,
@@ -74,14 +74,14 @@ export function DeliveryChallanForm({
   onCustomerChange: (customerId: string) => void;
   onOrderChange: (orderId: string, customerId: string) => void;
   onCancel: () => void;
-  onSave: (payload: DeliveryChallanPayload, action: DeliveryChallanSaveAction) => void | Promise<void>;
+  onSave: (payload: DeliveryChallanPayload, action: DeliveryChallanSaveAction) => boolean | Promise<boolean>;
   onPrint: (payload: DeliveryChallanPayload) => void;
 }) {
   const [form, setForm] = useState<DeliveryChallanFormValues>(initialValues);
   const [errors, setErrors] = useState<DeliveryChallanFieldError>({});
   const saveActionRef = useRef<DeliveryChallanSaveAction>('draft');
   const formRef = useRef<HTMLFormElement>(null);
-  const { isSubmitting, guardSubmit } = useSubmitGuard();
+  const { isSubmitting, guardSubmit, savingRef, holdAfterSuccess } = useSubmitGuard();
 
   const updateForm = (patch: Partial<DeliveryChallanFormValues>) => {
     setForm((prev) => ({ ...prev, ...patch }));
@@ -111,28 +111,29 @@ export function DeliveryChallanForm({
     };
   };
 
-  const handleSubmit = async (e: FormEvent) => {
+  const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
-    if (isSubmitting) return;
-    const nextErrors = validateDeliveryChallanForm(form);
-    const errorKeys = Object.keys(nextErrors);
-    if (errorKeys.length > 0) {
-      setErrors(nextErrors);
-      const firstKey = errorKeys[0];
-      document.getElementById(`dc-field-${firstKey}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      return;
-    }
-    setErrors({});
-    const action = saveActionRef.current;
-    saveActionRef.current = 'draft';
-    const status = action === 'dispatch' ? 'dispatched' : form.status;
-    const payload = toPayload(status);
-    await guardSubmit(async () => {
+    if (savingRef.current) return;
+    void guardSubmit(async () => {
+      const nextErrors = validateDeliveryChallanForm(form);
+      const errorKeys = Object.keys(nextErrors);
+      if (errorKeys.length > 0) {
+        setErrors(nextErrors);
+        const firstKey = errorKeys[0];
+        document.getElementById(`dc-field-${firstKey}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        return;
+      }
+      setErrors({});
+      const action = saveActionRef.current;
+      saveActionRef.current = 'draft';
+      const status = action === 'dispatch' ? 'dispatched' : form.status;
+      const payload = toPayload(status);
       if (action === 'print') {
         onPrint(payload);
         return;
       }
-      await Promise.resolve(onSave(payload, action));
+      const ok = await Promise.resolve(onSave(payload, action));
+      if (ok) holdAfterSuccess();
     });
   };
 
@@ -397,10 +398,11 @@ export function DeliveryChallanForm({
           <button
             type="submit"
             disabled={isSubmitting}
+            aria-busy={isSubmitting}
             onClick={() => { saveActionRef.current = 'draft'; }}
             className={`${DC_BTN_DRAFT} disabled:opacity-50 disabled:cursor-not-allowed`}
           >
-            {isSubmitting ? 'Saving…' : 'Save Draft'}
+            <SubmitBusyLabel busy={isSubmitting} idle="Save Draft" />
           </button>
           <div className="flex flex-wrap items-center gap-2 sm:justify-end">
             <button type="button" onClick={onCancel} className={DC_BTN_GHOST}>
@@ -409,11 +411,12 @@ export function DeliveryChallanForm({
             <button
               type="submit"
               disabled={isSubmitting}
+              aria-busy={isSubmitting}
               onClick={() => { saveActionRef.current = 'dispatch'; }}
               className={`${DC_BTN_PRIMARY} disabled:opacity-50 disabled:cursor-not-allowed`}
             >
               <Send className="w-4 h-4" />
-              {isSubmitting ? 'Saving…' : 'Create & Dispatch'}
+              <SubmitBusyLabel busy={isSubmitting} idle="Create & Dispatch" />
             </button>
             <button
               type="submit"

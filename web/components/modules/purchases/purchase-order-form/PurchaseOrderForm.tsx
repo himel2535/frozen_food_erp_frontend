@@ -14,7 +14,7 @@ import {
   User,
 } from 'lucide-react';
 import { ImageUploadField, type PendingImageUpload } from '@/components/shared/ImageUploadField';
-import { useSubmitGuard } from '@/hooks/use-submit-guard';
+import { SubmitBusyLabel, useSubmitGuard } from '@/hooks/use-submit-guard';
 import { FormHeader } from '@/components/layout/FormHeader';
 import { MODULE_LIST_SHELL } from '@/lib/ui/module-layout';
 import { IconInput, IconSelect, IconTextarea } from '@/components/modules/crm/customer-form/IconField';
@@ -72,14 +72,14 @@ export function PurchaseOrderForm({
     payload: PoFormPayload,
     action: PoSaveAction,
     pendingImageUpload?: Promise<PendingImageUpload | null> | null,
-  ) => void | Promise<void>;
+  ) => boolean | Promise<boolean>;
 }) {
   const [form, setForm] = useState<PoFormValues>(initialValues);
   const [errors, setErrors] = useState<PoFieldError>({});
   const saveActionRef = useRef<PoSaveAction>('draft');
   const formRef = useRef<HTMLFormElement>(null);
   const pendingImageUploadRef = useRef<Promise<PendingImageUpload | null> | null>(null);
-  const { isSubmitting, guardSubmit } = useSubmitGuard();
+  const { isSubmitting, guardSubmit, savingRef, holdAfterSuccess } = useSubmitGuard();
 
   const productOptions = useMemo(() => listPoProductOptions(appState), [appState]);
   const supplierProfile = useMemo(
@@ -110,19 +110,20 @@ export function PurchaseOrderForm({
     totals,
   });
 
-  const handleSubmit = async (e: FormEvent) => {
+  const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
-    if (isSubmitting) return;
-    const nextErrors = validatePoForm(form);
-    if (Object.keys(nextErrors).length > 0) {
-      setErrors(nextErrors);
-      return;
-    }
-    setErrors({});
-    const action = saveActionRef.current;
-    saveActionRef.current = 'draft';
-    await guardSubmit(async () => {
-      await Promise.resolve(onSave(toPayload(), action, pendingImageUploadRef.current));
+    if (savingRef.current) return;
+    void guardSubmit(async () => {
+      const nextErrors = validatePoForm(form);
+      if (Object.keys(nextErrors).length > 0) {
+        setErrors(nextErrors);
+        return;
+      }
+      setErrors({});
+      const action = saveActionRef.current;
+      saveActionRef.current = 'draft';
+      const ok = await Promise.resolve(onSave(toPayload(), action, pendingImageUploadRef.current));
+      if (ok) holdAfterSuccess();
     });
   };
 
@@ -163,17 +164,19 @@ export function PurchaseOrderForm({
             <button
               type="button"
               disabled={isSubmitting}
+              aria-busy={isSubmitting}
               onClick={() => {
                 saveActionRef.current = 'draft';
                 formRef.current?.requestSubmit();
               }}
               className={`${PO_BTN_OUTLINE} disabled:opacity-50 disabled:cursor-not-allowed`}
             >
-              {isSubmitting ? 'Saving…' : 'Save Draft'}
+              <SubmitBusyLabel busy={isSubmitting} idle="Save Draft" />
             </button>
             <button
               type="button"
               disabled={isSubmitting}
+              aria-busy={isSubmitting}
               onClick={() => {
                 saveActionRef.current = 'create';
                 updateForm({ status: form.status === 'Draft' ? 'Sent' : form.status });
@@ -181,7 +184,7 @@ export function PurchaseOrderForm({
               }}
               className={`${PO_BTN_PRIMARY} disabled:opacity-50 disabled:cursor-not-allowed`}
             >
-              {isSubmitting ? 'Saving…' : 'Create PO'}
+              <SubmitBusyLabel busy={isSubmitting} idle="Create PO" />
             </button>
           </div>
         </div>

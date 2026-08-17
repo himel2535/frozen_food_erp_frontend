@@ -16,10 +16,18 @@ export function SubmitBusyLabel({ busy, idle }: { busy: boolean; idle: ReactNode
 
 export function useSubmitGuard() {
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [held, setHeld] = useState(false);
   const savingRef = useRef(false);
+  const heldRef = useRef(false);
+
+  const holdAfterSuccess = useCallback(() => {
+    heldRef.current = true;
+    savingRef.current = true;
+    setHeld(true);
+  }, []);
 
   const guardSubmit = useCallback(async (fn: () => void | Promise<void>) => {
-    if (savingRef.current) return;
+    if (savingRef.current || heldRef.current) return;
     savingRef.current = true;
     flushSync(() => {
       setIsSubmitting(true);
@@ -27,10 +35,17 @@ export function useSubmitGuard() {
     try {
       await Promise.resolve(fn());
     } finally {
-      savingRef.current = false;
-      setIsSubmitting(false);
+      if (!heldRef.current) {
+        savingRef.current = false;
+        setIsSubmitting(false);
+      }
     }
   }, []);
 
-  return { isSubmitting, guardSubmit, savingRef };
+  return {
+    isSubmitting: isSubmitting || held,
+    guardSubmit,
+    savingRef,
+    holdAfterSuccess,
+  };
 }

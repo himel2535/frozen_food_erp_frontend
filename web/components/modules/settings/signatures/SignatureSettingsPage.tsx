@@ -2,7 +2,7 @@
 
 import { toast, confirmAction } from '@/lib/ui/feedback';
 import { useMemo, useState, type FormEvent } from 'react';
-import { useSubmitGuard } from '@/hooks/use-submit-guard';
+import { SubmitBusyLabel, useSubmitGuard } from '@/hooks/use-submit-guard';
 import { useRouter } from 'next/navigation';
 import { Footer } from '@/components/layout/Footer';
 import { useChromeSuppressed } from '@/components/layout/ModuleActionsContext';
@@ -42,7 +42,7 @@ export function SignatureSettingsPage() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [, bump] = useState(0);
   const [form, setForm] = useState<SignatureFormState>(EMPTY_SIGNATURE_FORM);
-  const { isSubmitting, guardSubmit } = useSubmitGuard();
+  const { isSubmitting, guardSubmit, savingRef } = useSubmitGuard();
 
   const signatures = useMemo(() => getSignaturesForCurrentUser(appState), [appState, bump]);
   const metrics = useMemo(() => getSignatureMetrics(appState), [appState, bump]);
@@ -150,10 +150,10 @@ export function SignatureSettingsPage() {
     }
   };
 
-  const handleSubmit = async (e: FormEvent) => {
+  const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
-    if (isSubmitting) return;
-    await guardSubmit(async () => {
+    if (savingRef.current) return;
+    void guardSubmit(async () => {
       const input = formToSignatureInput(form);
       const result = editingId
         ? updateCompanySignature(appState, editingId, input)
@@ -238,9 +238,10 @@ export function SignatureSettingsPage() {
             <button
               type="submit"
               disabled={isSubmitting}
+              aria-busy={isSubmitting}
               className={`${FORM_BTN_PRIMARY} disabled:opacity-50 disabled:cursor-not-allowed`}
             >
-              {isSubmitting ? 'Saving…' : labels.save}
+              <SubmitBusyLabel busy={isSubmitting} idle={labels.save} />
             </button>
           </div>
         </form>

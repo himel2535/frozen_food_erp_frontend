@@ -2,7 +2,7 @@
 
 import { toast } from '@/lib/ui/feedback';
 
-import { useMemo } from 'react';
+import { useMemo, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useChromeSuppressed } from '@/components/layout/ModuleActionsContext';
 import { PurchaseOrderForm, type PoSaveAction } from '@/components/modules/purchases/purchase-order-form/PurchaseOrderForm';
@@ -38,6 +38,7 @@ export function PurchaseOrderFormPage({ mode, orderId }: { mode: 'create' | 'edi
   const poApi = usePurchaseOrderFormApi();
   const appState = useAppStore((s) => s.appState);
   const saveAppState = useAppStore((s) => s.saveAppState);
+  const submittedRef = useRef(false);
 
   useChromeSuppressed(true);
 
@@ -78,46 +79,60 @@ export function PurchaseOrderFormPage({ mode, orderId }: { mode: 'create' | 'edi
     payload: PoFormPayload,
     action: PoSaveAction,
     pendingImageUpload?: Promise<PendingImageUpload | null> | null,
-  ) => {
-    const userVisiblePoId = orderId ?? payload.id ?? payload.poPreviewId;
-    const record = {
-      ...payloadToRecord({
-        ...payload,
-        id: userVisiblePoId,
-        status: action === 'create' && payload.status === 'Draft' ? 'Sent' : payload.status,
-      }),
-      legacyId: userVisiblePoId,
-    };
-    if (apiMode) {
-      const result = await poApi.saveOrder(orderId, record);
+  ): Promise<boolean> => {
+    if (submittedRef.current) return true;
+    submittedRef.current = true;
+    try {
+      const userVisiblePoId = orderId ?? payload.id ?? payload.poPreviewId;
+      const record = {
+        ...payloadToRecord({
+          ...payload,
+          id: userVisiblePoId,
+          status: action === 'create' && payload.status === 'Draft' ? 'Sent' : payload.status,
+        }),
+        legacyId: userVisiblePoId,
+      };
+      if (apiMode) {
+        const result = await poApi.saveOrder(orderId, record);
+        if (!result.ok) {
+          submittedRef.current = false;
+          toast.error('Operation failed', { module: 'Purchases', description: 'error' in result ? String(result.error) : 'Save failed' });
+          return false;
+        }
+        const recordId = orderId || ('id' in result ? String(result.id) : '');
+        if (recordId && pendingImageUpload) {
+          attachBackgroundImageLater({
+            recordId,
+            savedImageUrl: String(record.attachmentUrl ?? ''),
+            pending: pendingImageUpload,
+            patchImage: (id, url, pid) => patchResourceAttachment(API_RESOURCE_PATHS.purchaseOrders, id, url, pid),
+            moduleName: 'Purchase Orders',
+          });
+        }
+        await syncPurchaseOrderApproval(record);
+        router.push('/purchases/orders');
+        return true;
+      }
+      const result = mode === 'edit' && orderId
+        ? updatePurchaseOrder(appState, orderId, record)
+        : createPurchaseOrder(appState, record);
       if (!result.ok) {
+        submittedRef.current = false;
         toast.error('Operation failed', { module: 'Purchases', description: 'error' in result ? String(result.error) : 'Save failed' });
-        return;
+        return false;
       }
-      const recordId = orderId || ('id' in result ? String(result.id) : '');
-      if (recordId && pendingImageUpload) {
-        attachBackgroundImageLater({
-          recordId,
-          savedImageUrl: String(record.attachmentUrl ?? ''),
-          pending: pendingImageUpload,
-          patchImage: (id, url, pid) => patchResourceAttachment(API_RESOURCE_PATHS.purchaseOrders, id, url, pid),
-          moduleName: 'Purchase Orders',
-        });
-      }
-      await syncPurchaseOrderApproval(record);
+      upsertApprovalInState(appState, buildPurchaseOrderApproval(record));
+      saveAppState();
       router.push('/purchases/orders');
-      return;
+      return true;
+    } catch (err) {
+      submittedRef.current = false;
+      toast.error('Operation failed', {
+        module: 'Purchases',
+        description: err instanceof Error ? err.message : 'Save failed',
+      });
+      return false;
     }
-    const result = mode === 'edit' && orderId
-      ? updatePurchaseOrder(appState, orderId, record)
-      : createPurchaseOrder(appState, record);
-    if (!result.ok) {
-      toast.error('Operation failed', { module: 'Purchases', description: 'error' in result ? String(result.error) : 'Save failed' });
-      return;
-    }
-    upsertApprovalInState(appState, buildPurchaseOrderApproval(record));
-    saveAppState();
-    router.push('/purchases/orders');
   };
 
   return (

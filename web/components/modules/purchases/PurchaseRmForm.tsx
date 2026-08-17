@@ -3,7 +3,7 @@
 import { toast } from '@/lib/ui/feedback';
 
 import { useMemo, useRef, useState, type FormEvent } from 'react';
-import { useSubmitGuard } from '@/hooks/use-submit-guard';
+import { SubmitBusyLabel, useSubmitGuard } from '@/hooks/use-submit-guard';
 import {
   Building2,
   Calendar,
@@ -58,12 +58,12 @@ export function PurchaseRmForm({
   suppliers: Array<{ id: string; name: string }>;
   warehouses: Array<{ id: string; name: string }>;
   onCancel: () => void;
-  onSave: (payload: PurchaseRmPayload, action: PurchaseRmSaveAction) => void | Promise<void>;
+  onSave: (payload: PurchaseRmPayload, action: PurchaseRmSaveAction) => boolean | Promise<boolean>;
 }) {
   const [form, setForm] = useState<PurchaseRmFormValues>(initialValues);
   const saveActionRef = useRef<PurchaseRmSaveAction>('draft');
   const formRef = useRef<HTMLFormElement>(null);
-  const { isSubmitting, guardSubmit } = useSubmitGuard();
+  const { isSubmitting, guardSubmit, savingRef, holdAfterSuccess } = useSubmitGuard();
 
   const productOptions = useMemo(() => listRmProductOptions(appState), [appState]);
   const supplierProfile = useMemo(
@@ -86,26 +86,27 @@ export function PurchaseRmForm({
     createdBy: 'Sarah Connor',
   });
 
-  const handleSubmit = async (e: FormEvent) => {
+  const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
-    if (isSubmitting) return;
-    if (!form.supplierId) {
-      toast.error('Action required', { module: 'Purchases', description: "Please select a supplier." });
-      return;
-    }
-    if (!form.warehouseId) {
-      toast.error('Action required', { module: 'Purchases', description: "Please select a warehouse." });
-      return;
-    }
-    if (!form.items.some((i) => i.productName.trim() && i.qty > 0)) {
-      toast.error('Action required', { module: 'Purchases', description: "Add at least one product with quantity." });
-      return;
-    }
-    const action = saveActionRef.current;
-    saveActionRef.current = 'draft';
-    const status = action === 'complete' ? 'pending_approval' : 'draft';
-    await guardSubmit(async () => {
-      await Promise.resolve(onSave(toPayload(status), action));
+    if (savingRef.current) return;
+    void guardSubmit(async () => {
+      if (!form.supplierId) {
+        toast.error('Action required', { module: 'Purchases', description: "Please select a supplier." });
+        return;
+      }
+      if (!form.warehouseId) {
+        toast.error('Action required', { module: 'Purchases', description: "Please select a warehouse." });
+        return;
+      }
+      if (!form.items.some((i) => i.productName.trim() && i.qty > 0)) {
+        toast.error('Action required', { module: 'Purchases', description: "Add at least one product with quantity." });
+        return;
+      }
+      const action = saveActionRef.current;
+      saveActionRef.current = 'draft';
+      const status = action === 'complete' ? 'pending_approval' : 'draft';
+      const ok = await Promise.resolve(onSave(toPayload(status), action));
+      if (ok) holdAfterSuccess();
     });
   };
 
@@ -207,20 +208,22 @@ export function PurchaseRmForm({
             <button
               type="button"
               disabled={isSubmitting}
+              aria-busy={isSubmitting}
               onClick={() => { saveActionRef.current = 'draft'; formRef.current?.requestSubmit(); }}
               className={`${CF_BTN_OUTLINE} disabled:opacity-50 disabled:cursor-not-allowed`}
             >
               <Save className="w-4 h-4" />
-              {isSubmitting ? 'Saving…' : 'Save Draft'}
+              <SubmitBusyLabel busy={isSubmitting} idle="Save Draft" />
             </button>
             <button
               type="button"
               disabled={isSubmitting}
+              aria-busy={isSubmitting}
               onClick={() => { saveActionRef.current = 'complete'; formRef.current?.requestSubmit(); }}
               className={`${CF_BTN_PRIMARY} disabled:opacity-50 disabled:cursor-not-allowed`}
             >
               <ShoppingCart className="w-4 h-4" />
-              {isSubmitting ? 'Saving…' : 'Complete RM Order'}
+              <SubmitBusyLabel busy={isSubmitting} idle="Complete RM Order" />
             </button>
           </div>
         </div>

@@ -436,15 +436,16 @@ export function PurchaseRmPage() {
     return userVisiblePoId;
   };
 
-  const handleSave = async (payload: PurchaseRmPayload, action: PurchaseRmSaveAction) => {
+  const handleSave = async (payload: PurchaseRmPayload, action: PurchaseRmSaveAction): Promise<boolean> => {
     const savedId = await persistPo(payload, action);
-    if (!savedId) return;
+    if (!savedId) return false;
     resetListFilters();
     setStatusFilter(action === 'complete' ? 'pending_approval' : 'draft');
     skipSelectionResetRef.current = true;
     setView('main');
     setSelectedPoId(savedId);
     resetForm();
+    return true;
   };
 
   const runRmMutation = async (

@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo, useRef, useState, type FormEvent } from 'react';
-import { useSubmitGuard } from '@/hooks/use-submit-guard';
+import { SubmitBusyLabel, useSubmitGuard } from '@/hooks/use-submit-guard';
 import { ArrowRight, Plus, Save } from 'lucide-react';
 import { FormHeader } from '@/components/layout/FormHeader';
 import { MODULE_SHELL_SUPPRESSED } from '@/lib/ui/module-layout';
@@ -41,13 +41,13 @@ export function CreateProjectForm({
   initialValues: ProjectFormValues;
   appState: AppState;
   onCancel: () => void;
-  onSave: (form: ProjectFormValues, action: ProjectSaveAction) => void | Promise<void>;
+  onSave: (form: ProjectFormValues, action: ProjectSaveAction) => boolean | Promise<boolean>;
 }) {
   const [form, setForm] = useState<ProjectFormValues>(initialValues);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const saveActionRef = useRef<ProjectSaveAction>('draft');
   const formRef = useRef<HTMLFormElement>(null);
-  const { isSubmitting, guardSubmit } = useSubmitGuard();
+  const { isSubmitting, guardSubmit, savingRef, holdAfterSuccess } = useSubmitGuard();
 
   const customers = useMemo(() => listProjectCustomerOptions(appState), [appState]);
   const productOptions = useMemo(() => listProjectProductOptions(appState), [appState]);
@@ -67,19 +67,20 @@ export function CreateProjectForm({
     });
   };
 
-  const handleSubmit = async (e: FormEvent) => {
+  const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
-    if (isSubmitting) return;
-    const action = saveActionRef.current;
-    const nextErrors = validateProjectForm(form, action);
-    if (Object.keys(nextErrors).length > 0) {
-      setErrors(nextErrors);
-      return;
-    }
-    setErrors({});
-    saveActionRef.current = 'draft';
-    await guardSubmit(async () => {
-      await Promise.resolve(onSave(form, action));
+    if (savingRef.current) return;
+    void guardSubmit(async () => {
+      const action = saveActionRef.current;
+      const nextErrors = validateProjectForm(form, action);
+      if (Object.keys(nextErrors).length > 0) {
+        setErrors(nextErrors);
+        return;
+      }
+      setErrors({});
+      saveActionRef.current = 'draft';
+      const ok = await Promise.resolve(onSave(form, action));
+      if (ok) holdAfterSuccess();
     });
   };
 
@@ -176,6 +177,7 @@ export function CreateProjectForm({
             <button
               type="button"
               disabled={isSubmitting}
+              aria-busy={isSubmitting}
               onClick={() => {
                 saveActionRef.current = 'draft';
                 formRef.current?.requestSubmit();
@@ -183,18 +185,19 @@ export function CreateProjectForm({
               className={`${PJ_BTN_OUTLINE} disabled:opacity-50 disabled:cursor-not-allowed`}
             >
               <Save className="w-4 h-4" />
-              {isSubmitting ? 'Saving…' : 'Save Draft'}
+              <SubmitBusyLabel busy={isSubmitting} idle="Save Draft" />
             </button>
             <button
               type="button"
               disabled={isSubmitting}
+              aria-busy={isSubmitting}
               onClick={() => {
                 saveActionRef.current = 'create';
                 formRef.current?.requestSubmit();
               }}
               className={`${PJ_BTN_PRIMARY} disabled:opacity-50 disabled:cursor-not-allowed`}
             >
-              {isSubmitting ? 'Saving…' : 'Create Project & Continue'}
+              <SubmitBusyLabel busy={isSubmitting} idle="Create Project & Continue" />
               <ArrowRight className="w-4 h-4" />
             </button>
           </div>

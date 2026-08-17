@@ -2,7 +2,7 @@
 
 import { toast } from '@/lib/ui/feedback';
 
-import { useMemo } from 'react';
+import { useMemo, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useChromeSuppressed } from '@/components/layout/ModuleActionsContext';
 import { CreateProjectForm } from '@/components/modules/projects/project-form/CreateProjectForm';
@@ -24,6 +24,7 @@ export function CreateProjectFormPage() {
   const apiDataReady = useAppStore((s) => s.apiDataReady);
   const saveAppState = useAppStore((s) => s.saveAppState);
   const apiMode = isModuleApiMode('projects');
+  const submittedRef = useRef(false);
   const { state: formState } = useApiAppState(
     apiMode ? ['customers', 'products', 'employees', 'recipes'] : undefined,
   );
@@ -38,39 +39,53 @@ export function CreateProjectFormPage() {
   const handleSave = async (
     form: import('@/components/modules/projects/project-form/project-form-types').ProjectFormValues,
     action: ProjectSaveAction,
-  ) => {
-    if (apiMode) {
-      const body = mapProjectFormToApi(form, action);
-      const result = await createResource(API_RESOURCE_PATHS.projects, body);
-      if (!result.ok) {
-        toast.error('Operation failed', { module: 'Projects', description: 'error' in result ? String(result.error) : 'Save failed' });
-        return;
+  ): Promise<boolean> => {
+    if (submittedRef.current) return true;
+    submittedRef.current = true;
+    try {
+      if (apiMode) {
+        const body = mapProjectFormToApi(form, action);
+        const result = await createResource(API_RESOURCE_PATHS.projects, body);
+        if (!result.ok) {
+          submittedRef.current = false;
+          toast.error('Operation failed', { module: 'Projects', description: 'error' in result ? String(result.error) : 'Save failed' });
+          return false;
+        }
+        const savedId = 'id' in result ? String(result.id) : form.projectId;
+        if (action === 'create') {
+          toast.success('Project created', { module: 'Projects', description: 'Continue with BOM / Recipe setup.' });
+          router.push(`/projects/${savedId}/setup?step=2`);
+          return true;
+        }
+        toast.success('Draft saved', { module: 'Projects', description: 'Project draft saved successfully.' });
+        router.push('/projects');
+        return true;
       }
+
+      const result = createProject(appState, form, action);
+      if (!result.ok) {
+        submittedRef.current = false;
+        toast.error('Operation failed', { module: 'Projects', description: 'error' in result ? String(result.error) : 'Save failed' });
+        return false;
+      }
+      saveAppState();
       const savedId = 'id' in result ? String(result.id) : form.projectId;
       if (action === 'create') {
         toast.success('Project created', { module: 'Projects', description: 'Continue with BOM / Recipe setup.' });
         router.push(`/projects/${savedId}/setup?step=2`);
-        return;
+        return true;
       }
       toast.success('Draft saved', { module: 'Projects', description: 'Project draft saved successfully.' });
       router.push('/projects');
-      return;
+      return true;
+    } catch (err) {
+      submittedRef.current = false;
+      toast.error('Operation failed', {
+        module: 'Projects',
+        description: err instanceof Error ? err.message : 'Save failed',
+      });
+      return false;
     }
-
-    const result = createProject(appState, form, action);
-    if (!result.ok) {
-      toast.error('Operation failed', { module: 'Projects', description: 'error' in result ? String(result.error) : 'Save failed' });
-      return;
-    }
-    saveAppState();
-    const savedId = 'id' in result ? String(result.id) : form.projectId;
-    if (action === 'create') {
-      toast.success('Project created', { module: 'Projects', description: 'Continue with BOM / Recipe setup.' });
-      router.push(`/projects/${savedId}/setup?step=2`);
-      return;
-    }
-    toast.success('Draft saved', { module: 'Projects', description: 'Project draft saved successfully.' });
-    router.push('/projects');
   };
 
   if (apiMode && !apiDataReady) {

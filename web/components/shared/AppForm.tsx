@@ -46,7 +46,7 @@ export type AppFormShellProps = {
   subtitle?: string;
   titleId?: string;
   onCancel: () => void;
-  onSubmit: (e: FormEvent) => void | Promise<void>;
+  onSubmit: (e: FormEvent) => boolean | void | Promise<boolean | void>;
   submitLabel?: string;
   cancelLabel?: string;
   children: ReactNode;
@@ -70,7 +70,7 @@ export function AppFormShell({
   variant = 'page',
   onPendingUpload,
 }: AppFormShellProps) {
-  const { isSubmitting, guardSubmit } = useSubmitGuard();
+  const { isSubmitting, guardSubmit, holdAfterSuccess } = useSubmitGuard();
   const onPendingUploadRef = useRef(onPendingUpload);
   onPendingUploadRef.current = onPendingUpload;
 
@@ -85,7 +85,8 @@ export function AppFormShell({
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
     void guardSubmit(async () => {
-      await Promise.resolve(onSubmit(e));
+      const result = await Promise.resolve(onSubmit(e));
+      if (result === true) holdAfterSuccess();
     });
   };
 
@@ -150,7 +151,7 @@ export type AppFormModalProps = {
   title: string;
   subtitle?: string;
   titleId?: string;
-  onSubmit: (e: FormEvent) => void | Promise<void>;
+  onSubmit: (e: FormEvent) => boolean | void | Promise<boolean | void>;
   submitLabel?: string;
   cancelLabel?: string;
   size?: keyof typeof FORM_MODAL_SIZE_CLS;
@@ -230,7 +231,7 @@ export type AppFormPageProps = {
   subtitle?: string;
   titleId?: string;
   onBack: () => void;
-  onSubmit: (e: FormEvent) => void | Promise<void>;
+  onSubmit: (e: FormEvent) => boolean | void | Promise<boolean | void>;
   submitLabel?: string;
   cancelLabel?: string;
   maxWidth?: keyof typeof MAX_WIDTH_CLS;

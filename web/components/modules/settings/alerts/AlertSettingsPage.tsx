@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo, useState, type FormEvent } from 'react';
-import { useSubmitGuard } from '@/hooks/use-submit-guard';
+import { SubmitBusyLabel, useSubmitGuard } from '@/hooks/use-submit-guard';
 import { useRouter } from 'next/navigation';
 import { Icon } from '@iconify/react';
 import { Footer } from '@/components/layout/Footer';
@@ -54,7 +54,7 @@ export function AlertSettingsPage() {
   const [, bump] = useState(0);
 
   const [form, setForm] = useState<AlertSettings>(() => cloneSettings(getAlertSettings(appState)));
-  const { isSubmitting, guardSubmit } = useSubmitGuard();
+  const { isSubmitting, guardSubmit, savingRef } = useSubmitGuard();
 
   useChromeSuppressed(true);
 
@@ -79,10 +79,10 @@ export function AlertSettingsPage() {
     setForm(cloneSettings(DEFAULT_ALERT_SETTINGS));
   };
 
-  const handleSubmit = async (e: FormEvent) => {
+  const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
-    if (isSubmitting) return;
-    await guardSubmit(async () => {
+    if (savingRef.current) return;
+    void guardSubmit(async () => {
       appState.alertSettings = cloneSettings(form);
       logSystemAudit(appState, {
         action: 'UPDATE',
@@ -242,9 +242,10 @@ export function AlertSettingsPage() {
           <button
             type="submit"
             disabled={isSubmitting}
+            aria-busy={isSubmitting}
             className={`${FORM_BTN_PRIMARY} disabled:opacity-50 disabled:cursor-not-allowed`}
           >
-            {isSubmitting ? 'Saving…' : labels.save}
+            <SubmitBusyLabel busy={isSubmitting} idle={labels.save} />
           </button>
         </div>
       </form>

@@ -363,11 +363,12 @@ export function InvoicesPage() {
     return savedId;
   };
 
-  const handleSave = async (payload: InvoicePayload, action: InvoiceSaveAction) => {
+  const handleSave = async (payload: InvoicePayload, action: InvoiceSaveAction): Promise<boolean> => {
     const savedId = await persistInvoice(payload, action);
-    if (!savedId) return;
+    if (!savedId) return false;
     setView('main');
     resetForm();
+    return true;
   };
 
   const handlePreview = (payload: InvoicePayload) => {

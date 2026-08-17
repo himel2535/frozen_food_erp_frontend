@@ -119,7 +119,7 @@ export function CustomerDueFollowUpPage({ customerId }: { customerId: string }) 
     );
   }
 
-  const handleSaveFollowUp = (values: FollowUpFormValues) => {
+  const handleSaveFollowUp = (values: FollowUpFormValues): boolean => {
     const contactAt = combineDateTime(values.contactDate, values.contactTime);
     const nextScheduledAt = values.scheduleNext
       ? combineDateTime(values.nextDate, values.nextTime)
@@ -146,13 +146,14 @@ export function CustomerDueFollowUpPage({ customerId }: { customerId: string }) 
 
     if (!result.ok) {
       toast.error('Could not save follow-up', { module: 'Customer Due', description: result.error ?? 'Unknown error' });
-      return;
+      return false;
     }
     if (!apiMode) saveAppState();
     bump((n) => n + 1);
     toast.success('Follow-up saved', { module: 'Customer Due', description: 'Activity has been recorded and timeline updated.' });
     setPageView('timeline');
     setActiveTab('timeline');
+    return true;
   };
 
   const openReceive = (target: CustomerReceivable) => {

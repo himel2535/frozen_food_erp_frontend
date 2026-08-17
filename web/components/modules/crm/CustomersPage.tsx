@@ -317,7 +317,7 @@ function CustomersPageContent() {
     payload: CustomerFormPayload,
     action: CustomerSaveAction,
     pendingImageUpload?: Promise<PendingImageUpload | null> | null,
-  ) => {
+  ): Promise<boolean> => {
     if (apiMode) {
       const result = editingId
         ? await apiStore.update(editingId, payload)
@@ -327,7 +327,7 @@ function CustomersPageContent() {
           module: 'Customers',
           description: 'error' in result && result.error ? String(result.error) : 'API save failed',
         });
-        return;
+        return false;
       }
       const customerId = editingId
         || (result.ok && 'id' in result && typeof result.id === 'string' ? result.id : '');
@@ -345,11 +345,11 @@ function CustomersPageContent() {
         setEditingId(null);
         setFormValues(buildEmptyFormValues(owners[0]?.id ?? ''));
         setFormKey((k) => k + 1);
-        return;
+        return false;
       }
       setView('main');
       resetForm();
-      return;
+      return true;
     }
 
     const result = editingId
@@ -360,17 +360,18 @@ function CustomersPageContent() {
         module: 'Customers',
         description: 'error' in result && result.error ? String(result.error) : 'Duplicate or invalid customer',
       });
-      return;
+      return false;
     }
     saveAppState();
     if (action === 'save-and-add') {
       setEditingId(null);
       setFormValues(buildEmptyFormValues(owners[0]?.id ?? ''));
       setFormKey((k) => k + 1);
-      return;
+      return false;
     }
     setView('main');
     resetForm();
+    return true;
   };
 
   const toggleSelect = (id: string) => {

@@ -330,7 +330,7 @@ export function LeadsPage({ initialLeads }: { initialLeads?: Record<string, unkn
     setView('form');
   };
 
-  const handleSave = async (payload: LeadFormPayload) => {
+  const handleSave = async (payload: LeadFormPayload): Promise<boolean> => {
     if (apiMode) {
       const body = mapLeadToApi(payload as unknown as Record<string, unknown>, editingId ?? undefined);
       const editRow = editingId ? allLeads.find((l) => String(l.id) === editingId) : null;
@@ -339,11 +339,11 @@ export function LeadsPage({ initialLeads }: { initialLeads?: Record<string, unkn
         : await apiStore.create(body);
       if (!result.ok) {
         toast.error('Operation failed', { module: 'Leads', description: 'error' in result ? String(result.error) : 'Save failed' });
-        return;
+        return false;
       }
       setView('main');
       resetForm();
-      return;
+      return true;
     }
     if (editingId) {
       updateLead(appState, editingId, payload);
@@ -353,6 +353,7 @@ export function LeadsPage({ initialLeads }: { initialLeads?: Record<string, unkn
     saveAppState();
     setView('main');
     resetForm();
+    return true;
   };
 
   const columns = useMemo<AppTableColumn<Record<string, unknown>>[]>(() => [

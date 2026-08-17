@@ -32,11 +32,9 @@ export function EmployeeForm({
   ) => boolean | Promise<boolean>;
 }) {
   const [form, setForm] = useState<Record<string, string>>(initialValues);
-  const [saveSucceeded, setSaveSucceeded] = useState(false);
   const formRef = useRef<HTMLFormElement>(null);
   const pendingImageUploadRef = useRef<Promise<PendingImageUpload | null> | null>(null);
-  const { isSubmitting, guardSubmit, savingRef } = useSubmitGuard();
-  const busy = isSubmitting || saveSucceeded;
+  const { isSubmitting, guardSubmit, savingRef, holdAfterSuccess } = useSubmitGuard();
 
   const setField = (key: string, value: string) => {
     setForm((prev) => ({ ...prev, [key]: value }));
@@ -44,7 +42,7 @@ export function EmployeeForm({
 
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
-    if (savingRef.current || saveSucceeded) return;
+    if (savingRef.current) return;
     void guardSubmit(async () => {
       const nextErrors = validateEmployeeForm(form);
       if (Object.keys(nextErrors).length > 0) {
@@ -55,7 +53,7 @@ export function EmployeeForm({
         return;
       }
       const ok = await Promise.resolve(onSave(form, pendingImageUploadRef.current));
-      if (ok) setSaveSucceeded(true);
+      if (ok) holdAfterSuccess();
     });
   };
 
@@ -80,11 +78,11 @@ export function EmployeeForm({
             <button type="button" onClick={onCancel} className={PO_BTN_GHOST}>Cancel</button>
             <button
               type="submit"
-              disabled={busy}
-              aria-busy={busy}
+              disabled={isSubmitting}
+              aria-busy={isSubmitting}
               className={`${PO_BTN_PRIMARY} disabled:opacity-50 disabled:cursor-not-allowed`}
             >
-              <SubmitBusyLabel busy={busy} idle={submitLabel} />
+              <SubmitBusyLabel busy={isSubmitting} idle={submitLabel} />
             </button>
           </div>
         </div>

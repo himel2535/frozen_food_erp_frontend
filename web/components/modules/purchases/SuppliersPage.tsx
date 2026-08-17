@@ -139,7 +139,7 @@ export function SuppliersPage() {
   const handleSave = async (
     values: SupplierFormValues,
     pendingImageUpload?: Promise<PendingImageUpload | null> | null,
-  ) => {
+  ): Promise<boolean> => {
     const payload = {
       name: values.name.trim(),
       contact: values.contact.trim(),
@@ -164,7 +164,7 @@ export function SuppliersPage() {
         : await apiStore.create(body);
       if (!result.ok) {
         toast.error('Save failed', { module: 'Suppliers', description: 'error' in result ? result.error : 'API error' });
-        return;
+        return false;
       }
       if (!editingId && pendingImageUpload && result.ok && 'id' in result) {
         attachBackgroundImageLater({
@@ -180,7 +180,7 @@ export function SuppliersPage() {
       setView('main');
       setEditingId(null);
       setFormValues(EMPTY_SUPPLIER_FORM);
-      return;
+      return true;
     }
 
     if (editingId) {
@@ -198,6 +198,7 @@ export function SuppliersPage() {
     setView('main');
     setEditingId(null);
     setFormValues(EMPTY_SUPPLIER_FORM);
+    return true;
   };
 
   if (view === 'add-form' || view === 'edit-form') {

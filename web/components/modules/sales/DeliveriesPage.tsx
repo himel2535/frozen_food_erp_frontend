@@ -238,15 +238,16 @@ export function DeliveriesPage() {
     return savedId;
   };
 
-  const handleSave = async (payload: DeliveryChallanPayload, action: DeliveryChallanSaveAction) => {
+  const handleSave = async (payload: DeliveryChallanPayload, action: DeliveryChallanSaveAction): Promise<boolean> => {
     const savedId = await persistChallan(payload, action);
-    if (!savedId) return;
+    if (!savedId) return false;
     if (action === 'print') {
       setPrintPayload({ id: savedId, data: payload });
-      return;
+      return false;
     }
     setView('main');
     resetForm();
+    return true;
   };
 
   const handlePrint = (payload: DeliveryChallanPayload) => {
