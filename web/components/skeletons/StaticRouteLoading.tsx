@@ -12,7 +12,18 @@ type StaticRouteLoadingProps = {
 /** Route-specific loading shell — layout matches real page KPI grid + table columns. */
 export function StaticRouteLoading({ route }: StaticRouteLoadingProps) {
   if (route === '/dashboard') {
-    return <DashboardLoadingSkeleton />;
+    return (
+      <DashboardLoadingSkeleton
+        kpiLabels={[
+          'Total Revenue',
+          'Customer Due',
+          'Low Stock Alert',
+          'Pending Sales',
+          'Open Leads',
+          'Pending Production',
+        ]}
+      />
+    );
   }
   if (route === '/crm/leads') {
     return <LeadsLoadingSkeleton />;

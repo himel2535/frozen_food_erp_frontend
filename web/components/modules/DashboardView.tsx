@@ -5,7 +5,9 @@ import Link from 'next/link';
 import { useMemo, useEffect, useState } from 'react';
 import { Icon } from '@iconify/react';
 import {
-  DashboardLoadingSkeleton,
+  DashboardSalesTrendChartSkeleton,
+  DashboardRevenueChartSkeleton,
+  DashboardBusinessAlertsSkeleton,
   DashboardProjectProgressSkeleton,
 } from '@/components/skeletons/DashboardLoadingSkeleton';
 import { SalesTrendChart } from '@/components/modules/dashboard/SalesTrendChart';
@@ -23,6 +25,7 @@ import { onApiMutation } from '@/lib/services/api-sync-events';
 import type { DashboardServerPayload } from '@/lib/server/dashboard-snapshot';
 import { SkeletonText } from '@/components/skeletons/SkeletonText';
 import { isMongoDbBackend } from '@/lib/config/data-source';
+import { DASHBOARD_KPI_CARDS } from '@/lib/ui/dashboard-kpi';
 
 const DashboardProjectProgress = dynamic(
   () => import('@/components/modules/dashboard/DashboardProjectProgress').then((m) => m.DashboardProjectProgress),
@@ -30,15 +33,6 @@ const DashboardProjectProgress = dynamic(
 );
 
 const SUMMARY_MUTATION_MODULES = new Set(['invoices', 'salesOrders', 'payments']);
-
-const KPI_CARDS: { key: string; labelKey: string; icon: string; alert?: boolean; href?: string }[] = [
-  { key: 'month-revenue', labelKey: 'dashboard.total_revenue', icon: 'flat-color-icons:currency-exchange' },
-  { key: 'customer-due', labelKey: 'dashboard.customer_due', icon: 'fluent-color:person-24' },
-  { key: 'low-stock', labelKey: 'dashboard.low_stock', icon: 'fluent-color:alert-badge-24', alert: true, href: '/inventory/low-stock-alerts' },
-  { key: 'pending-sales', labelKey: 'dashboard.pending_sales', icon: 'flat-color-icons:shipped' },
-  { key: 'open-leads', labelKey: 'dashboard.open_leads', icon: 'fluent-color:people-interwoven-24' },
-  { key: 'pending-production', labelKey: 'dashboard.pending_production', icon: 'fluent-color:clock-24' },
-];
 
 type DashboardViewProps = {
   serverPayload?: DashboardServerPayload | null;
@@ -64,7 +58,6 @@ export function DashboardView({ serverPayload = null }: DashboardViewProps) {
   }, [ready, baseState, serverSnapshot]);
 
   const hasKpi = typeof (liveSummary ?? serverSummary)?.monthRevenue === 'number';
-  const hasInitialData = hasKpi || summaryFailed || !isMongoDbBackend();
 
   useEffect(() => {
     document.body.classList.add('dashboard-page');
@@ -89,7 +82,9 @@ export function DashboardView({ serverPayload = null }: DashboardViewProps) {
     };
 
     const loadKpi = async () => {
+      const started = typeof performance !== 'undefined' ? performance.now() : Date.now();
       const data = await fetchDashboardSummary('kpi');
+      console.log(`[timing] dashboard kpi ${Math.round((typeof performance !== 'undefined' ? performance.now() : Date.now()) - started)}ms`);
       if (!active) return;
       if (data) {
         mergeSummary(data);
@@ -120,10 +115,8 @@ export function DashboardView({ serverPayload = null }: DashboardViewProps) {
     if (serverSummary) {
       if (typeof serverSummary.lowStock !== 'number') void loadExtra();
     } else {
-      void (async () => {
-        const ok = await loadKpi();
-        if (active && ok) await loadExtra();
-      })();
+      void loadKpi();
+      void loadExtra();
     }
 
     const unsubscribe = onApiMutation((modules) => {
@@ -209,23 +202,21 @@ export function DashboardView({ serverPayload = null }: DashboardViewProps) {
     !isMongoDbBackend() ||
     summaryFailed ||
     typeof activeSummary?.lowStock === 'number';
-
-  if (!hasInitialData) {
-    return <DashboardLoadingSkeleton />;
-  }
+  const kpiPending = isMongoDbBackend() && !hasKpi && !summaryFailed;
 
   return (
     <DashboardStateProvider value={dashboardState}>
       <div className="flex flex-col flex-1 min-h-0 gap-1">
       <section className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-1 shrink-0">
-        {KPI_CARDS.map((card) => {
+        {DASHBOARD_KPI_CARDS.map((card) => {
           const data = metricValues[card.key];
           const className = `premium-card premium-shadow px-4 py-2.5 flex items-center justify-between gap-3 transition-[border-color,box-shadow] hover:border-slate-300 hover:shadow-md min-h-[84px]${card.href ? ' cursor-pointer' : ''}`;
+          const showValueSkeleton = kpiPending || (card.key === 'low-stock' && !extraReady);
           const body = (
             <>
               <div className="flex flex-col justify-center gap-0.5 min-w-0 flex-1 my-auto">
                 <span className="text-xs font-bold text-slate-500 tracking-wide leading-tight block">{t(card.labelKey)}</span>
-                {card.key === 'low-stock' && !extraReady ? (
+                {showValueSkeleton ? (
                   <>
                     <SkeletonText className="h-5 w-[72px] max-w-[90%] mt-0.5" />
                     <SkeletonText className="h-2.5 w-[96px] max-w-[95%]" />
@@ -263,9 +254,9 @@ export function DashboardView({ serverPayload = null }: DashboardViewProps) {
       </section>
 
       <section className="grid grid-cols-1 lg:grid-cols-4 gap-1 min-h-0 items-stretch" style={{ flex: '2 1 0%' }}>
-        <SalesTrendChart />
-        <RevenueAnalyticsChart />
-        <DashboardBusinessAlerts />
+        {ready ? <SalesTrendChart /> : <DashboardSalesTrendChartSkeleton />}
+        {ready ? <RevenueAnalyticsChart /> : <DashboardRevenueChartSkeleton />}
+        {ready ? <DashboardBusinessAlerts /> : <DashboardBusinessAlertsSkeleton />}
       </section>
 
       <DashboardBottomPanels />

@@ -10,6 +10,7 @@ import {
 } from '@/lib/services/access-control-service';
 import { toast } from '@/lib/ui/feedback';
 import { DashboardLoadingSkeleton } from '@/components/skeletons/DashboardLoadingSkeleton';
+import { DASHBOARD_KPI_CARDS } from '@/lib/ui/dashboard-kpi';
 
 export function AuthGuard({ children }: { children: React.ReactNode }) {
   const router = useRouter();
@@ -19,6 +20,7 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
   const authReady = useAppStore((s) => s.authReady);
   const hydrated = useAppStore((s) => s.hydrated);
   const ready = useAppStore((s) => s.ready);
+  const t = useAppStore((s) => s.t);
   const deniedRef = useRef<string | null>(null);
 
   useEffect(() => {
@@ -68,7 +70,12 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
   if (!authReady) {
     const path = pathname.split('?')[0].split('#')[0].replace(/\/$/, '') || '/dashboard';
     if (path === '/dashboard') {
-      return <DashboardLoadingSkeleton label="Loading workspace" />;
+      return (
+        <DashboardLoadingSkeleton
+          label="Loading workspace"
+          kpiLabels={DASHBOARD_KPI_CARDS.map((card) => t(card.labelKey))}
+        />
+      );
     }
     return null;
   }

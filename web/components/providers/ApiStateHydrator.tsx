@@ -52,19 +52,8 @@ export function ApiStateHydrator() {
     if (!USE_API || !authReady || !authUser) return;
 
     let cancelled = false;
-    let idleId: number | undefined;
-    let timeoutId: ReturnType<typeof setTimeout> | undefined;
 
     void (async () => {
-      await new Promise<void>((resolve) => {
-        const idle = window.requestIdleCallback;
-        if (typeof idle === 'function') {
-          idleId = idle(() => resolve(), { timeout: 2500 });
-        } else {
-          timeoutId = window.setTimeout(resolve, 200);
-        }
-      });
-      if (cancelled) return;
       try {
         const boot = await fetchModulesPageSafe([...API_BOOT_MODULES]);
         if (cancelled) return;
@@ -81,10 +70,6 @@ export function ApiStateHydrator() {
 
     return () => {
       cancelled = true;
-      if (idleId != null && typeof window.cancelIdleCallback === 'function') {
-        window.cancelIdleCallback(idleId);
-      }
-      if (timeoutId != null) window.clearTimeout(timeoutId);
     };
   }, [authReady, authUser, setApiDataReady]);
 

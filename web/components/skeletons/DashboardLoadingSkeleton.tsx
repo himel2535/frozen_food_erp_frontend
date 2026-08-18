@@ -5,14 +5,18 @@ export const DASHBOARD_KPI_COUNT = 6;
 
 const CHART_BAR_HEIGHTS = [42, 68, 55, 82, 61, 74, 48, 70, 58, 65, 52, 78];
 
-function DashboardKpiCardSkeleton() {
+function DashboardKpiCardSkeleton({ label }: { label?: string }) {
   return (
     <div
-      className="premium-card premium-shadow p-3.5 flex items-center justify-between gap-3 min-h-[80px]"
+      className="premium-card premium-shadow px-4 py-2.5 flex items-center justify-between gap-3 min-h-[84px]"
       aria-hidden="true"
     >
       <div className="flex flex-col justify-center gap-0.5 min-w-0 flex-1">
-        <SkeletonText className="h-3 w-[72px] max-w-[85%]" />
+        {label ? (
+          <span className="text-xs font-bold text-slate-500 tracking-wide leading-tight block">{label}</span>
+        ) : (
+          <SkeletonText className="h-3 w-[72px] max-w-[85%]" />
+        )}
         <SkeletonText className="h-5 md:h-6 w-[88px] max-w-[90%] mt-0.5" />
         <SkeletonText className="h-2.5 w-[96px] max-w-[95%]" />
       </div>
@@ -102,11 +106,11 @@ function DashboardChartBarsSkeleton() {
   );
 }
 
-export function DashboardKpiGridSkeleton() {
+export function DashboardKpiGridSkeleton({ labels }: { labels?: string[] }) {
   return (
-    <section className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-1.5">
+    <section className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-1 shrink-0">
       {Array.from({ length: DASHBOARD_KPI_COUNT }).map((_, index) => (
-        <DashboardKpiCardSkeleton key={`dashboard-kpi-${index}`} />
+        <DashboardKpiCardSkeleton key={`dashboard-kpi-${index}`} label={labels?.[index]} />
       ))}
     </section>
   );
@@ -289,10 +293,16 @@ export function DashboardChartsRowSkeleton() {
 }
 
 /** Full dashboard route shell — matches DashboardView layout exactly. */
-export function DashboardLoadingSkeleton({ label = 'Loading dashboard' }: { label?: string }) {
+export function DashboardLoadingSkeleton({
+  label = 'Loading dashboard',
+  kpiLabels,
+}: {
+  label?: string;
+  kpiLabels?: string[];
+}) {
   return (
     <div className="flex flex-col flex-1 min-h-0 gap-1" aria-busy="true" aria-label={label}>
-      <DashboardKpiGridSkeleton />
+      <DashboardKpiGridSkeleton labels={kpiLabels} />
       <DashboardChartsRowSkeleton />
       <DashboardBottomPanelsSkeleton />
       <DashboardProjectProgressSkeleton />

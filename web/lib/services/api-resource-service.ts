@@ -209,3 +209,20 @@ export async function fetchDashboardSummary(
     return null;
   }
 }
+
+export type DashboardTopProduct = {
+  name: string;
+  category: string;
+  sold: number;
+  revenue: number;
+  imageUrl: string;
+};
+
+export async function fetchDashboardTopProducts(limit = 5): Promise<DashboardTopProduct[] | null> {
+  try {
+    const { data } = await apiRequest<DashboardTopProduct[]>(`/dashboard/top-products?limit=${limit}`);
+    return Array.isArray(data) ? data : null;
+  } catch {
+    return null;
+  }
+}
