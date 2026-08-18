@@ -1,10 +1,5 @@
 import { create } from 'zustand';
-import { DEFAULT_STATE, LOCAL_STORAGE_KEY } from './default-state';
 import type { AppState, AuthUserRecord, Lang } from './types';
-import { ensureCrmState } from '../services/crm-service';
-import { ensureSettingsState } from '../services/settings-service';
-import { ensureRecipesState } from '../services/recipes-service';
-import { ensureAuditState, logSystemAudit } from '../services/audit-log-service';
 import { ensureBnTranslations, translate as translateKey } from '../i18n/translations';
 import {
   authUserToCurrentProfile,
@@ -12,71 +7,48 @@ import {
   signOut as authSignOut,
 } from '../services/auth-service';
 import { isMongoDbBackend } from '../config/data-source';
+import { IS_MONGO_BUILD } from '../config/dashboard-activity-mode';
+import {
+  createMongoBootstrapState,
+  LOCAL_STORAGE_KEY,
+  stripMongoAlertSeed,
+} from './mongo-bootstrap-state';
 
 let authListenerStarted = false;
 
-function hydrateAppState(state: Partial<AppState> | null): AppState {
-  const nextState = { ...DEFAULT_STATE, ...(state ?? {}) } as AppState;
-  if (!nextState.inventory) nextState.inventory = DEFAULT_STATE.inventory;
-  if (!nextState.invoices) nextState.invoices = DEFAULT_STATE.invoices;
-  if (!nextState.employees) nextState.employees = DEFAULT_STATE.employees;
-  if (!nextState.attendance) nextState.attendance = DEFAULT_STATE.attendance;
-  if (!nextState.purchases) nextState.purchases = DEFAULT_STATE.purchases;
-  if (!nextState.accounting) nextState.accounting = DEFAULT_STATE.accounting;
-  if (!nextState.cashboxEntries) nextState.cashboxEntries = DEFAULT_STATE.cashboxEntries;
-  if (!nextState.dueEntries) nextState.dueEntries = DEFAULT_STATE.dueEntries;
-  if (!nextState.purchasePayments) nextState.purchasePayments = DEFAULT_STATE.purchasePayments;
-  if (!nextState.trialBalance) nextState.trialBalance = DEFAULT_STATE.trialBalance;
-  if (!nextState.profitLoss) nextState.profitLoss = DEFAULT_STATE.profitLoss;
-  if (!nextState.balanceSheet) nextState.balanceSheet = DEFAULT_STATE.balanceSheet;
-  if (!nextState.salaryStructures) nextState.salaryStructures = DEFAULT_STATE.salaryStructures;
-  if (!nextState.salarySheetEntries) nextState.salarySheetEntries = DEFAULT_STATE.salarySheetEntries;
-  if (!nextState.payroll) nextState.payroll = DEFAULT_STATE.payroll;
-  if (!nextState.projects) nextState.projects = DEFAULT_STATE.projects;
-  if (!nextState.manufacturing) nextState.manufacturing = DEFAULT_STATE.manufacturing;
-  if (!nextState.productionOrders) nextState.productionOrders = DEFAULT_STATE.productionOrders;
-  if (!nextState.salesOrders) nextState.salesOrders = DEFAULT_STATE.salesOrders;
-  if (!nextState.purchasesSuppliers) nextState.purchasesSuppliers = DEFAULT_STATE.purchasesSuppliers;
-  if (!nextState.purchaseRmOrders) nextState.purchaseRmOrders = DEFAULT_STATE.purchaseRmOrders;
-  if (!nextState.approvals) nextState.approvals = DEFAULT_STATE.approvals;
-  if (!nextState.lang) nextState.lang = 'en';
-  ensureCrmState(nextState);
-  ensureSettingsState(nextState);
-  ensureRecipesState(nextState);
-  ensureAuditState(nextState);
+function mergeMongoAppState(state: Partial<AppState> | null): AppState {
+  const nextState = createMongoBootstrapState(state);
   return nextState;
 }
 
-function stripMongoAlertSeed(state: AppState): AppState {
-  state.dueEntries = [];
-  state.purchases = [];
-  state.productionOrders = [];
-  state.rawMaterials = [];
-  state.semiFinishedProducts = [];
-  state.finishedGoods = [];
-  state.inventory = [];
-  state.systemAuditLogsById = {};
-  const crm = state.crmData as { leadsById?: Record<string, unknown> } | undefined;
-  if (crm) crm.leadsById = {};
-  return state;
-}
-
 function loadInitialState(): AppState {
-  if (typeof window === 'undefined') return hydrateAppState(null);
+  if (typeof window === 'undefined') return mergeMongoAppState(null);
   try {
     const raw = localStorage.getItem(LOCAL_STORAGE_KEY);
     const parsed = raw ? JSON.parse(raw) : null;
     if (isMongoDbBackend()) {
-      const base = stripMongoAlertSeed(hydrateAppState(null));
+      const base = stripMongoAlertSeed(mergeMongoAppState(null));
       if (parsed?.lang) base.lang = parsed.lang;
       if (typeof parsed?.sidebarCollapsed === 'boolean') {
         base.sidebarCollapsed = parsed.sidebarCollapsed;
       }
       return base;
     }
-    return hydrateAppState(parsed);
+    // Local/firebase demo mode — lazy module keeps CRM/recipes/default-state out of Mongo bundle.
+    return mergeMongoAppState(parsed);
   } catch {
-    return hydrateAppState(null);
+    return mergeMongoAppState(null);
+  }
+}
+
+async function hydrateLocalFromStorage(): Promise<AppState> {
+  const { hydrateLocalAppState, LOCAL_STORAGE_KEY: localKey } = await import('./app-store-local-hydrate');
+  try {
+    const raw = localStorage.getItem(localKey);
+    const parsed = raw ? JSON.parse(raw) : null;
+    return hydrateLocalAppState(parsed);
+  } catch {
+    return hydrateLocalAppState(null);
   }
 }
 
@@ -110,7 +82,7 @@ interface AppStore {
   startAuthListener: () => void;
   applyAuthSession: (authUser: AuthUserRecord | null) => void;
   saveAppState: (options?: { immediate?: boolean }) => void;
-  recordAuditEvent: (payload: Parameters<typeof logSystemAudit>[1]) => void;
+  recordAuditEvent: (payload: Parameters<typeof import('../services/audit-log-service').logSystemAudit>[1]) => void;
   replaceAppState: (next: Partial<AppState>) => void;
   setApiDataReady: (ready: boolean) => void;
   setLoggedIn: (value: boolean) => void;
@@ -159,8 +131,10 @@ function flushPersistedAppState(
   set({ lastSyncedState: serialized });
 }
 
+const initialAppState = createMongoBootstrapState();
+
 export const useAppStore = create<AppStore>((set, get) => ({
-  appState: DEFAULT_STATE,
+  appState: initialAppState,
   authUser: null,
   authReady: false,
   ready: false,
@@ -169,26 +143,46 @@ export const useAppStore = create<AppStore>((set, get) => ({
   lastSyncedState: '',
   ignoreRemoteEcho: false,
   remoteListenerStarted: false,
-  t: createT(DEFAULT_STATE.lang ?? 'en'),
+  t: createT('en'),
 
   setHydrated: () => {
-    const appState = loadInitialState();
-    // Do not trust stale local isLoggedIn — Firebase Auth is source of truth
-    appState.isLoggedIn = false;
-    const lang = (appState.lang ?? 'en') as Lang;
-    set({
-      appState,
-      hydrated: true,
-      ready: true,
-      apiDataReady: !isMongoDbBackend(),
-      lastSyncedState: JSON.stringify(appState),
-      t: createT(lang),
-    });
-    if (lang === 'bn') {
-      void ensureBnTranslations().then(() => {
-        set((s) => ({ t: createT((s.appState.lang ?? 'bn') as Lang) }));
+    if (IS_MONGO_BUILD || isMongoDbBackend()) {
+      const appState = loadInitialState();
+      appState.isLoggedIn = false;
+      const lang = (appState.lang ?? 'en') as Lang;
+      set({
+        appState,
+        hydrated: true,
+        ready: true,
+        apiDataReady: !isMongoDbBackend(),
+        lastSyncedState: JSON.stringify(appState),
+        t: createT(lang),
       });
+      if (lang === 'bn') {
+        void ensureBnTranslations().then(() => {
+          set((s) => ({ t: createT((s.appState.lang ?? 'bn') as Lang) }));
+        });
+      }
+      return;
     }
+
+    void hydrateLocalFromStorage().then((appState) => {
+      appState.isLoggedIn = false;
+      const lang = (appState.lang ?? 'en') as Lang;
+      set({
+        appState,
+        hydrated: true,
+        ready: true,
+        apiDataReady: false,
+        lastSyncedState: JSON.stringify(appState),
+        t: createT(lang),
+      });
+      if (lang === 'bn') {
+        void ensureBnTranslations().then(() => {
+          set((s) => ({ t: createT((s.appState.lang ?? 'bn') as Lang) }));
+        });
+      }
+    });
   },
 
   initFromStorage: () => {
@@ -255,33 +249,54 @@ export const useAppStore = create<AppStore>((set, get) => ({
 
   recordAuditEvent: (payload) => {
     const state = get().appState;
-    logSystemAudit(state, payload);
-    set({
-      appState: {
-        ...state,
-        systemAuditLogsById: { ...(state.systemAuditLogsById ?? {}) },
-      },
+    void import('../services/audit-log-service').then(({ logSystemAudit }) => {
+      logSystemAudit(state, payload);
+      set({
+        appState: {
+          ...state,
+          systemAuditLogsById: { ...(state.systemAuditLogsById ?? {}) },
+        },
+      });
+      get().saveAppState({ immediate: true });
     });
-    get().saveAppState({ immediate: true });
   },
 
   replaceAppState: (next) => {
     const current = get().appState;
-    const hydrated = hydrateAppState({ ...current, ...next });
-    hydrated.isLoggedIn = current.isLoggedIn;
-    hydrated.sidebarCollapsed = current.sidebarCollapsed;
-    const authUser = get().authUser;
-    if (authUser) {
-      hydrated.currentUser = {
-        ...hydrated.currentUser,
-        ...authUserToCurrentProfile(authUser),
-      };
+    if (IS_MONGO_BUILD || isMongoDbBackend()) {
+      const hydrated = mergeMongoAppState({ ...current, ...next });
+      hydrated.isLoggedIn = current.isLoggedIn;
+      hydrated.sidebarCollapsed = current.sidebarCollapsed;
+      const authUser = get().authUser;
+      if (authUser) {
+        hydrated.currentUser = {
+          ...hydrated.currentUser,
+          ...authUserToCurrentProfile(authUser),
+        };
+      }
+      const lang = (hydrated.lang ?? 'en') as Lang;
+      set({ appState: hydrated, t: createT(lang) });
+      if (!isMongoDbBackend()) {
+        get().saveAppState({ immediate: true });
+      }
+      return;
     }
-    const lang = (hydrated.lang ?? 'en') as Lang;
-    set({ appState: hydrated, t: createT(lang) });
-    if (!isMongoDbBackend()) {
+
+    void import('./app-store-local-hydrate').then(({ hydrateLocalAppState }) => {
+      const hydrated = hydrateLocalAppState({ ...current, ...next });
+      hydrated.isLoggedIn = current.isLoggedIn;
+      hydrated.sidebarCollapsed = current.sidebarCollapsed;
+      const authUser = get().authUser;
+      if (authUser) {
+        hydrated.currentUser = {
+          ...hydrated.currentUser,
+          ...authUserToCurrentProfile(authUser),
+        };
+      }
+      const lang = (hydrated.lang ?? 'en') as Lang;
+      set({ appState: hydrated, t: createT(lang) });
       get().saveAppState({ immediate: true });
-    }
+    });
   },
 
   setApiDataReady: (ready) => {

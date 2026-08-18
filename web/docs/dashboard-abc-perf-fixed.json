@@ -1,0 +1,559 @@
+{
+  "protocol": "abc-fixed",
+  "headless": true,
+  "timestamp": "2026-08-18T09:03:32.803Z",
+  "results": {
+    "a": {
+      "warm": {
+        "samples": [
+          {
+            "fcpMs": 1462.5,
+            "lcpMs": 1462.5,
+            "lcpElement": "SPAN Real-time manufacturing, sales, stock & factory management",
+            "ttfbMs": 5.699999988079071,
+            "chunkEvalMs": 1169.5999999940395,
+            "viewMountedMs": 1331.8999999910593,
+            "mountMeasureMs": 162.29999999701977,
+            "activityMode": "a",
+            "phase": "warm",
+            "run": 1
+          },
+          {
+            "fcpMs": 990.7999999970198,
+            "lcpMs": 990.7999999970198,
+            "lcpElement": "SPAN Real-time manufacturing, sales, stock & factory management",
+            "ttfbMs": 14.700000002980232,
+            "chunkEvalMs": 696.2000000029802,
+            "viewMountedMs": 1202.2000000029802,
+            "mountMeasureMs": 506,
+            "activityMode": "a",
+            "phase": "warm",
+            "run": 2
+          },
+          {
+            "fcpMs": 571.8000000119209,
+            "lcpMs": 571.8000000119209,
+            "lcpElement": "SPAN Real-time manufacturing, sales, stock & factory management",
+            "ttfbMs": 27.600000008940697,
+            "chunkEvalMs": 899.6000000089407,
+            "viewMountedMs": 1581.6000000089407,
+            "mountMeasureMs": 682,
+            "activityMode": "a",
+            "phase": "warm",
+            "run": 3
+          },
+          {
+            "fcpMs": 718.7999999970198,
+            "lcpMs": 718.7999999970198,
+            "lcpElement": "SPAN Real-time manufacturing, sales, stock & factory management",
+            "ttfbMs": 6.199999988079071,
+            "chunkEvalMs": 706,
+            "viewMountedMs": 872.1999999880791,
+            "mountMeasureMs": 166.19999998807907,
+            "activityMode": "a",
+            "phase": "warm",
+            "run": 4
+          },
+          {
+            "fcpMs": 475,
+            "lcpMs": 475,
+            "lcpElement": "SPAN Real-time manufacturing, sales, stock & factory management",
+            "ttfbMs": 17.299999997019768,
+            "chunkEvalMs": 605.7000000029802,
+            "viewMountedMs": 910.6000000089407,
+            "mountMeasureMs": 304.90000000596046,
+            "activityMode": "a",
+            "phase": "warm",
+            "run": 5
+          }
+        ],
+        "summary": {
+          "runs": 5,
+          "fcp": {
+            "p25": 571.8000000119209,
+            "median": 718.7999999970198,
+            "p75": 990.7999999970198
+          },
+          "lcp": {
+            "p25": 571.8000000119209,
+            "median": 718.7999999970198,
+            "p75": 990.7999999970198
+          },
+          "ttfb": {
+            "p25": 6.199999988079071,
+            "median": 14.700000002980232,
+            "p75": 17.299999997019768
+          },
+          "chunkEval": {
+            "median": 706
+          },
+          "viewMounted": {
+            "median": 1202.2000000029802
+          },
+          "lcpElements": [
+            "SPAN Real-time manufacturing, sales, stock & factory management"
+          ]
+        }
+      },
+      "cold": {
+        "samples": [
+          {
+            "fcpMs": 874.6000000089407,
+            "lcpMs": 874.6000000089407,
+            "lcpElement": "SPAN Real-time manufacturing, sales, stock & factory management",
+            "ttfbMs": 5.5,
+            "chunkEvalMs": 1142.5,
+            "viewMountedMs": 1412.6000000089407,
+            "mountMeasureMs": 270.1000000089407,
+            "activityMode": "a",
+            "phase": "cold",
+            "run": 1
+          },
+          {
+            "fcpMs": 856,
+            "lcpMs": 856,
+            "lcpElement": "SPAN Real-time manufacturing, sales, stock & factory management",
+            "ttfbMs": 5.700000002980232,
+            "chunkEvalMs": 1085,
+            "viewMountedMs": 1242.2000000029802,
+            "mountMeasureMs": 157.20000000298023,
+            "activityMode": "a",
+            "phase": "cold",
+            "run": 2
+          },
+          {
+            "fcpMs": 470.70000000298023,
+            "lcpMs": 843,
+            "lcpElement": "SPAN Real-time manufacturing, sales, stock & factory management",
+            "ttfbMs": 7.9000000059604645,
+            "chunkEvalMs": 1671.4000000059605,
+            "viewMountedMs": 1928.9000000059605,
+            "mountMeasureMs": 257.5,
+            "activityMode": "a",
+            "phase": "cold",
+            "run": 3
+          },
+          {
+            "fcpMs": 969.5,
+            "lcpMs": 969.5,
+            "lcpElement": "SPAN Real-time manufacturing, sales, stock & factory management",
+            "ttfbMs": 9.200000002980232,
+            "chunkEvalMs": 1347.2999999970198,
+            "viewMountedMs": 1545.2000000029802,
+            "mountMeasureMs": 197.90000000596046,
+            "activityMode": "a",
+            "phase": "cold",
+            "run": 4
+          },
+          {
+            "fcpMs": 1204.7999999970198,
+            "lcpMs": 1204.7999999970198,
+            "lcpElement": "SPAN Real-time manufacturing, sales, stock & factory management",
+            "ttfbMs": 13.399999991059303,
+            "chunkEvalMs": 1512.699999988079,
+            "viewMountedMs": 2196.5999999940395,
+            "mountMeasureMs": 683.9000000059605,
+            "activityMode": "a",
+            "phase": "cold",
+            "run": 5
+          }
+        ],
+        "summary": {
+          "runs": 5,
+          "fcp": {
+            "p25": 856,
+            "median": 874.6000000089407,
+            "p75": 969.5
+          },
+          "lcp": {
+            "p25": 856,
+            "median": 874.6000000089407,
+            "p75": 969.5
+          },
+          "ttfb": {
+            "p25": 5.700000002980232,
+            "median": 7.9000000059604645,
+            "p75": 9.200000002980232
+          },
+          "chunkEval": {
+            "median": 1347.2999999970198
+          },
+          "viewMounted": {
+            "median": 1545.2000000029802
+          },
+          "lcpElements": [
+            "SPAN Real-time manufacturing, sales, stock & factory management"
+          ]
+        }
+      }
+    },
+    "b": {
+      "warm": {
+        "samples": [
+          {
+            "fcpMs": 1494.5,
+            "lcpMs": 1494.5,
+            "lcpElement": "SPAN Real-time manufacturing, sales, stock & factory management",
+            "ttfbMs": 24.80000001192093,
+            "chunkEvalMs": 2000.2000000029802,
+            "viewMountedMs": 2162.9000000059605,
+            "mountMeasureMs": 162.70000000298023,
+            "activityMode": "b",
+            "phase": "warm",
+            "run": 1
+          },
+          {
+            "fcpMs": 873.7999999970198,
+            "lcpMs": 873.7999999970198,
+            "lcpElement": "SPAN Real-time manufacturing, sales, stock & factory management",
+            "ttfbMs": 8.700000002980232,
+            "chunkEvalMs": 1053.0999999940395,
+            "viewMountedMs": 1513.0999999940395,
+            "mountMeasureMs": 460,
+            "activityMode": "b",
+            "phase": "warm",
+            "run": 2
+          },
+          {
+            "fcpMs": 914,
+            "lcpMs": 914,
+            "lcpElement": "SPAN Real-time manufacturing, sales, stock & factory management",
+            "ttfbMs": 60.5,
+            "chunkEvalMs": 855.0999999940395,
+            "viewMountedMs": 1239.8999999910593,
+            "mountMeasureMs": 384.79999999701977,
+            "activityMode": "b",
+            "phase": "warm",
+            "run": 3
+          },
+          {
+            "fcpMs": 795.8999999910593,
+            "lcpMs": 795.8999999910593,
+            "lcpElement": "SPAN Real-time manufacturing, sales, stock & factory management",
+            "ttfbMs": 9,
+            "chunkEvalMs": 971.2999999970198,
+            "viewMountedMs": 1669.5999999940395,
+            "mountMeasureMs": 698.2999999970198,
+            "activityMode": "b",
+            "phase": "warm",
+            "run": 4
+          },
+          {
+            "fcpMs": 1541.7000000029802,
+            "lcpMs": 1541.7000000029802,
+            "lcpElement": "SPAN Real-time manufacturing, sales, stock & factory management",
+            "ttfbMs": 12,
+            "chunkEvalMs": 1665.5,
+            "viewMountedMs": 2157.1000000089407,
+            "mountMeasureMs": 491.6000000089407,
+            "activityMode": "b",
+            "phase": "warm",
+            "run": 5
+          }
+        ],
+        "summary": {
+          "runs": 5,
+          "fcp": {
+            "p25": 873.7999999970198,
+            "median": 914,
+            "p75": 1494.5
+          },
+          "lcp": {
+            "p25": 873.7999999970198,
+            "median": 914,
+            "p75": 1494.5
+          },
+          "ttfb": {
+            "p25": 9,
+            "median": 12,
+            "p75": 24.80000001192093
+          },
+          "chunkEval": {
+            "median": 1053.0999999940395
+          },
+          "viewMounted": {
+            "median": 1669.5999999940395
+          },
+          "lcpElements": [
+            "SPAN Real-time manufacturing, sales, stock & factory management"
+          ]
+        }
+      },
+      "cold": {
+        "samples": [
+          {
+            "fcpMs": 1771.0999999940395,
+            "lcpMs": 1771.0999999940395,
+            "lcpElement": "SPAN Real-time manufacturing, sales, stock & factory management",
+            "ttfbMs": 14.299999997019768,
+            "chunkEvalMs": 2253.8999999910593,
+            "viewMountedMs": 2771.8999999910593,
+            "mountMeasureMs": 518,
+            "activityMode": "b",
+            "phase": "cold",
+            "run": 1
+          },
+          {
+            "fcpMs": 1579.5,
+            "lcpMs": 1579.5,
+            "lcpElement": "SPAN Real-time manufacturing, sales, stock & factory management",
+            "ttfbMs": 11.100000008940697,
+            "chunkEvalMs": 2777.7000000029802,
+            "viewMountedMs": 3514.300000011921,
+            "mountMeasureMs": 736.6000000089407,
+            "activityMode": "b",
+            "phase": "cold",
+            "run": 2
+          },
+          {
+            "fcpMs": 2641.4000000059605,
+            "lcpMs": 2641.4000000059605,
+            "lcpElement": "SPAN Real-time manufacturing, sales, stock & factory management",
+            "ttfbMs": 13.200000002980232,
+            "chunkEvalMs": 3394.4000000059605,
+            "viewMountedMs": 3952.4000000059605,
+            "mountMeasureMs": 558,
+            "activityMode": "b",
+            "phase": "cold",
+            "run": 3
+          },
+          {
+            "fcpMs": 2131.9000000059605,
+            "lcpMs": 2131.9000000059605,
+            "lcpElement": "SPAN Real-time manufacturing, sales, stock & factory management",
+            "ttfbMs": 10.400000005960464,
+            "chunkEvalMs": 2363.1000000089407,
+            "viewMountedMs": 3760.5,
+            "mountMeasureMs": 1397.3999999910593,
+            "activityMode": "b",
+            "phase": "cold",
+            "run": 4
+          },
+          {
+            "fcpMs": 2021.3999999910593,
+            "lcpMs": 2021.3999999910593,
+            "lcpElement": "SPAN Real-time manufacturing, sales, stock & factory management",
+            "ttfbMs": 14.099999994039536,
+            "chunkEvalMs": 3061.2000000029802,
+            "viewMountedMs": 4499.29999999702,
+            "mountMeasureMs": 1438.0999999940395,
+            "activityMode": "b",
+            "phase": "cold",
+            "run": 5
+          }
+        ],
+        "summary": {
+          "runs": 5,
+          "fcp": {
+            "p25": 1771.0999999940395,
+            "median": 2021.3999999910593,
+            "p75": 2131.9000000059605
+          },
+          "lcp": {
+            "p25": 1771.0999999940395,
+            "median": 2021.3999999910593,
+            "p75": 2131.9000000059605
+          },
+          "ttfb": {
+            "p25": 11.100000008940697,
+            "median": 13.200000002980232,
+            "p75": 14.099999994039536
+          },
+          "chunkEval": {
+            "median": 2777.7000000029802
+          },
+          "viewMounted": {
+            "median": 3760.5
+          },
+          "lcpElements": [
+            "SPAN Real-time manufacturing, sales, stock & factory management"
+          ]
+        }
+      }
+    },
+    "c": {
+      "warm": {
+        "samples": [
+          {
+            "fcpMs": 2529.2000000029802,
+            "lcpMs": 2529.2000000029802,
+            "lcpElement": "SPAN Real-time manufacturing, sales, stock & factory management",
+            "ttfbMs": 17.899999991059303,
+            "chunkEvalMs": 2166.5,
+            "viewMountedMs": 2636.2000000029802,
+            "mountMeasureMs": 469.70000000298023,
+            "activityMode": "c",
+            "phase": "warm",
+            "run": 1
+          },
+          {
+            "fcpMs": 1003,
+            "lcpMs": 1003,
+            "lcpElement": "SPAN Real-time manufacturing, sales, stock & factory management",
+            "ttfbMs": 9.199999988079071,
+            "chunkEvalMs": 1416.7999999970198,
+            "viewMountedMs": 2149.5999999940395,
+            "mountMeasureMs": 732.7999999970198,
+            "activityMode": "c",
+            "phase": "warm",
+            "run": 2
+          },
+          {
+            "fcpMs": 1022.7999999970198,
+            "lcpMs": 1022.7999999970198,
+            "lcpElement": "SPAN Real-time manufacturing, sales, stock & factory management",
+            "ttfbMs": 27.099999994039536,
+            "chunkEvalMs": 1302.2000000029802,
+            "viewMountedMs": 1861.3999999910593,
+            "mountMeasureMs": 559.1999999880791,
+            "activityMode": "c",
+            "phase": "warm",
+            "run": 3
+          },
+          {
+            "fcpMs": 1514,
+            "lcpMs": 1514,
+            "lcpElement": "SPAN Real-time manufacturing, sales, stock & factory management",
+            "ttfbMs": 20.299999997019768,
+            "chunkEvalMs": 1470,
+            "viewMountedMs": 2116.6000000089407,
+            "mountMeasureMs": 646.6000000089407,
+            "activityMode": "c",
+            "phase": "warm",
+            "run": 4
+          },
+          {
+            "fcpMs": 656.2999999970198,
+            "lcpMs": 656.2999999970198,
+            "lcpElement": "SPAN Real-time manufacturing, sales, stock & factory management",
+            "ttfbMs": 7.899999991059303,
+            "chunkEvalMs": 862.6999999880791,
+            "viewMountedMs": 1617.3999999910593,
+            "mountMeasureMs": 754.7000000029802,
+            "activityMode": "c",
+            "phase": "warm",
+            "run": 5
+          }
+        ],
+        "summary": {
+          "runs": 5,
+          "fcp": {
+            "p25": 1003,
+            "median": 1022.7999999970198,
+            "p75": 1514
+          },
+          "lcp": {
+            "p25": 1003,
+            "median": 1022.7999999970198,
+            "p75": 1514
+          },
+          "ttfb": {
+            "p25": 9.199999988079071,
+            "median": 17.899999991059303,
+            "p75": 20.299999997019768
+          },
+          "chunkEval": {
+            "median": 1416.7999999970198
+          },
+          "viewMounted": {
+            "median": 2116.6000000089407
+          },
+          "lcpElements": [
+            "SPAN Real-time manufacturing, sales, stock & factory management"
+          ]
+        }
+      },
+      "cold": {
+        "samples": [
+          {
+            "fcpMs": 2681.7000000029802,
+            "lcpMs": 2681.7000000029802,
+            "lcpElement": "SPAN Real-time manufacturing, sales, stock & factory management",
+            "ttfbMs": 22.600000008940697,
+            "chunkEvalMs": 3072.6000000089407,
+            "viewMountedMs": 3360.2000000029802,
+            "mountMeasureMs": 287.59999999403954,
+            "activityMode": "c",
+            "phase": "cold",
+            "run": 1
+          },
+          {
+            "fcpMs": 2192.5,
+            "lcpMs": 2192.5,
+            "lcpElement": "SPAN Real-time manufacturing, sales, stock & factory management",
+            "ttfbMs": 8.399999991059303,
+            "chunkEvalMs": 2343.5999999940395,
+            "viewMountedMs": 2742.7999999970198,
+            "mountMeasureMs": 399.20000000298023,
+            "activityMode": "c",
+            "phase": "cold",
+            "run": 2
+          },
+          {
+            "fcpMs": 1184.7000000029802,
+            "lcpMs": 1184.7000000029802,
+            "lcpElement": "SPAN Real-time manufacturing, sales, stock & factory management",
+            "ttfbMs": 7.4000000059604645,
+            "chunkEvalMs": 1876.5,
+            "viewMountedMs": 2424.2000000029802,
+            "mountMeasureMs": 547.7000000029802,
+            "activityMode": "c",
+            "phase": "cold",
+            "run": 3
+          },
+          {
+            "fcpMs": 1752.5,
+            "lcpMs": 1752.5,
+            "lcpElement": "SPAN Real-time manufacturing, sales, stock & factory management",
+            "ttfbMs": 77.3999999910593,
+            "chunkEvalMs": 1795.5999999940395,
+            "viewMountedMs": 2035.0999999940395,
+            "mountMeasureMs": 239.5,
+            "activityMode": "c",
+            "phase": "cold",
+            "run": 4
+          },
+          {
+            "fcpMs": 1023.9000000059605,
+            "lcpMs": 1023.9000000059605,
+            "lcpElement": "SPAN Real-time manufacturing, sales, stock & factory management",
+            "ttfbMs": 16.5,
+            "chunkEvalMs": 1221.9000000059605,
+            "viewMountedMs": 1465.9000000059605,
+            "mountMeasureMs": 244,
+            "activityMode": "c",
+            "phase": "cold",
+            "run": 5
+          }
+        ],
+        "summary": {
+          "runs": 5,
+          "fcp": {
+            "p25": 1184.7000000029802,
+            "median": 1752.5,
+            "p75": 2192.5
+          },
+          "lcp": {
+            "p25": 1184.7000000029802,
+            "median": 1752.5,
+            "p75": 2192.5
+          },
+          "ttfb": {
+            "p25": 8.399999991059303,
+            "median": 16.5,
+            "p75": 22.600000008940697
+          },
+          "chunkEval": {
+            "median": 1876.5
+          },
+          "viewMounted": {
+            "median": 2424.2000000029802
+          },
+          "lcpElements": [
+            "SPAN Real-time manufacturing, sales, stock & factory management"
+          ]
+        }
+      }
+    }
+  }
+}

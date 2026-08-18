@@ -13,6 +13,7 @@ import { SalesTrendChart } from '@/components/modules/dashboard/SalesTrendChart'
 import { RevenueAnalyticsChart } from '@/components/modules/dashboard/RevenueAnalyticsChart';
 import { DashboardBusinessAlerts } from '@/components/modules/dashboard/DashboardBusinessAlerts';
 import { DashboardBottomPanels } from '@/components/modules/dashboard/DashboardBottomPanels';
+import { DashboardPerfCollector } from '@/components/modules/dashboard/DashboardPerfCollector';
 import { useLocaleFormat } from '@/hooks/useLocaleFormat';
 import { emptyDashboardShell, useDashboardReady, DashboardStateProvider } from '@/hooks/use-dashboard-api-data';
 import { useAppStore } from '@/lib/state/app-store';
@@ -301,6 +302,7 @@ export function DashboardView({ serverPayload = null }: DashboardViewProps) {
 
       <DashboardBottomPanels criticalPaintReady={!kpiPending} />
 
+      <DashboardPerfCollector />
       <DashboardProjectProgress />
       </div>
     </DashboardStateProvider>

@@ -1,0 +1,24 @@
+{
+  "protocol": "part3",
+  "label": "pre-split",
+  "buildId": "gokZptFQgSsJitNmAZGYV",
+  "dashboardViewLazyBytes": 440961,
+  "headless": true,
+  "note": "Cold runs 2-5 failed (page.goto load timeout 60s). Warm completed.",
+  "warm": {
+    "samples": [
+      { "run": 1, "lcpMs": 9979.6, "fcpMs": 9979.6 },
+      { "run": 2, "lcpMs": 6909.7, "fcpMs": 6909.7 },
+      { "run": 3, "lcpMs": 8719.9, "fcpMs": 8719.9 },
+      { "run": 4, "lcpMs": 2151.7, "fcpMs": 2151.7 },
+      { "run": 5, "lcpMs": 2635.8, "fcpMs": 2635.8 }
+    ],
+    "lcp": { "median": 6909.7, "p25": 2635.8, "p75": 8719.9 }
+  },
+  "cold": {
+    "samples": [
+      { "run": 1, "lcpMs": 4337.4, "fcpMs": 4337.4 }
+    ],
+    "lcp": { "median": 4337.4 }
+  }
+}

@@ -1,5 +1,5 @@
 import type { AppState } from '@/lib/state/types';
-import { countLowStockItems } from '@/lib/services/business-alert-service';
+import { countLowStockItems } from '@/lib/services/business-alert-service-local';
 import {
   getFinishedGoodsMetrics,
   getRawMaterialMetrics,

@@ -12,6 +12,7 @@ import { formatRelativeTime, getTopProducts, type TopProductRow } from '@/lib/se
 import { fetchDashboardTopProducts, fetchResourcePage, invalidateDashboardTopProductsCache, peekDashboardTopProducts } from '@/lib/services/api-resource-service';
 import { DASHBOARD_DATA_MUTATION_MODULES, DASHBOARD_TOP_PRODUCTS_MUTATION_MODULES } from '@/lib/config/dashboard-mutation-modules';
 import { isMongoDbBackend } from '@/lib/config/data-source';
+import { readActivityMode } from '@/lib/config/dashboard-activity-mode';
 import { onApiMutation } from '@/lib/services/api-sync-events';
 import type { SystemAuditLogRecord } from '@/lib/state/types';
 import { InventoryItemThumb } from '@/components/shared/InventoryItemThumb';
@@ -126,6 +127,7 @@ export function DashboardBottomPanels({
   const t = useAppStore((s) => s.t);
   const { formatMoney } = useLocaleFormat();
   const mongo = isMongoDbBackend();
+  const activityMode = readActivityMode();
   const peekedTop = mongo ? peekDashboardTopProducts(5) : null;
   const auditQuery = { page: 1, limit: 5 };
   const peekedAudit = mongo && isApiListCacheFresh('/audit-logs', auditQuery, 15_000)
@@ -140,8 +142,9 @@ export function DashboardBottomPanels({
     if (!peekedAudit) return null;
     return peekedAudit.map(mapAuditRow).filter((row) => row.id || row.description);
   });
-  const [activityLoading, setActivityLoading] = useState(mongo && !peekedAudit);
-  const [activityPaintReady, setActivityPaintReady] = useState(false);
+  const [activityLoading, setActivityLoading] = useState(mongo && !peekedAudit && activityMode !== 'c');
+  const [activityPaintReady, setActivityPaintReady] = useState(activityMode === 'a');
+  const [activityFetchReady, setActivityFetchReady] = useState(activityMode !== 'c');
 
   useEffect(() => {
     if (!mongo) return;
@@ -190,6 +193,29 @@ export function DashboardBottomPanels({
       }
     };
 
+    if (activityMode === 'c') {
+      let cancelled = false;
+      const startFetch = () => {
+        if (cancelled) return;
+        setActivityFetchReady(true);
+        void load();
+      };
+      if (typeof requestIdleCallback === 'function') {
+        const idleId = requestIdleCallback(startFetch, { timeout: 1200 });
+        return () => {
+          active = false;
+          cancelled = true;
+          cancelIdleCallback(idleId);
+        };
+      }
+      const timer = window.setTimeout(startFetch, 0);
+      return () => {
+        active = false;
+        cancelled = true;
+        window.clearTimeout(timer);
+      };
+    }
+
     void load();
     const unsubscribe = onApiMutation((modules) => {
       const hit = modules?.some(
@@ -204,9 +230,13 @@ export function DashboardBottomPanels({
       active = false;
       unsubscribe();
     };
-  }, [mongo]);
+  }, [mongo, activityMode]);
 
   useEffect(() => {
+    if (activityMode === 'a') {
+      setActivityPaintReady(true);
+      return;
+    }
     if (!criticalPaintReady) return;
     let cancelled = false;
     const reveal = () => {
@@ -224,7 +254,7 @@ export function DashboardBottomPanels({
       cancelled = true;
       window.clearTimeout(timer);
     };
-  }, [criticalPaintReady]);
+  }, [criticalPaintReady, activityMode]);
 
   const localTopProducts = useMemo(
     () => (mongo ? [] : getTopProducts(appState, 5)),
@@ -294,7 +324,7 @@ export function DashboardBottomPanels({
       </div>
       )}
 
-      {activityLoading || !criticalPaintReady || !activityPaintReady ? (
+      {activityLoading || !criticalPaintReady || !activityPaintReady || (activityMode === 'c' && !activityFetchReady) ? (
         <DashboardActivityFeedSkeleton />
       ) : (
       <div className="premium-card p-2.5 premium-shadow flex flex-col">

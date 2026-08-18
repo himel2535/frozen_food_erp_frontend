@@ -3,11 +3,45 @@ import type { AppState, CompanyProfile, CompanySignature, CurrentUserProfile } f
 import { mapGenericApiRow, mapGenericPayloadToApi } from '@/lib/services/generic-api-mapper';
 import { mapApiInvoiceRow, mapApiProductRow } from '@/lib/services/entity-api-mappers';
 import { apiDocId } from '@/lib/services/api-resource-service';
-import { ensureCrmState } from '@/lib/services/crm-service';
-import { ensureSettingsState } from '@/lib/services/settings-service';
-import { ensureRecipesState } from '@/lib/services/recipes-service';
 import { DEFAULT_ALERT_SETTINGS } from '@/lib/services/alert-settings-defaults';
 import type { AlertSettings } from '@/lib/services/business-alert-types';
+
+const EMPTY_CRM_INDEX = {
+  customersById: {},
+  customerContactsById: {},
+  customerAddressesById: {},
+  customerAssignmentsById: {},
+  customerTagsById: {},
+  leadsById: {},
+  dealsById: {},
+  dealActivitiesById: {},
+  dealFollowUpsById: {},
+  dealNotesById: {},
+  dealAttachmentsById: {},
+  dealStageHistoryById: {},
+  activitiesById: {},
+  tasksById: {},
+  communicationsById: {},
+  attachmentsById: {},
+  supportTicketsById: {},
+  paymentsById: {},
+  auditLogsById: {},
+  customerMergesById: {},
+  quotationsById: {},
+  salesOrdersById: {},
+  refundsById: {},
+};
+
+function ensureMinimalCrmShell(state: AppState) {
+  if (!state.crmData) {
+    state.crmData = { ...EMPTY_CRM_INDEX };
+  }
+}
+
+function ensureMinimalRecipes(state: AppState) {
+  if (!Array.isArray(state.finishedGoodsRecipes)) state.finishedGoodsRecipes = [];
+  if (!Array.isArray(state.semiFinishedRecipes)) state.semiFinishedRecipes = [];
+}
 
 function rowsOf(data: Partial<Record<ApiModule, Record<string, unknown>[]>>, mod: ApiModule) {
   return (data[mod] ?? []).map(mapGenericApiRow);
@@ -26,7 +60,7 @@ function indexById(rows: Record<string, unknown>[]) {
 }
 
 function applyCrmIndexed(state: AppState, data: Partial<Record<ApiModule, Record<string, unknown>[]>>) {
-  ensureCrmState(state);
+  ensureMinimalCrmShell(state);
   const crm = state.crmData!;
   const pairs: [ApiModule, keyof typeof crm][] = [
     ['leads', 'leadsById'],
@@ -53,7 +87,6 @@ function applyCrmIndexed(state: AppState, data: Partial<Record<ApiModule, Record
 }
 
 function applySettingsDocs(state: AppState, docs: Record<string, unknown>[]) {
-  ensureSettingsState(state);
   for (const doc of docs) {
     const key = String(doc.settingsKey ?? doc.profileType ?? doc.field ?? '');
     const payload = (doc.payload ?? doc.data ?? doc) as Record<string, unknown>;
@@ -162,9 +195,11 @@ export function applyApiDataToAppState(
   
   applyCrmIndexed(next, data);
 
-  ensureCrmState(next);
-  ensureSettingsState(next);
-  ensureRecipesState(next);
+  ensureMinimalCrmShell(next);
+  ensureMinimalRecipes(next);
+  if (!next.alertSettings) {
+    next.alertSettings = JSON.parse(JSON.stringify(DEFAULT_ALERT_SETTINGS));
+  }
   return next;
 }
 

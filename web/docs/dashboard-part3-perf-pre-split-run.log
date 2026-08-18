@@ -1,0 +1,16 @@
+Part3 protocol | label=pre-split | BUILD_ID=gokZptFQgSsJitNmAZGYV | headless=true
+warm 1/5 LCP=9979.59999999404ms FCP=9979.59999999404ms
+warm 2/5 LCP=6909.70000000298ms FCP=6909.70000000298ms
+warm 3/5 LCP=8719.90000000596ms FCP=8719.90000000596ms
+warm 4/5 LCP=2151.699999988079ms FCP=2151.699999988079ms
+warm 5/5 LCP=2635.800000011921ms FCP=2635.800000011921ms
+cold 1/5 LCP=4337.399999991059ms FCP=4337.399999991059ms
+page.goto: Timeout 60000ms exceeded.
+Call log:
+  - navigating to "http://localhost:3000/dashboard?_cold=2&_t=1787045144254", waiting until "load"
+
+    at collectDashboardMetrics (/Users/monwarhossanhimel/Desktop/toys/toys_factory_erp/web/scripts/dashboard-perf-lib.mjs:45:14)
+    at coldRuns (/Users/monwarhossanhimel/Desktop/toys/toys_factory_erp/web/scripts/run-dashboard-part3-perf.mjs:53:26)
+    at async main (/Users/monwarhossanhimel/Desktop/toys/toys_factory_erp/web/scripts/run-dashboard-part3-perf.mjs:67:16) {
+  name: 'TimeoutError'
+}

@@ -3,7 +3,6 @@
 import { useDeferredValue, useEffect, useMemo, useState } from 'react';
 import { useAppStore } from '@/lib/state/app-store';
 import {
-  buildBusinessAlerts,
   filterAlertsByRole,
   getAlertSettings,
   getVisibleCategories,
@@ -11,7 +10,7 @@ import {
   type AlertCategory,
   type AlertSummary,
   type BusinessAlert,
-} from '@/lib/services/business-alert-service';
+} from '@/lib/services/business-alert-service-core';
 import { DASHBOARD_DATA_MUTATION_MODULES } from '@/lib/config/dashboard-mutation-modules';
 import { isMongoDbBackend, type ApiModule } from '@/lib/config/data-source';
 import {
@@ -23,7 +22,9 @@ import { onApiMutation } from '@/lib/services/api-sync-events';
 
 const ALERT_MUTATION_MODULES = new Set<string>(DASHBOARD_DATA_MUTATION_MODULES);
 
-function emptyResult(role: string, settings: ReturnType<typeof getAlertSettings>) {
+type LocalAlertBuilders = typeof import('@/lib/services/business-alert-service-local');
+
+function emptyResult(role: string, settings: ReturnType<typeof getAlertSettings>, loading = true) {
   return {
     alerts: [] as BusinessAlert[],
     summaries: [] as AlertSummary[],
@@ -32,7 +33,7 @@ function emptyResult(role: string, settings: ReturnType<typeof getAlertSettings>
     previewAlerts: [] as BusinessAlert[],
     settings,
     role,
-    loading: true,
+    loading,
   };
 }
 
@@ -48,6 +49,18 @@ export function useBusinessAlerts() {
     peeked ? (peeked.summaries as AlertSummary[]) : null,
   );
   const [loading, setLoading] = useState(mongo && !peeked);
+  const [localBuilders, setLocalBuilders] = useState<LocalAlertBuilders | null>(null);
+
+  useEffect(() => {
+    if (mongo) return;
+    let active = true;
+    void import('@/lib/services/business-alert-service-local').then((mod) => {
+      if (active) setLocalBuilders(mod);
+    });
+    return () => {
+      active = false;
+    };
+  }, [mongo]);
 
   useEffect(() => {
     if (!mongo) return;
@@ -111,7 +124,11 @@ export function useBusinessAlerts() {
       };
     }
 
-    const all = buildBusinessAlerts(deferredState, settings);
+    if (!localBuilders) {
+      return emptyResult(role, settings);
+    }
+
+    const all = localBuilders.buildBusinessAlerts(deferredState, settings);
     const alerts = filterAlertsByRole(all, role, settings);
     const summaries = summarizeAlerts(alerts);
     const totalCount = alerts.length;
@@ -134,7 +151,7 @@ export function useBusinessAlerts() {
       role,
       loading: false,
     };
-  }, [deferredState, mongo, loading, apiAlerts, apiSummaries]);
+  }, [deferredState, mongo, loading, apiAlerts, apiSummaries, localBuilders]);
 }
 
 export type { AlertCategory, AlertSummary, BusinessAlert };

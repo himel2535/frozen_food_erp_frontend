@@ -1,0 +1,153 @@
+npm warn Unknown env config "devdir". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+
+> web@0.1.0 analyze
+> cross-env ANALYZE=true next build --webpack
+
+▲ Next.js 16.3.0 (webpack)
+- Environments: .env.local, .env.production
+✓ Running next.config.ts took 101ms
+- Experiments (use with caution):
+  · optimizePackageImports
+  · staleTimes
+
+  Creating an optimized production build ...
+Webpack Bundle Analyzer saved report to /Users/monwarhossanhimel/Desktop/toys/toys_factory_erp/web/.next/analyze/nodejs.html
+
+No bundles were parsed. Analyzer will show only original module sizes from stats file.
+
+Webpack Bundle Analyzer saved report to /Users/monwarhossanhimel/Desktop/toys/toys_factory_erp/web/.next/analyze/edge.html
+Webpack Bundle Analyzer saved report to /Users/monwarhossanhimel/Desktop/toys/toys_factory_erp/web/.next/analyze/client.html
+✓ Compiled successfully in 4.8min
+  Running TypeScript ...
+  Finished TypeScript in 26.5s ...
+  Collecting page data using 3 workers ...
+  Generating static pages using 3 workers (0/102) ...
+  Generating static pages using 3 workers (25/102) 
+  Generating static pages using 3 workers (50/102) 
+  Generating static pages using 3 workers (76/102) 
+✓ Generating static pages using 3 workers (102/102) in 2.1min
+  Finalizing page optimization ...
+  Collecting build traces ...
+
+Route (app)
+┌ ○ /
+├ ○ /_not-found
+├ ○ /accounting/balance
+├ ○ /accounting/cashbox
+├ ○ /accounting/dues
+├ ○ /accounting/journals
+├ ○ /accounting/ledger
+├ ○ /accounting/payables
+├ ○ /accounting/pl
+├ ○ /accounting/receivables
+├ ƒ /accounting/receivables/[customerId]/follow-up
+├ ○ /accounting/trial
+├ ○ /alerts
+├ ○ /apple-icon.png
+├ ○ /asset-management
+├ ○ /crm/activities
+├ ○ /crm/complaints
+├ ○ /crm/customers
+├ ƒ /crm/customers/[id]
+├ ○ /crm/deals
+├ ○ /crm/leads
+├ ○ /dashboard
+├ ○ /design-system
+├ ○ /hrm/attendance
+├ ○ /hrm/departments
+├ ○ /hrm/designations
+├ ○ /hrm/employees
+├ ƒ /hrm/employees/[id]
+├ ƒ /hrm/employees/[id]/edit
+├ ○ /hrm/employees/new
+├ ○ /hrm/leave
+├ ○ /icon.png
+├ ○ /inventory
+├ ○ /inventory/adjustments
+├ ○ /inventory/categories
+├ ○ /inventory/finished-goods
+├ ○ /inventory/low-stock-alerts
+├ ○ /inventory/products
+├ ○ /inventory/raw-materials
+├ ○ /inventory/semi-finished-products
+├ ○ /inventory/stock-in
+├ ○ /inventory/stock-out
+├ ○ /inventory/transfers
+├ ○ /inventory/units
+├ ○ /inventory/warehouses
+├ ○ /legacy/projects
+├ ƒ /legacy/projects/[id]/setup
+├ ○ /legacy/projects/new
+├ ○ /login
+├ ○ /manufacturing/machine-maintenance
+├ ○ /manufacturing/mold-management
+├ ○ /manufacturing/packing
+├ ○ /manufacturing/wastage
+├ ○ /messages
+├ ○ /payroll/payments-due
+├ ○ /payroll/runs
+├ ○ /payroll/salary-sheet
+├ ƒ /payroll/salary-sheet/[employeeId]/review
+├ ○ /payroll/slips
+├ ○ /payroll/structures
+├ ƒ /payroll/structures/[id]/edit
+├ ○ /payroll/structures/new
+├ ○ /projects
+├ ƒ /projects/[id]
+├ ƒ /projects/[id]/edit
+├ ƒ /projects/[id]/tasks/new
+├ ○ /projects/my-tasks
+├ ○ /projects/new
+├ ƒ /projects/tasks/[taskId]
+├ ƒ /projects/tasks/[taskId]/edit
+├ ○ /projects/team-tasks
+├ ○ /purchases/bills
+├ ○ /purchases/goods-received
+├ ○ /purchases/orders
+├ ƒ /purchases/orders/[id]/edit
+├ ○ /purchases/orders/new
+├ ○ /purchases/payments
+├ ○ /purchases/purchase-rm
+├ ○ /purchases/recipes
+├ ○ /purchases/recipes/finished-goods
+├ ○ /purchases/recipes/semi-finished
+├ ○ /purchases/returns
+├ ○ /purchases/suppliers
+├ ƒ /purchases/suppliers/[supplierId]
+├ ○ /recipes/finished-goods
+├ ○ /recipes/semi-finished
+├ ○ /reports/customers
+├ ○ /reports/financial
+├ ○ /reports/hr
+├ ○ /reports/inventory
+├ ○ /reports/product-sales
+├ ○ /reports/purchases
+├ ○ /reports/sales
+├ ○ /reports/suppliers
+├ ○ /sales/deliveries
+├ ○ /sales/dispatch
+├ ○ /sales/invoices
+├ ○ /sales/orders
+├ ƒ /sales/orders/[id]/edit
+├ ○ /sales/orders/new
+├ ○ /sales/payments
+├ ○ /sales/pos
+├ ○ /sales/quotations
+├ ○ /sales/returns
+├ ○ /sales/wholesale
+├ ○ /settings/alert-settings
+├ ○ /settings/audit-logs
+├ ○ /settings/company
+├ ○ /settings/documents
+├ ○ /settings/permissions
+├ ○ /settings/profile
+├ ○ /settings/roles
+├ ○ /settings/signatures
+├ ○ /settings/users
+├ ○ /super-admin
+└ ○ /workflow-approvals
+
+
+○  (Static)   prerendered as static content
+ƒ  (Dynamic)  server-rendered on demand
+
