@@ -1,3 +1,18 @@
+/** Static English labels for SSR/first paint — keep in sync with DASHBOARD_KPI_CARDS order. */
+export const DASHBOARD_KPI_LCP_LABELS = [
+  'Total Revenue',
+  'Customer Due',
+  'Low Stock Alert',
+  'Pending Sales',
+  'Open Leads',
+  'Pending Production',
+] as const;
+
+export function isDashboardPath(pathname: string) {
+  const path = pathname.split('?')[0].split('#')[0].replace(/\/$/, '') || '/dashboard';
+  return path === '/dashboard';
+}
+
 export const DASHBOARD_KPI_CARDS: {
   key: string;
   labelKey: string;

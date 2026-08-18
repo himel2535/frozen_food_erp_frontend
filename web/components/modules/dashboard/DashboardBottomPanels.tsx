@@ -9,7 +9,7 @@ import type { AppState } from '@/lib/state/types';
 import { useLocaleFormat } from '@/hooks/useLocaleFormat';
 import { listSystemAuditLogRecords } from '@/lib/services/audit-log-service';
 import { formatRelativeTime, getTopProducts, type TopProductRow } from '@/lib/services/dashboard-service';
-import { fetchDashboardTopProducts, fetchResourcePage } from '@/lib/services/api-resource-service';
+import { fetchDashboardTopProducts, fetchResourcePage, invalidateDashboardTopProductsCache, peekDashboardTopProducts } from '@/lib/services/api-resource-service';
 import { isMongoDbBackend } from '@/lib/config/data-source';
 import { onApiMutation } from '@/lib/services/api-sync-events';
 import type { SystemAuditLogRecord } from '@/lib/state/types';
@@ -19,6 +19,7 @@ import {
   DashboardRecentInvoicesSkeleton,
   DashboardTopProductsSkeleton,
 } from '@/components/skeletons/DashboardLoadingSkeleton';
+import { getApiListCache, invalidateApiListCache, isApiListCacheFresh } from '@/lib/services/api-list-cache';
 
 function customerName(state: AppState, customerId: unknown) {
   const customers = Array.isArray(state.crmCustomers) ? state.crmCustomers : [];
@@ -120,20 +121,28 @@ export function DashboardBottomPanels() {
   const t = useAppStore((s) => s.t);
   const { formatMoney } = useLocaleFormat();
   const mongo = isMongoDbBackend();
+  const peekedTop = mongo ? peekDashboardTopProducts(5) : null;
+  const auditQuery = { page: 1, limit: 5 };
+  const peekedAudit = mongo && isApiListCacheFresh('/audit-logs', auditQuery, 15_000)
+    ? getApiListCache('/audit-logs', auditQuery)
+    : null;
 
-  const [apiTopProducts, setApiTopProducts] = useState<TopProductRow[] | null>(null);
-  const [topProductsLoading, setTopProductsLoading] = useState(mongo);
-  const [apiActivity, setApiActivity] = useState<SystemAuditLogRecord[] | null>(null);
-  const [activityLoading, setActivityLoading] = useState(mongo);
+  const [apiTopProducts, setApiTopProducts] = useState<TopProductRow[] | null>(
+    peekedTop ? (peekedTop as TopProductRow[]) : null,
+  );
+  const [topProductsLoading, setTopProductsLoading] = useState(mongo && !peekedTop);
+  const [apiActivity, setApiActivity] = useState<SystemAuditLogRecord[] | null>(() => {
+    if (!peekedAudit) return null;
+    return peekedAudit.map(mapAuditRow).filter((row) => row.id || row.description);
+  });
+  const [activityLoading, setActivityLoading] = useState(mongo && !peekedAudit);
 
   useEffect(() => {
     if (!mongo) return;
     let active = true;
 
     const load = async () => {
-      const started = typeof performance !== 'undefined' ? performance.now() : Date.now();
       const rows = await fetchDashboardTopProducts(5);
-      console.log(`[timing] dashboard top-products ${Math.round((typeof performance !== 'undefined' ? performance.now() : Date.now()) - started)}ms`);
       if (!active) return;
       setApiTopProducts(rows ?? []);
       setTopProductsLoading(false);
@@ -142,6 +151,7 @@ export function DashboardBottomPanels() {
     void load();
     const unsubscribe = onApiMutation((modules) => {
       if (modules?.some((mod) => mod === 'salesOrders' || mod === 'invoices' || mod === 'products')) {
+        invalidateDashboardTopProductsCache();
         void load();
       }
     });
@@ -157,7 +167,10 @@ export function DashboardBottomPanels() {
 
     const load = async () => {
       try {
-        const { rows } = await fetchResourcePage('/audit-logs', { page: 1, limit: 5 });
+        const query = { page: 1, limit: 5 };
+        const rows = isApiListCacheFresh('/audit-logs', query, 15_000)
+          ? (getApiListCache('/audit-logs', query) ?? [])
+          : (await fetchResourcePage('/audit-logs', query)).rows;
         if (!active) return;
         const mapped = rows.map(mapAuditRow).filter((row) => row.id || row.description);
         mapped.sort((a, b) => b.timestamp.localeCompare(a.timestamp));
@@ -171,7 +184,10 @@ export function DashboardBottomPanels() {
 
     void load();
     const unsubscribe = onApiMutation((modules) => {
-      if (modules?.some((mod) => mod === 'auditLogs')) void load();
+      if (modules?.some((mod) => mod === 'auditLogs')) {
+        invalidateApiListCache('/audit-logs');
+        void load();
+      }
     });
     return () => {
       active = false;

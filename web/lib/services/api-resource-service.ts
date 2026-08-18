@@ -199,15 +199,46 @@ export type DashboardSummary = {
 
 export type DashboardSummaryScope = 'kpi' | 'extra' | 'full';
 
+const DASHBOARD_GET_TTL_MS = 15_000;
+const summaryCache = new Map<string, { data: DashboardSummary; at: number }>();
+const summaryInflight = new Map<string, Promise<DashboardSummary | null>>();
+
+export function peekDashboardSummary(scope: DashboardSummaryScope = 'kpi'): DashboardSummary | null {
+  const hit = summaryCache.get(scope);
+  if (!hit) return null;
+  if (Date.now() - hit.at > DASHBOARD_GET_TTL_MS) {
+    summaryCache.delete(scope);
+    return null;
+  }
+  return hit.data;
+}
+
+export function invalidateDashboardSummaryCache() {
+  summaryCache.clear();
+  summaryInflight.clear();
+}
+
 export async function fetchDashboardSummary(
   scope: DashboardSummaryScope = 'kpi',
 ): Promise<DashboardSummary | null> {
-  try {
-    const { data } = await apiRequest<DashboardSummary>(`/dashboard/summary?scope=${scope}`);
-    return data ?? null;
-  } catch {
-    return null;
-  }
+  const cached = peekDashboardSummary(scope);
+  if (cached) return cached;
+  const pending = summaryInflight.get(scope);
+  if (pending) return pending;
+
+  const req = (async () => {
+    try {
+      const { data } = await apiRequest<DashboardSummary>(`/dashboard/summary?scope=${scope}`);
+      if (data) summaryCache.set(scope, { data, at: Date.now() });
+      return data ?? null;
+    } catch {
+      return null;
+    } finally {
+      summaryInflight.delete(scope);
+    }
+  })();
+  summaryInflight.set(scope, req);
+  return req;
 }
 
 export type DashboardTopProduct = {
@@ -219,12 +250,40 @@ export type DashboardTopProduct = {
 };
 
 export async function fetchDashboardTopProducts(limit = 5): Promise<DashboardTopProduct[] | null> {
-  try {
-    const { data } = await apiRequest<DashboardTopProduct[]>(`/dashboard/top-products?limit=${limit}`);
-    return Array.isArray(data) ? data : null;
-  } catch {
+  const cached = peekDashboardTopProducts(limit);
+  if (cached) return cached;
+  if (topProductsInflight) return topProductsInflight;
+
+  topProductsInflight = (async () => {
+    try {
+      const { data } = await apiRequest<DashboardTopProduct[]>(`/dashboard/top-products?limit=${limit}`);
+      const rows = Array.isArray(data) ? data : null;
+      if (rows) topProductsCache = { data: rows, limit, at: Date.now() };
+      return rows;
+    } catch {
+      return null;
+    } finally {
+      topProductsInflight = null;
+    }
+  })();
+  return topProductsInflight;
+}
+
+let topProductsCache: { data: DashboardTopProduct[]; limit: number; at: number } | null = null;
+let topProductsInflight: Promise<DashboardTopProduct[] | null> | null = null;
+
+export function peekDashboardTopProducts(limit = 5): DashboardTopProduct[] | null {
+  if (!topProductsCache || topProductsCache.limit !== limit) return null;
+  if (Date.now() - topProductsCache.at > DASHBOARD_GET_TTL_MS) {
+    topProductsCache = null;
     return null;
   }
+  return topProductsCache.data;
+}
+
+export function invalidateDashboardTopProductsCache() {
+  topProductsCache = null;
+  topProductsInflight = null;
 }
 
 export type DashboardBusinessAlertItem = {
@@ -251,12 +310,42 @@ export type DashboardBusinessAlertsPayload = {
   items: DashboardBusinessAlertItem[];
 };
 
-export async function fetchDashboardBusinessAlerts(): Promise<DashboardBusinessAlertsPayload | null> {
-  try {
-    const { data } = await apiRequest<DashboardBusinessAlertsPayload>('/dashboard/business-alerts');
-    if (!data || !Array.isArray(data.summaries) || !Array.isArray(data.items)) return null;
-    return data;
-  } catch {
+const ALERTS_CACHE_TTL_MS = 15_000;
+let alertsCache: { data: DashboardBusinessAlertsPayload; at: number } | null = null;
+let alertsInflight: Promise<DashboardBusinessAlertsPayload | null> | null = null;
+
+export function peekDashboardBusinessAlerts(): DashboardBusinessAlertsPayload | null {
+  if (!alertsCache) return null;
+  if (Date.now() - alertsCache.at > ALERTS_CACHE_TTL_MS) {
+    alertsCache = null;
     return null;
   }
+  return alertsCache.data;
+}
+
+export function invalidateDashboardBusinessAlertsCache() {
+  alertsCache = null;
+  alertsInflight = null;
+}
+
+export async function fetchDashboardBusinessAlerts(): Promise<DashboardBusinessAlertsPayload | null> {
+  const cached = peekDashboardBusinessAlerts();
+  if (cached) return cached;
+
+  if (alertsInflight) return alertsInflight;
+
+  alertsInflight = (async () => {
+    try {
+      const { data } = await apiRequest<DashboardBusinessAlertsPayload>('/dashboard/business-alerts');
+      if (!data || !Array.isArray(data.summaries) || !Array.isArray(data.items)) return null;
+      alertsCache = { data, at: Date.now() };
+      return data;
+    } catch {
+      return null;
+    } finally {
+      alertsInflight = null;
+    }
+  })();
+
+  return alertsInflight;
 }

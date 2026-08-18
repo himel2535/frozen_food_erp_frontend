@@ -13,7 +13,11 @@ import {
   type BusinessAlert,
 } from '@/lib/services/business-alert-service';
 import { isMongoDbBackend, type ApiModule } from '@/lib/config/data-source';
-import { fetchDashboardBusinessAlerts } from '@/lib/services/api-resource-service';
+import {
+  fetchDashboardBusinessAlerts,
+  invalidateDashboardBusinessAlertsCache,
+  peekDashboardBusinessAlerts,
+} from '@/lib/services/api-resource-service';
 import { onApiMutation } from '@/lib/services/api-sync-events';
 
 const ALERT_MUTATION_MODULES = new Set<string>([
@@ -47,15 +51,21 @@ export function useBusinessAlerts() {
   const appState = useAppStore((s) => s.appState);
   const deferredState = useDeferredValue(appState);
   const mongo = isMongoDbBackend();
-  const [apiAlerts, setApiAlerts] = useState<BusinessAlert[] | null>(null);
-  const [apiSummaries, setApiSummaries] = useState<AlertSummary[] | null>(null);
-  const [loading, setLoading] = useState(mongo);
+  const peeked = mongo ? peekDashboardBusinessAlerts() : null;
+  const [apiAlerts, setApiAlerts] = useState<BusinessAlert[] | null>(
+    peeked ? (peeked.items as BusinessAlert[]) : null,
+  );
+  const [apiSummaries, setApiSummaries] = useState<AlertSummary[] | null>(
+    peeked ? (peeked.summaries as AlertSummary[]) : null,
+  );
+  const [loading, setLoading] = useState(mongo && !peeked);
 
   useEffect(() => {
     if (!mongo) return;
     let active = true;
 
-    const load = async () => {
+    const load = async (force = false) => {
+      if (force) invalidateDashboardBusinessAlertsCache();
       const payload = await fetchDashboardBusinessAlerts();
       if (!active) return;
       if (!payload) {
@@ -72,7 +82,7 @@ export function useBusinessAlerts() {
     void load();
     const unsubscribe = onApiMutation((modules) => {
       if (!modules?.some((mod) => ALERT_MUTATION_MODULES.has(mod as ApiModule))) return;
-      void load();
+      void load(true);
     });
     return () => {
       active = false;

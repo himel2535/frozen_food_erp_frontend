@@ -2,21 +2,13 @@
 
 import dynamic from 'next/dynamic';
 import { DashboardLoadingSkeleton } from '@/components/skeletons/DashboardLoadingSkeleton';
-
-const KPI_LCP_LABELS = [
-  'Total Revenue',
-  'Customer Due',
-  'Low Stock Alert',
-  'Pending Sales',
-  'Open Leads',
-  'Pending Production',
-];
+import { DASHBOARD_KPI_LCP_LABELS } from '@/lib/ui/dashboard-kpi';
 
 const DashboardView = dynamic(
   () => import('@/components/modules/DashboardView').then((m) => m.DashboardView),
   {
     ssr: false,
-    loading: () => <DashboardLoadingSkeleton kpiLabels={KPI_LCP_LABELS} />,
+    loading: () => <DashboardLoadingSkeleton kpiLabels={[...DASHBOARD_KPI_LCP_LABELS]} />,
   },
 );
 

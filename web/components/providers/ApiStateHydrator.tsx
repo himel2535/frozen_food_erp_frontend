@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
+import { usePathname } from 'next/navigation';
 import { useAppStore } from '@/lib/state/app-store';
 import {
   API_BOOT_MODULES,
@@ -13,6 +14,7 @@ import { setApiListCache } from '@/lib/services/api-list-cache';
 import { applyApiDataToAppState } from '@/lib/services/api-app-state-mapper';
 import { onApiMutation } from '@/lib/services/api-sync-events';
 import { DEFAULT_LIST_PAGE_SIZE } from '@/lib/services/api-pagination-types';
+import { isDashboardPath } from '@/lib/ui/dashboard-kpi';
 
 const USE_API = isMongoDbBackend();
 
@@ -43,6 +45,7 @@ function mergeApiSnapshot(partial: Partial<Record<ApiModule, Record<string, unkn
 
 /** Seeds Zustand with first-page API data — no full-list background sweep. */
 export function ApiStateHydrator() {
+  const pathname = usePathname();
   const authUser = useAppStore((s) => s.authUser);
   const authReady = useAppStore((s) => s.authReady);
   const setApiDataReady = useAppStore((s) => s.setApiDataReady);
@@ -52,8 +55,9 @@ export function ApiStateHydrator() {
     if (!USE_API || !authReady || !authUser) return;
 
     let cancelled = false;
+    const delayMs = isDashboardPath(pathname) ? 1200 : 0;
 
-    void (async () => {
+    const runBoot = async () => {
       try {
         const boot = await fetchModulesPageSafe([...API_BOOT_MODULES]);
         if (cancelled) return;
@@ -66,12 +70,17 @@ export function ApiStateHydrator() {
           bootDoneRef.current = true;
         }
       }
-    })();
+    };
+
+    const timer = window.setTimeout(() => {
+      void runBoot();
+    }, delayMs);
 
     return () => {
       cancelled = true;
+      window.clearTimeout(timer);
     };
-  }, [authReady, authUser, setApiDataReady]);
+  }, [authReady, authUser, setApiDataReady, pathname]);
 
   useEffect(() => {
     if (!USE_API || !authUser) return;

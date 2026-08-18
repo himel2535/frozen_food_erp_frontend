@@ -19,7 +19,12 @@ import { useAppStore } from '@/lib/state/app-store';
 import { applyApiDataToAppState } from '@/lib/services/api-app-state-mapper';
 import { getDashboardMetrics } from '@/lib/services/dashboard-metrics';
 import { buildDashboardMetricValues, summaryLowStock } from '@/lib/services/dashboard-summary-metrics';
-import { fetchDashboardSummary, type DashboardSummary } from '@/lib/services/api-resource-service';
+import {
+  fetchDashboardSummary,
+  invalidateDashboardSummaryCache,
+  peekDashboardSummary,
+  type DashboardSummary,
+} from '@/lib/services/api-resource-service';
 import { onApiMutation } from '@/lib/services/api-sync-events';
 import type { DashboardServerPayload } from '@/lib/server/dashboard-snapshot';
 import { SkeletonText } from '@/components/skeletons/SkeletonText';
@@ -45,7 +50,12 @@ export function DashboardView({ serverPayload = null }: DashboardViewProps) {
   const t = useAppStore((s) => s.t);
   const { formatMoney } = useLocaleFormat();
 
-  const [liveSummary, setLiveSummary] = useState<DashboardSummary | null>(null);
+  const [liveSummary, setLiveSummary] = useState<DashboardSummary | null>(() => {
+    const kpi = peekDashboardSummary('kpi');
+    const extra = peekDashboardSummary('extra');
+    if (!kpi && !extra) return null;
+    return { ...(kpi ?? {}), ...(extra ?? {}) } as DashboardSummary;
+  });
   const [summaryFailed, setSummaryFailed] = useState(false);
 
   const dashboardState = useMemo(() => {
@@ -81,9 +91,7 @@ export function DashboardView({ serverPayload = null }: DashboardViewProps) {
     };
 
     const loadKpi = async () => {
-      const started = typeof performance !== 'undefined' ? performance.now() : Date.now();
       const data = await fetchDashboardSummary('kpi');
-      console.log(`[timing] dashboard kpi ${Math.round((typeof performance !== 'undefined' ? performance.now() : Date.now()) - started)}ms`);
       if (!active) return;
       if (data) {
         mergeSummary(data);
@@ -103,6 +111,7 @@ export function DashboardView({ serverPayload = null }: DashboardViewProps) {
     };
 
     const refreshAll = async () => {
+      invalidateDashboardSummaryCache();
       const [kpi, extra] = await Promise.all([
         fetchDashboardSummary('kpi'),
         fetchDashboardSummary('extra'),

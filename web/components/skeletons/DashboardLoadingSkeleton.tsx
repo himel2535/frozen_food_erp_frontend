@@ -9,7 +9,7 @@ function DashboardKpiCardSkeleton({ label }: { label?: string }) {
   return (
     <div
       className="premium-card premium-shadow px-4 py-2.5 flex items-center justify-between gap-3 min-h-[84px]"
-      aria-hidden="true"
+      aria-hidden={label ? undefined : true}
     >
       <div className="flex flex-col justify-center gap-0.5 min-w-0 flex-1">
         {label ? (

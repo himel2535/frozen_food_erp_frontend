@@ -8,20 +8,25 @@ import { ToysLoader } from '@/components/shared/ToysLoader';
 import { ModuleActionsProvider } from '@/components/layout/ModuleActionsContext';
 import { ModuleShell } from '@/components/layout/ModuleShell';
 import { ApiStateHydrator } from '@/components/providers/ApiStateHydrator';
+import { DashboardPrefetch } from '@/components/modules/dashboard/DashboardPrefetch';
 import { SocketProvider } from '@/components/providers/SocketProvider';
+import { usePathname } from 'next/navigation';
 import { useAppStore } from '@/lib/state/app-store';
 import { registerChromeIcons } from '@/lib/ui/register-chrome-icons';
+import { isDashboardPath } from '@/lib/ui/dashboard-kpi';
 
 registerChromeIcons();
 
 export function TenantShell({ children }: { children: React.ReactNode }) {
+  const pathname = usePathname();
   const hydrated = useAppStore((s) => s.hydrated);
   const ready = useAppStore((s) => s.ready);
-  const showBootLoader = !hydrated || !ready;
+  const showBootLoader = (!hydrated || !ready) && !isDashboardPath(pathname);
 
   return (
     <SocketProvider>
       <ApiStateHydrator />
+      <DashboardPrefetch />
       <BengaliFontLoader />
       {showBootLoader ? <ToysLoader label="Loading Workspace..." /> : null}
       <div id="screen-workspace" className="min-h-screen flex">
