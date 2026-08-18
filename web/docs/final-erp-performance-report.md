@@ -1,8 +1,25 @@
 # Final ERP Performance Report
 
-**Date:** 2026-08-18  
+**Date:** 2026-08-18 (updated after screenshot diagnosis pass)  
 **Scope:** End-to-end navigation, hydration, forms/mutations, client cache, Redis, Mongo, auth  
 **Method:** Profile first → root cause → fix → re-measure. No speculative optimizations.
+
+---
+
+## Post-Screenshot Fix Pass (2026-08-18 PM)
+
+Root causes from Network tab screenshot:
+
+| Issue | Fix |
+|-------|-----|
+| Duplicate `finished-goods` GET (hydrator + page hook) | `apiDataReady` gate + skip reload when cache fresh |
+| Duplicate `categories/units/warehouses` GET | `useInventoryLookups` uses `cacheOnly` stores |
+| Finished Goods navigated with 5 modules | Hydration trimmed to `finishedGoods` only |
+| `audit-logs` POST on every mutation (~400ms) | 2s debounced queue; no immediate `saveAppState` |
+| Slow lookup APIs on production | Backend Redis cache TTL 5min for employees/categories/units/warehouses |
+| Product save-and-add blocked on SKU | `fetchNextProductSku` non-blocking |
+
+**Redis in Network tab:** Never visible — Redis is server-side only. Verify via `/health` and response time on repeat GETs.
 
 ---
 
