@@ -1,8 +1,25 @@
 import type { ApiModule } from '@/lib/config/data-source';
 import { ROUTE_PREFETCH_MODULES } from '@/lib/server/route-prefetch-config';
+import { DEFAULT_LIST_PAGE_SIZE, LOOKUP_LIST_PAGE_SIZE, type ApiListQuery } from '@/lib/services/api-pagination-types';
+import { LOOKUP_CACHE_QUERY } from '@/lib/services/api-list-cache';
+import { isMasterDataModule } from '@/lib/config/cache-policy';
 
-/** Client-side hydration TTL — aligned with dashboard cache (15s). */
+/** Client-side hydration TTL — aligned with table cache. */
 export const HYDRATION_CACHE_TTL_MS = 15_000;
+
+/** Table page sizes that match page-level hooks (avoid limit mismatch duplicates). */
+export const ROUTE_TABLE_PAGE_SIZES: Partial<Record<string, number>> = {
+  '/inventory/products': 10,
+  '/inventory/categories': 10,
+  '/inventory/units': 10,
+  '/inventory/warehouses': 10,
+  '/inventory/raw-materials': 10,
+  '/inventory/semi-finished-products': 10,
+  '/inventory/finished-goods': 10,
+  '/purchases/suppliers': 8,
+  '/crm/leads': 10,
+  '/sales/pos': 50,
+};
 
 /** Routes that use dedicated admin APIs — no Mongo list hydration. */
 const ADMIN_API_ROUTES = new Set(['/settings/users', '/settings/roles']);
@@ -88,4 +105,42 @@ export function resolveHydrationModules(pathname: string): ApiModule[] {
   const formLookups = isFormSubRoute(path) ? (FORM_ROUTE_HYDRATION_LOOKUPS[routeKey] ?? []) : [];
 
   return dedupeModules([...primary, ...lookups, ...formLookups]);
+}
+
+function primaryModulesForRoute(pathname: string): ApiModule[] {
+  const path = normalizeRoutePath(pathname);
+  const routeKey = resolveRouteKey(path);
+  if (!routeKey) return [];
+  return toModuleArray(ROUTE_PREFETCH_MODULES[routeKey]);
+}
+
+/** Query used when hydrating a module for the current route. */
+export function resolveHydrationQuery(module: ApiModule, pathname: string): ApiListQuery {
+  const path = normalizeRoutePath(pathname);
+  const routeKey = resolveRouteKey(path);
+  const primary = primaryModulesForRoute(pathname);
+
+  if (routeKey && primary.includes(module)) {
+    const limit = ROUTE_TABLE_PAGE_SIZES[routeKey] ?? DEFAULT_LIST_PAGE_SIZE;
+    return { page: 1, limit };
+  }
+
+  if (isMasterDataModule(module)) {
+    return LOOKUP_CACHE_QUERY;
+  }
+
+  const lookups = [
+    ...(routeKey ? (ROUTE_HYDRATION_LOOKUPS[routeKey] ?? []) : []),
+    ...(routeKey && isFormSubRoute(path) ? (FORM_ROUTE_HYDRATION_LOOKUPS[routeKey] ?? []) : []),
+  ];
+  if (lookups.includes(module)) {
+    return LOOKUP_CACHE_QUERY;
+  }
+
+  return { page: 1, limit: DEFAULT_LIST_PAGE_SIZE };
+}
+
+export function isLookupHydrationModule(module: ApiModule, pathname: string): boolean {
+  const query = resolveHydrationQuery(module, pathname);
+  return query.limit === LOOKUP_LIST_PAGE_SIZE;
 }

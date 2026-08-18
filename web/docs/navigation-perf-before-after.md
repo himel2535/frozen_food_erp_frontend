@@ -1,42 +1,54 @@
-# Navigation Performance — Before/After
+# Navigation Performance — Before/After (Cache Tiers + Mutation Fix)
 
-Measured after route-aware hydration implementation on 2026-08-18.
+Measured after two-tier cache, RSC prefetch removal, and targeted mutation patches.
 
-## Methodology
+## Key improvements
 
-- Script: `web/scripts/run-navigation-perf.mjs`
-- Environment: `http://localhost:3000` (frontend) + local backend on port 5000
-- Counts GET requests to `/api/v1/*` during each client-side navigation (after `networkidle`)
-- **Before** column: estimated from pre-change architecture (global `API_BOOT_MODULES` = 9 parallel list GETs on every non-dashboard route, plus page-specific requests)
+| Area | Before | After |
+|---|---|---|
+| Cache keys | Mismatched limits (8/10/25/200) → duplicate GETs | Lookup tier (`limit=100`) + compatible cache reads |
+| Master data TTL | 10–15s global | 5 min for categories/units/warehouses |
+| Sidebar hover | `router.prefetch()` → `?_rsc=` storm | Removed — `prefetch={false}` only |
+| Product create | invalidate all + full reload + hydrator re-fetch + alerts | Cache patch + skip hydrator mutation refetch |
+| Backend mutations | Sync `clearCaches()` before response | `setImmediate(clearCaches)` after response |
 
-## Results
+## Verification targets
 
-| Navigation | Before (est.) | After (measured) | Removed (est.) | Main improvement |
-|---|---:|---:|---:|---|
-| Dashboard → Users | ~11 | **1** | ~10 | No boot modules; admin APIs only |
-| Users → Roles | ~10 | 5 | ~5 | No global boot; roles + admin only |
-| Roles → Customers | ~10 | 5 | ~5 | Route-specific; customers cached from session |
-| Customers → Products | ~10 | 5 | ~5 | Products + lookups only (not 9 boot) |
-| Products → Warehouses | ~10 | 11 | — | Route-aware: products + warehouses + lookups (different page sizes cause some duplicate GETs) |
-| Warehouses → Sales Orders | ~10 | 7 | ~3 | sales-orders + shared lookups only |
-| Sales Orders → Purchases | ~10 | 4 | ~6 | purchase-orders route (not 9 boot) |
-| Purchases → Production | ~10 | 0 | ~10 | Extended module; cache warm |
-| Production → CRM Leads | ~10 | 4 | ~6 | leads + employees lookup only |
-| CRM Leads → Dashboard | ~10 | 1 | ~9 | Dashboard critical boot reuses cache |
+| Scenario | Target |
+|---|---|
+| Dashboard → Products (warm, within 15s of dashboard boot) | 0 list GETs |
+| Dashboard → Products (cold) | ≤1 list GET (`products` only) |
+| Sidebar hover 5 links | 0 `?_rsc=` prefetches |
+| Product create | 1 POST; 0 blocking list GETs after save |
 
-**Average per transition:** ~10 (before est.) → **4.3** (after measured)
+## Scripts
 
-## Key findings
+```bash
+node scripts/verify-route-hydration.mjs
+node scripts/run-navigation-perf.mjs
+```
 
-1. **Dashboard → Users** dropped from ~11 requests to **1** (auth token refresh only) — primary goal achieved.
-2. Global boot modules (`customers`, `products`, `suppliers`, `employees`, `sales-orders`, `invoices`, `categories`, `units`, `warehouses`) no longer fire on admin/settings routes.
-3. Remaining non-module requests are expected: `auth`, `notifications`, `dashboard` summary (header alerts dropdown maps to `/dashboard/*` path segment).
-4. Some duplicate GETs remain when hydrator uses `limit=25` and page hooks use different page sizes (e.g. products page `limit=10`) — separate cache keys.
+Results: [`navigation-perf-results.json`](./navigation-perf-results.json)
 
-## Raw data
+## Architecture
 
-Full JSON: [`navigation-perf-results.json`](./navigation-perf-results.json)
+```mermaid
+flowchart TD
+  Nav[Navigate] --> Compat{Compatible cache hit?}
+  Compat -->|yes| Render[Render from memory]
+  Compat -->|no| Lookup{Lookup tier fresh?}
+  Lookup -->|yes| Slice[Slice lookup rows]
+  Lookup -->|no| API[Single API GET]
+  Mutate[POST create] --> Patch[Patch list cache]
+  Patch --> UI[Update UI immediately]
+```
 
-## Verification
+## Files changed
 
-Route dependency assertions: `node scripts/verify-route-hydration.mjs` (15/15 passed)
+- [`web/lib/services/api-list-cache.ts`](../lib/services/api-list-cache.ts) — lookup tier, compatible reads, cache patches
+- [`web/lib/config/cache-policy.ts`](../lib/config/cache-policy.ts) — master data TTL
+- [`web/lib/config/route-hydration-config.ts`](../lib/config/route-hydration-config.ts) — route-specific hydrator queries
+- [`web/components/providers/ApiStateHydrator.tsx`](../components/providers/ApiStateHydrator.tsx) — compatible cache, no mutation re-fetch
+- [`web/hooks/use-paginated-api-resource.ts`](../hooks/use-paginated-api-resource.ts) — targeted mutation patches
+- [`web/components/layout/Sidebar.tsx`](../components/layout/Sidebar.tsx) — removed hover prefetch
+- [`toys_factory_erp_backend/src/controllers/crudFactory.ts`](../../toys_factory_erp_backend/src/controllers/crudFactory.ts) — async cache invalidation

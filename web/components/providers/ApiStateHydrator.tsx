@@ -11,23 +11,25 @@ import {
   type ApiModule,
 } from '@/lib/config/data-source';
 import {
-  HYDRATION_CACHE_TTL_MS,
   resolveHydrationModules,
+  resolveHydrationQuery,
 } from '@/lib/config/route-hydration-config';
+import { cacheTtlForModule } from '@/lib/config/cache-policy';
 import { fetchResourcePage } from '@/lib/services/api-resource-service';
 import {
-  getApiListCache,
-  isApiListCacheFresh,
+  findCompatibleListCache,
+  isLookupCacheFresh,
+  getLookupCache,
   setApiListCache,
+  setLookupCache,
 } from '@/lib/services/api-list-cache';
 import { applyApiDataToAppState } from '@/lib/services/api-app-state-mapper';
-import { onApiMutation } from '@/lib/services/api-sync-events';
-import { DEFAULT_LIST_PAGE_SIZE } from '@/lib/services/api-pagination-types';
+import { DEFAULT_LIST_PAGE_SIZE, type ApiListQuery } from '@/lib/services/api-pagination-types';
 import { isDashboardPath } from '@/lib/ui/dashboard-kpi';
 
 const USE_API = isMongoDbBackend();
 
-const HYDRATION_QUERY = { page: 1, limit: DEFAULT_LIST_PAGE_SIZE };
+const DASHBOARD_HYDRATION_QUERY: ApiListQuery = { page: 1, limit: DEFAULT_LIST_PAGE_SIZE };
 
 /** Session-scoped set of modules loaded or found in fresh cache. */
 const sessionLoadedModules = new Set<ApiModule>();
@@ -36,34 +38,51 @@ function modulePath(mod: ApiModule): string | undefined {
   return API_RESOURCE_PATHS[mod];
 }
 
-function isModuleFresh(mod: ApiModule): boolean {
-  const path = modulePath(mod);
-  if (!path) return true;
-  return isApiListCacheFresh(path, HYDRATION_QUERY, HYDRATION_CACHE_TTL_MS);
-}
-
-function readCachedModuleRows(mod: ApiModule): Record<string, unknown>[] | null {
+function readCachedModuleRows(mod: ApiModule, query: ApiListQuery): Record<string, unknown>[] | null {
   const path = modulePath(mod);
   if (!path) return null;
-  return getApiListCache(path, HYDRATION_QUERY);
+  const ttl = cacheTtlForModule(mod);
+  const hit = findCompatibleListCache(path, query, ttl);
+  if (hit) return hit.docs;
+  if ((query.page ?? 1) === 1 && isLookupCacheFresh(path, ttl)) {
+    const lookup = getLookupCache(path);
+    if (lookup) {
+      const limit = query.limit ?? DEFAULT_LIST_PAGE_SIZE;
+      return lookup.slice(0, limit);
+    }
+  }
+  return null;
 }
 
-function filterModulesNeedingFetch(mods: readonly ApiModule[]): ApiModule[] {
-  return mods.filter((mod) => modulePath(mod) && !isModuleFresh(mod));
+function isModuleFresh(mod: ApiModule, query: ApiListQuery): boolean {
+  return readCachedModuleRows(mod, query) !== null;
 }
 
-function collectSnapshot(mods: readonly ApiModule[]): Partial<Record<ApiModule, Record<string, unknown>[]>> {
+function filterModulesNeedingFetch(
+  mods: readonly ApiModule[],
+  pathname: string,
+): Array<{ mod: ApiModule; query: ApiListQuery }> {
+  return mods
+    .map((mod) => ({ mod, query: resolveHydrationQuery(mod, pathname) }))
+    .filter(({ mod, query }) => modulePath(mod) && !isModuleFresh(mod, query));
+}
+
+function collectSnapshot(
+  mods: readonly ApiModule[],
+  pathname: string,
+): Partial<Record<ApiModule, Record<string, unknown>[]>> {
   const partial: Partial<Record<ApiModule, Record<string, unknown>[]>> = {};
   for (const mod of mods) {
-    const rows = readCachedModuleRows(mod);
+    const query = resolveHydrationQuery(mod, pathname);
+    const rows = readCachedModuleRows(mod, query);
     if (rows) partial[mod] = rows;
   }
   return partial;
 }
 
-async function fetchModulesPageSafe(mods: readonly ApiModule[]) {
-  const toFetch = filterModulesNeedingFetch(mods);
-  const partial = collectSnapshot(mods);
+async function fetchModulesPageSafe(mods: readonly ApiModule[], pathname: string) {
+  const toFetch = filterModulesNeedingFetch(mods, pathname);
+  const partial = collectSnapshot(mods, pathname);
 
   if (toFetch.length === 0) {
     for (const mod of mods) sessionLoadedModules.add(mod);
@@ -71,10 +90,13 @@ async function fetchModulesPageSafe(mods: readonly ApiModule[]) {
   }
 
   const results = await Promise.allSettled(
-    toFetch.map(async (mod) => {
+    toFetch.map(async ({ mod, query }) => {
       const path = modulePath(mod)!;
-      const { rows, meta } = await fetchResourcePage(path, HYDRATION_QUERY);
-      setApiListCache(path, rows, HYDRATION_QUERY, meta);
+      const { rows, meta } = await fetchResourcePage(path, query);
+      setApiListCache(path, rows, query, meta);
+      if (query.limit && query.limit >= 100) {
+        setLookupCache(path, rows, meta);
+      }
       sessionLoadedModules.add(mod);
       return [mod, rows] as const;
     }),
@@ -103,6 +125,43 @@ function scheduleIdle(fn: () => void): () => void {
   return () => window.clearTimeout(timer);
 }
 
+async function fetchDashboardModules(mods: readonly ApiModule[]) {
+  const partial: Partial<Record<ApiModule, Record<string, unknown>[]>> = {};
+  const toFetch: ApiModule[] = [];
+
+  for (const mod of mods) {
+    const path = modulePath(mod);
+    if (!path) continue;
+    const ttl = cacheTtlForModule(mod);
+    const hit = findCompatibleListCache(path, DASHBOARD_HYDRATION_QUERY, ttl);
+    if (hit) {
+      partial[mod] = hit.docs;
+      sessionLoadedModules.add(mod);
+    } else {
+      toFetch.push(mod);
+    }
+  }
+
+  if (toFetch.length === 0) return partial;
+
+  const results = await Promise.allSettled(
+    toFetch.map(async (mod) => {
+      const path = modulePath(mod)!;
+      const { rows, meta } = await fetchResourcePage(path, DASHBOARD_HYDRATION_QUERY);
+      setApiListCache(path, rows, DASHBOARD_HYDRATION_QUERY, meta);
+      sessionLoadedModules.add(mod);
+      return [mod, rows] as const;
+    }),
+  );
+
+  for (const result of results) {
+    if (result.status !== 'fulfilled') continue;
+    const [mod, docs] = result.value;
+    partial[mod] = docs;
+  }
+  return partial;
+}
+
 /** Route-aware hydration — fetches only modules required by the current page. */
 export function ApiStateHydrator() {
   const pathname = usePathname();
@@ -122,7 +181,7 @@ export function ApiStateHydrator() {
     const runHydration = async () => {
       try {
         if (dashboard) {
-          const critical = await fetchModulesPageSafe(DASHBOARD_CRITICAL_BOOT_MODULES);
+          const critical = await fetchDashboardModules(DASHBOARD_CRITICAL_BOOT_MODULES);
           if (cancelled) return;
           mergeApiSnapshot(critical);
           if (!apiDataReadyRef.current) {
@@ -131,7 +190,7 @@ export function ApiStateHydrator() {
           }
           cancelIdle = scheduleIdle(() => {
             if (cancelled) return;
-            void fetchModulesPageSafe(DASHBOARD_DEFERRED_BOOT_MODULES).then((partial) => {
+            void fetchDashboardModules(DASHBOARD_DEFERRED_BOOT_MODULES).then((partial) => {
               if (cancelled) return;
               mergeApiSnapshot(partial);
             });
@@ -148,7 +207,7 @@ export function ApiStateHydrator() {
           return;
         }
 
-        const partial = await fetchModulesPageSafe(routeModules);
+        const partial = await fetchModulesPageSafe(routeModules, pathname);
         if (cancelled) return;
         mergeApiSnapshot(partial);
         if (!apiDataReadyRef.current) {
@@ -173,19 +232,6 @@ export function ApiStateHydrator() {
       cancelIdle();
     };
   }, [authReady, authUser, setApiDataReady, pathname]);
-
-  useEffect(() => {
-    if (!USE_API || !authUser) return;
-    return onApiMutation((modules) => {
-      if (!modules?.length) return;
-      const targets = modules.filter(
-        (mod): mod is ApiModule =>
-          mod in API_RESOURCE_PATHS && sessionLoadedModules.has(mod as ApiModule),
-      );
-      if (!targets.length) return;
-      void fetchModulesPageSafe(targets).then((partial) => mergeApiSnapshot(partial));
-    });
-  }, [authUser]);
 
   return null;
 }

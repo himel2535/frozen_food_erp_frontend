@@ -7,6 +7,7 @@ import {
   type ApiModule,
   isModuleApiMode,
 } from '@/lib/config/data-source';
+import { cacheTtlForModule } from '@/lib/config/cache-policy';
 import {
   createResource,
   deleteResource,
@@ -15,10 +16,17 @@ import {
   isCachedResourceListFresh,
   readCachedResourceList,
   updateResource,
+  apiDocId,
 } from '@/lib/services/api-resource-service';
-import { getApiListCacheMeta } from '@/lib/services/api-list-cache';
 import { onApiMutation, consumeModuleMutation } from '@/lib/services/api-sync-events';
-import { invalidateApiListCache, setApiListCache } from '@/lib/services/api-list-cache';
+import {
+  invalidateApiListCache,
+  setApiListCache,
+  prependToListCache,
+  patchListCacheRow,
+  removeFromListCache,
+  LOOKUP_CACHE_QUERY,
+} from '@/lib/services/api-list-cache';
 import { DEFAULT_LIST_PAGE_SIZE, isDefaultListQuery, type ApiPaginationMeta } from '@/lib/services/api-pagination-types';
 import { useModuleInitialRows } from '@/components/providers/ModuleInitialDataProvider';
 import { useAppStore } from '@/lib/state/app-store';
@@ -63,11 +71,11 @@ export function usePaginatedApiResource(
   const path = API_RESOURCE_PATHS[module];
   const mapRowRef = useRef(mapRow);
   mapRowRef.current = mapRow;
+  const listTtl = cacheTtlForModule(module);
+  const skipMutationReloadRef = useRef(false);
 
   const serverRows = useModuleInitialRows(module);
   const initialRows = options?.initialRows ?? serverRows;
-  // If SSR returns 0 rows, it's very likely due to 401 Unauthorized (because server doesn't have localstorage JWT).
-  // By requiring length > 0, we prevent empty SSR payloads from wiping out valid client cache.
   const hasServerSeed = initialRows !== undefined && initialRows.length > 0;
 
   const [page, setPage] = useState(1);
@@ -97,7 +105,7 @@ export function usePaginatedApiResource(
 
   const [meta, setMeta] = useState<ApiPaginationMeta>(() => {
     if (options?.initialMeta) return options.initialMeta;
-    return getApiListCacheMeta(path, queryKey) ?? {
+    return {
       total: 0,
       page: 1,
       limit: pageSize,
@@ -148,7 +156,6 @@ export function usePaginatedApiResource(
     const mutated = consumeModuleMutation(module);
     if (mutated) {
       skipFirstFetchRef.current = false;
-      invalidateApiListCache(path);
     }
     if (skipFirstFetchRef.current && page === 1 && isDefaultQuery && seedFitsPage) {
       skipFirstFetchRef.current = false;
@@ -157,19 +164,21 @@ export function usePaginatedApiResource(
       }
       return;
     }
-    const isFresh = isCachedResourceListFresh(path, queryKey, 10000);
+    const isFresh = isCachedResourceListFresh(path, queryKey, listTtl);
     if (isFresh && !mutated) return;
     const cached = isCachedResourceList(path, queryKey);
     void reload(cached ? { silent: true } : undefined);
-  }, [enabled, path, reload, queryKey, page, debouncedSearch, status, queryFilters]);
+  }, [enabled, path, reload, queryKey, page, debouncedSearch, status, queryFilters, listTtl]);
 
   useEffect(() => {
     if (!enabled) return;
     return onApiMutation((modules) => {
-      if (modules?.includes(module)) {
-        invalidateApiListCache(path);
-        void reload();
+      if (!modules?.includes(module)) return;
+      if (skipMutationReloadRef.current) {
+        skipMutationReloadRef.current = false;
+        return;
       }
+      void reload({ silent: true });
     });
   }, [enabled, module, path, reload]);
 
@@ -198,34 +207,60 @@ export function usePaginatedApiResource(
   }, []);
 
   const create = useCallback(async (body: Record<string, unknown>) => {
+    skipMutationReloadRef.current = true;
     const result = await createResource(path, body);
     if (result.ok) {
       recordApiAudit(module, 'CREATE', result.id, body);
-      invalidateApiListCache(path);
-      await reload();
+      const raw = { ...body, ...result.data, id: result.id };
+      const mapped = mapRowRef.current(raw);
+      prependToListCache(path, queryKey, raw, {
+        total: meta.total + 1,
+        page: meta.page,
+        limit: meta.limit,
+        totalPages: Math.max(1, Math.ceil((meta.total + 1) / meta.limit)),
+      });
+      if (page === 1 && isDefaultQuery) {
+        setRows((prev) => {
+          const id = apiDocId(raw);
+          const filtered = prev.filter((r) => apiDocId(r) !== id);
+          return [mapped, ...filtered].slice(0, pageSize);
+        });
+        setMeta((m) => ({ ...m, total: m.total + 1 }));
+      }
+    } else {
+      skipMutationReloadRef.current = false;
     }
     return result;
-  }, [path, reload, module]);
+  }, [path, module, queryKey, meta, page, pageSize, isDefaultQuery]);
 
   const update = useCallback(async (id: string, body: Record<string, unknown>) => {
+    skipMutationReloadRef.current = true;
     const result = await updateResource(path, id, body);
     if (result.ok) {
       recordApiAudit(module, 'UPDATE', id, body);
-      invalidateApiListCache(path);
-      await reload();
+      patchListCacheRow(path, queryKey, id, body);
+      setRows((prev) =>
+        prev.map((row) => (apiDocId(row) === id ? mapRowRef.current({ ...row, ...body, id }) : row)),
+      );
+    } else {
+      skipMutationReloadRef.current = false;
     }
     return result;
-  }, [path, reload, module]);
+  }, [path, module, queryKey]);
 
   const remove = useCallback(async (id: string) => {
+    skipMutationReloadRef.current = true;
     const result = await deleteResource(path, id);
     if (result.ok) {
       recordApiAudit(module, 'DELETE', id);
-      invalidateApiListCache(path);
-      await reload();
+      removeFromListCache(path, queryKey, id);
+      setRows((prev) => prev.filter((row) => apiDocId(row) !== id));
+      setMeta((m) => ({ ...m, total: Math.max(0, m.total - 1) }));
+    } else {
+      skipMutationReloadRef.current = false;
     }
     return result;
-  }, [path, reload, module]);
+  }, [path, module, queryKey]);
 
   const setPageSize = useCallback((size: number) => {
     setPageSizeState(size);

@@ -5,6 +5,7 @@ import {
   isModuleApiMode,
   type ApiModule,
 } from '@/lib/config/data-source';
+import { LOOKUP_LIST_PAGE_SIZE } from '@/lib/services/api-pagination-types';
 import {
   mapApiCategoryRow,
   mapApiUnitRow,
@@ -12,7 +13,7 @@ import {
 } from '@/lib/services/inventory-api-mappers';
 import { useCallback } from 'react';
 
-const LOOKUP_LIMIT = 200;
+const LOOKUP_LIMIT = LOOKUP_LIST_PAGE_SIZE;
 
 /** Lightweight master-data lookups (categories, units, warehouses only). */
 export function useInventoryLookups() {

@@ -13,9 +13,15 @@ import {
   hasApiListCache,
   setApiListCache,
   isApiListCacheFresh,
-  invalidateApiListCache,
+  findCompatibleListCache,
+  setLookupCache,
+  getLookupCache,
+  isLookupCacheFresh,
+  setLookupCache,
 } from '@/lib/services/api-list-cache';
+import { cacheTtlForModule } from '@/lib/config/cache-policy';
 import { moduleFromApiPath } from '@/lib/config/data-source';
+import { isDefaultListQuery } from '@/lib/services/api-pagination-types';
 import { notifyApiMutation } from '@/lib/services/api-sync-events';
 
 export function apiDocId(doc: { id?: string; _id?: string; legacyId?: string }): string {
@@ -59,7 +65,14 @@ export async function fetchResourcePage(
   const { data, meta } = await apiRequest<Record<string, unknown>[]>(`${base}?${qs}`);
   const rows = Array.isArray(data) ? data : [];
   const parsed = parseApiPaginationMeta(meta);
-  setApiListCache(base, rows, query);
+  setApiListCache(base, rows, query, parsed);
+  if (
+    (query.page ?? 1) === 1
+    && (query.limit ?? DEFAULT_LIST_PAGE_SIZE) >= LOOKUP_LIST_PAGE_SIZE
+    && isDefaultListQuery(query)
+  ) {
+    setLookupCache(base, rows, parsed);
+  }
   return { rows, meta: parsed };
 }
 
@@ -93,22 +106,49 @@ export async function fetchResourceList(
   return all;
 }
 
-/** Return cached rows when available (no network). */
+function cacheTtlForPath(path: string, ttlMs?: number): number {
+  const mod = moduleFromApiPath(normalizeListPath(path));
+  if (ttlMs !== undefined) return ttlMs;
+  return mod ? cacheTtlForModule(mod) : 15_000;
+}
+
+/** Return cached rows when available (no network). Tries exact, compatible, and lookup tiers. */
 export function readCachedResourceList(
   path: string,
-  query?: ApiListQuery,
+  query: ApiListQuery = {},
 ): Record<string, unknown>[] | null {
-  return getApiListCache(normalizeListPath(path), query);
+  const base = normalizeListPath(path);
+  const ttl = cacheTtlForPath(base);
+  const hit = findCompatibleListCache(base, query, ttl);
+  if (hit) return hit.docs;
+
+  if ((query.page ?? 1) === 1) {
+    if (isLookupCacheFresh(base, ttl)) {
+      const lookup = getLookupCache(base);
+      if (lookup) {
+        const limit = query.limit ?? DEFAULT_LIST_PAGE_SIZE;
+        return lookup.slice(0, limit);
+      }
+    }
+  }
+  return getApiListCache(base, query);
 }
 
 /** True once this list endpoint has completed at least one fetch. */
 export function isCachedResourceList(path: string, query?: ApiListQuery): boolean {
-  return hasApiListCache(normalizeListPath(path), query);
+  const base = normalizeListPath(path);
+  if (readCachedResourceList(base, query ?? {})) return true;
+  return hasApiListCache(base, query);
 }
 
-/** True if the cache exists and was fetched within the given TTL (default 10s). */
+/** True if the cache exists and was fetched within the given TTL. */
 export function isCachedResourceListFresh(path: string, query?: ApiListQuery, ttlMs?: number): boolean {
-  return isApiListCacheFresh(normalizeListPath(path), query, ttlMs);
+  const base = normalizeListPath(path);
+  const q = query ?? {};
+  const ttl = cacheTtlForPath(base, ttlMs);
+  if (findCompatibleListCache(base, q, ttl)) return true;
+  if ((q.page ?? 1) === 1 && isLookupCacheFresh(base, ttl)) return true;
+  return isApiListCacheFresh(base, q, ttl);
 }
 
 export async function fetchResourceById(path: string, id: string): Promise<Record<string, unknown> | null> {
@@ -123,7 +163,7 @@ export async function fetchResourceById(path: string, id: string): Promise<Recor
 export async function createResource(
   path: string,
   body: Record<string, unknown>,
-): Promise<{ ok: true; id: string } | { ok: false; error: string }> {
+): Promise<{ ok: true; id: string; data: Record<string, unknown> } | { ok: false; error: string }> {
   try {
     const { data } = await apiRequest<Record<string, unknown>>(path, {
       method: 'POST',
@@ -131,11 +171,10 @@ export async function createResource(
     });
     const id = apiDocId(data ?? {});
     if (!id) return { ok: false, error: 'Missing id from API response' };
-    invalidateApiListCache(path);
     if (!path.includes('/audit-logs')) {
       notifyMutationForPath(path);
     }
-    return { ok: true, id };
+    return { ok: true, id, data: data ?? {} };
   } catch (err) {
     return { ok: false, error: err instanceof Error ? err.message : 'Create failed' };
   }
@@ -151,7 +190,6 @@ export async function updateResource(
       method: 'PUT',
       body: JSON.stringify(body),
     });
-    invalidateApiListCache(path);
     notifyMutationForPath(path);
     return { ok: true };
   } catch (err) {
@@ -165,7 +203,6 @@ export async function deleteResource(
 ): Promise<{ ok: true } | { ok: false; error: string }> {
   try {
     await apiRequest<null>(`${path}/${id}`, { method: 'DELETE' });
-    invalidateApiListCache(path);
     notifyMutationForPath(path);
     return { ok: true };
   } catch (err) {

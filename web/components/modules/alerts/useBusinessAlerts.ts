@@ -1,6 +1,6 @@
 'use client';
 
-import { useDeferredValue, useEffect, useMemo, useState } from 'react';
+import { useDeferredValue, useEffect, useMemo, useRef, useState } from 'react';
 import { useAppStore } from '@/lib/state/app-store';
 import {
   filterAlertsByRole,
@@ -21,8 +21,14 @@ import {
 import { onApiMutation } from '@/lib/services/api-sync-events';
 
 const ALERT_MUTATION_MODULES = new Set<string>(DASHBOARD_DATA_MUTATION_MODULES);
+const MUTATION_REFRESH_DEBOUNCE_MS = 2000;
 
 type LocalAlertBuilders = typeof import('@/lib/services/business-alert-service-local');
+
+type UseBusinessAlertsOptions = {
+  /** When false, skip refetch on CRUD mutations (e.g. header badge when dropdown closed). */
+  refreshOnMutation?: boolean;
+};
 
 function emptyResult(role: string, settings: ReturnType<typeof getAlertSettings>, loading = true) {
   return {
@@ -37,7 +43,8 @@ function emptyResult(role: string, settings: ReturnType<typeof getAlertSettings>
   };
 }
 
-export function useBusinessAlerts() {
+export function useBusinessAlerts(options?: UseBusinessAlertsOptions) {
+  const refreshOnMutation = options?.refreshOnMutation ?? true;
   const appState = useAppStore((s) => s.appState);
   const deferredState = useDeferredValue(appState);
   const mongo = isMongoDbBackend();
@@ -50,6 +57,7 @@ export function useBusinessAlerts() {
   );
   const [loading, setLoading] = useState(mongo && !peeked);
   const [localBuilders, setLocalBuilders] = useState<LocalAlertBuilders | null>(null);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     if (mongo) return;
@@ -83,14 +91,19 @@ export function useBusinessAlerts() {
 
     void load();
     const unsubscribe = onApiMutation((modules) => {
+      if (!refreshOnMutation) return;
       if (!modules?.some((mod) => ALERT_MUTATION_MODULES.has(mod as ApiModule))) return;
-      void load(true);
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+      debounceRef.current = setTimeout(() => {
+        void load(true);
+      }, MUTATION_REFRESH_DEBOUNCE_MS);
     });
     return () => {
       active = false;
+      if (debounceRef.current) clearTimeout(debounceRef.current);
       unsubscribe();
     };
-  }, [mongo]);
+  }, [mongo, refreshOnMutation]);
 
   return useMemo(() => {
     const settings = getAlertSettings(deferredState);

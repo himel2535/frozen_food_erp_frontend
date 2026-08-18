@@ -29,7 +29,7 @@ interface HeaderAlertsDropdownProps {
 
 export function HeaderAlertsDropdown({ open, onOpenChange }: HeaderAlertsDropdownProps) {
   const t = useAppStore((s) => s.t);
-  const { alerts, totalCount } = useBusinessAlerts();
+  const { alerts, totalCount } = useBusinessAlerts({ refreshOnMutation: open });
   const liveItems = useNotificationInboxStore((s) => s.items);
   const markLiveRead = useNotificationInboxStore((s) => s.markRead);
   const markAllLiveRead = useNotificationInboxStore((s) => s.markAllRead);
@@ -169,6 +169,7 @@ export function HeaderAlertsDropdown({ open, onOpenChange }: HeaderAlertsDropdow
                       <Link
                         key={item.id}
                         href={notificationHref(item)}
+                        prefetch={false}
                         onClick={() => {
                           markLiveRead(item.id);
                           closeMenu();
@@ -221,6 +222,7 @@ export function HeaderAlertsDropdown({ open, onOpenChange }: HeaderAlertsDropdow
                     <Link
                       key={alert.id}
                       href={alert.href}
+                      prefetch={false}
                       onClick={() => {
                         markRead(alert.id);
                         closeMenu();
@@ -269,6 +271,7 @@ export function HeaderAlertsDropdown({ open, onOpenChange }: HeaderAlertsDropdow
             <div className="px-4 py-3 border-t border-slate-100 bg-white">
               <Link
                 href="/alerts"
+                prefetch={false}
                 onClick={closeMenu}
                 className="block text-center text-xs font-extrabold text-[#3B4B95] hover:text-[#334585] cursor-pointer"
               >

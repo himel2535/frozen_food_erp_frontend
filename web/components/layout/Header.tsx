@@ -179,6 +179,7 @@ export function Header({ title }: HeaderProps) {
               </div>
               <Link
                 href="/settings/profile"
+                prefetch={false}
                 onClick={() => setOpenPanel(null)}
                 className="flex items-center gap-2.5 px-3 py-2 text-xs font-bold text-slate-600 hover:text-slate-900 hover:bg-slate-100/70 rounded-xl transition-all cursor-pointer"
               >
@@ -186,6 +187,7 @@ export function Header({ title }: HeaderProps) {
               </Link>
               <Link
                 href="/settings/company"
+                prefetch={false}
                 onClick={() => setOpenPanel(null)}
                 className="flex items-center gap-2.5 px-3 py-2 text-xs font-bold text-slate-600 hover:text-slate-900 hover:bg-slate-100/70 rounded-xl transition-all cursor-pointer"
               >

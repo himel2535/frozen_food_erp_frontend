@@ -19,7 +19,13 @@ const PASSWORD = process.env.DASHBOARD_PASSWORD ?? 'password123';
 const HEADLESS = process.env.HEADLESS !== 'false';
 const API_BASE = process.env.NAV_API_BASE ?? 'http://localhost:5000/api/v1';
 
+const LIST_RESOURCES = new Set([
+  'products', 'customers', 'suppliers', 'employees', 'categories', 'units', 'warehouses',
+  'sales-orders', 'invoices', 'purchase-orders', 'leads', 'roles', 'admin',
+]);
+
 const TRANSITIONS = [
+  { from: '/dashboard', to: '/inventory/products', label: 'Dashboard → Products' },
   { from: '/dashboard', to: '/settings/users', label: 'Dashboard → Users' },
   { from: '/settings/users', to: '/settings/roles', label: 'Users → Roles' },
   { from: '/settings/roles', to: '/crm/customers', label: 'Roles → Customers' },
@@ -34,6 +40,10 @@ const TRANSITIONS = [
 
 function isApiRequest(url) {
   return url.includes('/api/v1/') || url.startsWith(API_BASE);
+}
+
+function isRscPrefetch(url) {
+  return url.includes('_rsc=');
 }
 
 function resourceFromUrl(url) {
@@ -56,13 +66,12 @@ async function login(page) {
 
 async function measureTransition(page, from, to, label) {
   const requests = [];
-  const start = Date.now();
 
   const onRequest = (req) => {
     if (req.method() !== 'GET') return;
     const url = req.url();
     if (!isApiRequest(url)) return;
-    requests.push({ url, resource: resourceFromUrl(url), at: Date.now() - start });
+    requests.push({ url, resource: resourceFromUrl(url) });
   };
 
   page.on('request', onRequest);
@@ -76,18 +85,89 @@ async function measureTransition(page, from, to, label) {
 
   page.off('request', onRequest);
 
-  const resources = requests.map((r) => r.resource);
-  const uniqueResources = [...new Set(resources)];
+  const listRequests = requests.filter((r) => LIST_RESOURCES.has(r.resource));
+  const uniqueResources = [...new Set(requests.map((r) => r.resource))];
+  const uniqueListResources = [...new Set(listRequests.map((r) => r.resource))];
 
   return {
     label,
     from,
     to,
     totalRequests: requests.length,
+    listRequests: listRequests.length,
     uniqueResources,
+    uniqueListResources,
     uniqueCount: uniqueResources.length,
     durationMs: Date.now() - navStart,
-    requests: requests.map((r) => ({ resource: r.resource, ms: r.at })),
+    requests: requests.map((r) => ({ resource: r.resource })),
+  };
+}
+
+async function measureRscHover(page) {
+  await page.goto(`${BASE}/dashboard`, { waitUntil: 'networkidle', timeout: 60000 }).catch(() => {});
+  const rscRequests = [];
+  const onRequest = (req) => {
+    if (isRscPrefetch(req.url())) rscRequests.push(req.url());
+  };
+  page.on('request', onRequest);
+
+  const links = page.locator('aside a[href^="/"]').filter({ hasNot: page.locator('[href="/dashboard"]') });
+  const count = Math.min(await links.count(), 5);
+  for (let i = 0; i < count; i += 1) {
+    await links.nth(i).hover();
+    await page.waitForTimeout(200);
+  }
+  await page.waitForTimeout(500);
+  page.off('request', onRequest);
+
+  return {
+    label: 'Sidebar hover (5 links)',
+    rscPrefetchCount: rscRequests.length,
+    rscUrls: rscRequests.slice(0, 10),
+  };
+}
+
+async function measureProductCreateGets(page) {
+  await page.goto(`${BASE}/inventory/products`, { waitUntil: 'networkidle', timeout: 60000 }).catch(() => {});
+
+  const gets = [];
+  const posts = [];
+  const onRequest = (req) => {
+    const url = req.url();
+    if (!isApiRequest(url)) return;
+    if (req.method() === 'GET') gets.push(resourceFromUrl(url));
+    if (req.method() === 'POST' && url.includes('/products')) posts.push(url);
+  };
+  page.on('request', onRequest);
+
+  const addBtn = page.getByRole('button', { name: /add product/i }).first();
+  if (await addBtn.count()) {
+    await addBtn.click();
+    await page.waitForTimeout(500);
+  }
+
+  const skuInput = page.locator('input[name="sku"], input[placeholder*="SKU" i]').first();
+  const nameInput = page.locator('input[name="name"], input[placeholder*="name" i]').first();
+  if (await skuInput.count()) {
+    const stamp = Date.now();
+    await skuInput.fill(`PERF-SKU-${stamp}`);
+    if (await nameInput.count()) await nameInput.fill(`Perf Product ${stamp}`);
+    const saveBtn = page.getByRole('button', { name: /save/i }).first();
+    if (await saveBtn.count()) {
+      gets.length = 0;
+      posts.length = 0;
+      await saveBtn.click();
+      await page.waitForTimeout(3000);
+    }
+  }
+
+  page.off('request', onRequest);
+
+  return {
+    label: 'Product create mutation',
+    postCount: posts.length,
+    getCountAfterPost: gets.length,
+    getResources: [...new Set(gets)],
   };
 }
 
@@ -103,9 +183,17 @@ async function main() {
     console.log(`Measuring: ${t.label}`);
     const row = await measureTransition(page, t.from, t.to, t.label);
     results.push(row);
-    console.log(`  ${row.totalRequests} GET requests (${row.uniqueCount} unique) in ${row.durationMs}ms`);
+    console.log(`  ${row.totalRequests} GET (${row.listRequests} list) in ${row.durationMs}ms`);
     console.log(`  Resources: ${row.uniqueResources.join(', ') || '(none)'}`);
   }
+
+  console.log('Measuring: Sidebar RSC hover');
+  const rscHover = await measureRscHover(page);
+  console.log(`  ${rscHover.rscPrefetchCount} _rsc= prefetches`);
+
+  console.log('Measuring: Product create');
+  const productCreate = await measureProductCreateGets(page);
+  console.log(`  POST=${productCreate.postCount} GET-after=${productCreate.getCountAfterPost}`);
 
   await browser.close();
 
@@ -113,8 +201,11 @@ async function main() {
     measuredAt: new Date().toISOString(),
     baseUrl: BASE,
     transitions: results,
+    rscHover,
+    productCreate,
     totals: {
       requests: results.reduce((s, r) => s + r.totalRequests, 0),
+      listRequests: results.reduce((s, r) => s + r.listRequests, 0),
       avgPerTransition: Math.round(results.reduce((s, r) => s + r.totalRequests, 0) / results.length),
     },
   };
@@ -124,10 +215,10 @@ async function main() {
   writeFileSync(outPath, JSON.stringify(summary, null, 2));
   console.log(`\nWrote ${outPath}`);
 
-  console.log('\n| Navigation | Requests | Unique | Duration ms |');
+  console.log('\n| Navigation | GETs | List GETs | Duration ms |');
   console.log('|---|---:|---:|---:|');
   for (const r of results) {
-    console.log(`| ${r.label} | ${r.totalRequests} | ${r.uniqueCount} | ${r.durationMs} |`);
+    console.log(`| ${r.label} | ${r.totalRequests} | ${r.listRequests} | ${r.durationMs} |`);
   }
 }
 

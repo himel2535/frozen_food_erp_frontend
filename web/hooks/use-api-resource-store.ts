@@ -7,28 +7,34 @@ import {
   type ApiModule,
   isModuleApiMode,
 } from '@/lib/config/data-source';
+import { cacheTtlForModule } from '@/lib/config/cache-policy';
 import {
   createResource,
   deleteResource,
   fetchResourcePage,
-  isCachedResourceList,
   isCachedResourceListFresh,
   readCachedResourceList,
   updateResource,
+  apiDocId,
 } from '@/lib/services/api-resource-service';
 import { onApiMutation, consumeModuleMutation } from '@/lib/services/api-sync-events';
-import { invalidateApiListCache, setApiListCache } from '@/lib/services/api-list-cache';
-import { DEFAULT_LIST_PAGE_SIZE } from '@/lib/services/api-pagination-types';
+import {
+  setApiListCache,
+  setLookupCache,
+  prependToListCache,
+  patchListCacheRow,
+  removeFromListCache,
+  LOOKUP_CACHE_QUERY,
+  isLookupCacheFresh,
+  getLookupCache,
+} from '@/lib/services/api-list-cache';
 import { useModuleInitialRows } from '@/components/providers/ModuleInitialDataProvider';
 import { useAppStore } from '@/lib/state/app-store';
 
 type ApiResourceStoreOptions = {
-  /** Server-fetched rows — skip blocking initial fetch when provided. */
   initialRows?: Record<string, unknown>[];
   skipInitialFetch?: boolean;
-  /** When true, fetches only the first page (faster for large lists). */
   pageOnly?: boolean;
-  /** Page size for pageOnly fetches (dropdowns / lookups). */
   lookupLimit?: number;
 };
 
@@ -65,6 +71,11 @@ export function useApiResourceStore(
   const path = API_RESOURCE_PATHS[module];
   const mapRowRef = useRef(mapRow);
   mapRowRef.current = mapRow;
+  const listTtl = cacheTtlForModule(module);
+  const skipMutationReloadRef = useRef(false);
+  const pageOnly = options?.pageOnly ?? true;
+  const listQuery = LOOKUP_CACHE_QUERY;
+
   const serverRows = useModuleInitialRows(module);
   const initialRowsRef = useRef(options?.initialRows ?? serverRows);
   initialRowsRef.current = options?.initialRows ?? serverRows;
@@ -72,26 +83,33 @@ export function useApiResourceStore(
   const hasServerSeed = resolvedInitial !== undefined;
   const skipInitialFetch = Boolean(options?.skipInitialFetch || hasServerSeed);
   const skipFetchRef = useRef(skipInitialFetch);
-  const pageOnly = options?.pageOnly ?? true;
-  const listQuery = { page: 1, limit: options?.lookupLimit ?? DEFAULT_LIST_PAGE_SIZE };
+
+  const readInitialRows = (): Record<string, unknown>[] => {
+    if (isLookupCacheFresh(path, listTtl)) {
+      const lookup = getLookupCache(path);
+      if (lookup) return lookup;
+    }
+    const cached = readCachedResourceList(path, listQuery);
+    return cached ?? [];
+  };
 
   const [rows, setRows] = useState<Record<string, unknown>[]>(() => {
     if (!enabled) return [];
     if (hasServerSeed) {
       return (resolvedInitial ?? []).map((doc) => mapRow(doc));
     }
-    const docs = readCachedResourceList(path, listQuery);
-    return docs ? docs.map((doc) => mapRow(doc)) : [];
+    const docs = readInitialRows();
+    return docs.length ? docs.map((doc) => mapRow(doc)) : [];
   });
   const [loading, setLoading] = useState(() => {
     if (!enabled) return false;
     if (hasServerSeed) return false;
-    return !isCachedResourceList(path, listQuery);
+    return !isLookupCacheFresh(path, listTtl) && !readCachedResourceList(path, listQuery);
   });
   const [initialized, setInitialized] = useState(() => {
     if (!enabled) return true;
     if (hasServerSeed) return true;
-    return isCachedResourceList(path, listQuery);
+    return Boolean(isLookupCacheFresh(path, listTtl) || readCachedResourceList(path, listQuery));
   });
   const [error, setError] = useState<string | null>(null);
   const fetchGenRef = useRef(0);
@@ -99,17 +117,13 @@ export function useApiResourceStore(
   const reload = useCallback(async (opts?: { silent?: boolean }) => {
     if (!enabled) return;
     const generation = ++fetchGenRef.current;
-    if (!opts?.silent) {
-      setLoading(true);
-    }
+    if (!opts?.silent) setLoading(true);
     setError(null);
     try {
-      const result = pageOnly
-        ? await fetchResourcePage(path, listQuery)
-        : await fetchResourcePage(path, { page: 1, limit: 100 });
+      const result = await fetchResourcePage(path, listQuery);
       if (generation !== fetchGenRef.current) return;
-      const docs = result.rows;
-      setRows(docs.map((doc) => mapRowRef.current(doc)));
+      setLookupCache(path, result.rows, result.meta);
+      setRows(result.rows.map((doc) => mapRowRef.current(doc)));
     } catch (err) {
       if (generation !== fetchGenRef.current) return;
       setError(err instanceof Error ? err.message : `Failed to load ${module}`);
@@ -119,64 +133,77 @@ export function useApiResourceStore(
         setInitialized(true);
       }
     }
-  }, [enabled, path, module, pageOnly]);
+  }, [enabled, path, module, listQuery]);
 
   useEffect(() => {
     if (!enabled) return;
     const mutated = consumeModuleMutation(module);
-    if (mutated) {
-      skipFetchRef.current = false;
-      invalidateApiListCache(path);
-    }
+    if (mutated) skipFetchRef.current = false;
     if (skipFetchRef.current && initialRowsRef.current !== undefined) {
       skipFetchRef.current = false;
-      setApiListCache(path, initialRowsRef.current ?? [], listQuery);
+      setLookupCache(path, initialRowsRef.current ?? []);
       return;
     }
-    const isFresh = isCachedResourceListFresh(path, listQuery, 10000);
-    if (isFresh && !mutated) return;
-    const hasCache = isCachedResourceList(path, listQuery);
-    void reload(hasCache ? { silent: true } : undefined);
-  }, [enabled, path, reload, listQuery.limit]);
+    const fresh = isLookupCacheFresh(path, listTtl)
+      || isCachedResourceListFresh(path, listQuery, listTtl);
+    if (fresh && !mutated) return;
+    void reload({ silent: fresh });
+  }, [enabled, path, reload, listTtl, listQuery, module]);
 
   useEffect(() => {
     if (!enabled) return;
     return onApiMutation((modules) => {
-      if (modules?.includes(module)) {
-        void reload();
+      if (!modules?.includes(module)) return;
+      if (skipMutationReloadRef.current) {
+        skipMutationReloadRef.current = false;
+        return;
       }
+      void reload({ silent: true });
     });
   }, [enabled, module, reload]);
 
   const create = useCallback(async (body: Record<string, unknown>) => {
+    skipMutationReloadRef.current = true;
     const result = await createResource(path, body);
     if (result.ok) {
       recordApiAudit(module, 'CREATE', result.id, body);
-      invalidateApiListCache(path);
-      await reload();
+      const raw = { ...body, ...result.data, id: result.id };
+      prependToListCache(path, listQuery, raw);
+      setLookupCache(path, [raw, ...getLookupCache(path)?.filter((d) => apiDocId(d) !== result.id) ?? []]);
+      setRows((prev) => [mapRowRef.current(raw), ...prev.filter((r) => apiDocId(r) !== result.id)]);
+    } else {
+      skipMutationReloadRef.current = false;
     }
     return result;
-  }, [path, reload, module]);
+  }, [path, module, listQuery]);
 
   const update = useCallback(async (id: string, body: Record<string, unknown>) => {
+    skipMutationReloadRef.current = true;
     const result = await updateResource(path, id, body);
     if (result.ok) {
       recordApiAudit(module, 'UPDATE', id, body);
-      invalidateApiListCache(path);
-      await reload();
+      patchListCacheRow(path, listQuery, id, body);
+      setRows((prev) =>
+        prev.map((row) => (apiDocId(row) === id ? mapRowRef.current({ ...row, ...body, id }) : row)),
+      );
+    } else {
+      skipMutationReloadRef.current = false;
     }
     return result;
-  }, [path, reload, module]);
+  }, [path, module, listQuery]);
 
   const remove = useCallback(async (id: string) => {
+    skipMutationReloadRef.current = true;
     const result = await deleteResource(path, id);
     if (result.ok) {
       recordApiAudit(module, 'DELETE', id);
-      invalidateApiListCache(path);
-      await reload();
+      removeFromListCache(path, listQuery, id);
+      setRows((prev) => prev.filter((row) => apiDocId(row) !== id));
+    } else {
+      skipMutationReloadRef.current = false;
     }
     return result;
-  }, [path, reload, module]);
+  }, [path, module, listQuery]);
 
   return { enabled, rows, loading, initialized, error, reload, create, update, remove };
 }

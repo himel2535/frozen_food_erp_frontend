@@ -3,6 +3,7 @@
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { useMemo, useEffect, useState } from 'react';
+import { usePathname } from 'next/navigation';
 import { Icon } from '@iconify/react';
 import {
   DashboardSalesTrendChartSkeleton,
@@ -30,7 +31,7 @@ import type { DashboardServerPayload } from '@/lib/server/dashboard-snapshot';
 import { SkeletonText } from '@/components/skeletons/SkeletonText';
 import { isMongoDbBackend } from '@/lib/config/data-source';
 import { DASHBOARD_DATA_MUTATION_MODULES } from '@/lib/config/dashboard-mutation-modules';
-import { DASHBOARD_KPI_CARDS } from '@/lib/ui/dashboard-kpi';
+import { DASHBOARD_KPI_CARDS, isDashboardPath } from '@/lib/ui/dashboard-kpi';
 import type { DashboardMetrics } from '@/lib/services/dashboard-metrics';
 import type { TranslateFn } from '@/lib/i18n/resolve-label';
 
@@ -113,6 +114,7 @@ export function DashboardView({ serverPayload = null }: DashboardViewProps) {
   const baseState = useAppStore((s) => s.appState);
   const ready = useDashboardReady();
   const t = useAppStore((s) => s.t);
+  const pathname = usePathname();
   const { formatMoney } = useLocaleFormat();
 
   const [liveSummary, setLiveSummary] = useState<DashboardSummary | null>(() => {
@@ -152,7 +154,7 @@ export function DashboardView({ serverPayload = null }: DashboardViewProps) {
   }, []);
 
   useEffect(() => {
-    if (!isMongoDbBackend()) return;
+    if (!isMongoDbBackend() || !isDashboardPath(pathname)) return;
 
     let active = true;
 
@@ -215,7 +217,7 @@ export function DashboardView({ serverPayload = null }: DashboardViewProps) {
       active = false;
       unsubscribe();
     };
-  }, [serverSummary]);
+  }, [serverSummary, pathname]);
 
   useEffect(() => {
     if (isMongoDbBackend()) return;
@@ -283,7 +285,7 @@ export function DashboardView({ serverPayload = null }: DashboardViewProps) {
             </>
           );
           return card.href ? (
-            <Link key={card.key} href={card.href} className={className} data-metric={card.key}>
+            <Link key={card.key} href={card.href} prefetch={false} className={className} data-metric={card.key}>
               {body}
             </Link>
           ) : (
