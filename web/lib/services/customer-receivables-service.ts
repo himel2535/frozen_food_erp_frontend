@@ -91,23 +91,42 @@ function useLiveReceivablesOnly() {
   return isMongoDbBackend();
 }
 
-/** Merge live invoice/payment API rows into app state for receivables (rows already mapped by useApiResourceStore). */
+/** Merge live invoice/payment/customer API rows into app state for receivables. */
 export function buildReceivableAppState(
   base: AppState,
   options: {
     apiMode: boolean;
     invoiceRows: Record<string, unknown>[];
     paymentRows: Record<string, unknown>[];
+    customerRows?: Record<string, unknown>[];
     invoicesReady: boolean;
     paymentsReady: boolean;
+    customersReady?: boolean;
   },
 ): AppState {
-  const { apiMode, invoiceRows, paymentRows, invoicesReady, paymentsReady } = options;
+  const {
+    apiMode,
+    invoiceRows,
+    paymentRows,
+    customerRows = [],
+    invoicesReady,
+    paymentsReady,
+    customersReady = false,
+  } = options;
   if (!apiMode || !invoicesReady) return base;
 
   const next = { ...base } as AppState;
   ensureCrmState(next);
   next.invoices = invoiceRows as AppState['invoices'];
+
+  if (customersReady && customerRows.length > 0) {
+    const customersById: Record<string, Record<string, unknown>> = {};
+    for (const row of customerRows) {
+      const id = String(row.id ?? row.legacyId ?? '');
+      if (id) customersById[id] = row;
+    }
+    next.crmData = { ...next.crmData!, customersById };
+  }
 
   if (paymentsReady) {
     const existing = (next.crmData?.paymentsById ?? {}) as Record<string, Record<string, unknown>>;

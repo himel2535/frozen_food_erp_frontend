@@ -44,7 +44,7 @@ export const FORM_ROUTE_HYDRATION_LOOKUPS: Partial<Record<string, ApiModule[]>> 
   '/inventory/raw-materials': ['products', 'categories', 'units', 'warehouses'],
   '/inventory/semi-finished-products': ['products', 'categories', 'units', 'warehouses'],
   '/inventory/finished-goods': ['products', 'categories', 'units', 'warehouses'],
-  '/accounting/receivables': ['customers', 'payments', 'cashbox'],
+  '/accounting/receivables': ['payments', 'cashbox'],
   '/accounting/payables': ['suppliers', 'purchasePayments', 'cashbox'],
 };
 

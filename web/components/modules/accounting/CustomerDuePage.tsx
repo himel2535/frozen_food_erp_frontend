@@ -18,15 +18,16 @@ import { PageSkeleton } from '@/components/shared/PageSkeleton';
 
 import { useAppStore } from '@/lib/state/app-store';
 
-import { isModuleApiMode } from '@/lib/config/data-source';
+import { isModuleApiMode, API_RESOURCE_PATHS } from '@/lib/config/data-source';
+import { createResource, updateResource } from '@/lib/services/api-resource-service';
 
 import { useApiResourceStore } from '@/hooks/use-api-resource-store';
-import { usePaginatedApiResource } from '@/hooks/use-paginated-api-resource';
-import { ListPagination } from '@/components/shared/ListPagination';
 
 import { mapGenericApiRow, mapGenericPayloadToApi } from '@/lib/services/generic-api-mapper';
 
 import { mapApiInvoiceRow, mapInvoiceRecordToApi, mapPaymentRecordToApi, resolveApiRowId } from '@/lib/services/entity-api-mappers';
+
+import { mapApiCustomerToListRow, type ApiCustomerDoc } from '@/lib/services/customers-api-service';
 
 import { ApiModeBanner } from '@/components/shared/ApiModeBanner';
 
@@ -77,6 +78,10 @@ function customerOptionLabel(name: string, company: string) {
   return `${name} — ${company}`;
 }
 
+function mapCustomerRow(doc: Record<string, unknown>) {
+  return mapApiCustomerToListRow(doc as ApiCustomerDoc);
+}
+
 export function CustomerDuePage() {
 
   const appState = useAppStore((s) => s.appState);
@@ -87,11 +92,11 @@ export function CustomerDuePage() {
 
   const apiMode = isModuleApiMode('invoices');
 
-  const invoiceStore = usePaginatedApiResource('invoices', mapApiInvoiceRow, { pageSize: DEFAULT_PAGE_SIZE });
-
-  const paymentStore = useApiResourceStore('payments', mapGenericApiRow, { pageOnly: true, lookupLimit: 100 });
-
-  const cashboxStore = useApiResourceStore('cashbox', mapGenericApiRow, { pageOnly: true, lookupLimit: 100 });
+  const customerStore = useApiResourceStore('customers', mapCustomerRow, { cacheOnly: true });
+  const invoiceLookupStore = useApiResourceStore('invoices', mapApiInvoiceRow, { cacheOnly: true });
+  const paymentStore = useApiResourceStore('payments', mapGenericApiRow, { cacheOnly: true, skipInitialFetch: true });
+  const cashboxStore = useApiResourceStore('cashbox', mapGenericApiRow, { cacheOnly: true, skipInitialFetch: true });
+  const invoicePath = API_RESOURCE_PATHS.invoices;
 
 
 
@@ -144,12 +149,23 @@ export function CustomerDuePage() {
   const receivableState = useMemo(
     () => buildReceivableAppState(appState, {
       apiMode,
-      invoiceRows: invoiceStore.rows,
+      invoiceRows: apiMode ? invoiceLookupStore.rows : appState.invoices ?? [],
       paymentRows: paymentStore.rows,
-      invoicesReady: invoiceStore.initialized,
+      customerRows: customerStore.rows,
+      invoicesReady: apiMode ? invoiceLookupStore.initialized : true,
       paymentsReady: paymentStore.initialized,
+      customersReady: apiMode ? customerStore.initialized : true,
     }),
-    [appState, apiMode, invoiceStore.rows, invoiceStore.initialized, paymentStore.rows, paymentStore.initialized],
+    [
+      appState,
+      apiMode,
+      invoiceLookupStore.rows,
+      invoiceLookupStore.initialized,
+      paymentStore.rows,
+      paymentStore.initialized,
+      customerStore.rows,
+      customerStore.initialized,
+    ],
   );
 
 
@@ -206,24 +222,23 @@ export function CustomerDuePage() {
 
   const todayStats = useMemo(() => getTodayCollectionStats(receivableState), [receivableState]);
 
-  const effectiveSearch = apiMode ? invoiceStore.search : search;
+  const effectiveSearch = search;
 
   const filteredRows = useMemo(
     () => filterCustomerReceivables(allCustomers, { search: effectiveSearch, status: statusFilter }),
     [allCustomers, effectiveSearch, statusFilter],
   );
 
-  const listPage = apiMode ? invoiceStore.page : page;
-  const listPageSize = apiMode ? invoiceStore.pageSize : pageSize;
-  const listTotal = apiMode ? invoiceStore.meta.total : filteredRows.length;
+  const listPage = page;
+  const listPageSize = pageSize;
+  const listTotal = filteredRows.length;
 
   const onPageChange = (p: number) => {
-    if (apiMode) invoiceStore.setPage(p);
-    else setPage(p);
+    setPage(p);
   };
 
-  const tablePage = apiMode ? 1 : listPage;
-  const tablePageSize = apiMode ? Math.max(filteredRows.length, 1) : listPageSize;
+  const tablePage = listPage;
+  const tablePageSize = listPageSize;
 
 
 
@@ -266,16 +281,20 @@ export function CustomerDuePage() {
 
 
   const resetListFilters = useCallback(() => {
-    if (apiMode) invoiceStore.setSearchTerm('');
-    else setSearch('');
+    setSearch('');
     setStatusFilter('all');
-    if (apiMode) invoiceStore.setPage(1);
-    else setPage(1);
-  }, [apiMode, invoiceStore.setSearchTerm, invoiceStore.setPage]);
+    setPage(1);
+  }, []);
 
 
 
   const openReceive = useCallback((customer: CustomerReceivable) => {
+    if (apiMode) {
+      if (!paymentStore.initialized) void paymentStore.reload({ silent: true });
+      if (isModuleApiMode('cashbox') && !cashboxStore.initialized) {
+        void cashboxStore.reload({ silent: true });
+      }
+    }
 
     setReceiveTarget(customer);
 
@@ -292,8 +311,7 @@ export function CustomerDuePage() {
     });
 
     setShowReceiveModal(true);
-
-  }, []);
+  }, [apiMode, paymentStore, cashboxStore]);
 
 
 
@@ -316,10 +334,12 @@ export function CustomerDuePage() {
 
       const pseudo = buildReceivableAppState(appState, {
         apiMode,
-        invoiceRows: (apiMode ? invoiceStore.rows : appState.invoices ?? []).map((r) => ({ ...r })),
+        invoiceRows: (apiMode ? invoiceLookupStore.rows : appState.invoices ?? []).map((r) => ({ ...r })),
         paymentRows: paymentStore.rows,
+        customerRows: customerStore.rows,
         invoicesReady: true,
         paymentsReady: paymentStore.initialized,
+        customersReady: true,
       });
 
       const beforeIds = new Set((pseudo.invoices ?? []).map((inv) => String(inv.id)));
@@ -349,7 +369,7 @@ export function CustomerDuePage() {
             customerName: customer?.company ?? customer?.name,
           } as Record<string, unknown>);
 
-          const sync = await invoiceStore.create(body);
+          const sync = await createResource(invoicePath, body);
 
           if (!sync.ok) {
 
@@ -358,8 +378,8 @@ export function CustomerDuePage() {
             return;
 
           }
-
         }
+        void invoiceLookupStore.reload({ silent: true });
 
       } else {
 
@@ -406,7 +426,7 @@ export function CustomerDuePage() {
 
     setSaving(true);
     try {
-      const baseInvoices = (apiMode ? invoiceStore.rows : appState.invoices ?? []).map((r) => ({ ...r }));
+      const baseInvoices = (apiMode ? invoiceLookupStore.rows : appState.invoices ?? []).map((r) => ({ ...r }));
 
       const beforePayments = new Set(Object.keys(receivableState.crmData?.paymentsById ?? {}));
 
@@ -416,8 +436,10 @@ export function CustomerDuePage() {
           apiMode,
           invoiceRows: baseInvoices,
           paymentRows: paymentStore.rows,
+          customerRows: customerStore.rows,
           invoicesReady: true,
           paymentsReady: paymentStore.initialized,
+          customersReady: true,
         },
       );
 
@@ -453,7 +475,8 @@ export function CustomerDuePage() {
           const prevDue = Number(prev?.due ?? prev?.dueAmount ?? 0);
           const nextDue = Number(inv.due ?? inv.dueAmount ?? 0);
           if (prev && prevDue !== nextDue) {
-            const sync = await invoiceStore.update(
+            const sync = await updateResource(
+              invoicePath,
               resolveApiRowId(inv as Record<string, unknown>),
               mapInvoiceRecordToApi(inv as Record<string, unknown>, String(inv.legacyId ?? inv.id)),
             );
@@ -493,6 +516,7 @@ export function CustomerDuePage() {
             return;
           }
         }
+        void invoiceLookupStore.reload({ silent: true });
       } else {
 
         Object.assign(appState, {
@@ -585,7 +609,9 @@ export function CustomerDuePage() {
 
 
 
-  if (apiMode && !apiDataReady && !invoiceStore.initialized) {
+  const coreDataReady = !apiMode || (customerStore.initialized && invoiceLookupStore.initialized);
+
+  if (apiMode && !coreDataReady && !apiDataReady) {
 
     return <PageSkeleton variant="module-list" label="Loading receivables" />;
 
@@ -597,9 +623,9 @@ export function CustomerDuePage() {
 
     <>
 
-      {(invoiceStore.error || paymentStore.error) ? (
+      {(invoiceLookupStore.error || customerStore.error || paymentStore.error) ? (
 
-        <ApiModeBanner module="invoices" error={invoiceStore.error ?? paymentStore.error ?? ''} />
+        <ApiModeBanner module="invoices" error={invoiceLookupStore.error ?? customerStore.error ?? paymentStore.error ?? ''} />
 
       ) : null}
 
@@ -630,8 +656,7 @@ export function CustomerDuePage() {
             viewMode={viewMode}
 
             onSearchChange={(v) => {
-              if (apiMode) invoiceStore.setSearchTerm(v);
-              else setSearch(v);
+              setSearch(v);
               onPageChange(1);
             }}
             onStatusChange={(v) => { setStatusFilter(v); onPageChange(1); }}
@@ -654,20 +679,11 @@ export function CustomerDuePage() {
 
               onPageChange={onPageChange}
 
-              onPageSizeChange={apiMode ? undefined : (size) => { setPageSize(size); onPageChange(1); }}
+              onPageSizeChange={(size) => { setPageSize(size); onPageChange(1); }}
 
               onRowClick={(customer) => { setSelectedCustomerId(customer.customerId); setDetailTab('overview'); }}
 
             />
-
-            {apiMode ? (
-              <ListPagination
-                page={invoiceStore.page}
-                pageSize={invoiceStore.pageSize}
-                total={listTotal}
-                onPageChange={invoiceStore.setPage}
-              />
-            ) : null}
 
           </div>
 

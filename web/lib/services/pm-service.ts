@@ -142,7 +142,48 @@ export function pmTaskFormToApi(
 function bumpPmCaches() {
   invalidateApiListCache(API_RESOURCE_PATHS.pmProjects);
   invalidateApiListCache(API_RESOURCE_PATHS.pmTasks);
+  invalidateMyPmTasksCache();
   notifyApiMutation(['pmProjects', 'pmTasks']);
+}
+
+export type MyPmTasksGroups = {
+  overdue: Record<string, unknown>[];
+  today: Record<string, unknown>[];
+  upcoming: Record<string, unknown>[];
+  completed: Record<string, unknown>[];
+};
+
+const MY_PM_TASKS_TTL_MS = 60_000;
+let myPmTasksCache: { data: MyPmTasksGroups; at: number } | null = null;
+let myPmTasksInflight: Promise<MyPmTasksGroups> | null = null;
+
+export function peekMyPmTasks(): MyPmTasksGroups | null {
+  if (!myPmTasksCache) return null;
+  if (Date.now() - myPmTasksCache.at > MY_PM_TASKS_TTL_MS) {
+    myPmTasksCache = null;
+    return null;
+  }
+  return myPmTasksCache.data;
+}
+
+export function invalidateMyPmTasksCache() {
+  myPmTasksCache = null;
+  myPmTasksInflight = null;
+}
+
+async function loadMyPmTasksFromApi(): Promise<MyPmTasksGroups> {
+  const { data } = await apiRequest<{
+    overdue: Record<string, unknown>[];
+    today: Record<string, unknown>[];
+    upcoming: Record<string, unknown>[];
+    completed: Record<string, unknown>[];
+  }>('/pm-tasks/my');
+  return {
+    overdue: (data.overdue ?? []).map(mapPmTaskRow),
+    today: (data.today ?? []).map(mapPmTaskRow),
+    upcoming: (data.upcoming ?? []).map(mapPmTaskRow),
+    completed: (data.completed ?? []).map(mapPmTaskRow),
+  };
 }
 
 export async function createPmProject(body: Record<string, unknown>) {
@@ -200,19 +241,24 @@ export async function fetchPmProjectSummary() {
   return data;
 }
 
-export async function fetchMyPmTasks() {
-  const { data } = await apiRequest<{
-    overdue: Record<string, unknown>[];
-    today: Record<string, unknown>[];
-    upcoming: Record<string, unknown>[];
-    completed: Record<string, unknown>[];
-  }>('/pm-tasks/my');
-  return {
-    overdue: (data.overdue ?? []).map(mapPmTaskRow),
-    today: (data.today ?? []).map(mapPmTaskRow),
-    upcoming: (data.upcoming ?? []).map(mapPmTaskRow),
-    completed: (data.completed ?? []).map(mapPmTaskRow),
-  };
+export async function fetchMyPmTasks(force = false): Promise<MyPmTasksGroups> {
+  if (!force) {
+    const cached = peekMyPmTasks();
+    if (cached) return cached;
+    if (myPmTasksInflight) return myPmTasksInflight;
+  }
+
+  const req = loadMyPmTasksFromApi()
+    .then((data) => {
+      myPmTasksCache = { data, at: Date.now() };
+      return data;
+    })
+    .finally(() => {
+      myPmTasksInflight = null;
+    });
+
+  if (!force) myPmTasksInflight = req;
+  return req;
 }
 
 export async function fetchPmTeamOverview(query?: { employeeId?: string; projectId?: string; search?: string }) {

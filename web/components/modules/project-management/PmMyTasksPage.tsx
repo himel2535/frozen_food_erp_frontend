@@ -12,19 +12,24 @@ import { FORM_SELECT_CLS } from '@/lib/ui/form-styles';
 import { getKpiGridClassName } from '@/lib/ui/kpi-grid';
 import { useLocaleFormat } from '@/hooks/useLocaleFormat';
 import { toast } from '@/lib/ui/feedback';
-import { fetchMyPmTasks, isPmTaskOverdue, patchPmTaskStatus } from '@/lib/services/pm-service';
+import {
+  fetchMyPmTasks,
+  peekMyPmTasks,
+  type MyPmTasksGroups,
+  patchPmTaskStatus,
+} from '@/lib/services/pm-service';
 import { PM_STATUS_LABELS, PM_TASK_STATUSES } from '@/lib/services/pm-types';
 import { resolveApiRowId } from '@/lib/services/entity-api-mappers';
 
-type TaskGroups = {
-  overdue: Record<string, unknown>[];
-  today: Record<string, unknown>[];
-  upcoming: Record<string, unknown>[];
-  completed: Record<string, unknown>[];
+const EMPTY_GROUPS: MyPmTasksGroups = {
+  overdue: [],
+  today: [],
+  upcoming: [],
+  completed: [],
 };
 
 const SECTION_META: Array<{
-  key: keyof TaskGroups;
+  key: keyof MyPmTasksGroups;
   title: string;
   accent: string;
 }> = [
@@ -37,14 +42,16 @@ const SECTION_META: Array<{
 export function PmMyTasksPage() {
   const router = useRouter();
   const { formatDate, formatCount } = useLocaleFormat();
-  const [groups, setGroups] = useState<TaskGroups>({ overdue: [], today: [], upcoming: [], completed: [] });
-  const [loading, setLoading] = useState(true);
+  const [groups, setGroups] = useState<MyPmTasksGroups>(() => peekMyPmTasks() ?? EMPTY_GROUPS);
+  const [loading, setLoading] = useState(() => !peekMyPmTasks());
   const [open, setOpen] = useState<Record<string, boolean>>({ overdue: true, today: true, upcoming: true, completed: false });
   const [savingId, setSavingId] = useState<string | null>(null);
 
-  const reload = useCallback(async () => {
+  const reload = useCallback(async (opts?: { force?: boolean; silent?: boolean }) => {
+    if (!opts?.silent && !peekMyPmTasks()) setLoading(true);
     try {
-      setGroups(await fetchMyPmTasks());
+      const data = await fetchMyPmTasks(opts?.force);
+      setGroups(data);
     } catch (err) {
       toast.error('Could not load tasks', {
         module: 'Projects',
@@ -56,25 +63,15 @@ export function PmMyTasksPage() {
   }, []);
 
   useEffect(() => {
-    let cancelled = false;
-    void fetchMyPmTasks()
-      .then((data) => {
-        if (!cancelled) setGroups(data);
-      })
-      .catch((err: unknown) => {
-        if (cancelled) return;
-        toast.error('Could not load tasks', {
-          module: 'Projects',
-          description: err instanceof Error ? err.message : 'Try again.',
-        });
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, []);
+    const cached = peekMyPmTasks();
+    if (cached) {
+      setGroups(cached);
+      setLoading(false);
+      void reload({ silent: true });
+      return;
+    }
+    void reload();
+  }, [reload]);
 
   const kpis = useMemo(
     () => [
@@ -93,7 +90,7 @@ export function PmMyTasksPage() {
     try {
       await patchPmTaskStatus(id, status);
       toast.success('Status updated', { module: 'Projects' });
-      await reload();
+      await reload({ force: true, silent: true });
     } catch (err) {
       toast.error('Could not update status', {
         module: 'Projects',
@@ -120,67 +117,49 @@ export function PmMyTasksPage() {
                 className="w-full flex items-center justify-between px-4 py-3 cursor-pointer"
                 onClick={() => setOpen((prev) => ({ ...prev, [section.key]: !expanded }))}
               >
-                <span className={`text-sm font-extrabold ${section.accent}`}>
-                  {section.title} ({rows.length})
-                </span>
-                <ChevronDown className={`w-4 h-4 text-slate-500 transition-transform ${expanded ? 'rotate-180' : ''}`} />
+                <div className="flex items-center gap-2">
+                  <span className={`text-sm font-semibold ${section.accent}`}>{section.title}</span>
+                  <span className="text-xs text-slate-500">({rows.length})</span>
+                </div>
+                <ChevronDown className={`w-4 h-4 text-slate-400 transition-transform ${expanded ? 'rotate-180' : ''}`} />
               </button>
               {expanded ? (
                 rows.length === 0 ? (
-                  <p className="px-4 pb-4 text-xs text-slate-400">No tasks in this section.</p>
+                  <p className="px-4 pb-4 text-sm text-slate-500">No tasks in this section.</p>
                 ) : (
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-xs">
-                      <thead>
-                        <tr className="text-left text-[11px] uppercase tracking-wide text-slate-500 border-t border-slate-100">
-                          <th className="px-4 py-2 font-bold">Task</th>
-                          <th className="px-4 py-2 font-bold">Project</th>
-                          <th className="px-4 py-2 font-bold">Deadline</th>
-                          <th className="px-4 py-2 font-bold">Priority</th>
-                          <th className="px-4 py-2 font-bold">Status</th>
-                          <th className="px-4 py-2 font-bold">Actions</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {rows.map((row) => {
-                          const overdue = isPmTaskOverdue(row);
-                          return (
-                            <tr key={resolveApiRowId(row)} className="border-t border-slate-50">
-                              <td className="px-4 py-2.5 font-semibold text-slate-800">{String(row.name ?? '—')}</td>
-                              <td className="px-4 py-2.5 text-slate-600">{String(row.projectName ?? '—')}</td>
-                              <td className={`px-4 py-2.5 ${overdue ? 'text-rose-600 font-semibold' : 'text-slate-700'}`}>
-                                {row.deadline ? formatDate(String(row.deadline)) : '—'}
-                              </td>
-                              <td className="px-4 py-2.5">
-                                <StatusBadge status={PM_STATUS_LABELS[String(row.priority)] ?? String(row.priority)} />
-                              </td>
-                              <td className="px-4 py-2.5">
-                                <select
-                                  className={FORM_SELECT_CLS}
-                                  value={String(row.status)}
-                                  disabled={savingId === resolveApiRowId(row)}
-                                  onChange={(e) => void handleStatus(row, e.target.value)}
-                                >
-                                  {PM_TASK_STATUSES.map((status) => (
-                                    <option key={status} value={status}>{PM_STATUS_LABELS[status]}</option>
-                                  ))}
-                                </select>
-                              </td>
-                              <td className="px-4 py-2.5">
-                                <button
-                                  type="button"
-                                  className={CF_BTN_GHOST}
-                                  onClick={() => router.push(`/projects/tasks/${resolveApiRowId(row)}`)}
-                                >
-                                  Update
-                                </button>
-                              </td>
-                            </tr>
-                          );
-                        })}
-                      </tbody>
-                    </table>
-                  </div>
+                  <ul className="divide-y divide-slate-100">
+                    {rows.map((row) => {
+                      const id = resolveApiRowId(row);
+                      return (
+                        <li key={id} className="px-4 py-3 flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
+                          <button
+                            type="button"
+                            className="flex-1 text-left cursor-pointer"
+                            onClick={() => router.push(`/projects/${String(row.projectId)}/tasks/${id}`)}
+                          >
+                            <p className="text-sm font-semibold text-slate-800">{String(row.name ?? 'Task')}</p>
+                            <p className="text-xs text-slate-500">{String(row.projectName ?? 'Project')} · Due {formatDate(String(row.deadline ?? ''))}</p>
+                          </button>
+                          <div className="flex items-center gap-2">
+                            <StatusBadge status={String(row.status ?? 'todo')} />
+                            <select
+                              className={FORM_SELECT_CLS}
+                              value={String(row.status ?? 'todo')}
+                              disabled={savingId === id}
+                              onChange={(e) => void handleStatus(row, e.target.value)}
+                            >
+                              {PM_TASK_STATUSES.map((status) => (
+                                <option key={status} value={status}>{PM_STATUS_LABELS[status] ?? status}</option>
+                              ))}
+                            </select>
+                            <button type="button" className={CF_BTN_GHOST} onClick={() => router.push(`/projects/${String(row.projectId)}/tasks/${id}`)}>
+                              Open
+                            </button>
+                          </div>
+                        </li>
+                      );
+                    })}
+                  </ul>
                 )
               ) : null}
             </section>

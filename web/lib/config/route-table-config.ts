@@ -66,7 +66,7 @@ export const ROUTE_MODULE_QUERIES: Partial<Record<string, Partial<Record<ApiModu
   '/accounting/trial': { trialBalance: { page: 1, limit: 500 } },
   '/accounting/pl': { profitLoss: { page: 1, limit: 500 } },
   '/accounting/balance': { balanceSheet: { page: 1, limit: 500 } },
-  '/accounting/receivables': { invoices: { page: 1, limit: 8 } },
+  '/accounting/receivables': { customers: { page: 1, limit: 200 }, invoices: { page: 1, limit: 100 } },
   '/accounting/payables': { vendorBills: { page: 1, limit: 8 } },
   '/settings/permissions': { permissions: { page: 1, limit: 25 } },
   '/settings/documents': { documents: { page: 1, limit: 25 } },

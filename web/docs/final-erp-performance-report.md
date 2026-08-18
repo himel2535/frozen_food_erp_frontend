@@ -6,7 +6,18 @@
 
 ---
 
-## Site-Wide Cache Fix Pass (2026-08-18 PM — Pass 3)
+## Customer Due + My Tasks Fix (2026-08-18 PM — Pass 4)
+
+| Issue | Root cause | Fix |
+|-------|------------|-----|
+| Customer Due empty table | `listCustomerReceivables()` iterates customers but route hydration trimmed customers away | Restore `customers` + `invoices` (limit 100) on `/accounting/receivables`; merge customer rows in `buildReceivableAppState` |
+| Customer Due slow (4 GETs) | payments + cashbox fetched on every mount | `cacheOnly` + `skipInitialFetch`; load payments/cashbox only when Receive Payment opens |
+| My Tasks slow every revisit | `/pm-tasks/my` uncached; inherits `/projects` hydration (employees + pmProjects) | Dedicated `/projects/my-tasks: []` route; 60s client cache for `fetchMyPmTasks()`; SWR on revisit |
+| Skeleton "timer" | User perception | **No artificial delay** — skeleton duration = real network time (~500ms/request) |
+
+**Route hydration verification:** 37/37 passed.
+
+---
 
 User reported Balance Sheet (and full site) re-fetches on every navigation despite Redis. Root cause: **client-side** architecture gaps, not Redis failure.
 
