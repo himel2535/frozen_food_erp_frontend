@@ -199,7 +199,7 @@ export function logSystemAudit(state: AppState, payload: AuditPayload): SystemAu
   }
 
   if (isMongoDbBackend() && payload.action !== 'LOGOUT') {
-    queueAuditApiSync(entry as Record<string, unknown>);
+    queueAuditApiSync(entry as unknown as Record<string, unknown>);
   }
 
   return entry;
