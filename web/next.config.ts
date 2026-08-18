@@ -149,7 +149,7 @@ const nextConfig: NextConfig = {
     ];
   },
   async rewrites() {
-    const backendUrl = (process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:5000/api/v1').replace(/\/$/, '');
+    const backendUrl = (process.env.NEXT_PUBLIC_API_URL ?? 'http://127.0.0.1:5000/api/v1').replace(/\/$/, '').replace(/\/\/localhost\b/i, '//127.0.0.1');
     return [
       {
         source: '/favicon.ico',
