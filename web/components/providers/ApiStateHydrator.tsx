@@ -4,15 +4,22 @@ import { useEffect, useRef } from 'react';
 import { usePathname } from 'next/navigation';
 import { useAppStore } from '@/lib/state/app-store';
 import {
-  API_BOOT_MODULES,
   API_RESOURCE_PATHS,
   DASHBOARD_CRITICAL_BOOT_MODULES,
   DASHBOARD_DEFERRED_BOOT_MODULES,
   isMongoDbBackend,
   type ApiModule,
 } from '@/lib/config/data-source';
+import {
+  HYDRATION_CACHE_TTL_MS,
+  resolveHydrationModules,
+} from '@/lib/config/route-hydration-config';
 import { fetchResourcePage } from '@/lib/services/api-resource-service';
-import { setApiListCache } from '@/lib/services/api-list-cache';
+import {
+  getApiListCache,
+  isApiListCacheFresh,
+  setApiListCache,
+} from '@/lib/services/api-list-cache';
 import { applyApiDataToAppState } from '@/lib/services/api-app-state-mapper';
 import { onApiMutation } from '@/lib/services/api-sync-events';
 import { DEFAULT_LIST_PAGE_SIZE } from '@/lib/services/api-pagination-types';
@@ -20,17 +27,59 @@ import { isDashboardPath } from '@/lib/ui/dashboard-kpi';
 
 const USE_API = isMongoDbBackend();
 
+const HYDRATION_QUERY = { page: 1, limit: DEFAULT_LIST_PAGE_SIZE };
+
+/** Session-scoped set of modules loaded or found in fresh cache. */
+const sessionLoadedModules = new Set<ApiModule>();
+
+function modulePath(mod: ApiModule): string | undefined {
+  return API_RESOURCE_PATHS[mod];
+}
+
+function isModuleFresh(mod: ApiModule): boolean {
+  const path = modulePath(mod);
+  if (!path) return true;
+  return isApiListCacheFresh(path, HYDRATION_QUERY, HYDRATION_CACHE_TTL_MS);
+}
+
+function readCachedModuleRows(mod: ApiModule): Record<string, unknown>[] | null {
+  const path = modulePath(mod);
+  if (!path) return null;
+  return getApiListCache(path, HYDRATION_QUERY);
+}
+
+function filterModulesNeedingFetch(mods: readonly ApiModule[]): ApiModule[] {
+  return mods.filter((mod) => modulePath(mod) && !isModuleFresh(mod));
+}
+
+function collectSnapshot(mods: readonly ApiModule[]): Partial<Record<ApiModule, Record<string, unknown>[]>> {
+  const partial: Partial<Record<ApiModule, Record<string, unknown>[]>> = {};
+  for (const mod of mods) {
+    const rows = readCachedModuleRows(mod);
+    if (rows) partial[mod] = rows;
+  }
+  return partial;
+}
+
 async function fetchModulesPageSafe(mods: readonly ApiModule[]) {
+  const toFetch = filterModulesNeedingFetch(mods);
+  const partial = collectSnapshot(mods);
+
+  if (toFetch.length === 0) {
+    for (const mod of mods) sessionLoadedModules.add(mod);
+    return partial;
+  }
+
   const results = await Promise.allSettled(
-    mods.map(async (mod) => {
-      const path = API_RESOURCE_PATHS[mod];
-      const { rows, meta } = await fetchResourcePage(path, { page: 1, limit: DEFAULT_LIST_PAGE_SIZE });
-      setApiListCache(path, rows, { page: 1, limit: DEFAULT_LIST_PAGE_SIZE }, meta);
+    toFetch.map(async (mod) => {
+      const path = modulePath(mod)!;
+      const { rows, meta } = await fetchResourcePage(path, HYDRATION_QUERY);
+      setApiListCache(path, rows, HYDRATION_QUERY, meta);
+      sessionLoadedModules.add(mod);
       return [mod, rows] as const;
     }),
   );
 
-  const partial: Partial<Record<ApiModule, Record<string, unknown>[]>> = {};
   for (const result of results) {
     if (result.status !== 'fulfilled') continue;
     const [mod, docs] = result.value;
@@ -54,30 +103,32 @@ function scheduleIdle(fn: () => void): () => void {
   return () => window.clearTimeout(timer);
 }
 
-/** Seeds Zustand with first-page API data — no full-list background sweep. */
+/** Route-aware hydration — fetches only modules required by the current page. */
 export function ApiStateHydrator() {
   const pathname = usePathname();
   const authUser = useAppStore((s) => s.authUser);
   const authReady = useAppStore((s) => s.authReady);
   const setApiDataReady = useAppStore((s) => s.setApiDataReady);
-  const bootDoneRef = useRef(false);
+  const apiDataReadyRef = useRef(false);
 
   useEffect(() => {
     if (!USE_API || !authReady || !authUser) return;
 
     let cancelled = false;
     let cancelIdle = () => {};
-    const delayMs = isDashboardPath(pathname) ? 1200 : 0;
     const dashboard = isDashboardPath(pathname);
+    const delayMs = dashboard ? 1200 : 0;
 
-    const runBoot = async () => {
+    const runHydration = async () => {
       try {
         if (dashboard) {
           const critical = await fetchModulesPageSafe(DASHBOARD_CRITICAL_BOOT_MODULES);
           if (cancelled) return;
           mergeApiSnapshot(critical);
-          setApiDataReady(true);
-          bootDoneRef.current = true;
+          if (!apiDataReadyRef.current) {
+            setApiDataReady(true);
+            apiDataReadyRef.current = true;
+          }
           cancelIdle = scheduleIdle(() => {
             if (cancelled) return;
             void fetchModulesPageSafe(DASHBOARD_DEFERRED_BOOT_MODULES).then((partial) => {
@@ -88,21 +139,32 @@ export function ApiStateHydrator() {
           return;
         }
 
-        const boot = await fetchModulesPageSafe(API_BOOT_MODULES);
+        const routeModules = resolveHydrationModules(pathname);
+        if (routeModules.length === 0) {
+          if (!apiDataReadyRef.current) {
+            setApiDataReady(true);
+            apiDataReadyRef.current = true;
+          }
+          return;
+        }
+
+        const partial = await fetchModulesPageSafe(routeModules);
         if (cancelled) return;
-        mergeApiSnapshot(boot);
-        setApiDataReady(true);
-        bootDoneRef.current = true;
-      } catch {
-        if (!cancelled && !bootDoneRef.current) {
+        mergeApiSnapshot(partial);
+        if (!apiDataReadyRef.current) {
           setApiDataReady(true);
-          bootDoneRef.current = true;
+          apiDataReadyRef.current = true;
+        }
+      } catch {
+        if (!cancelled && !apiDataReadyRef.current) {
+          setApiDataReady(true);
+          apiDataReadyRef.current = true;
         }
       }
     };
 
     const timer = window.setTimeout(() => {
-      void runBoot();
+      void runHydration();
     }, delayMs);
 
     return () => {
@@ -116,9 +178,10 @@ export function ApiStateHydrator() {
     if (!USE_API || !authUser) return;
     return onApiMutation((modules) => {
       if (!modules?.length) return;
-      const targets = modules.filter((mod) =>
-        API_BOOT_MODULES.includes(mod as ApiModule),
-      ) as ApiModule[];
+      const targets = modules.filter(
+        (mod): mod is ApiModule =>
+          mod in API_RESOURCE_PATHS && sessionLoadedModules.has(mod as ApiModule),
+      );
       if (!targets.length) return;
       void fetchModulesPageSafe(targets).then((partial) => mergeApiSnapshot(partial));
     });

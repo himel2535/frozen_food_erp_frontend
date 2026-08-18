@@ -71,7 +71,7 @@ export const MONGODB_READY_MODULES: readonly ApiModule[] = [
   ...EXTENDED_API_MODULE_KEYS,
 ] as const;
 
-/** Loaded first — warm cache for the most-used list pages. */
+/** Dashboard deferred boot + legacy reference. Do not fetch globally on every route — use route-hydration-config. */
 export const API_BOOT_MODULES: readonly ApiModule[] = [
   'customers',
   'products',

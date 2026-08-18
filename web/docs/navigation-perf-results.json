@@ -1,0 +1,336 @@
+{
+  "measuredAt": "2026-08-18T11:09:25.398Z",
+  "baseUrl": "http://localhost:3000",
+  "transitions": [
+    {
+      "label": "Dashboard → Users",
+      "from": "/dashboard",
+      "to": "/settings/users",
+      "totalRequests": 1,
+      "uniqueResources": [
+        "auth"
+      ],
+      "uniqueCount": 1,
+      "durationMs": 12076,
+      "requests": [
+        {
+          "resource": "auth",
+          "ms": 15110
+        }
+      ]
+    },
+    {
+      "label": "Users → Roles",
+      "from": "/settings/users",
+      "to": "/settings/roles",
+      "totalRequests": 5,
+      "uniqueResources": [
+        "auth",
+        "dashboard",
+        "admin",
+        "roles",
+        "notifications"
+      ],
+      "uniqueCount": 5,
+      "durationMs": 52636,
+      "requests": [
+        {
+          "resource": "auth",
+          "ms": 19122
+        },
+        {
+          "resource": "dashboard",
+          "ms": 26652
+        },
+        {
+          "resource": "admin",
+          "ms": 26776
+        },
+        {
+          "resource": "roles",
+          "ms": 26776
+        },
+        {
+          "resource": "notifications",
+          "ms": 28998
+        }
+      ]
+    },
+    {
+      "label": "Roles → Customers",
+      "from": "/settings/roles",
+      "to": "/crm/customers",
+      "totalRequests": 5,
+      "uniqueResources": [
+        "auth",
+        "dashboard",
+        "roles",
+        "notifications",
+        "admin"
+      ],
+      "uniqueCount": 5,
+      "durationMs": 60526,
+      "requests": [
+        {
+          "resource": "auth",
+          "ms": 25582
+        },
+        {
+          "resource": "dashboard",
+          "ms": 32654
+        },
+        {
+          "resource": "roles",
+          "ms": 32654
+        },
+        {
+          "resource": "notifications",
+          "ms": 33463
+        },
+        {
+          "resource": "admin",
+          "ms": 34732
+        }
+      ]
+    },
+    {
+      "label": "Customers → Products",
+      "from": "/crm/customers",
+      "to": "/inventory/products",
+      "totalRequests": 5,
+      "uniqueResources": [
+        "auth",
+        "dashboard",
+        "customers",
+        "notifications"
+      ],
+      "uniqueCount": 4,
+      "durationMs": 60517,
+      "requests": [
+        {
+          "resource": "auth",
+          "ms": 60760
+        },
+        {
+          "resource": "dashboard",
+          "ms": 68607
+        },
+        {
+          "resource": "customers",
+          "ms": 68614
+        },
+        {
+          "resource": "customers",
+          "ms": 68970
+        },
+        {
+          "resource": "notifications",
+          "ms": 72223
+        }
+      ]
+    },
+    {
+      "label": "Products → Warehouses",
+      "from": "/inventory/products",
+      "to": "/inventory/warehouses",
+      "totalRequests": 11,
+      "uniqueResources": [
+        "auth",
+        "dashboard",
+        "products",
+        "categories",
+        "units",
+        "warehouses",
+        "notifications"
+      ],
+      "uniqueCount": 7,
+      "durationMs": 58460,
+      "requests": [
+        {
+          "resource": "auth",
+          "ms": 37722
+        },
+        {
+          "resource": "dashboard",
+          "ms": 45735
+        },
+        {
+          "resource": "products",
+          "ms": 45735
+        },
+        {
+          "resource": "categories",
+          "ms": 45735
+        },
+        {
+          "resource": "units",
+          "ms": 45735
+        },
+        {
+          "resource": "warehouses",
+          "ms": 45735
+        },
+        {
+          "resource": "products",
+          "ms": 46111
+        },
+        {
+          "resource": "categories",
+          "ms": 46111
+        },
+        {
+          "resource": "units",
+          "ms": 46111
+        },
+        {
+          "resource": "warehouses",
+          "ms": 46111
+        },
+        {
+          "resource": "notifications",
+          "ms": 47189
+        }
+      ]
+    },
+    {
+      "label": "Warehouses → Sales Orders",
+      "from": "/inventory/warehouses",
+      "to": "/sales/orders",
+      "totalRequests": 7,
+      "uniqueResources": [
+        "auth",
+        "dashboard",
+        "warehouses",
+        "products",
+        "notifications"
+      ],
+      "uniqueCount": 5,
+      "durationMs": 60072,
+      "requests": [
+        {
+          "resource": "auth",
+          "ms": 26900
+        },
+        {
+          "resource": "dashboard",
+          "ms": 34392
+        },
+        {
+          "resource": "warehouses",
+          "ms": 34395
+        },
+        {
+          "resource": "products",
+          "ms": 34395
+        },
+        {
+          "resource": "warehouses",
+          "ms": 34996
+        },
+        {
+          "resource": "products",
+          "ms": 34996
+        },
+        {
+          "resource": "notifications",
+          "ms": 38218
+        }
+      ]
+    },
+    {
+      "label": "Sales Orders → Purchases",
+      "from": "/sales/orders",
+      "to": "/purchases/orders",
+      "totalRequests": 4,
+      "uniqueResources": [
+        "auth",
+        "dashboard",
+        "sales-orders",
+        "notifications"
+      ],
+      "uniqueCount": 4,
+      "durationMs": 60509,
+      "requests": [
+        {
+          "resource": "auth",
+          "ms": 23738
+        },
+        {
+          "resource": "dashboard",
+          "ms": 30910
+        },
+        {
+          "resource": "sales-orders",
+          "ms": 30910
+        },
+        {
+          "resource": "notifications",
+          "ms": 32222
+        }
+      ]
+    },
+    {
+      "label": "Purchases → Production",
+      "from": "/purchases/orders",
+      "to": "/manufacturing/machine-maintenance",
+      "totalRequests": 0,
+      "uniqueResources": [],
+      "uniqueCount": 0,
+      "durationMs": 60584,
+      "requests": []
+    },
+    {
+      "label": "Production → CRM Leads",
+      "from": "/manufacturing/machine-maintenance",
+      "to": "/crm/leads",
+      "totalRequests": 4,
+      "uniqueResources": [
+        "auth",
+        "dashboard",
+        "machine-maintenance",
+        "notifications"
+      ],
+      "uniqueCount": 4,
+      "durationMs": 60510,
+      "requests": [
+        {
+          "resource": "auth",
+          "ms": 48117
+        },
+        {
+          "resource": "dashboard",
+          "ms": 55121
+        },
+        {
+          "resource": "machine-maintenance",
+          "ms": 55138
+        },
+        {
+          "resource": "notifications",
+          "ms": 57144
+        }
+      ]
+    },
+    {
+      "label": "CRM Leads → Dashboard",
+      "from": "/crm/leads",
+      "to": "/dashboard",
+      "totalRequests": 1,
+      "uniqueResources": [
+        "notifications"
+      ],
+      "uniqueCount": 1,
+      "durationMs": 14267,
+      "requests": [
+        {
+          "resource": "notifications",
+          "ms": 61106
+        }
+      ]
+    }
+  ],
+  "totals": {
+    "requests": 43,
+    "avgPerTransition": 4
+  }
+}
