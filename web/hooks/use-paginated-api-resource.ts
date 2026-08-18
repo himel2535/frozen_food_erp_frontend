@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { usePathname } from 'next/navigation';
 import {
   API_RESOURCE_PATHS,
   API_MODULE_LABELS,
@@ -8,6 +9,7 @@ import {
   isModuleApiMode,
 } from '@/lib/config/data-source';
 import { cacheTtlForModule } from '@/lib/config/cache-policy';
+import { getRouteModulePageSize } from '@/lib/config/route-table-config';
 import {
   createResource,
   deleteResource,
@@ -69,6 +71,7 @@ export function usePaginatedApiResource(
 ) {
   const enabled = isModuleApiMode(module);
   const path = API_RESOURCE_PATHS[module];
+  const pathname = usePathname();
   const mapRowRef = useRef(mapRow);
   mapRowRef.current = mapRow;
   const listTtl = cacheTtlForModule(module);
@@ -79,7 +82,9 @@ export function usePaginatedApiResource(
   const hasServerSeed = initialRows !== undefined && initialRows.length > 0;
 
   const [page, setPage] = useState(1);
-  const [pageSize, setPageSizeState] = useState(options?.pageSize ?? DEFAULT_LIST_PAGE_SIZE);
+  const [pageSize, setPageSizeState] = useState(
+    options?.pageSize ?? getRouteModulePageSize(pathname, module),
+  );
   const [search, setSearch] = useState('');
   const [status, setStatus] = useState('all');
   const [queryFilters, setQueryFilters] = useState<Record<string, string>>({});
@@ -166,17 +171,27 @@ export function usePaginatedApiResource(
       return;
     }
     const isFresh = isCachedResourceListFresh(path, queryKey, listTtl);
+    const hasCached = isCachedResourceList(path, queryKey);
     if (isFresh && !mutated) {
       const cached = readCachedResourceList(path, queryKey);
-      if (cached?.length) {
+      if (cached !== null) {
         setRows(cached.map((doc) => mapRowRef.current(doc)));
         setInitialized(true);
         setLoading(false);
       }
       return;
     }
-    const cached = isCachedResourceList(path, queryKey);
-    void reload(cached ? { silent: true } : undefined);
+    if (hasCached && !mutated) {
+      const cached = readCachedResourceList(path, queryKey);
+      if (cached !== null) {
+        setRows(cached.map((doc) => mapRowRef.current(doc)));
+        setInitialized(true);
+        setLoading(false);
+      }
+      void reload({ silent: true });
+      return;
+    }
+    void reload(undefined);
   }, [enabled, apiDataReady, path, reload, queryKey, page, debouncedSearch, status, queryFilters, listTtl, module, isDefaultQuery, seedFitsPage, initialRows, options?.initialMeta]);
 
   useEffect(() => {

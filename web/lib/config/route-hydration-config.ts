@@ -3,51 +3,37 @@ import { ROUTE_PREFETCH_MODULES } from '@/lib/server/route-prefetch-config';
 import { DEFAULT_LIST_PAGE_SIZE, LOOKUP_LIST_PAGE_SIZE, type ApiListQuery } from '@/lib/services/api-pagination-types';
 import { LOOKUP_CACHE_QUERY } from '@/lib/services/api-list-cache';
 import { isMasterDataModule } from '@/lib/config/cache-policy';
+import { getRouteModuleQuery } from '@/lib/config/route-table-config';
 
 /** Client-side hydration TTL — aligned with table cache. */
 export const HYDRATION_CACHE_TTL_MS = 15_000;
 
-/** Table page sizes that match page-level hooks (avoid limit mismatch duplicates). */
-export const ROUTE_TABLE_PAGE_SIZES: Partial<Record<string, number>> = {
-  '/inventory/products': 10,
-  '/inventory/categories': 10,
-  '/inventory/units': 10,
-  '/inventory/warehouses': 10,
-  '/inventory/raw-materials': 10,
-  '/inventory/semi-finished-products': 10,
-  '/inventory/finished-goods': 10,
-  '/purchases/suppliers': 8,
-  '/crm/leads': 10,
-  '/sales/pos': 50,
-};
+/**
+ * @deprecated Use ROUTE_MODULE_QUERIES in route-table-config.ts
+ * Kept for scripts that still reference this export.
+ */
+export const ROUTE_TABLE_PAGE_SIZES: Partial<Record<string, number>> = {};
 
 /** Routes that use dedicated admin APIs — no Mongo list hydration. */
 const ADMIN_API_ROUTES = new Set(['/settings/users', '/settings/roles']);
 
 /**
  * Extra lookup modules beyond the primary route module(s).
- * Derived from form dropdowns, filters, and KPI cross-references in page components.
+ * List pages: keep empty — lookups load on form open or via cacheOnly hooks.
  */
 export const ROUTE_HYDRATION_LOOKUPS: Partial<Record<string, ApiModule[]>> = {
   '/inventory/products': ['categories', 'units', 'warehouses'],
   '/inventory/categories': ['products'],
   '/inventory/units': ['products'],
   '/inventory/warehouses': ['products'],
-  '/inventory/raw-materials': ['products', 'categories', 'units', 'warehouses'],
-  '/inventory/semi-finished-products': ['products', 'categories', 'units', 'warehouses'],
   '/inventory/stock-in': ['products'],
   '/inventory/stock-out': ['products'],
   '/inventory/transfers': ['products'],
   '/inventory/adjustments': ['products'],
-  '/sales/invoices': ['customers'],
-  '/purchases/orders': ['suppliers'],
   '/crm/leads': ['employees'],
   '/crm/deals': ['employees'],
   '/projects': ['employees'],
   '/workflow-approvals': ['purchaseRm', 'purchaseOrders', 'leaveRequests'],
-  '/accounting/receivables': ['customers', 'payments'],
-  '/accounting/payables': ['suppliers', 'cashbox'],
-  '/accounting/dues': ['cashbox'],
 };
 
 /** Additional modules for form/edit sub-routes (e.g. /sales/orders/new). */
@@ -55,6 +41,11 @@ export const FORM_ROUTE_HYDRATION_LOOKUPS: Partial<Record<string, ApiModule[]>> 
   '/sales/orders': ['customers', 'employees', 'products'],
   '/sales/invoices': ['customers', 'products'],
   '/purchases/orders': ['suppliers', 'products'],
+  '/inventory/raw-materials': ['products', 'categories', 'units', 'warehouses'],
+  '/inventory/semi-finished-products': ['products', 'categories', 'units', 'warehouses'],
+  '/inventory/finished-goods': ['products', 'categories', 'units', 'warehouses'],
+  '/accounting/receivables': ['customers', 'payments', 'cashbox'],
+  '/accounting/payables': ['suppliers', 'purchasePayments', 'cashbox'],
 };
 
 const ROUTE_KEYS_BY_LENGTH = Object.keys(ROUTE_PREFETCH_MODULES).sort(
@@ -120,8 +111,7 @@ export function resolveHydrationQuery(module: ApiModule, pathname: string): ApiL
   const primary = primaryModulesForRoute(pathname);
 
   if (routeKey && primary.includes(module)) {
-    const limit = ROUTE_TABLE_PAGE_SIZES[routeKey] ?? DEFAULT_LIST_PAGE_SIZE;
-    return { page: 1, limit };
+    return getRouteModuleQuery(pathname, module);
   }
 
   if (isMasterDataModule(module)) {

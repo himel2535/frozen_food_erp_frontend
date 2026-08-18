@@ -12,6 +12,7 @@ import {
   createResource,
   deleteResource,
   fetchResourcePage,
+  isCachedResourceList,
   isCachedResourceListFresh,
   readCachedResourceList,
   updateResource,
@@ -150,15 +151,24 @@ export function useApiResourceStore(
     }
     const fresh = isLookupCacheFresh(path, listTtl)
       || isCachedResourceListFresh(path, listQuery, listTtl);
+    const hasCached = isLookupCacheFresh(path, listTtl)
+      || isCachedResourceList(path, listQuery);
     if (fresh && !mutated) {
       const docs = readInitialRows();
-      if (docs.length) {
-        setRows(docs.map((doc) => mapRowRef.current(doc)));
-        setInitialized(true);
-        setLoading(false);
-      }
+      setRows(docs.map((doc) => mapRowRef.current(doc)));
+      setInitialized(true);
+      setLoading(false);
       return;
     }
+    if (hasCached && !mutated && !cacheOnly) {
+      const docs = readInitialRows();
+      setRows(docs.map((doc) => mapRowRef.current(doc)));
+      setInitialized(true);
+      setLoading(false);
+      void reload({ silent: true });
+      return;
+    }
+    if (cacheOnly) return;
     void reload({ silent: fresh });
   }, [enabled, apiDataReady, path, reload, listTtl, listQuery, module]);
 

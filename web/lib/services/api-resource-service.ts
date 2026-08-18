@@ -61,19 +61,35 @@ export async function fetchResourcePage(
 ): Promise<ApiPageResult> {
   const base = normalizeListPath(path);
   const qs = buildListQueryString(query);
-  const { data, meta } = await apiRequest<Record<string, unknown>[]>(`${base}?${qs}`);
-  const rows = Array.isArray(data) ? data : [];
-  const parsed = parseApiPaginationMeta(meta);
-  setApiListCache(base, rows, query, parsed);
-  if (
-    (query.page ?? 1) === 1
-    && (query.limit ?? DEFAULT_LIST_PAGE_SIZE) >= LOOKUP_LIST_PAGE_SIZE
-    && isDefaultListQuery(query)
-  ) {
-    setLookupCache(base, rows, parsed);
-  }
-  return { rows, meta: parsed };
+  const inflightKey = `${base}?${qs}`;
+
+  const pending = inflightGets.get(inflightKey);
+  if (pending) return pending;
+
+  const req = (async (): Promise<ApiPageResult> => {
+    try {
+      const { data, meta } = await apiRequest<Record<string, unknown>[]>(`${base}?${qs}`);
+      const rows = Array.isArray(data) ? data : [];
+      const parsed = parseApiPaginationMeta(meta);
+      setApiListCache(base, rows, query, parsed);
+      if (
+        (query.page ?? 1) === 1
+        && (query.limit ?? DEFAULT_LIST_PAGE_SIZE) >= LOOKUP_LIST_PAGE_SIZE
+        && isDefaultListQuery(query)
+      ) {
+        setLookupCache(base, rows, parsed);
+      }
+      return { rows, meta: parsed };
+    } finally {
+      inflightGets.delete(inflightKey);
+    }
+  })();
+
+  inflightGets.set(inflightKey, req);
+  return req;
 }
+
+const inflightGets = new Map<string, Promise<ApiPageResult>>();
 
 const LIST_PAGE_SIZE = LOOKUP_LIST_PAGE_SIZE;
 

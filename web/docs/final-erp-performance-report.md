@@ -6,6 +6,30 @@
 
 ---
 
+## Site-Wide Cache Fix Pass (2026-08-18 PM — Pass 3)
+
+User reported Balance Sheet (and full site) re-fetches on every navigation despite Redis. Root cause: **client-side** architecture gaps, not Redis failure.
+
+| Issue | Fix |
+|-------|-----|
+| Hydrator `limit=25` vs page `limit=500` (Balance Sheet, Trial, P&L, Salary) | Unified `route-table-config.ts` — single source of truth for all 60+ routes |
+| `/balance-sheet/summary` refetch on every mount | Client summary cache (60s TTL + in-flight dedup) in `accounting-api-service.ts` |
+| Duplicate GET when cache stale (hydrator + hook) | In-flight GET coalescing in `fetchResourcePage` |
+| 15s TTL too aggressive for ERP navigation | Tiered TTLs: reports 2min, standard 60s, realtime 15s, master 5min |
+| Stale cache still blocks UI | Stale-while-revalidate in `usePaginatedApiResource` |
+| Extended backend routes uncached (450ms+ Mongo every GET) | `cacheGetResponse` on all `extendedRoutes.ts` list GETs (30s/60s) |
+| Over-eager lookup hydration on list pages | Trimmed lookups; receivables/payables primary-only; inventory lookups on form open |
+| Empty list cache ignored | Fixed `cached?.length` → `cached !== null` |
+
+**Expected Balance Sheet after fix:**
+- First visit: 1× `balance-sheet?limit=500` + 1× `summary` (not 25+500+summary)
+- Revisit within 60s: **0 network requests** (client cache)
+- Server miss: Redis HIT ~10–50ms instead of 450ms+ Mongo
+
+**Route hydration verification:** 35/35 static cases passed (`verify-route-hydration.mjs`).
+
+---
+
 ## Post-Screenshot Fix Pass (2026-08-18 PM)
 
 Root causes from Network tab screenshot:

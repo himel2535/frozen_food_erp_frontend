@@ -6,6 +6,10 @@ import {
   fetchProfitLossSummary,
   fetchSalarySheetSummary,
   fetchTrialBalanceSummary,
+  peekBalanceSheetSummary,
+  peekProfitLossSummary,
+  peekSalarySheetSummary,
+  peekTrialBalanceSummary,
   type SalarySheetSummary,
 } from '@/lib/services/accounting-api-service';
 import type { BalanceSheetMetrics } from '@/lib/services/balance-sheet-service';
@@ -20,10 +24,14 @@ type SummaryHookResult<T> = {
   reload: () => Promise<void>;
 };
 
-function useSummaryFetch<T>(fetcher: () => Promise<T | null>, deps: unknown[] = []): SummaryHookResult<T> {
-  const [summary, setSummary] = useState<T | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [initialized, setInitialized] = useState(false);
+function useSummaryFetch<T>(
+  fetcher: () => Promise<T | null>,
+  peek: () => T | null,
+  deps: unknown[] = [],
+): SummaryHookResult<T> {
+  const [summary, setSummary] = useState<T | null>(() => peek());
+  const [loading, setLoading] = useState(() => !peek());
+  const [initialized, setInitialized] = useState(() => Boolean(peek()));
   const [error, setError] = useState<string | null>(null);
   const genRef = useRef(0);
 
@@ -48,14 +56,21 @@ function useSummaryFetch<T>(fetcher: () => Promise<T | null>, deps: unknown[] = 
   }, deps);
 
   useEffect(() => {
+    const cached = peek();
+    if (cached) {
+      setSummary(cached);
+      setInitialized(true);
+      setLoading(false);
+      return;
+    }
     void reload();
-  }, [reload]);
+  }, [reload, peek]);
 
   return { summary, loading, initialized, error, reload };
 }
 
 export function useBalanceSheetSummary(enabled: boolean) {
-  const base = useSummaryFetch(fetchBalanceSheetSummary, []);
+  const base = useSummaryFetch(fetchBalanceSheetSummary, peekBalanceSheetSummary, []);
   if (!enabled) {
     return { summary: null, loading: false, initialized: true, error: null, reload: async () => {} };
   }
@@ -63,7 +78,7 @@ export function useBalanceSheetSummary(enabled: boolean) {
 }
 
 export function useProfitLossSummary(enabled: boolean) {
-  const base = useSummaryFetch(fetchProfitLossSummary, []);
+  const base = useSummaryFetch(fetchProfitLossSummary, peekProfitLossSummary, []);
   if (!enabled) {
     return { summary: null, loading: false, initialized: true, error: null, reload: async () => {} };
   }
@@ -71,7 +86,7 @@ export function useProfitLossSummary(enabled: boolean) {
 }
 
 export function useTrialBalanceSummary(enabled: boolean) {
-  const base = useSummaryFetch(fetchTrialBalanceSummary, []);
+  const base = useSummaryFetch(fetchTrialBalanceSummary, peekTrialBalanceSummary, []);
   if (!enabled) {
     return { summary: null, loading: false, initialized: true, error: null, reload: async () => {} };
   }
@@ -81,6 +96,7 @@ export function useTrialBalanceSummary(enabled: boolean) {
 export function useSalarySheetSummary(enabled: boolean, period?: string) {
   const base = useSummaryFetch<SalarySheetSummary>(
     () => fetchSalarySheetSummary(period),
+    () => peekSalarySheetSummary(period),
     [period],
   );
   if (!enabled) {
