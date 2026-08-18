@@ -250,14 +250,16 @@ export const useAppStore = create<AppStore>((set, get) => ({
   recordAuditEvent: (payload) => {
     const state = get().appState;
     void import('../services/audit-log-service').then(({ logSystemAudit }) => {
-      logSystemAudit(state, payload);
+      const next = logSystemAudit(state, payload);
       set({
         appState: {
-          ...state,
-          systemAuditLogsById: { ...(state.systemAuditLogsById ?? {}) },
+          ...get().appState,
+          systemAuditLogsById: {
+            ...(get().appState.systemAuditLogsById ?? {}),
+            [next.id]: next,
+          },
         },
       });
-      get().saveAppState({ immediate: true });
     });
   },
 

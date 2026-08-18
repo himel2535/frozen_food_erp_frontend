@@ -2,7 +2,6 @@ import type { AppState, SystemAuditLogRecord } from '@/lib/state/types';
 import type { KpiCardItem } from '@/components/shared/KpiCards';
 import { isMongoDbBackend } from '@/lib/config/data-source';
 import { createResource } from '@/lib/services/api-resource-service';
-import { apiRequest } from '@/lib/services/api-client';
 
 type AuditPayload = {
   action: string;
@@ -13,6 +12,26 @@ type AuditPayload = {
   actorId?: string;
   actorName?: string;
 };
+
+const AUDIT_API_FLUSH_MS = 2_000;
+const auditApiQueue: Record<string, unknown>[] = [];
+let auditFlushTimer: ReturnType<typeof setTimeout> | null = null;
+
+function flushAuditApiQueue() {
+  auditFlushTimer = null;
+  if (!auditApiQueue.length) return;
+  const batch = auditApiQueue.splice(0, auditApiQueue.length);
+  for (const entry of batch) {
+    createResource('/audit-logs', entry).catch(() => {});
+  }
+}
+
+function queueAuditApiSync(entry: Record<string, unknown>) {
+  if (!isMongoDbBackend()) return;
+  auditApiQueue.push(entry);
+  if (auditFlushTimer) clearTimeout(auditFlushTimer);
+  auditFlushTimer = setTimeout(flushAuditApiQueue, AUDIT_API_FLUSH_MS);
+}
 
 const MAX_LOGS = 500;
 
@@ -180,7 +199,7 @@ export function logSystemAudit(state: AppState, payload: AuditPayload): SystemAu
   }
 
   if (isMongoDbBackend() && payload.action !== 'LOGOUT') {
-    createResource('/audit-logs', entry as any).catch(() => {});
+    queueAuditApiSync(entry as Record<string, unknown>);
   }
 
   return entry;

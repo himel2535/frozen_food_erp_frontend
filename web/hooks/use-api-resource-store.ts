@@ -36,6 +36,8 @@ type ApiResourceStoreOptions = {
   skipInitialFetch?: boolean;
   pageOnly?: boolean;
   lookupLimit?: number;
+  /** When true, use hydrator/lookup cache only — no network unless cache stale or reload() called. */
+  cacheOnly?: boolean;
 };
 
 function auditEntityLabel(body: Record<string, unknown>, id: string): string {
@@ -81,8 +83,10 @@ export function useApiResourceStore(
   initialRowsRef.current = options?.initialRows ?? serverRows;
   const resolvedInitial = initialRowsRef.current;
   const hasServerSeed = resolvedInitial !== undefined;
-  const skipInitialFetch = Boolean(options?.skipInitialFetch || hasServerSeed);
+  const skipInitialFetch = Boolean(options?.skipInitialFetch || hasServerSeed || options?.cacheOnly);
   const skipFetchRef = useRef(skipInitialFetch);
+  const cacheOnly = options?.cacheOnly ?? false;
+  const apiDataReady = useAppStore((s) => s.apiDataReady);
 
   const readInitialRows = (): Record<string, unknown>[] => {
     if (isLookupCacheFresh(path, listTtl)) {
@@ -136,7 +140,7 @@ export function useApiResourceStore(
   }, [enabled, path, module, listQuery]);
 
   useEffect(() => {
-    if (!enabled) return;
+    if (!enabled || !apiDataReady) return;
     const mutated = consumeModuleMutation(module);
     if (mutated) skipFetchRef.current = false;
     if (skipFetchRef.current && initialRowsRef.current !== undefined) {
@@ -146,9 +150,17 @@ export function useApiResourceStore(
     }
     const fresh = isLookupCacheFresh(path, listTtl)
       || isCachedResourceListFresh(path, listQuery, listTtl);
-    if (fresh && !mutated) return;
+    if (fresh && !mutated) {
+      const docs = readInitialRows();
+      if (docs.length) {
+        setRows(docs.map((doc) => mapRowRef.current(doc)));
+        setInitialized(true);
+        setLoading(false);
+      }
+      return;
+    }
     void reload({ silent: fresh });
-  }, [enabled, path, reload, listTtl, listQuery, module]);
+  }, [enabled, apiDataReady, path, reload, listTtl, listQuery, module]);
 
   useEffect(() => {
     if (!enabled) return;

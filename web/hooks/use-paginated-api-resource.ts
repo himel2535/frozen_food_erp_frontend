@@ -128,6 +128,7 @@ export function usePaginatedApiResource(
   const [error, setError] = useState<string | null>(null);
   const fetchGenRef = useRef(0);
   const skipFirstFetchRef = useRef(Boolean(seedFitsPage && options?.initialMeta));
+  const apiDataReady = useAppStore((s) => s.apiDataReady);
 
   const reload = useCallback(async (opts?: { silent?: boolean }) => {
     if (!enabled) return;
@@ -152,7 +153,7 @@ export function usePaginatedApiResource(
   }, [enabled, path, module, queryKey]);
 
   useEffect(() => {
-    if (!enabled) return;
+    if (!enabled || !apiDataReady) return;
     const mutated = consumeModuleMutation(module);
     if (mutated) {
       skipFirstFetchRef.current = false;
@@ -165,10 +166,18 @@ export function usePaginatedApiResource(
       return;
     }
     const isFresh = isCachedResourceListFresh(path, queryKey, listTtl);
-    if (isFresh && !mutated) return;
+    if (isFresh && !mutated) {
+      const cached = readCachedResourceList(path, queryKey);
+      if (cached?.length) {
+        setRows(cached.map((doc) => mapRowRef.current(doc)));
+        setInitialized(true);
+        setLoading(false);
+      }
+      return;
+    }
     const cached = isCachedResourceList(path, queryKey);
     void reload(cached ? { silent: true } : undefined);
-  }, [enabled, path, reload, queryKey, page, debouncedSearch, status, queryFilters, listTtl]);
+  }, [enabled, apiDataReady, path, reload, queryKey, page, debouncedSearch, status, queryFilters, listTtl, module, isDefaultQuery, seedFitsPage, initialRows, options?.initialMeta]);
 
   useEffect(() => {
     if (!enabled) return;

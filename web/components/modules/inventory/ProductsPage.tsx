@@ -340,8 +340,7 @@ export function ProductsPage() {
         if (!editingId) resetFilters();
         if (action === 'save-and-add') {
           if (!editingId) resetFilters();
-          const nextSku = apiMode ? await fetchNextProductSku() : undefined;
-          resetForm(nextSku);
+          void fetchNextProductSku().then((nextSku) => resetForm(nextSku));
           return;
         }
         if (!editingId) resetFilters();

@@ -20,14 +20,17 @@ export function useInventoryLookups() {
   const categoriesStore = useApiResourceStore('categories', mapApiCategoryRow, {
     pageOnly: true,
     lookupLimit: LOOKUP_LIMIT,
+    cacheOnly: true,
   });
   const unitsStore = useApiResourceStore('units', mapApiUnitRow, {
     pageOnly: true,
     lookupLimit: LOOKUP_LIMIT,
+    cacheOnly: true,
   });
   const warehousesStore = useApiResourceStore('warehouses', mapApiWarehouseRow, {
     pageOnly: true,
     lookupLimit: LOOKUP_LIMIT,
+    cacheOnly: true,
   });
 
   const apiMode =

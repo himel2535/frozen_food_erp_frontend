@@ -35,7 +35,6 @@ export const ROUTE_HYDRATION_LOOKUPS: Partial<Record<string, ApiModule[]>> = {
   '/inventory/warehouses': ['products'],
   '/inventory/raw-materials': ['products', 'categories', 'units', 'warehouses'],
   '/inventory/semi-finished-products': ['products', 'categories', 'units', 'warehouses'],
-  '/inventory/finished-goods': ['products', 'categories', 'units', 'warehouses'],
   '/inventory/stock-in': ['products'],
   '/inventory/stock-out': ['products'],
   '/inventory/transfers': ['products'],
