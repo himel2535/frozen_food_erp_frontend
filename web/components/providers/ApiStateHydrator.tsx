@@ -31,9 +31,6 @@ const USE_API = isMongoDbBackend();
 
 const DASHBOARD_HYDRATION_QUERY: ApiListQuery = { page: 1, limit: DEFAULT_LIST_PAGE_SIZE };
 
-/** Session-scoped set of modules loaded or found in fresh cache. */
-const sessionLoadedModules = new Set<ApiModule>();
-
 function modulePath(mod: ApiModule): string | undefined {
   return API_RESOURCE_PATHS[mod];
 }
@@ -85,7 +82,6 @@ async function fetchModulesPageSafe(mods: readonly ApiModule[], pathname: string
   const partial = collectSnapshot(mods, pathname);
 
   if (toFetch.length === 0) {
-    for (const mod of mods) sessionLoadedModules.add(mod);
     return partial;
   }
 
@@ -97,7 +93,6 @@ async function fetchModulesPageSafe(mods: readonly ApiModule[], pathname: string
       if (query.limit && query.limit >= 100) {
         setLookupCache(path, rows, meta);
       }
-      sessionLoadedModules.add(mod);
       return [mod, rows] as const;
     }),
   );
@@ -136,7 +131,6 @@ async function fetchDashboardModules(mods: readonly ApiModule[]) {
     const hit = findCompatibleListCache(path, DASHBOARD_HYDRATION_QUERY, ttl);
     if (hit) {
       partial[mod] = hit.docs;
-      sessionLoadedModules.add(mod);
     } else {
       toFetch.push(mod);
     }
@@ -149,7 +143,6 @@ async function fetchDashboardModules(mods: readonly ApiModule[]) {
       const path = modulePath(mod)!;
       const { rows, meta } = await fetchResourcePage(path, DASHBOARD_HYDRATION_QUERY);
       setApiListCache(path, rows, DASHBOARD_HYDRATION_QUERY, meta);
-      sessionLoadedModules.add(mod);
       return [mod, rows] as const;
     }),
   );

@@ -16,8 +16,7 @@ import {
   isCachedResourceListFresh,
   readCachedResourceList,
 } from '@/lib/services/api-resource-service';
-import { setApiListCache, invalidateApiListCache } from '@/lib/services/api-list-cache';
-import { consumeModuleMutation } from '@/lib/services/api-sync-events';
+import { setApiListCache, prependToListCache, patchListCacheRow, removeFromListCache } from '@/lib/services/api-list-cache';
 
 const CUSTOMERS_PATH = '/customers';
 const CUSTOMER_LOOKUP_QUERY = { page: 1, limit: 200 } as const;
@@ -52,33 +51,46 @@ export function useCustomersApiStore() {
 
   useEffect(() => {
     if (!enabled) return;
-    const mutated = consumeModuleMutation('customers');
-    if (mutated) {
-      invalidateApiListCache(CUSTOMERS_PATH);
-    }
     const isFresh = isCachedResourceListFresh(CUSTOMERS_PATH, CUSTOMER_LOOKUP_QUERY, 10000);
-    if (isFresh && !mutated) return;
+    if (isFresh) return;
     const hasCache = isCachedResourceList(CUSTOMERS_PATH, CUSTOMER_LOOKUP_QUERY);
     void reload(hasCache ? { silent: true } : undefined);
   }, [enabled, reload]);
 
   const create = useCallback(async (payload: CustomerFormPayload) => {
     const result = await createCustomerViaApi(payload);
-    if (result.ok) await reload({ silent: true });
+    if (result.ok) {
+      const raw = { ...payload, id: result.id, status: payload.status ?? 'active' };
+      const mapped = mapApiCustomerToListRow(raw as unknown as ApiCustomerDoc);
+      prependToListCache(CUSTOMERS_PATH, CUSTOMER_LOOKUP_QUERY, raw as Record<string, unknown>);
+      setRows((prev) => {
+        const filtered = prev.filter((r) => String(r.id) !== result.id);
+        return [mapped, ...filtered];
+      });
+      void reload({ silent: true });
+    }
     return result;
   }, [reload]);
 
   const update = useCallback(async (id: string, payload: CustomerFormPayload) => {
     const result = await updateCustomerViaApi(id, payload);
-    if (result.ok) await reload({ silent: true });
+    if (result.ok) {
+      patchListCacheRow(CUSTOMERS_PATH, CUSTOMER_LOOKUP_QUERY, id, payload as Record<string, unknown>);
+      setRows((prev) =>
+        prev.map((row) => (String(row.id) === id ? mapApiCustomerToListRow({ ...row, ...payload, id } as unknown as ApiCustomerDoc) : row)),
+      );
+    }
     return result;
-  }, [reload]);
+  }, []);
 
   const remove = useCallback(async (id: string) => {
     const result = await deleteCustomerViaApi(id);
-    if (result.ok) await reload({ silent: true });
+    if (result.ok) {
+      removeFromListCache(CUSTOMERS_PATH, CUSTOMER_LOOKUP_QUERY, id);
+      setRows((prev) => prev.filter((row) => String(row.id) !== id));
+    }
     return result;
-  }, [reload]);
+  }, []);
 
   return {
     enabled,

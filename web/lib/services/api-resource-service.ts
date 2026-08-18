@@ -17,7 +17,6 @@ import {
   setLookupCache,
   getLookupCache,
   isLookupCacheFresh,
-  setLookupCache,
 } from '@/lib/services/api-list-cache';
 import { cacheTtlForModule } from '@/lib/config/cache-policy';
 import { moduleFromApiPath } from '@/lib/config/data-source';

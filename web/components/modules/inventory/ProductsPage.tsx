@@ -270,18 +270,19 @@ export function ProductsPage() {
     setFormKey((k) => k + 1);
   }, [apiMode, appState, categories, units, warehouses, warehouseIds]);
 
-  const openCreate = useCallback(async () => {
-    try {
-      const sku = apiMode ? await fetchNextProductSku() : previewProductSku(appState);
-      resetForm(sku);
-      setView('form');
-    } catch (err) {
-      toast.error('Could not load next SKU', {
-        module: 'Products',
-        description: err instanceof Error ? err.message : 'Please try again.',
-      });
+  const openCreate = useCallback(() => {
+    resetForm('');
+    setView('form');
+    if (apiMode) {
+      void fetchNextProductSku()
+        .then((sku) => {
+          setFormValues((prev) => (prev && !prev.sku ? { ...prev, sku } : prev));
+        })
+        .catch(() => {
+          /* SKU loads on Generate click or user input */
+        });
     }
-  }, [apiMode, appState, resetForm]);
+  }, [apiMode, resetForm]);
 
   useChromeSuppressed(view !== 'main');
 

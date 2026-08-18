@@ -1,0 +1,64 @@
+{
+  "reportDate": "2026-08-18",
+  "measurementNotes": {
+    "playwright": "Unavailable on macOS 12 — browser E2E from prior session; API-level scripts used for mutations and route bundles",
+    "scripts": [
+      "web/scripts/run-api-perf.mjs",
+      "web/scripts/run-redis-health.mjs",
+      "web/scripts/verify-route-hydration.mjs",
+      "web/scripts/run-navigation-perf.mjs",
+      "web/scripts/run-mutation-perf.mjs"
+    ],
+    "perfTrace": "Env-gated PERF_TRACE=1 backend, NEXT_PUBLIC_PERF_TRACE=1 frontend — retained for dev observability"
+  },
+  "rootCauses": {
+    "confirmed": [
+      "Product form openCreate blocked on fetchNextProductSku GET before showing form",
+      "Customer create/update/delete awaited full 200-row reload blocking submit return",
+      "inventoryStockController cleared caches synchronously before response",
+      "Employee create navigated to list without cache patch causing full refetch",
+      "Redis REDIS_URL not set — backend uses in-memory cache fallback (working)",
+      "authUserCache reduces auth Mongo from ~348ms to ~1ms on warm requests",
+      "Product POST API faster than Customer POST at Mongo layer (variable Atlas latency on customer writes)",
+      "Route-aware hydration verified: Users/Admin routes fetch 0 list modules"
+    ],
+    "suspected": [
+      "Mongo list queries on Atlas replica set routinely 350–1000ms without Redis",
+      "Sales Order form may duplicate customer/product/employee lookups when hydrator + form both mount",
+      "Customer Mongo write variance (508–1183ms) may include index/duplicate-key retry on first insert"
+    ]
+  },
+  "navigation": {
+    "dashboardToUsers": { "before": 11, "after": 1, "removed": 10 },
+    "dashboardToCustomers": { "requiredApisAfter": 1, "modules": ["customers"] },
+    "dashboardToProducts": { "requiredApisAfter": 4, "modules": ["products", "categories", "units", "warehouses"] }
+  },
+  "formPerformance": {
+    "customer": { "postMs": 537, "mongoMs": 508, "apiCount": 1, "mainBottleneck": "Mongo write + previously blocking 200-row reload (fixed)" },
+    "product": { "postMs": 21, "mongoMs": 2, "apiCount": 1, "mainBottleneck": "Form open SKU fetch (fixed lazy); notifyApiMutation listeners minimal" },
+    "supplier": { "postMs": 378, "mongoMs": 363, "apiCount": 1, "mainBottleneck": "Mongo write" },
+    "employee": { "postMs": "not measured", "apiCount": 1, "mainBottleneck": "List refetch on return (fixed cache patch)" }
+  },
+  "redis": {
+    "status": "NOT_CONFIGURED",
+    "connection": "not_configured",
+    "inMemoryFallback": "WORKING",
+    "appCacheHit": { "firstMs": 778, "secondMs": 17 },
+    "tenantKeys": "tenant:{tenantId}:... in responseCache.ts",
+    "healthEndpoint": "/health/redis-test"
+  },
+  "slowApisOver500ms": [
+    "/api/v1/customers (list/mutation variable)",
+    "/api/v1/categories ~580ms",
+    "/api/v1/warehouses ~981ms",
+    "/api/v1/employees lookup ~1033ms",
+    "/api/v1/purchase-orders ~504ms"
+  ],
+  "git": {
+    "pushed": false,
+    "backendCommitsRecent": ["59a1ea5 all", "8872d56 hydration improvement"],
+    "frontendCommitsRecent": ["419c8c0 all", "6ac5f34 hydration improvement"],
+    "typescriptBackend": "pass",
+    "typescriptFrontend": "pass"
+  }
+}

@@ -1,4 +1,5 @@
 import { dataSourceConfig } from '@/lib/config/data-source';
+import { isPerfTraceEnabled, perfMark, recordMutationTrace } from '@/lib/utils/perf-trace';
 
 export class ApiError extends Error {
   status: number;
@@ -75,6 +76,10 @@ async function apiRequestInternal<T>(
   const timeoutMs = 15000;
   const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
 
+  const traceEnabled = isPerfTraceEnabled();
+  const traceId = traceEnabled ? `api:${method}:${path}:${Date.now()}` : '';
+  if (traceEnabled) perfMark(`${traceId}:start`);
+
   let res: Response;
   try {
     res = await fetch(url, { ...fetchOptions, signal: controller.signal });
@@ -96,6 +101,18 @@ async function apiRequestInternal<T>(
 
   if (!res.ok || body?.success === false) {
     throw new ApiError(res.status, formatApiError(res.status, body));
+  }
+
+  if (traceEnabled) {
+    perfMark(`${traceId}:end`);
+    const perfHeader = res.headers.get('X-Perf-Trace') ?? undefined;
+    if (method !== 'GET') {
+      recordMutationTrace({
+        operation: `${method} ${path}`,
+        marks: { api: Math.round(performance.now()) },
+        perfTraceHeader: perfHeader,
+      });
+    }
   }
 
   return { data: body?.data as T, meta: body?.meta };

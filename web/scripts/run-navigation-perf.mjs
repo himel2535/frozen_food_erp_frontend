@@ -171,6 +171,36 @@ async function measureProductCreateGets(page) {
   };
 }
 
+async function measureCacheReuse(page) {
+  const measureVisit = async (path) => {
+    const requests = [];
+    const onRequest = (req) => {
+      if (req.method() !== 'GET') return;
+      const url = req.url();
+      if (!isApiRequest(url)) return;
+      requests.push({ resource: resourceFromUrl(url) });
+    };
+    page.on('request', onRequest);
+    const start = Date.now();
+    await page.goto(`${BASE}${path}`, { waitUntil: 'networkidle', timeout: 60000 }).catch(() => {});
+    await page.waitForTimeout(400);
+    page.off('request', onRequest);
+    return { path, totalRequests: requests.length, resources: [...new Set(requests.map((r) => r.resource))], durationMs: Date.now() - start };
+  };
+
+  const first = await measureVisit('/crm/customers');
+  await measureVisit('/inventory/products');
+  const second = await measureVisit('/crm/customers');
+
+  return {
+    label: 'Customers → Products → Customers cache reuse',
+    firstVisit: first,
+    secondVisit: second,
+    requestsSaved: Math.max(0, first.totalRequests - second.totalRequests),
+    reused: second.totalRequests < first.totalRequests,
+  };
+}
+
 async function main() {
   const browser = await chromium.launch({ headless: HEADLESS });
   const context = await browser.newContext();
@@ -195,6 +225,10 @@ async function main() {
   const productCreate = await measureProductCreateGets(page);
   console.log(`  POST=${productCreate.postCount} GET-after=${productCreate.getCountAfterPost}`);
 
+  console.log('Measuring: A→B→A cache reuse');
+  const cacheReuse = await measureCacheReuse(page);
+  console.log(`  first=${cacheReuse.firstVisit.totalRequests} second=${cacheReuse.secondVisit.totalRequests} saved=${cacheReuse.requestsSaved}`);
+
   await browser.close();
 
   const summary = {
@@ -203,6 +237,7 @@ async function main() {
     transitions: results,
     rscHover,
     productCreate,
+    cacheReuse,
     totals: {
       requests: results.reduce((s, r) => s + r.totalRequests, 0),
       listRequests: results.reduce((s, r) => s + r.listRequests, 0),

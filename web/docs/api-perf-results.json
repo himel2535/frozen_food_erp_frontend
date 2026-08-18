@@ -1,0 +1,225 @@
+{
+  "measuredAt": "2026-08-18T12:37:55.723Z",
+  "apiBase": "http://localhost:5000",
+  "auth": {
+    "firstMs": 906,
+    "secondMs": 34,
+    "firstAuthMs": 348,
+    "secondAuthMs": 1,
+    "cacheHitLikely": true
+  },
+  "mutations": {
+    "customer": {
+      "label": "customer",
+      "postMs": 537,
+      "perfTrace": "auth=2ms mongo=508ms total=515ms",
+      "legs": {
+        "auth": 2,
+        "mongo": 508,
+        "total": 515
+      },
+      "id": "6a84521c5eae5aa20733e3b6"
+    },
+    "product": {
+      "label": "product",
+      "postMs": 21,
+      "perfTrace": "auth=0ms mongo=2ms total=14ms",
+      "legs": {
+        "auth": 0,
+        "mongo": 2,
+        "total": 14
+      }
+    },
+    "supplier": {
+      "label": "supplier",
+      "postMs": 378,
+      "perfTrace": "auth=0ms mongo=363ms total=366ms",
+      "legs": {
+        "auth": 0,
+        "mongo": 363,
+        "total": 366
+      },
+      "id": "6a84521c5eae5aa20733e3b9"
+    }
+  },
+  "navigation": [
+    {
+      "route": "/dashboard",
+      "apiCount": 0,
+      "totalMs": 0,
+      "apis": []
+    },
+    {
+      "route": "/settings/users",
+      "apiCount": 0,
+      "totalMs": 0,
+      "apis": []
+    },
+    {
+      "route": "/crm/customers",
+      "apiCount": 1,
+      "totalMs": 383,
+      "apis": [
+        {
+          "path": "/api/v1/customers",
+          "query": "page=1&limit=10",
+          "durationMs": 383,
+          "perfTrace": "auth=4ms total=366ms"
+        }
+      ]
+    },
+    {
+      "route": "/inventory/products",
+      "apiCount": 4,
+      "totalMs": 2323,
+      "apis": [
+        {
+          "path": "/api/v1/products",
+          "query": "page=1&limit=10",
+          "durationMs": 375,
+          "perfTrace": "auth=1ms total=355ms"
+        },
+        {
+          "path": "/api/v1/categories",
+          "query": "page=1&limit=100&lookup=1",
+          "durationMs": 580,
+          "perfTrace": "auth=8ms total=571ms"
+        },
+        {
+          "path": "/api/v1/units",
+          "query": "page=1&limit=100&lookup=1",
+          "durationMs": 387,
+          "perfTrace": "auth=1ms total=376ms"
+        },
+        {
+          "path": "/api/v1/warehouses",
+          "query": "page=1&limit=100&lookup=1",
+          "durationMs": 981,
+          "perfTrace": "auth=486ms total=961ms"
+        }
+      ]
+    },
+    {
+      "route": "/hrm/employees",
+      "apiCount": 1,
+      "totalMs": 391,
+      "apis": [
+        {
+          "path": "/api/v1/employees",
+          "query": "page=1&limit=10",
+          "durationMs": 391,
+          "perfTrace": "auth=1ms total=385ms"
+        }
+      ]
+    },
+    {
+      "route": "/purchases/suppliers",
+      "apiCount": 1,
+      "totalMs": 359,
+      "apis": [
+        {
+          "path": "/api/v1/suppliers",
+          "query": "page=1&limit=8",
+          "durationMs": 359,
+          "perfTrace": "auth=1ms total=351ms"
+        }
+      ]
+    },
+    {
+      "route": "/sales/orders",
+      "apiCount": 1,
+      "totalMs": 358,
+      "apis": [
+        {
+          "path": "/api/v1/sales-orders",
+          "query": "page=1&limit=10",
+          "durationMs": 358,
+          "perfTrace": "auth=0ms total=352ms"
+        }
+      ]
+    },
+    {
+      "route": "/purchases/orders",
+      "apiCount": 2,
+      "totalMs": 1187,
+      "apis": [
+        {
+          "path": "/api/v1/purchase-orders",
+          "query": "page=1&limit=10",
+          "durationMs": 504,
+          "perfTrace": "auth=1ms total=487ms"
+        },
+        {
+          "path": "/api/v1/suppliers",
+          "query": "page=1&limit=100&lookup=1",
+          "durationMs": 683,
+          "perfTrace": "auth=3ms total=626ms"
+        }
+      ]
+    },
+    {
+      "route": "/manufacturing/machine-maintenance",
+      "apiCount": 0,
+      "totalMs": 0,
+      "apis": []
+    },
+    {
+      "route": "/crm/leads",
+      "apiCount": 2,
+      "totalMs": 1449,
+      "apis": [
+        {
+          "path": "/api/v1/leads",
+          "query": "page=1&limit=10",
+          "durationMs": 416,
+          "perfTrace": "auth=1ms total=373ms"
+        },
+        {
+          "path": "/api/v1/employees",
+          "query": "page=1&limit=100&lookup=1",
+          "durationMs": 1033,
+          "perfTrace": "auth=368ms total=1024ms"
+        }
+      ]
+    }
+  ],
+  "slowApis": [
+    {
+      "route": "/inventory/products",
+      "path": "/api/v1/categories",
+      "durationMs": 580
+    },
+    {
+      "route": "/inventory/products",
+      "path": "/api/v1/warehouses",
+      "durationMs": 981
+    },
+    {
+      "route": "/purchases/orders",
+      "path": "/api/v1/purchase-orders",
+      "durationMs": 504
+    },
+    {
+      "route": "/purchases/orders",
+      "path": "/api/v1/suppliers",
+      "durationMs": 683
+    },
+    {
+      "route": "/crm/leads",
+      "path": "/api/v1/employees",
+      "durationMs": 1033
+    },
+    {
+      "route": "mutation",
+      "path": "customer",
+      "durationMs": 537
+    }
+  ],
+  "comparison": {
+    "customerPostMs": 537,
+    "productPostMs": 21,
+    "differenceMs": -516,
+    "customerMongoMs": 508,
+    "productMongoMs": 2
+  }
+}

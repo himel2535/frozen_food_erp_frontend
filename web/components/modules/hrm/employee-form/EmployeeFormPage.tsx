@@ -17,6 +17,8 @@ import {
 import { isModuleApiMode } from '@/lib/config/data-source';
 import { API_RESOURCE_PATHS } from '@/lib/config/data-source';
 import { createResource, fetchResourceById, updateResource } from '@/lib/services/api-resource-service';
+import { prependToListCache } from '@/lib/services/api-list-cache';
+import { DEFAULT_LIST_PAGE_SIZE } from '@/lib/services/api-pagination-types';
 import { attachBackgroundImageLater } from '@/lib/services/background-image-attach';
 import { patchResourceImageUrl } from '@/lib/services/resource-image-patch';
 import type { PendingImageUpload } from '@/components/shared/ImageUploadField';
@@ -107,6 +109,14 @@ export function EmployeeFormPage({ mode, employeeId }: { mode: 'create' | 'edit'
         const recordId = mode === 'edit' && employeeId
           ? employeeId
           : ('id' in result ? String(result.id) : '');
+        if (mode === 'create' && recordId && result.ok && 'data' in result) {
+          const listQuery = { page: 1, limit: DEFAULT_LIST_PAGE_SIZE };
+          prependToListCache(
+            API_RESOURCE_PATHS.employees,
+            listQuery,
+            { ...body, ...(result.data ?? {}), id: recordId },
+          );
+        }
         if (recordId && pendingImageUpload) {
           attachBackgroundImageLater({
             recordId,

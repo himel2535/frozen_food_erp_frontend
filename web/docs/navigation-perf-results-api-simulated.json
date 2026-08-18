@@ -1,0 +1,21 @@
+{
+  "measuredAt": "2026-08-18T12:37:55.723Z",
+  "method": "api-simulation",
+  "note": "Playwright browsers unavailable on macOS 12; route hydration API counts derived from run-api-perf.mjs matching resolveHydrationModules(). Browser E2E from prior session in navigation-perf-results.json.",
+  "routes": [
+    { "route": "/dashboard", "requiredApis": 0, "totalMs": 0 },
+    { "route": "/settings/users", "requiredApis": 0, "totalMs": 0 },
+    { "route": "/crm/customers", "requiredApis": 1, "totalMs": 383 },
+    { "route": "/inventory/products", "requiredApis": 4, "totalMs": 2323 },
+    { "route": "/hrm/employees", "requiredApis": 1, "totalMs": 391 },
+    { "route": "/purchases/suppliers", "requiredApis": 1, "totalMs": 359 },
+    { "route": "/sales/orders", "requiredApis": 1, "totalMs": 358 },
+    { "route": "/purchases/orders", "requiredApis": 2, "totalMs": 1187 },
+    { "route": "/crm/leads", "requiredApis": 2, "totalMs": 1449 }
+  ],
+  "verification": {
+    "routeHydrationCases": "15/15 passed",
+    "dashboardToUsersListGets": "0 (admin route, prior Playwright: 1 auth only)",
+    "unrelatedResourcesOnUsers": "none"
+  }
+}

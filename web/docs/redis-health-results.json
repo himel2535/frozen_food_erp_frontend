@@ -1,0 +1,31 @@
+{
+  "measuredAt": "2026-08-18T12:30:23.281Z",
+  "apiBase": "http://localhost:5000",
+  "health": {
+    "success": true,
+    "data": {
+      "service": "toys-factory-erp-backend",
+      "status": "ok",
+      "environment": "development",
+      "timestamp": "2026-08-18T12:30:21.478Z",
+      "database": "connected",
+      "redis": "not_configured",
+      "note": "Firebase remains the live frontend backend until you wire this API in."
+    }
+  },
+  "redisTest": {
+    "success": true,
+    "data": {
+      "configured": false,
+      "connected": false,
+      "steps": {}
+    }
+  },
+  "appCache": {
+    "firstMs": 778,
+    "secondMs": 17,
+    "speedupMs": 761,
+    "secondFaster": true
+  },
+  "redisStatus": "not_configured"
+}
