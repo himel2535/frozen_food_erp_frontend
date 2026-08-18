@@ -203,7 +203,7 @@ function DashboardActivityRowSkeleton() {
 
 export function DashboardTopProductsSkeleton() {
   return (
-    <div className="premium-card p-4 premium-shadow lg:col-span-2 flex flex-col h-full min-h-[220px]">
+    <div className="premium-card p-4 premium-shadow lg:col-span-2 flex flex-col h-full min-h-[220px] max-md:h-auto max-md:min-h-0">
       <DashboardPanelHeaderSkeleton />
       <div className="flex-1 flex flex-col justify-between gap-4 min-h-[9.75rem]">
         {Array.from({ length: 3 }).map((_, index) => (
@@ -216,7 +216,7 @@ export function DashboardTopProductsSkeleton() {
 
 export function DashboardRecentInvoicesSkeleton() {
   return (
-    <div className="premium-card p-4 premium-shadow lg:col-span-1 flex flex-col h-full min-h-[220px]">
+    <div className="premium-card p-4 premium-shadow lg:col-span-1 flex flex-col h-full min-h-[220px] max-md:h-auto max-md:min-h-0">
       <DashboardPanelHeaderSkeleton />
       <div className="flex-1 flex flex-col justify-between gap-4 min-h-[9.75rem]">
         {Array.from({ length: 3 }).map((_, index) => (
@@ -229,7 +229,7 @@ export function DashboardRecentInvoicesSkeleton() {
 
 export function DashboardActivityFeedSkeleton() {
   return (
-    <div className="premium-card p-4 premium-shadow flex flex-col h-full min-h-[220px]">
+    <div className="premium-card p-4 premium-shadow flex flex-col h-full min-h-[220px] max-md:h-auto max-md:min-h-0">
       <DashboardPanelHeaderSkeleton />
       <div className="flex-1 flex flex-col justify-between gap-4 min-h-[9.75rem]">
         {Array.from({ length: 3 }).map((_, index) => (
@@ -301,7 +301,7 @@ export function DashboardLoadingSkeleton({
   kpiLabels?: string[];
 }) {
   return (
-    <div className="flex flex-col flex-1 min-h-0 gap-1" aria-busy="true" aria-label={label}>
+    <div className="flex flex-col flex-1 min-h-0 gap-1 max-md:gap-2" aria-busy="true" aria-label={label}>
       <DashboardKpiGridSkeleton labels={kpiLabels} />
       <DashboardChartsRowSkeleton />
       <DashboardBottomPanelsSkeleton />

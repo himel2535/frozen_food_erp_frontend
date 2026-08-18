@@ -29,7 +29,7 @@ export function DashboardProjectProgress() {
   const hasMore = projects.length > PREVIEW_COUNT;
 
   return (
-    <section className="premium-card premium-shadow p-2.5 min-h-0 flex flex-col" style={{ flex: '1.2 1 0%' }}>
+    <section className="premium-card premium-shadow p-2.5 min-h-0 flex flex-col max-md:flex-none md:flex-[1.2_1_0%]">
       <div className="flex items-center justify-between mb-1.5 border-b border-slate-100 pb-1.5">
         <div className="flex items-center gap-2">
           <Icon icon="fluent-color:document-folder-24" width={22} height={22} className="shrink-0" />

@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { HeaderAlertsDropdown } from '@/components/layout/HeaderAlertsDropdown';
 import { HeaderMessagesDropdown } from '@/components/layout/HeaderMessagesDropdown';
+import { SidebarCollapseToggle } from '@/components/layout/SidebarCollapseToggle';
 import { DateInput } from '@/components/shared/DateInput';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Search, User, Settings, LogOut } from 'lucide-react';
@@ -19,18 +20,22 @@ interface HeaderProps {
   title?: string;
 }
 
-type HeaderPanel = 'messages' | 'alerts' | 'profile' | null;
+type HeaderPanel = 'messages' | 'alerts' | 'profile' | 'search' | null;
 
 export function Header({ title }: HeaderProps) {
   const router = useRouter();
   const currentUser = useAppStore((s) => s.appState.currentUser);
   const employees = useAppStore((s) => s.appState.employees);
   const toggleLanguage = useAppStore((s) => s.toggleLanguage);
+  const toggleMobileSidebar = useAppStore((s) => s.toggleMobileSidebar);
+  const mobileSidebarOpen = useAppStore((s) => s.mobileSidebarOpen);
   const logout = useAppStore((s) => s.logout);
   const lang = useAppStore((s) => s.appState.lang);
   const [openPanel, setOpenPanel] = useState<HeaderPanel>(null);
   const [navDate, setNavDate] = useState('');
+  const [mobileSearchQuery, setMobileSearchQuery] = useState('');
   const profileMenuRef = useRef<HTMLDivElement>(null);
+  const mobileSearchRef = useRef<HTMLDivElement>(null);
   const showBrand = !title || title === 'Enterprise Workspace';
   const displayTitle = showBrand ? '' : title;
 
@@ -51,7 +56,9 @@ export function Header({ title }: HeaderProps) {
     [],
   );
   const closeProfile = useCallback(() => setOpenPanel((p) => (p === 'profile' ? null : p)), []);
+  const closeMobileSearch = useCallback(() => setOpenPanel((p) => (p === 'search' ? null : p)), []);
   useClickOutside(profileMenuRef, closeProfile, openPanel === 'profile');
+  useClickOutside(mobileSearchRef, closeMobileSearch, openPanel === 'search');
 
   useEffect(() => {
     setNavDate(new Date().toISOString().slice(0, 10));
@@ -73,21 +80,29 @@ export function Header({ title }: HeaderProps) {
   };
 
   return (
-    <header className="h-16 glass-header px-5 flex items-center justify-between shrink-0 sticky top-0 z-20 border-b border-white/40 bg-white/20 backdrop-blur-2xl">
-      {/* Left: Brand / page title */}
-      <div className="flex items-center gap-3 min-w-0 flex-1 ml-3">
-        <div className="min-w-0">
+    <header className="h-16 glass-header px-2 sm:px-3 md:px-5 flex flex-nowrap items-center justify-between gap-1.5 sm:gap-2 shrink-0 sticky top-0 z-20 border-b border-white/40 bg-white/20 backdrop-blur-2xl">
+      {/* Left: sidebar toggle + brand */}
+      <div className="flex items-center gap-1 sm:gap-1.5 min-w-0 flex-1 md:ml-3">
+        <SidebarCollapseToggle
+          variant="inline"
+          expanded={mobileSidebarOpen}
+          onClick={toggleMobileSidebar}
+          aria-label={mobileSidebarOpen ? 'Close navigation' : 'Open navigation'}
+          aria-expanded={mobileSidebarOpen}
+        />
+        <div className="min-w-0 shrink-0">
           {showBrand ? (
-            <h2 className="m-0 leading-none flex items-center gap-2 min-w-0 truncate">
+            <h2 className="m-0 leading-none flex items-center gap-2 whitespace-nowrap">
               <Image
                 src="/images/logo-toys.png"
                 alt="Toys Factory"
                 width={20}
                 height={20}
-                className="w-5 h-5 object-contain shrink-0 drop-shadow-xs"
+                className="object-contain shrink-0 drop-shadow-xs h-5 w-auto"
+                style={{ width: 'auto', height: '1.25rem' }}
                 unoptimized
               />
-              <span className="inline-flex items-baseline min-w-0">
+              <span className="inline-flex items-baseline shrink-0 whitespace-nowrap">
                 <span className="text-[15px] font-black tracking-tight">
                   <span className="text-amber-700">Toys</span>
                   <span className="text-cyan-600 ml-0.5">Factory</span>
@@ -109,9 +124,10 @@ export function Header({ title }: HeaderProps) {
         </div>
       </div>
 
-      {/* Center: Search + Date */}
-      <div className="flex items-center gap-2 flex-1 justify-end px-3 min-w-0">
-        <div className="flex-1 max-w-md hidden lg:block">
+      {/* Right: search, date (desktop), chat, alerts, language, profile */}
+      <div className="flex items-center gap-1 sm:gap-1.5 shrink-0 flex-nowrap relative z-30">
+        {/* Desktop search */}
+        <div className="hidden lg:block w-[min(16rem,28vw)]">
           <div className="relative group">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 group-focus-within:text-blue-600 transition-colors" />
             <input
@@ -126,16 +142,42 @@ export function Header({ title }: HeaderProps) {
             </div>
           </div>
         </div>
+
+        {/* Mobile/tablet search icon + popover */}
+        <div className="relative lg:hidden" ref={mobileSearchRef}>
+          <button
+            type="button"
+            onClick={() => setOpenPanel((p) => (p === 'search' ? null : 'search'))}
+            className="h-8 w-8 sm:h-9 sm:w-9 rounded-xl bg-white/50 hover:bg-white/90 border border-white/80 shadow-xs flex items-center justify-center transition-all cursor-pointer shrink-0"
+            aria-label="Search"
+            aria-expanded={openPanel === 'search'}
+          >
+            <Search className="w-4 h-4 sm:w-[18px] sm:h-[18px] text-slate-800" />
+          </button>
+          {openPanel === 'search' ? (
+            <div className="absolute right-0 top-full mt-2 w-[min(calc(100vw-2rem),18rem)] rounded-xl border border-white/90 bg-white/95 backdrop-blur-2xl shadow-xl p-2 z-50">
+              <div className="relative group">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 group-focus-within:text-blue-600 transition-colors" />
+                <input
+                  type="text"
+                  autoFocus
+                  value={mobileSearchQuery}
+                  onChange={(e) => setMobileSearchQuery(e.target.value)}
+                  className="w-full bg-white/40 hover:bg-white/70 focus:bg-white border border-white/80 focus:border-blue-500/80 text-xs font-semibold rounded-xl pl-8.5 pr-3 py-1.5 shadow-2xs transition-all placeholder:text-slate-400 text-slate-800"
+                  placeholder="Search anything..."
+                />
+              </div>
+            </div>
+          ) : null}
+        </div>
+
         <DateInput
           value={navDate}
           onChange={setNavDate}
           aria-label="Business date"
-          className="h-9 w-[9.5rem] bg-white/50 hover:bg-white/90 border border-white/80 rounded-xl px-3 text-xs font-semibold text-slate-700 shadow-xs focus:outline-none focus:ring-2 focus:ring-blue-500/20 cursor-pointer shrink-0"
+          className="max-md:hidden h-9 w-[9.5rem] bg-white/50 hover:bg-white/90 border border-white/80 rounded-xl px-3 text-xs font-semibold text-slate-700 shadow-xs focus:outline-none focus:ring-2 focus:ring-blue-500/20 cursor-pointer shrink-0"
         />
-      </div>
 
-      {/* Right: Vibrant Colorful Controls & Matching Brand Avatar */}
-      <div className="flex items-center gap-2 shrink-0 relative z-30">
         <HeaderMessagesDropdown
           open={openPanel === 'messages'}
           onOpenChange={setMessagesOpen}
@@ -146,24 +188,24 @@ export function Header({ title }: HeaderProps) {
           onOpenChange={setAlertsOpen}
         />
 
-        {/* Language Switcher with Vibrant Colorful Globe Icon */}
         <button
           type="button"
           onClick={toggleLanguage}
-          className="h-9 px-2.5 rounded-xl bg-white/50 hover:bg-white/90 border border-white/80 shadow-xs flex items-center gap-1.5 transition-all cursor-pointer"
+          className="h-8 w-8 sm:h-9 sm:max-w-none sm:w-auto sm:px-2.5 rounded-xl bg-white/50 hover:bg-white/90 border border-white/80 shadow-xs flex items-center justify-center sm:justify-start gap-1.5 transition-all cursor-pointer shrink-0"
           title="Switch Language"
         >
           <Icon icon="fluent-color:globe-24" width={18} height={18} className="shrink-0" />
-          <span className="uppercase text-[11px] font-extrabold text-slate-800">{lang === 'en' ? 'EN' : 'বাংলা'}</span>
+          <span className="hidden sm:inline uppercase text-[11px] font-extrabold text-slate-800">
+            {lang === 'en' ? 'EN' : 'বাংলা'}
+          </span>
         </button>
 
-        {/* User Profile Circular Avatar with Matching Toys Amber Brand Palette (NO violet!) */}
         <div className="relative" ref={profileMenuRef}>
           <button
             type="button"
             onClick={() => setOpenPanel((p) => (p === 'profile' ? null : 'profile'))}
             onMouseDown={(e) => e.stopPropagation()}
-            className="relative z-[60] h-9 w-9 rounded-full bg-gradient-to-br from-amber-500 via-amber-600 to-amber-700 text-white flex items-center justify-center font-black text-xs shadow-md shadow-amber-500/25 border-2 border-white hover:scale-105 transition-all cursor-pointer focus:outline-none"
+            className="relative z-[60] h-8 w-8 sm:h-9 sm:w-9 rounded-full bg-gradient-to-br from-amber-500 via-amber-600 to-amber-700 text-white flex items-center justify-center font-black text-[10px] sm:text-xs shadow-md shadow-amber-500/25 border-2 border-white hover:scale-105 transition-all cursor-pointer focus:outline-none shrink-0"
             title="User Profile"
             aria-expanded={openPanel === 'profile'}
             aria-haspopup="true"

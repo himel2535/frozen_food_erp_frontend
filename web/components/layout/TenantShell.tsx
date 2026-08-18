@@ -29,9 +29,9 @@ export function TenantShell({ children }: { children: React.ReactNode }) {
       <DashboardPrefetch />
       <BengaliFontLoader />
       {showBootLoader ? <ToysLoader label="Loading Workspace..." /> : null}
-      <div id="screen-workspace" className="min-h-screen flex">
+      <div id="screen-workspace" className="min-h-screen overflow-x-hidden md:flex">
         <Sidebar />
-        <main className="flex-1 flex flex-col min-h-screen overflow-hidden">
+        <main className="w-full min-w-0 flex flex-col min-h-screen overflow-hidden md:flex-1">
           <Header title="Enterprise Workspace" />
           <div className="flex flex-1 min-h-0 flex-col overflow-hidden">
             <AuthGuard>

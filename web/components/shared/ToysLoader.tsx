@@ -35,7 +35,8 @@ export function ToysLoader({
               alt="Toys Factory Loader"
               width={40}
               height={40}
-              className="w-full h-full object-contain shrink-0"
+              className="object-contain shrink-0"
+              style={{ width: 'auto', height: '100%' }}
               unoptimized
             />
           </div>

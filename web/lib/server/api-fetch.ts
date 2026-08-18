@@ -8,12 +8,37 @@ type ApiEnvelope<T> = {
   meta?: Record<string, unknown>;
 };
 
+const BACKEND_COOLDOWN_MS = 15_000;
+let backendUnreachableUntil = 0;
+
+function normalizeServerApiUrl(url: string): string {
+  return url.replace(/\/\/localhost\b/i, '//127.0.0.1');
+}
+
+function isConnectionError(err: unknown): boolean {
+  if (!err || typeof err !== 'object') return false;
+  const code = (err as { code?: string }).code;
+  if (code === 'ECONNREFUSED' || code === 'ENOTFOUND' || code === 'ECONNRESET') return true;
+  if (err instanceof AggregateError) {
+    return err.errors.some((nested) => isConnectionError(nested));
+  }
+  const cause = (err as { cause?: unknown }).cause;
+  if (cause && cause !== err) return isConnectionError(cause);
+  return false;
+}
+
 export async function serverApiRequest<T>(
   path: string,
   _revalidateSeconds = 30,
   options?: { timeoutMs?: number },
 ): Promise<{ data: T; meta?: Record<string, unknown> } | null> {
-  const url = `${dataSourceConfig.apiBaseUrl}${path.startsWith('/') ? path : `/${path}`}`;
+  if (Date.now() < backendUnreachableUntil) {
+    return null;
+  }
+
+  const url = normalizeServerApiUrl(
+    `${dataSourceConfig.apiBaseUrl}${path.startsWith('/') ? path : `/${path}`}`,
+  );
 
   const cookieStore = await cookies();
   const token = cookieStore.get('token')?.value;
@@ -48,7 +73,10 @@ export async function serverApiRequest<T>(
     }
 
     return { data: body?.data as T, meta: body?.meta };
-  } catch {
+  } catch (err) {
+    if (isConnectionError(err)) {
+      backendUnreachableUntil = Date.now() + BACKEND_COOLDOWN_MS;
+    }
     return null;
   } finally {
     if (timeoutId) clearTimeout(timeoutId);

@@ -73,7 +73,8 @@ export function LoginScreen({
                 alt="Toys Factory Logo"
                 width={40}
                 height={40}
-                className="w-10 h-10 object-contain drop-shadow-xs"
+                className="object-contain drop-shadow-xs"
+                style={{ width: 'auto', height: '2.5rem' }}
                 unoptimized
               />
             </div>

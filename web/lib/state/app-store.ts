@@ -88,6 +88,9 @@ interface AppStore {
   setLoggedIn: (value: boolean) => void;
   logout: () => Promise<void>;
   toggleSidebar: () => void;
+  mobileSidebarOpen: boolean;
+  setMobileSidebarOpen: (open: boolean) => void;
+  toggleMobileSidebar: () => void;
   toggleLanguage: () => void;
   t: (key: string, vars?: Record<string, string | number>) => string;
 }
@@ -143,6 +146,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
   lastSyncedState: '',
   ignoreRemoteEcho: false,
   remoteListenerStarted: false,
+  mobileSidebarOpen: false,
   t: createT('en'),
 
   setHydrated: () => {
@@ -332,6 +336,14 @@ export const useAppStore = create<AppStore>((set, get) => ({
   toggleSidebar: () => {
     set((s) => ({ appState: { ...s.appState, sidebarCollapsed: !s.appState.sidebarCollapsed } }));
     get().saveAppState();
+  },
+
+  setMobileSidebarOpen: (open) => {
+    set({ mobileSidebarOpen: open });
+  },
+
+  toggleMobileSidebar: () => {
+    set((s) => ({ mobileSidebarOpen: !s.mobileSidebarOpen }));
   },
 
   toggleLanguage: () => {

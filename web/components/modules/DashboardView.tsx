@@ -262,7 +262,7 @@ export function DashboardView({ serverPayload = null }: DashboardViewProps) {
 
   return (
     <DashboardStateProvider value={dashboardState}>
-      <div className="flex flex-col flex-1 min-h-0 gap-1">
+      <div className="flex flex-col flex-1 min-h-0 gap-1 max-md:gap-2">
       <section className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-1 shrink-0">
         {DASHBOARD_KPI_CARDS.map((card) => {
           const data = metricValues[card.key];
@@ -309,7 +309,7 @@ export function DashboardView({ serverPayload = null }: DashboardViewProps) {
         })}
       </section>
 
-      <section className="grid grid-cols-1 lg:grid-cols-4 gap-1 min-h-0 items-stretch" style={{ flex: '2 1 0%' }}>
+      <section className="grid grid-cols-1 lg:grid-cols-4 gap-1 min-h-0 items-stretch max-md:flex-none md:flex-[2_1_0%]">
         {ready ? <SalesTrendChart /> : <DashboardSalesTrendChartSkeleton />}
         {ready ? <RevenueAnalyticsChart /> : <DashboardRevenueChartSkeleton />}
         <DashboardBusinessAlerts />

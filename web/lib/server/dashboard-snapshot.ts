@@ -18,9 +18,13 @@ export async function fetchDashboardSnapshot(): Promise<DashboardServerPayload> 
     return { summary: null, modules: {} };
   }
 
-  const summary = await fetchServerDashboardSummary({
-    scope: 'kpi',
-    timeoutMs: SSR_KPI_BUDGET_MS,
-  });
-  return { summary, modules: {} };
+  try {
+    const summary = await fetchServerDashboardSummary({
+      scope: 'kpi',
+      timeoutMs: SSR_KPI_BUDGET_MS,
+    });
+    return { summary, modules: {} };
+  } catch {
+    return { summary: null, modules: {} };
+  }
 }

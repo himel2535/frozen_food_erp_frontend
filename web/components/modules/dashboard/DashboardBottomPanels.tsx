@@ -54,7 +54,7 @@ function TopProductsPanel({
   if (loading) return <DashboardTopProductsSkeleton />;
 
   return (
-    <div className="premium-card p-2.5 premium-shadow lg:col-span-2 flex flex-col">
+    <div className="premium-card p-2.5 premium-shadow lg:col-span-2 flex flex-col max-md:h-auto max-md:min-h-0">
       <div className="flex items-center justify-between mb-1.5 border-b border-slate-100 pb-1.5">
         <div className="flex items-center gap-2">
           <Icon icon="fluent-color:ribbon-24" width={22} height={22} className="shrink-0" />
@@ -274,13 +274,13 @@ export function DashboardBottomPanels({
   const activityItems = mongo ? (apiActivity ?? []) : localActivity;
 
   return (
-    <section className="grid grid-cols-1 lg:grid-cols-4 gap-1 items-stretch min-h-0" style={{ flex: '1.5 1 0%' }}>
+    <section className="grid grid-cols-1 lg:grid-cols-4 gap-1 items-stretch min-h-0 max-md:flex-none md:flex-[1.5_1_0%]">
       <TopProductsPanel products={topProducts} loading={topProductsLoading} />
 
       {!listsReady ? (
         <DashboardRecentInvoicesSkeleton />
       ) : (
-      <div className="premium-card p-2.5 premium-shadow lg:col-span-1 flex flex-col">
+      <div className="premium-card p-2.5 premium-shadow lg:col-span-1 flex flex-col max-md:h-auto max-md:min-h-0">
         <div className="flex items-center justify-between mb-1.5 border-b border-slate-100 pb-1.5">
           <div className="flex items-center gap-2">
             <Icon icon="fluent-color:receipt-24" width={22} height={22} className="shrink-0" />
@@ -327,7 +327,7 @@ export function DashboardBottomPanels({
       {activityLoading || !criticalPaintReady || !activityPaintReady || (activityMode === 'c' && !activityFetchReady) ? (
         <DashboardActivityFeedSkeleton />
       ) : (
-      <div className="premium-card p-2.5 premium-shadow flex flex-col">
+      <div className="premium-card p-2.5 premium-shadow flex flex-col max-md:h-auto max-md:min-h-0">
         <div className="flex items-center justify-between mb-1.5 border-b border-slate-100 pb-1.5">
           <div className="flex items-center gap-2">
             <Icon icon="fluent-color:history-24" width={22} height={22} className="shrink-0" />

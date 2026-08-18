@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { BrandMark } from '@/components/layout/BrandMark';
 import { useState, useEffect, useMemo } from 'react';
-import { ChevronDown, ChevronLeft, ChevronRight, X } from 'lucide-react';
+import { ChevronDown, X } from 'lucide-react';
 import {
   TENANT_SIDEBAR_SECTIONS,
   getActiveSidebarModule,
@@ -19,6 +19,7 @@ import { getVisibleSections, isMainAdmin } from '@/lib/services/access-control-s
 import { SidebarIcon } from './SidebarIcon';
 import { SidebarCollapsedTooltip } from './SidebarCollapsedTooltip';
 import { PageSkeleton } from '@/components/shared/PageSkeleton';
+import { SidebarCollapseToggle } from '@/components/layout/SidebarCollapseToggle';
 
 function sidebarLabel(t: (k: string) => string, key: string, fallback: string) {
   const id = `sidebar.${key}`;
@@ -86,9 +87,12 @@ export function Sidebar() {
   const pathname = usePathname();
   const collapsed = useAppStore((s) => s.appState.sidebarCollapsed);
   const toggleSidebar = useAppStore((s) => s.toggleSidebar);
+  const mobileSidebarOpen = useAppStore((s) => s.mobileSidebarOpen);
+  const setMobileSidebarOpen = useAppStore((s) => s.setMobileSidebarOpen);
   const t = useAppStore((s) => s.t);
   const authUser = useAppStore((s) => s.authUser);
   const authReady = useAppStore((s) => s.authReady);
+  const showExpanded = mobileSidebarOpen || !collapsed;
 
   const visibleSections = useMemo(() => {
     const sections = getVisibleSections(authUser);
@@ -122,6 +126,44 @@ export function Sidebar() {
   useEffect(() => {
     setOpenSubmenus(buildInitialSubmenus(activeModule, visibleSections));
   }, [activeModule, visibleSections]);
+
+  useEffect(() => {
+    setMobileSidebarOpen(false);
+  }, [pathname, setMobileSidebarOpen]);
+
+  useEffect(() => {
+    if (!mobileSidebarOpen) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setMobileSidebarOpen(false);
+    };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [mobileSidebarOpen, setMobileSidebarOpen]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const mq = window.matchMedia('(min-width: 768px)');
+    const onChange = () => {
+      if (mq.matches) setMobileSidebarOpen(false);
+    };
+    onChange();
+    mq.addEventListener('change', onChange);
+    return () => mq.removeEventListener('change', onChange);
+  }, [setMobileSidebarOpen]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const mq = window.matchMedia('(max-width: 767px)');
+    const apply = () => {
+      document.body.style.overflow = mq.matches && mobileSidebarOpen ? 'hidden' : '';
+    };
+    apply();
+    mq.addEventListener('change', apply);
+    return () => {
+      document.body.style.overflow = '';
+      mq.removeEventListener('change', apply);
+    };
+  }, [mobileSidebarOpen]);
 
   const toggleSubmenu = (id: string) => {
     if (collapsed) toggleSidebar();
@@ -169,34 +211,40 @@ export function Sidebar() {
 
   return (
     <>
-      <div className="fixed inset-0 bg-slate-950/40 backdrop-blur-sm z-20 hidden md:hidden" data-sidebar-toggle />
+      {mobileSidebarOpen ? (
+        <div
+          className="fixed inset-0 bg-slate-950/40 backdrop-blur-sm z-30 md:hidden"
+          onClick={() => setMobileSidebarOpen(false)}
+          aria-hidden
+        />
+      ) : null}
       <aside
         id="sidebar"
-        className={`sidebar-transition ${collapsed ? 'w-20 sidebar-is-collapsed' : 'w-72'} glass-sidebar text-slate-600 hidden md:flex flex-col shrink-0 sticky top-0 z-30 h-[100dvh] relative`}
+        className={`sidebar-transition glass-sidebar text-slate-600 flex flex-col h-[100dvh] fixed inset-y-0 left-0 z-40 w-72 max-w-[85vw] transition-transform duration-300 ease-in-out md:sticky md:top-0 md:z-30 md:shrink-0 md:max-w-none ${collapsed ? 'md:w-20 md:sidebar-is-collapsed' : 'md:w-72'} ${mobileSidebarOpen ? 'translate-x-0 max-md:pointer-events-auto max-md:visible' : '-translate-x-full max-md:pointer-events-none max-md:invisible md:translate-x-0'}`}
       >
-        {/* Transparent Water Glass Toggle Tab Button */}
-        <button
-          type="button"
+        <SidebarCollapseToggle
+          variant="edge"
+          expanded={!collapsed}
           onClick={toggleSidebar}
-          className="absolute -right-6 top-4 z-50 h-8 w-6 rounded-r-xl rounded-l-none bg-white/40 hover:bg-white/80 backdrop-blur-2xl text-slate-800 shadow-[0_4px_12px_rgba(0,0,0,0.06)] border border-l-0 border-white/80 flex items-center justify-center transition-all duration-200 cursor-pointer hover:w-7 group focus:outline-none"
-          title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-        >
-          {collapsed ? (
-            <ChevronRight className="w-4 h-4 text-slate-800 transition-transform duration-200 group-hover:scale-110" />
-          ) : (
-            <ChevronLeft className="w-4 h-4 text-slate-800 transition-transform duration-200 group-hover:scale-110" />
-          )}
-        </button>
+        />
 
-        <div className="h-16 pl-5 pr-3.5 border-b border-white/40 bg-white/10 flex items-center justify-between overflow-hidden shrink-0">
-          <div className="flex items-center min-w-0 flex-1">
-            <BrandMark size="sidebar" showWordmark={!collapsed} />
+        <div className="h-16 px-3.5 border-b border-white/40 bg-white/10 flex items-center justify-between overflow-hidden shrink-0">
+          <div className="flex flex-nowrap items-center min-w-0 flex-1 overflow-hidden">
+            <BrandMark size="sidebar" showWordmark={showExpanded} />
           </div>
+          <button
+            type="button"
+            onClick={() => setMobileSidebarOpen(false)}
+            className="md:hidden mr-1 flex h-8 w-8 items-center justify-center rounded-xl text-slate-500 transition-all hover:bg-black/5 hover:text-slate-800 focus:outline-none cursor-pointer"
+            aria-label="Close navigation"
+          >
+            <X className="w-5 h-5" />
+          </button>
         </div>
 
         <nav className="flex-1 overflow-y-auto px-3.5 py-3.5 space-y-2.5">
           {!authReady ? (
-            <PageSkeleton variant="sidebar" collapsed={collapsed} />
+            <PageSkeleton variant="sidebar" collapsed={!showExpanded} />
           ) : (
           visibleSections.map((section) => {
             const hasSubmenu = section.items.length > 0;
@@ -214,7 +262,7 @@ export function Sidebar() {
                 >
                   <SidebarCollapsedTooltip
                     label={sidebarLabel(t, section.id, section.label)}
-                    collapsed={collapsed}
+                    collapsed={!showExpanded}
                   >
                     <Link
                       href={section.href}
@@ -229,14 +277,14 @@ export function Sidebar() {
                           size={28}
                         />
                       </span>
-                      {!collapsed && (
+                      {!showExpanded ? null : (
                         <span className="sidebar-label truncate ml-3 text-sm font-extrabold">
                           {sidebarLabel(t, section.id, section.label)}
                         </span>
                       )}
                     </Link>
                   </SidebarCollapsedTooltip>
-                  {hasSubmenu && !collapsed && (
+                  {hasSubmenu && showExpanded && (
                     <button
                       type="button"
                       onClick={() => toggleSubmenu(section.id)}
@@ -248,7 +296,7 @@ export function Sidebar() {
                   )}
                 </div>
 
-                {hasSubmenu && openSubmenus[section.id] && !collapsed && (
+                {hasSubmenu && openSubmenus[section.id] && showExpanded && (
                   <div className="sidebar-submenu sidebar-label relative ml-4 pl-3.5 border-l-2 border-blue-500/30 space-y-2 my-1">
                     {section.items.map((item) => {
                       if (item.children?.length) {
@@ -315,20 +363,5 @@ export function Sidebar() {
         </nav>
       </aside>
     </>
-  );
-}
-
-export function MobileSidebarBackdrop({ open, onClose }: { open: boolean; onClose: () => void }) {
-  if (!open) return null;
-  return (
-    <div className="fixed inset-0 bg-slate-950/40 backdrop-blur-sm z-20 md:hidden" onClick={onClose}>
-      <aside className="w-72 h-full bg-white border-r border-slate-200 p-4" onClick={(e) => e.stopPropagation()}>
-        <button type="button" onClick={onClose} className="mb-4 p-2 rounded-xl hover:bg-slate-100">
-          <X className="w-5 h-5" />
-        </button>
-        <p className="text-sm font-bold text-slate-900">Navigation</p>
-        <p className="text-xs text-slate-500 mt-1">Use desktop sidebar or bottom menu on mobile.</p>
-      </aside>
-    </div>
   );
 }
