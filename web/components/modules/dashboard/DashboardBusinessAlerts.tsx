@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { useMemo } from 'react';
 import { Icon } from '@iconify/react';
 import { useAppStore } from '@/lib/state/app-store';
 import { useLocaleFormat } from '@/hooks/useLocaleFormat';
@@ -18,10 +19,24 @@ const CATEGORY_LABEL_KEYS: Record<AlertCategory, string> = {
   supplier_due: 'alerts.category_supplier_due',
 };
 
+const PRIORITY_RANK = { critical: 3, warning: 2, info: 1 } as const;
+const MAX_WIDGET_SUMMARIES = 8;
+
 export function DashboardBusinessAlerts() {
   const t = useAppStore((s) => s.t);
   const { formatNumber } = useLocaleFormat();
   const { summaries, loading } = useBusinessAlerts();
+
+  const displayed = useMemo(
+    () =>
+      [...summaries]
+        .sort(
+          (a, b) =>
+            PRIORITY_RANK[b.priority] - PRIORITY_RANK[a.priority] || b.count - a.count,
+        )
+        .slice(0, MAX_WIDGET_SUMMARIES),
+    [summaries],
+  );
 
   if (loading) return <DashboardBusinessAlertsSkeleton />;
 
@@ -37,9 +52,9 @@ export function DashboardBusinessAlerts() {
         </Link>
       </div>
 
-      <div className="flex flex-col gap-1 flex-1 overflow-y-auto min-h-0 justify-between">
-        {summaries.length ? (
-          summaries.map((item) => (
+      <div className="flex flex-col gap-1 overflow-y-auto min-h-0 justify-start">
+        {displayed.length ? (
+          displayed.map((item) => (
             <Link
               key={item.category}
               href={`/alerts?category=${item.category}`}

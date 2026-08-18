@@ -251,7 +251,7 @@ export type DashboardSummary = {
 
 export type DashboardSummaryScope = 'kpi' | 'extra' | 'full';
 
-const DASHBOARD_GET_TTL_MS = 15_000;
+const DASHBOARD_GET_TTL_MS = 60_000;
 const summaryCache = new Map<string, { data: DashboardSummary; at: number }>();
 const summaryInflight = new Map<string, Promise<DashboardSummary | null>>();
 
@@ -362,7 +362,7 @@ export type DashboardBusinessAlertsPayload = {
   items: DashboardBusinessAlertItem[];
 };
 
-const ALERTS_CACHE_TTL_MS = 15_000;
+const ALERTS_CACHE_TTL_MS = 60_000;
 let alertsCache: { data: DashboardBusinessAlertsPayload; at: number } | null = null;
 let alertsInflight: Promise<DashboardBusinessAlertsPayload | null> | null = null;
 

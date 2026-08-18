@@ -9,11 +9,9 @@ import {
   DashboardSalesTrendChartSkeleton,
   DashboardRevenueChartSkeleton,
   DashboardProjectProgressSkeleton,
+  DashboardBottomPanelsSkeleton,
 } from '@/components/skeletons/DashboardLoadingSkeleton';
-import { SalesTrendChart } from '@/components/modules/dashboard/SalesTrendChart';
-import { RevenueAnalyticsChart } from '@/components/modules/dashboard/RevenueAnalyticsChart';
 import { DashboardBusinessAlerts } from '@/components/modules/dashboard/DashboardBusinessAlerts';
-import { DashboardBottomPanels } from '@/components/modules/dashboard/DashboardBottomPanels';
 import { DashboardPerfCollector } from '@/components/modules/dashboard/DashboardPerfCollector';
 import { useLocaleFormat } from '@/hooks/useLocaleFormat';
 import { emptyDashboardShell, useDashboardReady, DashboardStateProvider } from '@/hooks/use-dashboard-api-data';
@@ -38,6 +36,21 @@ import type { TranslateFn } from '@/lib/i18n/resolve-label';
 const DashboardProjectProgress = dynamic(
   () => import('@/components/modules/dashboard/DashboardProjectProgress').then((m) => m.DashboardProjectProgress),
   { ssr: false, loading: () => <DashboardProjectProgressSkeleton /> },
+);
+
+const SalesTrendChart = dynamic(
+  () => import('@/components/modules/dashboard/SalesTrendChart').then((m) => m.SalesTrendChart),
+  { loading: () => <DashboardSalesTrendChartSkeleton /> },
+);
+
+const RevenueAnalyticsChart = dynamic(
+  () => import('@/components/modules/dashboard/RevenueAnalyticsChart').then((m) => m.RevenueAnalyticsChart),
+  { loading: () => <DashboardRevenueChartSkeleton /> },
+);
+
+const DashboardBottomPanels = dynamic(
+  () => import('@/components/modules/dashboard/DashboardBottomPanels').then((m) => m.DashboardBottomPanels),
+  { loading: () => <DashboardBottomPanelsSkeleton /> },
 );
 
 const SUMMARY_MUTATION_MODULES = new Set<string>(DASHBOARD_DATA_MUTATION_MODULES);
@@ -201,10 +214,14 @@ export function DashboardView({ serverPayload = null }: DashboardViewProps) {
     };
 
     if (serverSummary) {
-      if (typeof serverSummary.lowStock !== 'number') void loadExtra();
+      if (!peekDashboardSummary('extra')) void loadExtra();
     } else {
-      void loadKpi();
-      void loadExtra();
+      const cachedKpi = peekDashboardSummary('kpi');
+      const cachedExtra = peekDashboardSummary('extra');
+      if (cachedKpi) mergeSummary(cachedKpi);
+      if (cachedExtra) mergeSummary(cachedExtra);
+      if (!cachedKpi) void loadKpi();
+      if (!cachedExtra) void loadExtra();
     }
 
     const unsubscribe = onApiMutation((modules) => {
@@ -241,10 +258,6 @@ export function DashboardView({ serverPayload = null }: DashboardViewProps) {
   }, [t, formatMoney, demoMetrics, activeSummary]);
 
   const lowStockCount = activeSummary ? summaryLowStock(activeSummary) : (demoMetrics?.lowStock ?? 0);
-  const extraReady =
-    !isMongoDbBackend() ||
-    summaryFailed ||
-    typeof activeSummary?.lowStock === 'number';
   const kpiPending = isMongoDbBackend() && !hasKpi && !summaryFailed;
 
   return (
@@ -254,7 +267,7 @@ export function DashboardView({ serverPayload = null }: DashboardViewProps) {
         {DASHBOARD_KPI_CARDS.map((card) => {
           const data = metricValues[card.key];
           const className = `premium-card premium-shadow px-4 py-2.5 flex items-center justify-between gap-3 transition-[border-color,box-shadow] hover:border-slate-300 hover:shadow-md min-h-[84px]${card.href ? ' cursor-pointer' : ''}`;
-          const showValueSkeleton = kpiPending || (card.key === 'low-stock' && !extraReady);
+          const showValueSkeleton = kpiPending;
           const body = (
             <>
               <div className="flex flex-col justify-center gap-0.5 min-w-0 flex-1 my-auto">

@@ -130,7 +130,7 @@ export function DashboardBottomPanels({
   const activityMode = readActivityMode();
   const peekedTop = mongo ? peekDashboardTopProducts(5) : null;
   const auditQuery = { page: 1, limit: 5 };
-  const peekedAudit = mongo && isApiListCacheFresh('/audit-logs', auditQuery, 15_000)
+  const peekedAudit = mongo && isApiListCacheFresh('/audit-logs', auditQuery, 60_000)
     ? getApiListCache('/audit-logs', auditQuery)
     : null;
 
@@ -179,7 +179,7 @@ export function DashboardBottomPanels({
     const load = async () => {
       try {
         const query = { page: 1, limit: 5 };
-        const rows = isApiListCacheFresh('/audit-logs', query, 15_000)
+        const rows = isApiListCacheFresh('/audit-logs', query, 60_000)
           ? (getApiListCache('/audit-logs', query) ?? [])
           : (await fetchResourcePage('/audit-logs', query)).rows;
         if (!active) return;

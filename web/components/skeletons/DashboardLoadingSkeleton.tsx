@@ -144,8 +144,8 @@ export function DashboardBusinessAlertsSkeleton() {
   return (
     <div className="premium-card p-3 premium-shadow flex flex-col h-full min-h-0">
       <DashboardPanelHeaderSkeleton />
-      <div className="flex-1 flex flex-col gap-2.5 overflow-hidden">
-        {Array.from({ length: 6 }).map((_, index) => (
+      <div className="flex flex-col gap-1 justify-start overflow-hidden">
+        {Array.from({ length: 5 }).map((_, index) => (
           <div key={`alert-${index}`} className="flex items-center gap-3 rounded-xl px-2 py-1.5 min-h-[2rem]">
             <SkeletonBlock className="w-2.5 h-2.5 rounded-full shrink-0" />
             <SkeletonText className="h-3.5 flex-1 max-w-[220px]" />

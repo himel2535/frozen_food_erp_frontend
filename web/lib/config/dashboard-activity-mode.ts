@@ -5,7 +5,7 @@ export type DashboardActivityMode = 'a' | 'b' | 'c';
 
 /** Activity Feed LCP experiment mode (runtime via ?activityMode= or sessionStorage). */
 export function readActivityMode(): DashboardActivityMode {
-  if (typeof window === 'undefined') return 'b';
+  if (typeof window === 'undefined') return 'a';
   try {
     const fromSession = sessionStorage.getItem('dashboard:activityMode');
     if (fromSession === 'a' || fromSession === 'b' || fromSession === 'c') return fromSession;
@@ -15,5 +15,5 @@ export function readActivityMode(): DashboardActivityMode {
   } catch {
     // ignore
   }
-  return 'b';
+  return 'a';
 }

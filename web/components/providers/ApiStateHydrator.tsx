@@ -169,7 +169,6 @@ export function ApiStateHydrator() {
     let cancelled = false;
     let cancelIdle = () => {};
     const dashboard = isDashboardPath(pathname);
-    const delayMs = dashboard ? 1200 : 0;
 
     const runHydration = async () => {
       try {
@@ -215,13 +214,10 @@ export function ApiStateHydrator() {
       }
     };
 
-    const timer = window.setTimeout(() => {
-      void runHydration();
-    }, delayMs);
+    void runHydration();
 
     return () => {
       cancelled = true;
-      window.clearTimeout(timer);
       cancelIdle();
     };
   }, [authReady, authUser, setApiDataReady, pathname]);
