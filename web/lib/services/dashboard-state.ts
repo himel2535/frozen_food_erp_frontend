@@ -19,6 +19,7 @@ const EMPTY_LIST_KEYS: (keyof AppState)[] = [
   'deliveries',
   'payments',
   'purchaseRmOrders',
+  'dueEntries',
 ];
 
 /** Zero out list fields so KPI math does not read demo-seed data before API hydration. */

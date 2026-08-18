@@ -1,19 +1,12 @@
 'use client';
 
 import Link from 'next/link';
-import { useMemo } from 'react';
 import { Icon } from '@iconify/react';
 import { useAppStore } from '@/lib/state/app-store';
-import { useDashboardAppState } from '@/hooks/use-dashboard-api-data';
 import { useLocaleFormat } from '@/hooks/useLocaleFormat';
-import {
-  buildBusinessAlerts,
-  filterAlertsByRole,
-  getAlertSettings,
-  priorityDotClass,
-  summarizeAlerts,
-  type AlertCategory,
-} from '@/lib/services/business-alert-service';
+import { useBusinessAlerts } from '@/components/modules/alerts/useBusinessAlerts';
+import { DashboardBusinessAlertsSkeleton } from '@/components/skeletons/DashboardLoadingSkeleton';
+import { priorityDotClass, type AlertCategory } from '@/lib/services/business-alert-service';
 
 const CATEGORY_LABEL_KEYS: Record<AlertCategory, string> = {
   customer_due: 'alerts.category_customer_due',
@@ -26,16 +19,11 @@ const CATEGORY_LABEL_KEYS: Record<AlertCategory, string> = {
 };
 
 export function DashboardBusinessAlerts() {
-  const appState = useDashboardAppState();
   const t = useAppStore((s) => s.t);
   const { formatNumber } = useLocaleFormat();
+  const { summaries, loading } = useBusinessAlerts();
 
-  const summaries = useMemo(() => {
-    const settings = getAlertSettings(appState);
-    const role = String(appState.currentUser?.role ?? 'admin');
-    const alerts = filterAlertsByRole(buildBusinessAlerts(appState, settings), role, settings);
-    return summarizeAlerts(alerts);
-  }, [appState]);
+  if (loading) return <DashboardBusinessAlertsSkeleton />;
 
   return (
     <div className="premium-card p-3 premium-shadow flex flex-col h-full min-h-0">

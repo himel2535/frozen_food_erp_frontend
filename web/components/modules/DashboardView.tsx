@@ -7,7 +7,6 @@ import { Icon } from '@iconify/react';
 import {
   DashboardSalesTrendChartSkeleton,
   DashboardRevenueChartSkeleton,
-  DashboardBusinessAlertsSkeleton,
   DashboardProjectProgressSkeleton,
 } from '@/components/skeletons/DashboardLoadingSkeleton';
 import { SalesTrendChart } from '@/components/modules/dashboard/SalesTrendChart';
@@ -256,7 +255,7 @@ export function DashboardView({ serverPayload = null }: DashboardViewProps) {
       <section className="grid grid-cols-1 lg:grid-cols-4 gap-1 min-h-0 items-stretch" style={{ flex: '2 1 0%' }}>
         {ready ? <SalesTrendChart /> : <DashboardSalesTrendChartSkeleton />}
         {ready ? <RevenueAnalyticsChart /> : <DashboardRevenueChartSkeleton />}
-        {ready ? <DashboardBusinessAlerts /> : <DashboardBusinessAlertsSkeleton />}
+        <DashboardBusinessAlerts />
       </section>
 
       <DashboardBottomPanels />

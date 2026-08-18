@@ -9,9 +9,10 @@ import type { AppState } from '@/lib/state/types';
 import { useLocaleFormat } from '@/hooks/useLocaleFormat';
 import { listSystemAuditLogRecords } from '@/lib/services/audit-log-service';
 import { formatRelativeTime, getTopProducts, type TopProductRow } from '@/lib/services/dashboard-service';
-import { fetchDashboardTopProducts } from '@/lib/services/api-resource-service';
+import { fetchDashboardTopProducts, fetchResourcePage } from '@/lib/services/api-resource-service';
 import { isMongoDbBackend } from '@/lib/config/data-source';
 import { onApiMutation } from '@/lib/services/api-sync-events';
+import type { SystemAuditLogRecord } from '@/lib/state/types';
 import { InventoryItemThumb } from '@/components/shared/InventoryItemThumb';
 import {
   DashboardActivityFeedSkeleton,
@@ -99,6 +100,20 @@ function TopProductsPanel({
   );
 }
 
+function mapAuditRow(row: Record<string, unknown>): SystemAuditLogRecord {
+  return {
+    id: String(row.id ?? row._id ?? row.legacyId ?? ''),
+    timestamp: String(row.timestamp ?? row.createdAt ?? ''),
+    actorId: String(row.actorId ?? ''),
+    actorName: String(row.actorName ?? row.user ?? 'System'),
+    action: String(row.action ?? ''),
+    module: String(row.module ?? ''),
+    entityType: row.entityType ? String(row.entityType) : undefined,
+    entityId: row.entityId ? String(row.entityId) : undefined,
+    description: String(row.description ?? row.desc ?? ''),
+  };
+}
+
 export function DashboardBottomPanels() {
   const appState = useDashboardAppState();
   const listsReady = useDashboardReady();
@@ -108,6 +123,8 @@ export function DashboardBottomPanels() {
 
   const [apiTopProducts, setApiTopProducts] = useState<TopProductRow[] | null>(null);
   const [topProductsLoading, setTopProductsLoading] = useState(mongo);
+  const [apiActivity, setApiActivity] = useState<SystemAuditLogRecord[] | null>(null);
+  const [activityLoading, setActivityLoading] = useState(mongo);
 
   useEffect(() => {
     if (!mongo) return;
@@ -134,6 +151,34 @@ export function DashboardBottomPanels() {
     };
   }, [mongo]);
 
+  useEffect(() => {
+    if (!mongo) return;
+    let active = true;
+
+    const load = async () => {
+      try {
+        const { rows } = await fetchResourcePage('/audit-logs', { page: 1, limit: 5 });
+        if (!active) return;
+        const mapped = rows.map(mapAuditRow).filter((row) => row.id || row.description);
+        mapped.sort((a, b) => b.timestamp.localeCompare(a.timestamp));
+        setApiActivity(mapped.slice(0, 5));
+      } catch {
+        if (active) setApiActivity([]);
+      } finally {
+        if (active) setActivityLoading(false);
+      }
+    };
+
+    void load();
+    const unsubscribe = onApiMutation((modules) => {
+      if (modules?.some((mod) => mod === 'auditLogs')) void load();
+    });
+    return () => {
+      active = false;
+      unsubscribe();
+    };
+  }, [mongo]);
+
   const localTopProducts = useMemo(
     () => (mongo ? [] : getTopProducts(appState, 5)),
     [appState, mongo],
@@ -145,10 +190,11 @@ export function DashboardBottomPanels() {
     return rows.slice(0, 5);
   }, [appState.invoices]);
 
-  const activityItems = useMemo(
-    () => listSystemAuditLogRecords(appState).slice(0, 5),
-    [appState],
+  const localActivity = useMemo(
+    () => (mongo ? [] : listSystemAuditLogRecords(appState).slice(0, 5)),
+    [appState, mongo],
   );
+  const activityItems = mongo ? (apiActivity ?? []) : localActivity;
 
   return (
     <section className="grid grid-cols-1 lg:grid-cols-4 gap-1 items-stretch min-h-0" style={{ flex: '1.5 1 0%' }}>
@@ -201,7 +247,7 @@ export function DashboardBottomPanels() {
       </div>
       )}
 
-      {!listsReady ? (
+      {activityLoading ? (
         <DashboardActivityFeedSkeleton />
       ) : (
       <div className="premium-card p-2.5 premium-shadow flex flex-col">

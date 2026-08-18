@@ -47,19 +47,30 @@ function hydrateAppState(state: Partial<AppState> | null): AppState {
   return nextState;
 }
 
+function stripMongoAlertSeed(state: AppState): AppState {
+  state.dueEntries = [];
+  state.purchases = [];
+  state.productionOrders = [];
+  state.rawMaterials = [];
+  state.semiFinishedProducts = [];
+  state.finishedGoods = [];
+  state.inventory = [];
+  state.systemAuditLogsById = {};
+  const crm = state.crmData as { leadsById?: Record<string, unknown> } | undefined;
+  if (crm) crm.leadsById = {};
+  return state;
+}
+
 function loadInitialState(): AppState {
   if (typeof window === 'undefined') return hydrateAppState(null);
   try {
     const raw = localStorage.getItem(LOCAL_STORAGE_KEY);
     const parsed = raw ? JSON.parse(raw) : null;
     if (isMongoDbBackend()) {
-      const base = hydrateAppState(null);
+      const base = stripMongoAlertSeed(hydrateAppState(null));
       if (parsed?.lang) base.lang = parsed.lang;
       if (typeof parsed?.sidebarCollapsed === 'boolean') {
         base.sidebarCollapsed = parsed.sidebarCollapsed;
-      }
-      if (parsed?.systemAuditLogsById && typeof parsed.systemAuditLogsById === 'object') {
-        base.systemAuditLogsById = parsed.systemAuditLogsById;
       }
       return base;
     }
@@ -125,7 +136,6 @@ function flushPersistedAppState(
         JSON.stringify({
           lang: appState.lang,
           sidebarCollapsed: appState.sidebarCollapsed,
-          systemAuditLogsById: appState.systemAuditLogsById ?? {},
         }),
       );
     } catch (error) {

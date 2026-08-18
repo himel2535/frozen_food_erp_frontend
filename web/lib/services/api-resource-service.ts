@@ -226,3 +226,37 @@ export async function fetchDashboardTopProducts(limit = 5): Promise<DashboardTop
     return null;
   }
 }
+
+export type DashboardBusinessAlertItem = {
+  id: string;
+  category: string;
+  priority: 'critical' | 'warning' | 'info';
+  title: string;
+  subtitle?: string;
+  lines: { label: string; value: string }[];
+  href: string;
+  actions: { label: string; href: string; variant?: 'primary' | 'outline' }[];
+  sortKey: number;
+  overdueDays?: number;
+};
+
+export type DashboardBusinessAlertSummary = {
+  category: string;
+  count: number;
+  priority: 'critical' | 'warning' | 'info';
+};
+
+export type DashboardBusinessAlertsPayload = {
+  summaries: DashboardBusinessAlertSummary[];
+  items: DashboardBusinessAlertItem[];
+};
+
+export async function fetchDashboardBusinessAlerts(): Promise<DashboardBusinessAlertsPayload | null> {
+  try {
+    const { data } = await apiRequest<DashboardBusinessAlertsPayload>('/dashboard/business-alerts');
+    if (!data || !Array.isArray(data.summaries) || !Array.isArray(data.items)) return null;
+    return data;
+  } catch {
+    return null;
+  }
+}

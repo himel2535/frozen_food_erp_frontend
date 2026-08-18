@@ -32,7 +32,7 @@ export function BusinessAlertsPage() {
   const t = useAppStore((s) => s.t);
   const searchParams = useSearchParams();
   const activeCategory = (searchParams.get('category') ?? 'all') as AlertCategory | 'all';
-  const { alerts, summaries, visibleCategories } = useBusinessAlerts();
+  const { alerts, summaries, visibleCategories, loading } = useBusinessAlerts();
 
   const displayed =
     activeCategory === 'all' ? alerts : alerts.filter((a) => a.category === activeCategory);
@@ -83,7 +83,11 @@ export function BusinessAlertsPage() {
       </div>
 
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-2">
-        {displayed.length ? (
+        {loading ? (
+          <div className="premium-card premium-shadow p-8 text-center xl:col-span-2 text-xs font-medium text-slate-400">
+            {t('common.loading')}
+          </div>
+        ) : displayed.length ? (
           displayed.map((alert) => <BusinessAlertCard key={alert.id} alert={alert} />)
         ) : (
           <div className="premium-card premium-shadow p-8 text-center xl:col-span-2">
