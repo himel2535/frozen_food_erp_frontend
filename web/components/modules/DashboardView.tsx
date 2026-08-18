@@ -17,7 +17,6 @@ import { useLocaleFormat } from '@/hooks/useLocaleFormat';
 import { emptyDashboardShell, useDashboardReady, DashboardStateProvider } from '@/hooks/use-dashboard-api-data';
 import { useAppStore } from '@/lib/state/app-store';
 import { applyApiDataToAppState } from '@/lib/services/api-app-state-mapper';
-import { getDashboardMetrics } from '@/lib/services/dashboard-metrics';
 import { buildDashboardMetricValues, summaryLowStock } from '@/lib/services/dashboard-summary-metrics';
 import {
   fetchDashboardSummary,
@@ -29,14 +28,79 @@ import { onApiMutation } from '@/lib/services/api-sync-events';
 import type { DashboardServerPayload } from '@/lib/server/dashboard-snapshot';
 import { SkeletonText } from '@/components/skeletons/SkeletonText';
 import { isMongoDbBackend } from '@/lib/config/data-source';
+import { DASHBOARD_DATA_MUTATION_MODULES } from '@/lib/config/dashboard-mutation-modules';
 import { DASHBOARD_KPI_CARDS } from '@/lib/ui/dashboard-kpi';
+import type { DashboardMetrics } from '@/lib/services/dashboard-metrics';
+import type { TranslateFn } from '@/lib/i18n/resolve-label';
 
 const DashboardProjectProgress = dynamic(
   () => import('@/components/modules/dashboard/DashboardProjectProgress').then((m) => m.DashboardProjectProgress),
   { ssr: false, loading: () => <DashboardProjectProgressSkeleton /> },
 );
 
-const SUMMARY_MUTATION_MODULES = new Set(['invoices', 'salesOrders', 'payments']);
+const SUMMARY_MUTATION_MODULES = new Set<string>(DASHBOARD_DATA_MUTATION_MODULES);
+
+type FormatMoney = (value: number, opts?: { decimals?: number }) => string;
+
+function localMetricValues(
+  metrics: DashboardMetrics,
+  t: TranslateFn,
+  formatMoney: FormatMoney,
+): Record<string, { value: string; sub?: string }> {
+  return {
+    'production-summary': {
+      value: t('dashboard.metric_completed', { n: metrics.productionSummary.completed }),
+      sub: t('dashboard.metric_pcs_produced', { n: metrics.productionSummary.qty }),
+    },
+    'purchase-summary': {
+      value: t('dashboard.metric_orders_lower', { n: metrics.purchaseSummary.count }),
+      sub: t('dashboard.metric_total_suffix', { amount: formatMoney(metrics.purchaseSummary.total) }),
+    },
+    'sales-summary': {
+      value: t('dashboard.metric_orders_lower', { n: metrics.salesSummary.count }),
+      sub: t('dashboard.metric_total_suffix', { amount: formatMoney(metrics.salesSummary.total) }),
+    },
+    'rm-stock': { value: formatMoney(metrics.rmStockValue), sub: t('dashboard.raw_materials') },
+    'sf-stock': { value: formatMoney(metrics.sfStockValue), sub: t('dashboard.metric_parts_wip') },
+    'fg-stock': { value: formatMoney(metrics.fgStockValue), sub: t('dashboard.ready_dispatch') },
+    'low-stock': {
+      value: t('dashboard.metric_items', { n: metrics.lowStock }),
+      sub: metrics.lowStock > 0 ? t('dashboard.requires_attention') : t('dashboard.stock_levels_ok'),
+    },
+    'pending-production': {
+      value: t('dashboard.metric_orders', { n: metrics.pendingProduction }),
+      sub: t('dashboard.metric_pcs_planned', { n: metrics.pendingProductionQty }),
+    },
+    'pending-purchase': {
+      value: t('dashboard.metric_orders', { n: metrics.pendingPurchase }),
+      sub: t('dashboard.raw_materials'),
+    },
+    'pending-sales': {
+      value: t('dashboard.metric_orders', { n: metrics.pendingSales }),
+      sub: t('dashboard.awaiting_dispatch'),
+    },
+    'customer-due': {
+      value: formatMoney(metrics.customerDue),
+      sub: t('dashboard.metric_across_customers', { n: metrics.customerDueCount }),
+    },
+    'supplier-due': {
+      value: formatMoney(metrics.supplierDue),
+      sub: t('dashboard.metric_across_suppliers', { n: metrics.supplierDueCount }),
+    },
+    'total-inventory': {
+      value: formatMoney(metrics.totalInventoryValue),
+      sub: t('dashboard.metric_all_stock'),
+    },
+    'open-leads': {
+      value: t('dashboard.metric_leads', { n: metrics.openLeadsCount }),
+      sub: t('dashboard.metric_pipeline_suffix', { amount: formatMoney(metrics.openLeadsValue) }),
+    },
+    'month-revenue': {
+      value: formatMoney(metrics.monthRevenue),
+      sub: t('dashboard.metric_month_orders', { n: metrics.monthSalesCount }),
+    },
+  };
+}
 
 type DashboardViewProps = {
   serverPayload?: DashboardServerPayload | null;
@@ -57,6 +121,7 @@ export function DashboardView({ serverPayload = null }: DashboardViewProps) {
     return { ...(kpi ?? {}), ...(extra ?? {}) } as DashboardSummary;
   });
   const [summaryFailed, setSummaryFailed] = useState(false);
+  const [demoMetrics, setDemoMetrics] = useState<DashboardMetrics | null>(null);
 
   const dashboardState = useMemo(() => {
     if (ready) return baseState;
@@ -70,6 +135,18 @@ export function DashboardView({ serverPayload = null }: DashboardViewProps) {
 
   useEffect(() => {
     document.body.classList.add('dashboard-page');
+    if (typeof performance !== 'undefined') {
+      performance.mark('dashboard-view-mounted');
+      try {
+        performance.measure(
+          'dashboard-view-mount',
+          'dashboard-view-chunk-evaluated',
+          'dashboard-view-mounted',
+        );
+      } catch {
+        /* mark missing on first paint without dynamic wrapper */
+      }
+    }
     return () => document.body.classList.remove('dashboard-page');
   }, []);
 
@@ -139,10 +216,16 @@ export function DashboardView({ serverPayload = null }: DashboardViewProps) {
     };
   }, [serverSummary]);
 
-  const metrics = useMemo(
-    () => getDashboardMetrics(dashboardState),
-    [dashboardState],
-  );
+  useEffect(() => {
+    if (isMongoDbBackend()) return;
+    let cancelled = false;
+    void import('@/lib/services/dashboard-metrics').then(({ getDashboardMetrics }) => {
+      if (!cancelled) setDemoMetrics(getDashboardMetrics(dashboardState));
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [dashboardState]);
 
   const activeSummary = liveSummary || serverSummary;
 
@@ -150,62 +233,11 @@ export function DashboardView({ serverPayload = null }: DashboardViewProps) {
     if (activeSummary) {
       return buildDashboardMetricValues(activeSummary, t, formatMoney);
     }
-    return {
-      'production-summary': {
-        value: t('dashboard.metric_completed', { n: metrics.productionSummary.completed }),
-        sub: t('dashboard.metric_pcs_produced', { n: metrics.productionSummary.qty }),
-      },
-      'purchase-summary': {
-        value: t('dashboard.metric_orders_lower', { n: metrics.purchaseSummary.count }),
-        sub: t('dashboard.metric_total_suffix', { amount: formatMoney(metrics.purchaseSummary.total) }),
-      },
-      'sales-summary': {
-        value: t('dashboard.metric_orders_lower', { n: metrics.salesSummary.count }),
-        sub: t('dashboard.metric_total_suffix', { amount: formatMoney(metrics.salesSummary.total) }),
-      },
-      'rm-stock': { value: formatMoney(metrics.rmStockValue), sub: t('dashboard.raw_materials') },
-      'sf-stock': { value: formatMoney(metrics.sfStockValue), sub: t('dashboard.metric_parts_wip') },
-      'fg-stock': { value: formatMoney(metrics.fgStockValue), sub: t('dashboard.ready_dispatch') },
-      'low-stock': {
-        value: t('dashboard.metric_items', { n: metrics.lowStock }),
-        sub: metrics.lowStock > 0 ? t('dashboard.requires_attention') : t('dashboard.stock_levels_ok'),
-      },
-      'pending-production': {
-        value: t('dashboard.metric_orders', { n: metrics.pendingProduction }),
-        sub: t('dashboard.metric_pcs_planned', { n: metrics.pendingProductionQty }),
-      },
-      'pending-purchase': {
-        value: t('dashboard.metric_orders', { n: metrics.pendingPurchase }),
-        sub: t('dashboard.raw_materials'),
-      },
-      'pending-sales': {
-        value: t('dashboard.metric_orders', { n: metrics.pendingSales }),
-        sub: t('dashboard.awaiting_dispatch'),
-      },
-      'customer-due': {
-        value: formatMoney(metrics.customerDue),
-        sub: t('dashboard.metric_across_customers', { n: metrics.customerDueCount }),
-      },
-      'supplier-due': {
-        value: formatMoney(metrics.supplierDue),
-        sub: t('dashboard.metric_across_suppliers', { n: metrics.supplierDueCount }),
-      },
-      'total-inventory': {
-        value: formatMoney(metrics.totalInventoryValue),
-        sub: t('dashboard.metric_all_stock'),
-      },
-      'open-leads': {
-        value: t('dashboard.metric_leads', { n: metrics.openLeadsCount }),
-        sub: t('dashboard.metric_pipeline_suffix', { amount: formatMoney(metrics.openLeadsValue) }),
-      },
-      'month-revenue': {
-        value: formatMoney(metrics.monthRevenue),
-        sub: t('dashboard.metric_month_orders', { n: metrics.monthSalesCount }),
-      },
-    };
-  }, [t, formatMoney, metrics, activeSummary]);
+    if (demoMetrics) return localMetricValues(demoMetrics, t, formatMoney);
+    return {};
+  }, [t, formatMoney, demoMetrics, activeSummary]);
 
-  const lowStockCount = activeSummary ? summaryLowStock(activeSummary) : metrics.lowStock;
+  const lowStockCount = activeSummary ? summaryLowStock(activeSummary) : (demoMetrics?.lowStock ?? 0);
   const extraReady =
     !isMongoDbBackend() ||
     summaryFailed ||
@@ -267,7 +299,7 @@ export function DashboardView({ serverPayload = null }: DashboardViewProps) {
         <DashboardBusinessAlerts />
       </section>
 
-      <DashboardBottomPanels />
+      <DashboardBottomPanels criticalPaintReady={!kpiPending} />
 
       <DashboardProjectProgress />
       </div>

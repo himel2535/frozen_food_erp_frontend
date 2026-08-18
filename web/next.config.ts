@@ -99,6 +99,7 @@ const nextConfig: NextConfig = {
   compress: true,
   poweredByHeader: false,
   serverExternalPackages: ['firebase-admin'],
+  staticPageGenerationTimeout: 180,
   experimental: {
     staleTimes: {
       dynamic: 30,

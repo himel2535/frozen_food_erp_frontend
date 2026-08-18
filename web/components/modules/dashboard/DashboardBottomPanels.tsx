@@ -10,6 +10,7 @@ import { useLocaleFormat } from '@/hooks/useLocaleFormat';
 import { listSystemAuditLogRecords } from '@/lib/services/audit-log-service';
 import { formatRelativeTime, getTopProducts, type TopProductRow } from '@/lib/services/dashboard-service';
 import { fetchDashboardTopProducts, fetchResourcePage, invalidateDashboardTopProductsCache, peekDashboardTopProducts } from '@/lib/services/api-resource-service';
+import { DASHBOARD_DATA_MUTATION_MODULES, DASHBOARD_TOP_PRODUCTS_MUTATION_MODULES } from '@/lib/config/dashboard-mutation-modules';
 import { isMongoDbBackend } from '@/lib/config/data-source';
 import { onApiMutation } from '@/lib/services/api-sync-events';
 import type { SystemAuditLogRecord } from '@/lib/state/types';
@@ -115,7 +116,11 @@ function mapAuditRow(row: Record<string, unknown>): SystemAuditLogRecord {
   };
 }
 
-export function DashboardBottomPanels() {
+export function DashboardBottomPanels({
+  criticalPaintReady = true,
+}: {
+  criticalPaintReady?: boolean;
+}) {
   const appState = useDashboardAppState();
   const listsReady = useDashboardReady();
   const t = useAppStore((s) => s.t);
@@ -136,6 +141,7 @@ export function DashboardBottomPanels() {
     return peekedAudit.map(mapAuditRow).filter((row) => row.id || row.description);
   });
   const [activityLoading, setActivityLoading] = useState(mongo && !peekedAudit);
+  const [activityPaintReady, setActivityPaintReady] = useState(false);
 
   useEffect(() => {
     if (!mongo) return;
@@ -150,7 +156,9 @@ export function DashboardBottomPanels() {
 
     void load();
     const unsubscribe = onApiMutation((modules) => {
-      if (modules?.some((mod) => mod === 'salesOrders' || mod === 'invoices' || mod === 'products')) {
+      if (modules?.some((mod) =>
+        (DASHBOARD_TOP_PRODUCTS_MUTATION_MODULES as readonly string[]).includes(mod),
+      )) {
         invalidateDashboardTopProductsCache();
         void load();
       }
@@ -184,7 +192,10 @@ export function DashboardBottomPanels() {
 
     void load();
     const unsubscribe = onApiMutation((modules) => {
-      if (modules?.some((mod) => mod === 'auditLogs')) {
+      const hit = modules?.some(
+        (mod) => mod === 'auditLogs' || (DASHBOARD_DATA_MUTATION_MODULES as readonly string[]).includes(mod),
+      );
+      if (hit) {
         invalidateApiListCache('/audit-logs');
         void load();
       }
@@ -194,6 +205,26 @@ export function DashboardBottomPanels() {
       unsubscribe();
     };
   }, [mongo]);
+
+  useEffect(() => {
+    if (!criticalPaintReady) return;
+    let cancelled = false;
+    const reveal = () => {
+      if (!cancelled) setActivityPaintReady(true);
+    };
+    if (typeof requestIdleCallback === 'function') {
+      const idleId = requestIdleCallback(reveal, { timeout: 800 });
+      return () => {
+        cancelled = true;
+        cancelIdleCallback(idleId);
+      };
+    }
+    const timer = window.setTimeout(reveal, 0);
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timer);
+    };
+  }, [criticalPaintReady]);
 
   const localTopProducts = useMemo(
     () => (mongo ? [] : getTopProducts(appState, 5)),
@@ -263,7 +294,7 @@ export function DashboardBottomPanels() {
       </div>
       )}
 
-      {activityLoading ? (
+      {activityLoading || !criticalPaintReady || !activityPaintReady ? (
         <DashboardActivityFeedSkeleton />
       ) : (
       <div className="premium-card p-2.5 premium-shadow flex flex-col">

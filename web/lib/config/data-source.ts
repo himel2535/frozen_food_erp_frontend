@@ -84,6 +84,20 @@ export const API_BOOT_MODULES: readonly ApiModule[] = [
   'warehouses',
 ] as const;
 
+/** Dashboard charts + recent invoices: sales trend, revenue, customer names. */
+export const DASHBOARD_CRITICAL_BOOT_MODULES: readonly ApiModule[] = [
+  'customers',
+  'salesOrders',
+  'invoices',
+] as const;
+
+const DASHBOARD_CRITICAL_BOOT_SET = new Set<string>(DASHBOARD_CRITICAL_BOOT_MODULES);
+
+/** Remaining boot lists — not needed for dashboard first paint. */
+export const DASHBOARD_DEFERRED_BOOT_MODULES: readonly ApiModule[] = API_BOOT_MODULES.filter(
+  (mod) => !DASHBOARD_CRITICAL_BOOT_SET.has(mod),
+);
+
 const BOOT_MODULE_SET = new Set<string>(API_BOOT_MODULES);
 
 export function getApiBackgroundModules(): ApiModule[] {

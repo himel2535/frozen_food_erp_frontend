@@ -12,6 +12,7 @@ import {
   type AlertSummary,
   type BusinessAlert,
 } from '@/lib/services/business-alert-service';
+import { DASHBOARD_DATA_MUTATION_MODULES } from '@/lib/config/dashboard-mutation-modules';
 import { isMongoDbBackend, type ApiModule } from '@/lib/config/data-source';
 import {
   fetchDashboardBusinessAlerts,
@@ -20,19 +21,7 @@ import {
 } from '@/lib/services/api-resource-service';
 import { onApiMutation } from '@/lib/services/api-sync-events';
 
-const ALERT_MUTATION_MODULES = new Set<string>([
-  'leads',
-  'customers',
-  'products',
-  'rawMaterials',
-  'semiFinishedProducts',
-  'finishedGoods',
-  'purchaseOrders',
-  'productionOrders',
-  'invoices',
-  'dues',
-  'payments',
-]);
+const ALERT_MUTATION_MODULES = new Set<string>(DASHBOARD_DATA_MUTATION_MODULES);
 
 function emptyResult(role: string, settings: ReturnType<typeof getAlertSettings>) {
   return {

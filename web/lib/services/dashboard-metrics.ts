@@ -64,3 +64,5 @@ export function getDashboardMetrics(appState: AppState) {
     openLeadsValue: openLeads.reduce((s: number, l) => s + Number((l as Record<string, unknown>).expectedValue || 0), 0),
   };
 }
+
+export type DashboardMetrics = ReturnType<typeof getDashboardMetrics>;

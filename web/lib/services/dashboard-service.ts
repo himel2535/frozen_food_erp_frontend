@@ -1,5 +1,4 @@
 import type { AppState } from '@/lib/state/types';
-import { listInventory } from '@/lib/services/inventory-service';
 
 export type SalesTrendRange = 'day' | 'week' | 'month' | 'quarter' | 'year';
 
@@ -325,8 +324,9 @@ function catalogLookup(state: AppState) {
     if (!normalized || byKey.has(normalized)) return;
     byKey.set(normalized, entry);
   };
+  const inventory = Array.isArray(state.inventory) ? state.inventory : [];
   const catalogRows = [
-    ...listInventory(state, { excludeRaw: true }),
+    ...inventory.filter((row) => !String(row.productType ?? '').toLowerCase().includes('raw')),
     ...(Array.isArray(state.finishedGoods) ? state.finishedGoods : []),
   ];
   catalogRows.forEach((product) => {

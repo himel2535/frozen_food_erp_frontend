@@ -6,6 +6,8 @@ import { useAppStore } from '@/lib/state/app-store';
 import {
   API_BOOT_MODULES,
   API_RESOURCE_PATHS,
+  DASHBOARD_CRITICAL_BOOT_MODULES,
+  DASHBOARD_DEFERRED_BOOT_MODULES,
   isMongoDbBackend,
   type ApiModule,
 } from '@/lib/config/data-source';
@@ -18,7 +20,7 @@ import { isDashboardPath } from '@/lib/ui/dashboard-kpi';
 
 const USE_API = isMongoDbBackend();
 
-async function fetchModulesPageSafe(mods: ApiModule[]) {
+async function fetchModulesPageSafe(mods: readonly ApiModule[]) {
   const results = await Promise.allSettled(
     mods.map(async (mod) => {
       const path = API_RESOURCE_PATHS[mod];
@@ -43,6 +45,15 @@ function mergeApiSnapshot(partial: Partial<Record<ApiModule, Record<string, unkn
   replaceAppState(applyApiDataToAppState(appState, partial));
 }
 
+function scheduleIdle(fn: () => void): () => void {
+  if (typeof requestIdleCallback === 'function') {
+    const id = requestIdleCallback(fn, { timeout: 2000 });
+    return () => cancelIdleCallback(id);
+  }
+  const timer = window.setTimeout(fn, 0);
+  return () => window.clearTimeout(timer);
+}
+
 /** Seeds Zustand with first-page API data — no full-list background sweep. */
 export function ApiStateHydrator() {
   const pathname = usePathname();
@@ -55,11 +66,29 @@ export function ApiStateHydrator() {
     if (!USE_API || !authReady || !authUser) return;
 
     let cancelled = false;
+    let cancelIdle = () => {};
     const delayMs = isDashboardPath(pathname) ? 1200 : 0;
+    const dashboard = isDashboardPath(pathname);
 
     const runBoot = async () => {
       try {
-        const boot = await fetchModulesPageSafe([...API_BOOT_MODULES]);
+        if (dashboard) {
+          const critical = await fetchModulesPageSafe(DASHBOARD_CRITICAL_BOOT_MODULES);
+          if (cancelled) return;
+          mergeApiSnapshot(critical);
+          setApiDataReady(true);
+          bootDoneRef.current = true;
+          cancelIdle = scheduleIdle(() => {
+            if (cancelled) return;
+            void fetchModulesPageSafe(DASHBOARD_DEFERRED_BOOT_MODULES).then((partial) => {
+              if (cancelled) return;
+              mergeApiSnapshot(partial);
+            });
+          });
+          return;
+        }
+
+        const boot = await fetchModulesPageSafe(API_BOOT_MODULES);
         if (cancelled) return;
         mergeApiSnapshot(boot);
         setApiDataReady(true);
@@ -79,6 +108,7 @@ export function ApiStateHydrator() {
     return () => {
       cancelled = true;
       window.clearTimeout(timer);
+      cancelIdle();
     };
   }, [authReady, authUser, setApiDataReady, pathname]);
 
