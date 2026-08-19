@@ -6,42 +6,22 @@ export type AuthSession = {
   authUser: AuthUserRecord;
 };
 
-const AUTH_TOKEN_KEY = 'hookerp_jwt_token';
+
+
 const AUTH_PROFILE_CACHE_KEY = 'hookerp_auth_profile_cache';
+const AUTH_PROFILE_TIME_KEY = 'hookerp_auth_profile_time';
+const PROFILE_CACHE_TTL_MS = 5 * 60 * 1000;
 
-export function getJwtToken(): string | null {
-  if (typeof window === 'undefined') return null;
-  try {
-    return sessionStorage.getItem(AUTH_TOKEN_KEY);
-  } catch {
-    return null;
-  }
-}
-
-function writeJwtToken(token: string) {
-  if (typeof window === 'undefined') return;
-  try {
-    sessionStorage.setItem(AUTH_TOKEN_KEY, token);
-  } catch {
-    // ignore quota / private mode
-  }
-}
-
-function clearJwtToken() {
-  if (typeof window === 'undefined') return;
-  try {
-    sessionStorage.removeItem(AUTH_TOKEN_KEY);
-  } catch {
-    // ignore
-  }
-}
-
-function readCachedAuthProfile(): AuthUserRecord | null {
+function readCachedAuthProfile(): { profile: AuthUserRecord; isFresh: boolean } | null {
   if (typeof window === 'undefined') return null;
   try {
     const raw = sessionStorage.getItem(AUTH_PROFILE_CACHE_KEY);
     if (!raw) return null;
-    return JSON.parse(raw) as AuthUserRecord;
+    const profile = JSON.parse(raw) as AuthUserRecord;
+    const timeRaw = sessionStorage.getItem(AUTH_PROFILE_TIME_KEY);
+    const fetchedAt = timeRaw ? parseInt(timeRaw, 10) : 0;
+    const isFresh = Date.now() - fetchedAt < PROFILE_CACHE_TTL_MS;
+    return { profile, isFresh };
   } catch {
     return null;
   }
@@ -51,6 +31,7 @@ function writeCachedAuthProfile(authUser: AuthUserRecord) {
   if (typeof window === 'undefined') return;
   try {
     sessionStorage.setItem(AUTH_PROFILE_CACHE_KEY, JSON.stringify(authUser));
+    sessionStorage.setItem(AUTH_PROFILE_TIME_KEY, String(Date.now()));
   } catch {}
 }
 
@@ -58,6 +39,7 @@ function clearCachedAuthProfile() {
   if (typeof window === 'undefined') return;
   try {
     sessionStorage.removeItem(AUTH_PROFILE_CACHE_KEY);
+    sessionStorage.removeItem(AUTH_PROFILE_TIME_KEY);
   } catch {}
 }
 
@@ -82,7 +64,6 @@ export async function signIn(email: string, password: string): Promise<AuthSessi
   }
 
   const data = await res.json();
-  const token = data.token;
   const user = data.user;
 
   const authUser = normalizeAuthUser(user.uid, {
@@ -95,15 +76,11 @@ export async function signIn(email: string, password: string): Promise<AuthSessi
   }
 
   writeCachedAuthProfile(authUser);
-  if (typeof token === 'string' && token) {
-    writeJwtToken(token);
-  }
 
-  return { token, authUser };
+  return { token: 'cookie-auth', authUser };
 }
 
 export async function signOut(): Promise<void> {
-  clearJwtToken();
   clearCachedAuthProfile();
   
   try {
@@ -123,7 +100,6 @@ export async function loadAuthProfile(): Promise<AuthUserRecord | null> {
     });
     if (!res.ok) {
       if (res.status === 401) {
-        clearJwtToken();
         clearCachedAuthProfile();
       }
       return null;
@@ -144,11 +120,14 @@ export function onAuthSession(
 ): () => void {
   // We use HttpOnly cookies, so we can't check the token directly.
   // Instead, we rely on the cached profile or load from the server.
-  const cached = readCachedAuthProfile();
+  const cachedData = readCachedAuthProfile();
   
-  // We can pass a dummy token string because the real token is in the cookie
-  if (cached && cached.status !== 'disabled') {
-    callback({ token: 'cookie-auth', authUser: cached });
+  if (cachedData?.profile && cachedData.profile.status !== 'disabled') {
+    callback({ token: 'cookie-auth', authUser: cachedData.profile });
+    // If cached profile is fresh (< 5 mins), avoid immediate duplicate /auth/me network call
+    if (cachedData.isFresh) {
+      return () => {};
+    }
   }
 
   void (async () => {
@@ -161,7 +140,6 @@ export function onAuthSession(
     }
   })();
 
-  // No real-time listener for JWT, so we just return a no-op un-subscriber
   return () => {};
 }
 

@@ -1,5 +1,4 @@
 import { io, type Socket } from 'socket.io-client';
-import { getJwtToken } from '@/lib/services/auth-service';
 
 type SocketGlobals = {
   __toysFactoryErpSocket?: Socket | null;
@@ -23,9 +22,7 @@ export function getSocketUrl(): string {
   return api.replace(/\/api\/v1$/, '') || 'http://localhost:5000';
 }
 
-function applyAuth(socket: Socket) {
-  socket.auth = { token: getJwtToken() ?? '' };
-}
+
 
 function attachLifecycleLogs(socket: Socket) {
   if (g.__toysFactoryErpSocketLogsAttached) return;
@@ -40,8 +37,7 @@ function attachLifecycleLogs(socket: Socket) {
     console.log('[socket] reconnect', attempt);
   });
   socket.io.on('reconnect_attempt', () => {
-    const current = g.__toysFactoryErpSocket;
-    if (current) applyAuth(current);
+    // Reconnect will automatically send the HttpOnly cookie
   });
 }
 
@@ -51,7 +47,6 @@ export function acquireSocket(): Socket {
   let instance = g.__toysFactoryErpSocket ?? null;
   if (!instance) {
     instance = io(getSocketUrl(), {
-      auth: { token: getJwtToken() ?? '' },
       withCredentials: true,
       transports: ['websocket', 'polling'],
       autoConnect: true,
@@ -60,7 +55,6 @@ export function acquireSocket(): Socket {
     g.__toysFactoryErpSocketLogsAttached = false;
     attachLifecycleLogs(instance);
   } else {
-    applyAuth(instance);
     attachLifecycleLogs(instance);
     if (!instance.connected) instance.connect();
   }

@@ -157,7 +157,9 @@ export function DashboardBottomPanels({
       setTopProductsLoading(false);
     };
 
-    void load();
+    const timer = window.setTimeout(() => {
+      if (active) void load();
+    }, 1500);
     const unsubscribe = onApiMutation((modules) => {
       if (modules?.some((mod) =>
         (DASHBOARD_TOP_PRODUCTS_MUTATION_MODULES as readonly string[]).includes(mod),
@@ -168,6 +170,7 @@ export function DashboardBottomPanels({
     });
     return () => {
       active = false;
+      window.clearTimeout(timer);
       unsubscribe();
     };
   }, [mongo]);

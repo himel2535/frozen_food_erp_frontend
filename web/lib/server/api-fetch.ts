@@ -46,7 +46,6 @@ export async function serverApiRequest<T>(
   const headers: HeadersInit = {};
   if (token) {
     headers.Cookie = `token=${token}`;
-    headers.Authorization = `Bearer ${token}`;
   }
 
   const timeoutMs = options?.timeoutMs;

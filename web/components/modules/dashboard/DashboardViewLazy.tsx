@@ -14,7 +14,6 @@ const DashboardView = dynamic(
       return m.DashboardView;
     }),
   {
-    ssr: false,
     loading: () => <DashboardLoadingSkeleton kpiLabels={[...DASHBOARD_KPI_LCP_LABELS]} />,
   },
 );

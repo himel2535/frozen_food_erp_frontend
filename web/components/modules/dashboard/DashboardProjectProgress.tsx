@@ -17,9 +17,20 @@ export function DashboardProjectProgress() {
   const [projects, setProjects] = useState<Record<string, unknown>[]>([]);
 
   useEffect(() => {
-    void fetchResourcePage(API_RESOURCE_PATHS.pmProjects, { page: 1, limit: 12, status: 'active' })
-      .then((result) => setProjects(result.rows.map(mapPmProjectRow)))
-      .catch(() => setProjects([]));
+    let active = true;
+    const timer = window.setTimeout(() => {
+      void fetchResourcePage(API_RESOURCE_PATHS.pmProjects, { page: 1, limit: 12, status: 'active' })
+        .then((result) => {
+          if (active) setProjects(result.rows.map(mapPmProjectRow));
+        })
+        .catch(() => {
+          if (active) setProjects([]);
+        });
+    }, 1500);
+    return () => {
+      active = false;
+      window.clearTimeout(timer);
+    };
   }, []);
 
   const visibleProjects = useMemo(

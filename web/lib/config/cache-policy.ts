@@ -17,7 +17,7 @@ export const STANDARD_TTL_MS = 60_000;
 export const REALTIME_TTL_MS = 15_000;
 /** @deprecated Use tier-specific TTLs via cacheTtlForModule */
 export const TABLE_TTL_MS = STANDARD_TTL_MS;
-export const DEFAULT_CACHE_TTL_MS = 10_000;
+export const DEFAULT_CACHE_TTL_MS = 30_000;
 
 const MASTER_DATA_SET = new Set<string>(MASTER_DATA_MODULES);
 const REPORT_SET = new Set<string>(REPORT_MODULES);

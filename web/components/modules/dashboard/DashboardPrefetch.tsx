@@ -9,10 +9,9 @@ import {
   fetchDashboardBusinessAlerts,
   fetchDashboardSummary,
   fetchDashboardTopProducts,
-  fetchResourcePage,
+  peekDashboardSummary,
 } from '@/lib/services/api-resource-service';
 
-/** Start dashboard APIs as soon as auth is ready — do not wait for the ssr:false view chunk. */
 export function DashboardPrefetch() {
   const pathname = usePathname();
   const authReady = useAppStore((s) => s.authReady);
@@ -20,11 +19,15 @@ export function DashboardPrefetch() {
 
   useEffect(() => {
     if (!isMongoDbBackend() || !authReady || !authUser || !isDashboardPath(pathname)) return;
+
     void fetchDashboardBusinessAlerts();
-    void fetchDashboardSummary('kpi');
     void fetchDashboardSummary('extra');
     void fetchDashboardTopProducts(5);
-    void fetchResourcePage('/audit-logs', { page: 1, limit: 5 });
+
+    // Only fetch scope=kpi if not already cached/fetched
+    if (!peekDashboardSummary('kpi')) {
+      void fetchDashboardSummary('kpi');
+    }
   }, [authReady, authUser, pathname]);
 
   return null;

@@ -180,13 +180,14 @@ export function ApiStateHydrator() {
             setApiDataReady(true);
             apiDataReadyRef.current = true;
           }
-          cancelIdle = scheduleIdle(() => {
+          const timer = window.setTimeout(() => {
             if (cancelled) return;
             void fetchDashboardModules(DASHBOARD_DEFERRED_BOOT_MODULES).then((partial) => {
               if (cancelled) return;
               mergeApiSnapshot(partial);
             });
-          });
+          }, 3000);
+          cancelIdle = () => window.clearTimeout(timer);
           return;
         }
 
