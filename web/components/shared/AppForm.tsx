@@ -11,6 +11,7 @@ import {
   PendingImageUploadContext,
   type PendingImageSetter,
 } from '@/components/shared/pending-image-upload-context';
+import { Button } from '@/components/shared/Button';
 import { SubmitBusyLabel, useSubmitGuard } from '@/hooks/use-submit-guard';
 import { publicIdFieldKey } from '@/lib/services/cloudinary-service';
 import type { PortField } from '@/lib/modules/port-types';
@@ -92,17 +93,16 @@ export function AppFormShell({
 
   const defaultFooter = (
     <div className={variant === 'modal' ? FORM_MODAL_FOOTER_CLS : FORM_FOOTER_CLS}>
-      <button type="button" onClick={onCancel} className={FORM_BTN_SECONDARY}>
+      <Button type="button" onClick={onCancel} variant="outline">
         {cancelLabel}
-      </button>
-      <button
+      </Button>
+      <Button
         type="submit"
-        disabled={isSubmitting}
-        aria-busy={isSubmitting}
-        className={`${FORM_BTN_PRIMARY} disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center`}
+        loading={isSubmitting}
+        variant="primary"
       >
-        <SubmitBusyLabel busy={isSubmitting} idle={submitLabel} />
-      </button>
+        {submitLabel}
+      </Button>
     </div>
   );
 

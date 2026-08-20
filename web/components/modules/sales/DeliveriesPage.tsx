@@ -6,6 +6,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Plus } from 'lucide-react';
 import { Footer } from '@/components/layout/Footer';
+import { Button } from '@/components/shared/Button';
 import { useChromeSuppressed, useRegisterModuleActions } from '@/components/layout/ModuleActionsContext';
 import { FilterTabs } from '@/components/shared/FilterTabs';
 import { ModuleKpiSection } from '@/components/shared/ModuleKpiSection';
@@ -300,13 +301,14 @@ export function DeliveriesPage() {
 
   useRegisterModuleActions(
     view === 'main' ? (
-      <button
+      <Button
         type="button"
         onClick={openCreate}
-        className="bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold px-4 py-2.5 rounded-xl transition-colors flex items-center gap-2 cursor-pointer self-start"
+        variant="primary"
+        leftIcon={<Plus className="w-4 h-4" />}
       >
-        <Plus className="w-4 h-4" /> {t('sales.new_challan')}
-      </button>
+        {t('sales.new_challan')}
+      </Button>
     ) : null,
     [view, openCreate, t],
   );

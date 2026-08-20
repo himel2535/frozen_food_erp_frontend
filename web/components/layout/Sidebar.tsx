@@ -197,7 +197,7 @@ export function Sidebar() {
         key={key}
         href={item.href}
         prefetch={false}
-        className={`group/item relative rounded-2xl px-3 py-2.5 text-sm tracking-[0.01em] transition-all flex items-center gap-2.5 ${itemClasses} before:absolute before:-left-3.5 before:top-1/2 before:-translate-y-1/2 before:w-2.5 before:h-[2px] ${a.connector} before:rounded-full`}
+        className={`group/item relative rounded-2xl px-3 py-2.5 text-sm tracking-[0.01em] transition-all flex items-center gap-2.5 ${itemClasses} before:absolute before:-left-1 before:top-1/2 before:-translate-y-1/2 before:w-2.5 before:h-[2px] ${a.connector} before:rounded-full`}
       >
         <span className="flex items-center justify-center shrink-0">
           <SidebarIcon imageIcon={item.imageIcon} iconifyIcon={item.iconifyIcon} size={size} />

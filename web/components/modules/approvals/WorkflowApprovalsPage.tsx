@@ -3,6 +3,7 @@
 import { toast, confirmAction } from '@/lib/ui/feedback';
 
 import { useEffect, useMemo } from 'react';
+import { Button } from '@/components/shared/Button';
 import { useRouter } from 'next/navigation';
 import { DedicatedModule, type DedicatedModuleConfig } from '@/components/modules/shared/DedicatedModule';
 import { useLegacyParityConfig } from '@/hooks/use-legacy-parity-config';
@@ -154,44 +155,52 @@ export function WorkflowApprovalsPage() {
         if (refType === 'purchase_rm_order') {
           return (
             <>
-              <button
+              <Button
                 type="button"
                 title="Approve"
                 onClick={() => { void handleApprove(); }}
-                className="p-1.5 rounded-lg hover:bg-blue-50 text-blue-600 cursor-pointer text-[10px] font-bold"
+                variant="success"
+                size="sm"
+                className="!px-2 !py-1 text-[11px]"
               >
                 Approve
-              </button>
-              <button
+              </Button>
+              <Button
                 type="button"
                 title="Reject"
                 onClick={() => { void handleReject(); }}
-                className="p-1.5 rounded-lg hover:bg-rose-50 text-rose-500 cursor-pointer text-[10px] font-bold"
+                variant="danger"
+                size="sm"
+                className="!px-2 !py-1 text-[11px]"
               >
                 Reject
-              </button>
+              </Button>
             </>
           );
         }
 
         return (
           <>
-            <button
+            <Button
               type="button"
               title="Approve"
               onClick={() => { void handleApprove(); }}
-              className="p-1.5 rounded-lg hover:bg-blue-50 text-blue-600 cursor-pointer text-[10px] font-bold"
+              variant="success"
+              size="sm"
+              className="!px-2 !py-1 text-[11px]"
             >
               Approve
-            </button>
-            <button
+            </Button>
+            <Button
               type="button"
               title="Reject"
               onClick={() => { void handleReject(); }}
-              className="p-1.5 rounded-lg hover:bg-rose-50 text-rose-500 cursor-pointer text-[10px] font-bold"
+              variant="danger"
+              size="sm"
+              className="!px-2 !py-1 text-[11px]"
             >
               Reject
-            </button>
+            </Button>
           </>
         );
       },

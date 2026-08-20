@@ -1,6 +1,7 @@
 'use client';
 
 import { Building2, Globe, Mail, MapPin, Pencil, Phone } from 'lucide-react';
+import { Button } from '@/components/shared/Button';
 import { Icon } from '@iconify/react';
 import {
   ST_ACCENT_BAR_COMPANY,
@@ -93,14 +94,15 @@ export function CompanySettingsHeader({ profile, editLabel, onEdit }: CompanySet
 
         <div className="flex flex-col items-end justify-between gap-4 shrink-0">
           {onEdit ? (
-            <button
-              type="button"
-              onClick={onEdit}
-              className="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold px-4 py-2.5 rounded-xl cursor-pointer transition-colors"
-            >
-              <Pencil className="w-4 h-4" />
-              {editLabel ?? 'Edit Company Settings'}
-            </button>
+          <Button
+            type="button"
+            onClick={onEdit}
+            variant="primary"
+            size="sm"
+            leftIcon={<Pencil className="w-4 h-4" />}
+          >
+            {editLabel ?? 'Edit Company Settings'}
+          </Button>
           ) : null}
           <div className="hidden lg:flex items-end justify-center w-44 xl:w-52">
             <Icon icon="fluent-color:building-factory-24" width={160} height={160} className="opacity-90" />

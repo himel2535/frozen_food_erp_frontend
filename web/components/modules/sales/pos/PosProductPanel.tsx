@@ -1,6 +1,7 @@
 'use client';
 
 import { useRef } from 'react';
+import { Button } from '@/components/shared/Button';
 import { Barcode, Grid3X3, List, Search } from 'lucide-react';
 import { POS_CATEGORIES } from './pos-utils';
 import type { PosCategoryId, PosProduct } from './pos-types';
@@ -165,14 +166,16 @@ function ProductCard({
         </div>
         <div className="text-right shrink-0 w-[5.5rem]">
           <p className="text-sm font-extrabold text-blue-600 tabular-nums truncate">{formatMoney(product.price)}</p>
-          <button
+          <Button
             type="button"
             disabled={outOfStock}
             onClick={onAdd}
-            className="mt-1 w-full inline-flex items-center justify-center gap-1 px-2 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 disabled:opacity-45 disabled:cursor-not-allowed text-white text-[11px] font-bold cursor-pointer"
+            variant="primary"
+            size="sm"
+            className="mt-1 !w-full !px-2 !py-1.5 !text-[11px]"
           >
             + {labels.add}
-          </button>
+          </Button>
         </div>
       </div>
     );
@@ -194,14 +197,16 @@ function ProductCard({
       </p>
       <div className="mt-auto pt-3 grid grid-cols-[minmax(0,1fr)_5.25rem] gap-2 items-center">
         <p className="text-sm font-extrabold text-blue-600 tabular-nums truncate min-w-0">{formatMoney(product.price)}</p>
-        <button
+        <Button
           type="button"
           disabled={outOfStock}
           onClick={onAdd}
-          className="w-full inline-flex items-center justify-center gap-1 px-2 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 disabled:opacity-45 disabled:cursor-not-allowed text-white text-[11px] font-bold cursor-pointer"
+          variant="primary"
+          size="sm"
+          className="!w-full !px-2 !py-1.5 !text-[11px]"
         >
           + {labels.add}
-        </button>
+        </Button>
       </div>
     </div>
   );

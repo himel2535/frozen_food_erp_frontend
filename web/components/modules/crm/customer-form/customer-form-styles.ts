@@ -5,7 +5,7 @@ export const CF_INPUT_WRAP_CLS =
   'relative flex items-center';
 
 export const CF_INPUT_CLS =
-  'w-full pl-10 pr-4 py-2 rounded-xl border border-slate-200/90 bg-white text-xs font-medium text-slate-800 shadow-sm transition-all focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 placeholder:text-slate-400';
+  'w-full pl-10 pr-4 py-2 rounded-xl border border-slate-200/90 bg-white text-xs font-medium text-slate-800 shadow-sm transition-all focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 placeholder:text-slate-400';
 
 export const CF_SELECT_CLS = `${CF_INPUT_CLS} cursor-pointer appearance-none`;
 
@@ -18,19 +18,19 @@ export const CF_ICON_TEXTAREA_CLS =
   'absolute left-3 top-3 w-4 h-4 text-slate-400 pointer-events-none';
 
 export const CF_BTN_PRIMARY =
-  'inline-flex items-center gap-2 bg-gradient-to-b from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white text-xs font-bold px-5 py-2.5 rounded-xl shadow-sm shadow-blue-600/20 cursor-pointer transition-all';
+  'inline-flex items-center gap-2 btn-premium-3d-green text-white text-xs font-semibold px-4 py-2.5 rounded-xl cursor-pointer focus:outline-none focus:ring-2 focus:ring-green-600/30 transition-all select-none';
 
 export const CF_BTN_OUTLINE =
-  'inline-flex items-center gap-2 border border-blue-300 bg-blue-50/80 hover:bg-blue-100 text-blue-800 text-xs font-bold px-5 py-2.5 rounded-xl cursor-pointer transition-all';
+  'inline-flex items-center gap-2 border border-emerald-200 bg-emerald-50 text-emerald-800 text-xs font-semibold px-4 py-2.5 rounded-xl cursor-pointer hover:bg-emerald-100/70 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 transition-all select-none';
 
 export const CF_BTN_GHOST =
-  'inline-flex items-center gap-2 border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold px-5 py-2.5 rounded-xl cursor-pointer transition-all';
+  'inline-flex items-center gap-2 border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 text-xs font-semibold px-4 py-2.5 rounded-xl cursor-pointer focus:outline-none focus:ring-2 focus:ring-slate-500/20 transition-all select-none';
 
 export const CF_FOOTER_CLS =
   'sticky bottom-0 z-10 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 px-4 py-4 -mx-2 md:-mx-4 mt-6 border-t border-slate-200/80 bg-white/85 backdrop-blur-md';
 
 export const CF_SECTION_BADGE_CLS =
-  'flex items-center justify-center w-7 h-7 rounded-full bg-blue-600 text-white text-xs font-extrabold shrink-0';
+  'flex items-center justify-center w-7 h-7 rounded-full bg-emerald-600 text-white text-xs font-extrabold shrink-0';
 
 export const CF_SUB_PANEL_CLS =
   'rounded-xl border border-slate-200/90 bg-white/70 p-3 w-full';
@@ -57,10 +57,10 @@ export const CF_ADDRESS_HEADER_SPACER_CLS =
   'mt-1.5 pl-[42px] h-[18px]';
 
 export const CF_ADDRESS_ICON_BADGE_CLS =
-  'flex items-center justify-center w-8 h-8 rounded-full bg-blue-50 border border-blue-100 text-blue-600 shrink-0';
+  'flex items-center justify-center w-8 h-8 rounded-full bg-emerald-50 border border-emerald-100 text-emerald-600 shrink-0';
 
 export const CF_ADDRESS_FIELD_BASE_CLS =
-  'w-full px-4 py-2 rounded-xl border border-slate-200/90 bg-white text-xs font-medium text-slate-800 shadow-sm transition-all focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 placeholder:text-slate-400 disabled:bg-slate-50/80 disabled:text-slate-500 disabled:cursor-not-allowed';
+  'w-full px-4 py-2 rounded-xl border border-slate-200/90 bg-white text-xs font-medium text-slate-800 shadow-sm transition-all focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 placeholder:text-slate-400 disabled:bg-slate-50/80 disabled:text-slate-500 disabled:cursor-not-allowed';
 
 export const CF_ADDRESS_TEXTAREA_CLS =
   `${CF_ADDRESS_FIELD_BASE_CLS} resize-none min-h-[72px] h-[72px]`;

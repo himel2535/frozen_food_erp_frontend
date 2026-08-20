@@ -3,7 +3,8 @@
 import type { CustomerReceivable } from '@/lib/services/customer-receivables-service';
 import { formatDueDate, isValidIsoDate } from '@/lib/services/customer-receivables-service';
 import { formatDueMoneyDetailed, openPhoneCall } from '@/lib/utils/communication-utils';
-import { FU_BTN_BLUE_OUTLINE, FU_BTN_GREEN_OUTLINE, FU_CARD_CLS, FU_WIDGET_TITLE_CLS } from './follow-up-styles';
+import { Button } from '@/components/shared/Button';
+import { FU_CARD_CLS, FU_WIDGET_TITLE_CLS } from './follow-up-styles';
 
 function promiseStatusBadge(status?: 'waiting' | 'missed' | 'received') {
   if (status === 'missed') return 'bg-rose-100 text-rose-700 border-rose-200';
@@ -47,12 +48,22 @@ export function FollowUpPromiseWidget({
       <p className="text-[11px] text-slate-500">{dueLabel}</p>
       <p className="text-[10px] text-slate-400">Promise logged by {customer.assignedTo?.name ?? 'Staff'}</p>
       <div className="flex flex-wrap gap-2">
-        <button type="button" className={FU_BTN_GREEN_OUTLINE} onClick={onMarkReceived}>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={onMarkReceived}
+        >
           Mark Received
-        </button>
-        <button type="button" className={FU_BTN_BLUE_OUTLINE} onClick={() => openPhoneCall(customer.phone)}>
+        </Button>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={() => openPhoneCall(customer.phone)}
+        >
           Follow Up Now
-        </button>
+        </Button>
       </div>
     </div>
   );

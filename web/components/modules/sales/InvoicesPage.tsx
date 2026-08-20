@@ -6,6 +6,7 @@ import { useMemo, useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Download, Plus } from 'lucide-react';
 import { Footer } from '@/components/layout/Footer';
+import { Button } from '@/components/shared/Button';
 import { useChromeSuppressed, useRegisterModuleActions } from '@/components/layout/ModuleActionsContext';
 import { AppTable, type AppTableColumn } from '@/components/shared/AppTable';
 import { DateDisplay } from '@/components/shared/DateDisplay';
@@ -415,20 +416,22 @@ export function InvoicesPage() {
   useRegisterModuleActions(
     view === 'main' ? (
       <>
-        <button
+        <Button
           type="button"
           onClick={handleExport}
-          className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl border border-slate-200 text-xs font-bold text-slate-600 hover:bg-slate-50 cursor-pointer"
+          variant="outline"
+          leftIcon={<Download className="w-4 h-4" />}
         >
-          <Download className="w-4 h-4" /> Export CSV
-        </button>
-        <button
+          Export CSV
+        </Button>
+        <Button
           type="button"
           onClick={openCreate}
-          className="bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold px-4 py-2.5 rounded-xl transition-colors flex items-center gap-2 cursor-pointer"
+          variant="primary"
+          leftIcon={<Plus className="w-4 h-4" />}
         >
-          <Plus className="w-4 h-4" /> Create Invoice
-        </button>
+          Create Invoice
+        </Button>
       </>
     ) : null,
     [view, handleExport, openCreate],

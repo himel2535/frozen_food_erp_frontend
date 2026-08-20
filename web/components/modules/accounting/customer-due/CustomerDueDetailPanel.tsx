@@ -1,6 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
+import { Button } from '@/components/shared/Button';
 import { Phone, MessageCircle, CalendarPlus, X, UserRound, MapPin, Bookmark, CheckCircle2 } from 'lucide-react';
 import {
   formatDueDate,
@@ -161,30 +162,36 @@ export function CustomerDueDetailPanel({
             <p className="text-xs text-slate-600 leading-relaxed">{customer.nextAction.reason}</p>
           )}
           <div className="flex flex-wrap gap-2">
-            <button
+            <Button
               type="button"
-              className="inline-flex items-center gap-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-[11px] font-bold px-3 py-1.5 cursor-pointer"
+              variant="outline"
+              size="sm"
+              className="!text-[11px] !px-3 !py-1.5"
+              leftIcon={<Phone className="w-3.5 h-3.5" />}
               onClick={() => openPhoneCall(customer.phone)}
             >
-              <Phone className="w-3.5 h-3.5" />
               Call
-            </button>
-            <button
+            </Button>
+            <Button
               type="button"
-              className="inline-flex items-center gap-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-[11px] font-bold px-3 py-1.5 cursor-pointer"
+              variant="outline"
+              size="sm"
+              className="!text-[11px] !px-3 !py-1.5"
+              leftIcon={<MessageCircle className="w-3.5 h-3.5" />}
               onClick={() => openWhatsApp(customer.phone)}
             >
-              <MessageCircle className="w-3.5 h-3.5" />
               WhatsApp
-            </button>
-            <button
+            </Button>
+            <Button
               type="button"
-              className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-[11px] font-bold px-3 py-1.5 cursor-pointer"
+              variant="outline"
+              size="sm"
+              className="!text-[11px] !px-3 !py-1.5"
+              leftIcon={<CalendarPlus className="w-3.5 h-3.5" />}
               onClick={() => router.push(`/accounting/receivables/${customer.customerId}/follow-up?add=1`)}
             >
-              <CalendarPlus className="w-3.5 h-3.5" />
-              + Follow-up
-            </button>
+              Follow-up
+            </Button>
           </div>
         </div>
       )}
@@ -204,20 +211,24 @@ export function CustomerDueDetailPanel({
             </span>
           </div>
           <div className="flex flex-wrap gap-2">
-            <button
+            <Button
               type="button"
-              className="inline-flex items-center rounded-lg border-2 border-blue-600 text-blue-700 hover:bg-blue-50 text-[11px] font-bold px-3 py-1.5 cursor-pointer"
+              variant="success"
+              size="sm"
+              className="!px-3 !py-1.5 !text-[11px]"
               onClick={() => onReceive(customer)}
             >
               Mark Received
-            </button>
-            <button
+            </Button>
+            <Button
               type="button"
-              className="inline-flex items-center rounded-lg border-2 border-blue-600 text-blue-700 hover:bg-blue-50 text-[11px] font-bold px-3 py-1.5 cursor-pointer"
+              variant="outline"
+              size="sm"
+              className="!px-3 !py-1.5 !text-[11px]"
               onClick={() => router.push(`/accounting/receivables/${customer.customerId}/follow-up`)}
             >
               Follow Up
-            </button>
+            </Button>
           </div>
         </div>
       )}
@@ -285,8 +296,8 @@ export function CustomerDueDetailPanel({
                   <p className="text-xs text-slate-600 mt-2">{customer.nextAction.reason}</p>
                 )}
                 <div className="flex gap-2 mt-3">
-                  <button type="button" className="text-[10px] font-bold text-blue-700 border border-blue-200 rounded-lg px-2.5 py-1.5 cursor-pointer hover:bg-blue-50" onClick={() => openPhoneCall(customer.phone)}>Call</button>
-                  <button type="button" className="text-[10px] font-bold text-blue-700 border border-blue-200 rounded-lg px-2.5 py-1.5 cursor-pointer hover:bg-blue-50" onClick={() => openWhatsApp(customer.phone)}>WhatsApp</button>
+                  <Button type="button" variant="outline" size="sm" className="!text-[10px] !px-2.5 !py-1.5" onClick={() => openPhoneCall(customer.phone)}>Call</Button>
+                  <Button type="button" variant="outline" size="sm" className="!text-[10px] !px-2.5 !py-1.5" onClick={() => openWhatsApp(customer.phone)}>WhatsApp</Button>
                 </div>
               </div>
             ) : (
@@ -349,14 +360,16 @@ export function CustomerDueDetailPanel({
       </div>
 
       <div className="pt-2 border-t border-slate-100 mt-auto">
-        <button
+        <Button
           type="button"
           disabled={customer.totalDue <= 0}
-          className="w-full inline-flex items-center justify-center gap-2 rounded-lg bg-blue-600 hover:bg-blue-700 disabled:bg-slate-200 disabled:text-slate-400 disabled:cursor-not-allowed text-white text-sm font-bold py-2.5 cursor-pointer"
+          variant="primary"
+          size="md"
+          className="!w-full"
           onClick={() => onReceive(customer)}
         >
           Receive Payment
-        </button>
+        </Button>
       </div>
     </aside>
   );

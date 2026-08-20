@@ -5,6 +5,7 @@ import { toast } from '@/lib/ui/feedback';
 import { useMemo, useState } from 'react';
 import { FileDown, FileSpreadsheet, Plus, Printer } from 'lucide-react';
 import { Footer } from '@/components/layout/Footer';
+import { Button } from '@/components/shared/Button';
 import { useRegisterModuleActions } from '@/components/layout/ModuleActionsContext';
 import { AppFormFields, AppFormModal } from '@/components/shared/AppForm';
 import { useAppStore } from '@/lib/state/app-store';
@@ -140,22 +141,38 @@ export function TrialBalancePage() {
 
   useRegisterModuleActions(
     <>
-      <button type="button" onClick={() => toast.info('Feature coming soon', { module: 'Trial Balance', description: "Export PDF coming soon." })} className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition-colors cursor-pointer">
-        <FileDown className="w-4 h-4" />
+      <Button
+        type="button"
+        onClick={() => toast.info('Feature coming soon', { module: 'Trial Balance', description: "Export PDF coming soon." })}
+        variant="outline"
+        leftIcon={<FileDown className="w-4 h-4" />}
+      >
         Export PDF
-      </button>
-      <button type="button" onClick={() => toast.info('Feature coming soon', { module: 'Trial Balance', description: "Export Excel coming soon." })} className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition-colors cursor-pointer">
-        <FileSpreadsheet className="w-4 h-4" />
+      </Button>
+      <Button
+        type="button"
+        onClick={() => toast.info('Feature coming soon', { module: 'Trial Balance', description: "Export Excel coming soon." })}
+        variant="outline"
+        leftIcon={<FileSpreadsheet className="w-4 h-4" />}
+      >
         Export Excel
-      </button>
-      <button type="button" onClick={() => window.print()} className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition-colors cursor-pointer">
-        <Printer className="w-4 h-4" />
+      </Button>
+      <Button
+        type="button"
+        onClick={() => window.print()}
+        variant="outline"
+        leftIcon={<Printer className="w-4 h-4" />}
+      >
         Print
-      </button>
-      <button type="button" onClick={() => setShowAddModal(true)} className="bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold px-4 py-2.5 rounded-xl transition-colors flex items-center gap-2 cursor-pointer">
-        <Plus className="w-4 h-4" />
+      </Button>
+      <Button
+        type="button"
+        onClick={() => setShowAddModal(true)}
+        variant="primary"
+        leftIcon={<Plus className="w-4 h-4" />}
+      >
         Add Line
-      </button>
+      </Button>
     </>,
     [],
   );

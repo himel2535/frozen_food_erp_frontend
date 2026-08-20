@@ -5,9 +5,8 @@ import { SubmitBusyLabel, useSubmitGuard } from '@/hooks/use-submit-guard';
 import { FormHeader } from '@/components/layout/FormHeader';
 import { Footer } from '@/components/layout/Footer';
 import { FormSectionCard } from '@/components/modules/crm/customer-form/FormSectionCard';
+import { Button } from '@/components/shared/Button';
 import {
-  CF_BTN_GHOST,
-  CF_BTN_PRIMARY,
   CF_FOOTER_CLS,
   CF_INPUT_CLS,
   CF_LABEL_CLS,
@@ -273,17 +272,17 @@ export function SupplierForm({
             {mode === 'create' ? 'New supplier profile' : 'Editing supplier profile'}
           </p>
           <div className="flex items-center gap-3">
-            <button type="button" onClick={onCancel} className={CF_BTN_GHOST}>
+            <Button type="button" onClick={onCancel} variant="ghost">
               Cancel
-            </button>
-            <button
+            </Button>
+            <Button
               type="submit"
               disabled={isSubmitting}
-              aria-busy={isSubmitting}
-              className={`${CF_BTN_PRIMARY} disabled:opacity-50 disabled:cursor-not-allowed`}
+              variant="primary"
+              loading={isSubmitting}
             >
               <SubmitBusyLabel busy={isSubmitting} idle={mode === 'create' ? 'Save Supplier' : 'Update Supplier'} />
-            </button>
+            </Button>
           </div>
         </div>
       </form>

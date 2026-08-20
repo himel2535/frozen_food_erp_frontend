@@ -3,6 +3,8 @@
 import { useRouter } from 'next/navigation';
 import { Building2, Calendar, Mail, MapPin, MoreHorizontal, Phone } from 'lucide-react';
 import { StatusBadge } from '@/components/shared/StatusBadge';
+import { Button } from '@/components/shared/Button';
+import { IconButton } from '@/components/shared/IconButton';
 import { InventoryItemThumb } from '@/components/shared/InventoryItemThumb';
 import {
   CD_ACCENT_BAR,
@@ -132,20 +134,20 @@ export function CustomerDetailHeaderActions({
 
   return (
     <>
-      <button
+      <Button
         type="button"
         onClick={() => router.push(`/crm/customers?edit=${customerId}`)}
-        className="bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold px-4 py-2.5 rounded-xl cursor-pointer transition-colors"
+        variant="primary"
       >
         Edit Customer
-      </button>
-      <button
+      </Button>
+      <IconButton
         type="button"
-        className="p-2.5 rounded-xl border border-slate-200 bg-white text-slate-500 hover:bg-slate-50 cursor-pointer"
+        variant="outline"
         aria-label="More actions"
       >
         <MoreHorizontal className="w-4 h-4" />
-      </button>
+      </IconButton>
     </>
   );
 }

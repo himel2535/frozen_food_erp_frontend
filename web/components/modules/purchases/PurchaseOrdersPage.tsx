@@ -42,7 +42,8 @@ import { PurchaseOrdersDetailPanel } from './purchase-orders/PurchaseOrdersDetai
 
 import { poFirstItemLabel } from './purchase-orders/purchase-orders-utils';
 
-import { PO_BTN_PRIMARY, PO_CARD_CLS } from './purchase-orders/purchase-orders-styles';
+import { ModuleToolbarActions } from '@/components/shared/ListToolbar';
+import { PO_CARD_CLS } from './purchase-orders/purchase-orders-styles';
 
 
 
@@ -177,14 +178,7 @@ export function PurchaseOrdersPage() {
   const save = () => saveAppState();
 
   useRegisterModuleActions(
-    <button
-      type="button"
-      onClick={() => router.push('/purchases/orders/new')}
-      className={`${PO_BTN_PRIMARY} self-start`}
-    >
-      <Plus className="w-4 h-4" />
-      Create PO
-    </button>,
+    <ModuleToolbarActions onAdd={() => router.push('/purchases/orders/new')} addLabel="Create PO" />,
     [router],
   );
 

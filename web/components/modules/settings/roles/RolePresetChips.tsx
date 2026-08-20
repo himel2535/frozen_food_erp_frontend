@@ -31,8 +31,8 @@ export function RolePresetChips({
               onClick={() => onSelect(preset)}
               className={`text-[11px] font-semibold px-3 py-1.5 rounded-full border transition-all cursor-pointer ${
                 isActive
-                  ? 'bg-blue-600 text-white border-blue-600 shadow-sm shadow-blue-600/20'
-                  : 'premium-card premium-shadow bg-white/45 text-slate-600 border-white/65 hover:border-blue-300/80 hover:bg-blue-50/50 hover:text-blue-800'
+                  ? 'bg-emerald-600 text-white border-emerald-600 shadow-sm shadow-emerald-600/20'
+                  : 'premium-card premium-shadow bg-white/45 text-slate-600 border-white/65 hover:border-slate-300 hover:bg-slate-50 hover:text-slate-800'
               }`}
             >
               {preset.name}

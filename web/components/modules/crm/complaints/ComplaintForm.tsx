@@ -2,6 +2,7 @@
 
 import { useMemo, useRef, useState, type FormEvent } from 'react';
 import { Save } from 'lucide-react';
+import { Button } from '@/components/shared/Button';
 import { FormHeader } from '@/components/layout/FormHeader';
 import { ImageUploadField, type PendingImageUpload } from '@/components/shared/ImageUploadField';
 import { SubmitBusyLabel, useSubmitGuard } from '@/hooks/use-submit-guard';
@@ -211,16 +212,15 @@ export function ComplaintForm({
           </div>
 
           <div className="flex justify-end gap-3 pt-2">
-            <button type="button" onClick={onCancel} className={FORM_BTN_SECONDARY}>Cancel</button>
-            <button
+            <Button type="button" onClick={onCancel} variant="outline">Cancel</Button>
+            <Button
               type="submit"
-              disabled={isSubmitting}
-              aria-busy={isSubmitting}
-              className={`${FORM_BTN_PRIMARY} inline-flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed`}
+              loading={isSubmitting}
+              variant="primary"
+              leftIcon={<Save className="w-4 h-4" />}
             >
-              <Save className="w-4 h-4" />
-              <SubmitBusyLabel busy={isSubmitting} idle={mode === 'edit' ? 'Update Complaint' : 'Save Complaint'} />
-            </button>
+              {mode === 'edit' ? 'Update Complaint' : 'Save Complaint'}
+            </Button>
           </div>
         </div>
       </form>

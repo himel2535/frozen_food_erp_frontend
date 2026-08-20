@@ -6,7 +6,7 @@ import { FollowUpNextActionWidget } from './FollowUpNextActionWidget';
 import { FollowUpPromiseWidget } from './FollowUpPromiseWidget';
 import { FollowUpQuickActions } from './FollowUpQuickActions';
 import { FollowUpSummaryWidget } from './FollowUpSummaryWidget';
-import { FU_BTN_PRIMARY } from './follow-up-styles';
+import { Button } from '@/components/shared/Button';
 
 export function FollowUpSidebar({
   customer,
@@ -23,11 +23,17 @@ export function FollowUpSidebar({
       <FollowUpNextActionWidget customer={customer} />
       <FollowUpPromiseWidget customer={customer} onMarkReceived={onMarkReceived} />
       <FollowUpQuickActions />
-      <button type="button" className={`${FU_BTN_PRIMARY} w-full justify-center py-3 text-sm`} onClick={onReceivePayment}>
-        <Wallet className="w-4 h-4" />
+      <Button
+        type="button"
+        variant="primary"
+        size="md"
+        className="!w-full !justify-center"
+        leftIcon={<Wallet className="w-4 h-4" />}
+        rightIcon={<ArrowRight className="w-4 h-4" />}
+        onClick={onReceivePayment}
+      >
         Receive Payment
-        <ArrowRight className="w-4 h-4" />
-      </button>
+      </Button>
     </aside>
   );
 }

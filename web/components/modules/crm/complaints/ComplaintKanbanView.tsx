@@ -1,6 +1,7 @@
 'use client';
 
 import { MoreHorizontal } from 'lucide-react';
+import { IconButton } from '@/components/shared/IconButton';
 import type { ComplaintRecord } from '@/lib/services/complaints-service';
 import {
   categoryBadgeClass,
@@ -102,9 +103,9 @@ export function ComplaintRowActions({
 }) {
   return (
     <div className="relative group">
-      <button type="button" className="app-table-icon-btn cursor-pointer" title="Actions">
+      <IconButton type="button" variant="ghost" size="sm" aria-label="Actions" title="Actions">
         <MoreHorizontal className="w-4 h-4" />
-      </button>
+      </IconButton>
       <div className="hidden group-hover:block absolute right-0 top-full z-20 mt-1 w-40 rounded-xl border border-slate-200 bg-white shadow-lg p-1">
         <button type="button" onClick={onProgress} className="w-full text-left px-3 py-2 text-[11px] font-semibold text-slate-700 hover:bg-slate-50 rounded-lg cursor-pointer">
           Mark In Progress

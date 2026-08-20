@@ -5,10 +5,7 @@ import { createPortal } from 'react-dom';
 import { Printer, X } from 'lucide-react';
 import { InvoicePrint } from '@/components/modules/sales/invoice-form/InvoicePrint';
 import type { InvoicePayload } from '@/components/modules/sales/invoice-form/inv-form-types';
-import {
-  INV_BTN_GHOST,
-  INV_BTN_PRIMARY,
-} from '@/components/modules/sales/invoice-form/inv-form-styles';
+import { Button } from '@/components/shared/Button';
 
 export function InvoicePrintPreview({
   invoiceNo,
@@ -58,12 +55,12 @@ export function InvoicePrintPreview({
           <p className="text-[11px] font-medium text-slate-500">{invoiceNo}</p>
         </div>
         <div className="flex items-center gap-2">
-          <button type="button" onClick={onClose} className={INV_BTN_GHOST}>
-            <X className="w-4 h-4" /> Close
-          </button>
-          <button type="button" onClick={() => void handlePrint()} className={INV_BTN_PRIMARY}>
-            <Printer className="w-4 h-4" /> Print Invoice
-          </button>
+          <Button type="button" onClick={onClose} variant="ghost" leftIcon={<X className="w-4 h-4" />}>
+            Close
+          </Button>
+          <Button type="button" onClick={() => void handlePrint()} variant="primary" leftIcon={<Printer className="w-4 h-4" />}>
+            Print Invoice
+          </Button>
         </div>
       </div>
 

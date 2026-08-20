@@ -34,11 +34,8 @@ import {
   type DeliveryChallanFormValues,
   type DeliveryChallanPayload,
 } from '@/components/modules/sales/delivery-challan-form/dc-form-types';
+import { Button } from '@/components/shared/Button';
 import {
-  DC_BTN_DRAFT,
-  DC_BTN_GHOST,
-  DC_BTN_OUTLINE,
-  DC_BTN_PRIMARY,
   DC_CHALLAN_BADGE_CLS,
   DC_FIELD_GRID_CLS,
   DC_FOOTER_CLS,
@@ -395,38 +392,39 @@ export function DeliveryChallanForm({
         </div>
 
         <div className={DC_FOOTER_CLS}>
-          <button
+          <Button
             type="submit"
             disabled={isSubmitting}
-            aria-busy={isSubmitting}
             onClick={() => { saveActionRef.current = 'draft'; }}
-            className={`${DC_BTN_DRAFT} disabled:opacity-50 disabled:cursor-not-allowed`}
+            variant="outline"
+            loading={isSubmitting && saveActionRef.current === 'draft'}
           >
-            <SubmitBusyLabel busy={isSubmitting} idle="Save Draft" />
-          </button>
+            <SubmitBusyLabel busy={isSubmitting && saveActionRef.current === 'draft'} idle="Save Draft" />
+          </Button>
           <div className="flex flex-wrap items-center gap-2 sm:justify-end">
-            <button type="button" onClick={onCancel} className={DC_BTN_GHOST}>
+            <Button type="button" onClick={onCancel} variant="ghost">
               Cancel
-            </button>
-            <button
+            </Button>
+            <Button
               type="submit"
               disabled={isSubmitting}
-              aria-busy={isSubmitting}
               onClick={() => { saveActionRef.current = 'dispatch'; }}
-              className={`${DC_BTN_PRIMARY} disabled:opacity-50 disabled:cursor-not-allowed`}
+              variant="primary"
+              leftIcon={<Send className="w-4 h-4" />}
+              loading={isSubmitting && saveActionRef.current === 'dispatch'}
             >
-              <Send className="w-4 h-4" />
-              <SubmitBusyLabel busy={isSubmitting} idle="Create & Dispatch" />
-            </button>
-            <button
+              <SubmitBusyLabel busy={isSubmitting && saveActionRef.current === 'dispatch'} idle="Create & Dispatch" />
+            </Button>
+            <Button
               type="submit"
               disabled={isSubmitting}
               onClick={() => { saveActionRef.current = 'print'; }}
-              className={`${DC_BTN_OUTLINE} disabled:opacity-50 disabled:cursor-not-allowed`}
+              variant="outline"
+              leftIcon={<Printer className="w-4 h-4" />}
+              loading={isSubmitting && saveActionRef.current === 'print'}
             >
-              <Printer className="w-4 h-4" />
               Print Challan
-            </button>
+            </Button>
           </div>
         </div>
       </form>

@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { Button } from '@/components/shared/Button';
 import { Download, X } from 'lucide-react';
 import {
   DEFAULT_PRODUCTION_PLAN_PDF_OPTIONS,
@@ -99,23 +100,25 @@ export function ProductionPlanExportModal({
         </div>
 
         <div className="flex justify-end gap-2 pt-1">
-          <button
+          <Button
             type="button"
             onClick={onClose}
             disabled={exporting}
-            className="px-4 py-2.5 rounded-xl border border-slate-200 text-xs font-bold cursor-pointer disabled:opacity-50"
+            variant="outline"
+            size="sm"
           >
             Cancel
-          </button>
-          <button
+          </Button>
+          <Button
             type="button"
             onClick={() => onExport(options)}
             disabled={exporting}
-            className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+            variant="primary"
+            size="sm"
+            leftIcon={<Download className="w-3.5 h-3.5" />}
           >
-            <Download className="w-3.5 h-3.5" />
             {exporting ? 'Exporting…' : 'Download PDF'}
-          </button>
+          </Button>
         </div>
       </div>
     </div>

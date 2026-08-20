@@ -1,5 +1,7 @@
 'use client';
 
+import { Button } from '@/components/shared/Button';
+
 type ReportTablePaginationProps = {
   page: number;
   totalPages: number;
@@ -22,34 +24,36 @@ export function ReportTablePagination({
     <div className="report-table-pagination flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 px-4 py-3 text-xs text-slate-500">
       <span className="font-medium">{label}</span>
       <div className="flex flex-wrap items-center gap-2">
-        <button
+        <Button
           type="button"
           disabled={page <= 1}
           onClick={() => onPageChange(page - 1)}
-          className="px-3 py-1.5 border border-slate-200 rounded-lg cursor-pointer disabled:opacity-50 hover:bg-slate-50"
+          variant="outline"
+          size="sm"
         >
           Previous
-        </button>
+        </Button>
         {pageNumbers.map((n) => (
-          <button
+          <Button
             key={n}
             type="button"
             onClick={() => onPageChange(n)}
-            className={`min-w-[32px] px-2 py-1.5 rounded-lg font-bold cursor-pointer ${
-              n === page ? 'bg-blue-600 text-white' : 'border border-slate-200 hover:bg-slate-50'
-            }`}
+            variant={n === page ? 'primary' : 'outline'}
+            size="sm"
+            className="min-w-[32px] px-2 py-1.5 font-bold"
           >
             {n}
-          </button>
+          </Button>
         ))}
-        <button
+        <Button
           type="button"
           disabled={page >= totalPages}
           onClick={() => onPageChange(page + 1)}
-          className="px-3 py-1.5 border border-slate-200 rounded-lg cursor-pointer disabled:opacity-50 hover:bg-slate-50"
+          variant="outline"
+          size="sm"
         >
           Next
-        </button>
+        </Button>
       </div>
     </div>
   );

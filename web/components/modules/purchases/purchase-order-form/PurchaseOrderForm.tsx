@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { ImageUploadField, type PendingImageUpload } from '@/components/shared/ImageUploadField';
 import { SubmitBusyLabel, useSubmitGuard } from '@/hooks/use-submit-guard';
+import { Button } from '@/components/shared/Button';
 import { FormHeader } from '@/components/layout/FormHeader';
 import { MODULE_LIST_SHELL } from '@/lib/ui/module-layout';
 import { IconInput, IconSelect, IconTextarea } from '@/components/modules/crm/customer-form/IconField';
@@ -26,14 +27,10 @@ import { PoPaymentInfo } from '@/components/modules/purchases/purchase-order-for
 import { PoSupplierDetailsCard } from '@/components/modules/purchases/purchase-order-form/PoSupplierDetailsCard';
 import { PO_STATUS_OPTIONS } from '@/components/modules/purchases/purchase-order-form/po-form-options';
 import {
-  PO_BTN_GHOST,
-  PO_BTN_OUTLINE,
-  PO_BTN_PRIMARY,
   PO_CARD_COMPACT_CLS,
   PO_INPUT_CLS,
   PO_LABEL_CLS,
   PO_SECTION_TITLE_CLS,
-  PO_ADD_ITEM_BTN_CLS,
 } from '@/components/modules/purchases/purchase-order-form/po-form-styles';
 import {
   computePoTotalsFromForm,
@@ -160,32 +157,32 @@ export function PurchaseOrderForm({
             onBack={onCancel}
           />
           <div className="flex flex-wrap items-center gap-2 self-start">
-            <button type="button" onClick={onCancel} className={PO_BTN_GHOST}>Cancel</button>
-            <button
+            <Button type="button" onClick={onCancel} variant="ghost">Cancel</Button>
+            <Button
               type="button"
               disabled={isSubmitting}
-              aria-busy={isSubmitting}
               onClick={() => {
                 saveActionRef.current = 'draft';
                 formRef.current?.requestSubmit();
               }}
-              className={`${PO_BTN_OUTLINE} disabled:opacity-50 disabled:cursor-not-allowed`}
+              variant="outline"
+              loading={isSubmitting && saveActionRef.current === 'draft'}
             >
-              <SubmitBusyLabel busy={isSubmitting} idle="Save Draft" />
-            </button>
-            <button
+              <SubmitBusyLabel busy={isSubmitting && saveActionRef.current === 'draft'} idle="Save Draft" />
+            </Button>
+            <Button
               type="button"
               disabled={isSubmitting}
-              aria-busy={isSubmitting}
               onClick={() => {
                 saveActionRef.current = 'create';
                 updateForm({ status: form.status === 'Draft' ? 'Sent' : form.status });
                 formRef.current?.requestSubmit();
               }}
-              className={`${PO_BTN_PRIMARY} disabled:opacity-50 disabled:cursor-not-allowed`}
+              variant="primary"
+              loading={isSubmitting && saveActionRef.current === 'create'}
             >
-              <SubmitBusyLabel busy={isSubmitting} idle="Create PO" />
-            </button>
+              <SubmitBusyLabel busy={isSubmitting && saveActionRef.current === 'create'} idle="Create PO" />
+            </Button>
           </div>
         </div>
 
@@ -275,20 +272,24 @@ export function PurchaseOrderForm({
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1.5">
                 <h3 className={PO_SECTION_TITLE_CLS}>Order Items</h3>
                 <div className="flex items-center gap-2">
-                  <button
+                  <Button
                     type="button"
                     onClick={() => updateForm({ items: [...form.items, createEmptyPoLineItem()] })}
-                    className={PO_ADD_ITEM_BTN_CLS}
+                    variant="primary"
+                    size="sm"
+                    leftIcon={<Plus className="w-3.5 h-3.5" />}
                   >
-                    <Plus className="w-3.5 h-3.5" /> Add Item
-                  </button>
-                  <button
+                    Add Item
+                  </Button>
+                  <Button
                     type="button"
                     onClick={() => toast.info('Feature coming soon', { module: 'Purchases', description: "Import Items" })}
-                    className={PO_BTN_OUTLINE}
+                    variant="outline"
+                    size="sm"
+                    leftIcon={<FileSpreadsheet className="w-4 h-4" />}
                   >
-                    <FileSpreadsheet className="w-4 h-4" /> Import Items
-                  </button>
+                    Import Items
+                  </Button>
                 </div>
               </div>
               <PoItemsTable

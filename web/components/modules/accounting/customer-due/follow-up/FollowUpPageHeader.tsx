@@ -2,9 +2,7 @@
 
 import { Plus } from 'lucide-react';
 import { FormHeader } from '@/components/layout/FormHeader';
-import {
-  FU_BTN_PRIMARY,
-} from './follow-up-styles';
+import { Button } from '@/components/shared/Button';
 
 export function FollowUpPageHeader({
   onAddFollowUp,
@@ -31,10 +29,15 @@ export function FollowUpPageHeader({
         backLabel={backLabel}
       />
       {!isAddForm ? (
-        <button type="button" className={FU_BTN_PRIMARY} onClick={onAddFollowUp}>
-          <Plus className="w-3.5 h-3.5" />
+        <Button
+          type="button"
+          variant="primary"
+          size="sm"
+          leftIcon={<Plus className="w-3.5 h-3.5" />}
+          onClick={onAddFollowUp}
+        >
           Add Follow-up
-        </button>
+        </Button>
       ) : null}
     </div>
   );

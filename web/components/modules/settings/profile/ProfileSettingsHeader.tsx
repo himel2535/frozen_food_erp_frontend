@@ -1,6 +1,7 @@
 'use client';
 
 import { Briefcase, Building2, Globe, Mail, Pencil, Phone, Shield } from 'lucide-react';
+import { Button } from '@/components/shared/Button';
 import { InventoryItemThumb } from '@/components/shared/InventoryItemThumb';
 import { StatusBadge } from '@/components/shared/StatusBadge';
 import {
@@ -94,14 +95,16 @@ export function ProfileSettingsHeader({ profile, subtitle, editLabel, onEdit }: 
           </div>
         </div>
         {onEdit ? (
-          <button
+          <Button
             type="button"
             onClick={onEdit}
-            className="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold px-4 py-2.5 rounded-xl cursor-pointer transition-colors shrink-0 self-start"
+            variant="primary"
+            size="sm"
+            leftIcon={<Pencil className="w-4 h-4" />}
+            className="!shrink-0 !self-start"
           >
-            <Pencil className="w-4 h-4" />
             {editLabel ?? 'Edit Profile'}
-          </button>
+          </Button>
         ) : null}
       </div>
     </div>

@@ -4,6 +4,8 @@ import { toast } from '@/lib/ui/feedback';
 
 import { useMemo } from 'react';
 import { Bookmark, CalendarClock, Phone, MessageCircle, UserPlus } from 'lucide-react';
+import { Button } from '@/components/shared/Button';
+import { IconButton } from '@/components/shared/IconButton';
 import { AppTable, type AppTableColumn } from '@/components/shared/AppTable';
 import {
   formatDueMoney,
@@ -44,10 +46,13 @@ function handleNextAction(row: CustomerReceivable, e: React.MouseEvent) {
 function RowActionIcons({ row }: { row: CustomerReceivable }) {
   return (
     <div className="flex items-center justify-center gap-1">
-      <button
+      <IconButton
         type="button"
         title="Call"
-        className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-blue-600 hover:bg-slate-100 cursor-pointer"
+        aria-label="Call customer"
+        variant="ghost"
+        size="sm"
+        className="!h-8 !w-8"
         onClick={(e) => {
           e.stopPropagation();
           if (!openPhoneCall(row.phone)) {
@@ -55,12 +60,15 @@ function RowActionIcons({ row }: { row: CustomerReceivable }) {
           }
         }}
       >
-        <Phone className="w-4 h-4" />
-      </button>
-      <button
+        <Phone className="w-4 h-4 text-slate-600 hover:text-slate-900" />
+      </IconButton>
+      <IconButton
         type="button"
         title="WhatsApp"
-        className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-blue-600 hover:bg-slate-100 cursor-pointer"
+        aria-label="WhatsApp customer"
+        variant="ghost"
+        size="sm"
+        className="!h-8 !w-8"
         onClick={(e) => {
           e.stopPropagation();
           if (!openWhatsApp(row.phone)) {
@@ -68,8 +76,8 @@ function RowActionIcons({ row }: { row: CustomerReceivable }) {
           }
         }}
       >
-        <MessageCircle className="w-4 h-4" />
-      </button>
+        <MessageCircle className="w-4 h-4 text-slate-600 hover:text-slate-900" />
+      </IconButton>
     </div>
   );
 }
@@ -222,32 +230,38 @@ export function CustomerDueTable({
               ))}
             </select>
           )}
-          <button
+          <Button
             type="button"
             disabled={safePage <= 1}
-            className="px-2 py-1 rounded border border-slate-200 disabled:opacity-40 cursor-pointer disabled:cursor-not-allowed"
+            variant="outline"
+            size="sm"
+            className="!px-2 !py-1"
             onClick={() => onPageChange(safePage - 1)}
           >
             Previous
-          </button>
+          </Button>
           {Array.from({ length: totalPages }, (_, i) => i + 1).slice(0, 5).map((n) => (
-            <button
+            <Button
               key={n}
               type="button"
-              className={`px-2.5 py-1 rounded border cursor-pointer ${n === safePage ? 'border-indigo-300 bg-indigo-50 text-indigo-700 font-bold' : 'border-slate-200'}`}
+              variant={n === safePage ? 'primary' : 'outline'}
+              size="sm"
+              className="!px-2.5 !py-1"
               onClick={() => onPageChange(n)}
             >
               {n}
-            </button>
+            </Button>
           ))}
-          <button
+          <Button
             type="button"
             disabled={safePage >= totalPages}
-            className="px-2 py-1 rounded border border-slate-200 disabled:opacity-40 cursor-pointer disabled:cursor-not-allowed"
+            variant="outline"
+            size="sm"
+            className="!px-2 !py-1"
             onClick={() => onPageChange(safePage + 1)}
           >
             Next
-          </button>
+          </Button>
         </div>
       </div>
     </div>

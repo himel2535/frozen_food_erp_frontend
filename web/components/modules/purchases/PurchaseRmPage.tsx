@@ -15,7 +15,7 @@ import { MODULE_FILTER_ACTION_BTN, MODULE_FILTER_INPUT, MODULE_FILTER_SEARCH } f
 import { StatusBadge } from '@/components/shared/StatusBadge';
 import { TableIconAction } from '@/components/shared/TableIconAction';
 import { AppTable, type AppTableColumn } from '@/components/shared/AppTable';
-import { CF_BTN_OUTLINE, CF_BTN_PRIMARY } from '@/components/modules/crm/customer-form/customer-form-styles';
+import { Button } from '@/components/shared/Button';
 import { useAppStore } from '@/lib/state/app-store';
 import { usePaginatedApiResource } from '@/hooks/use-paginated-api-resource';
 import { ListPagination } from '@/components/shared/ListPagination';
@@ -550,15 +550,29 @@ export function PurchaseRmPage() {
 
   useRegisterModuleActions(
     <>
-      <button type="button" onClick={() => toast.info('Feature coming soon', { module: 'Purchases', description: "Import Excel" })} className={CF_BTN_OUTLINE}>
-        <FileSpreadsheet className="w-4 h-4" /> Import Excel
-      </button>
-      <button type="button" onClick={() => setLowStockOnly((v) => !v)} className={`${CF_BTN_OUTLINE} ${lowStockOnly ? 'ring-2 ring-blue-300' : ''}`}>
+      <Button
+        type="button"
+        onClick={() => toast.info('Feature coming soon', { module: 'Purchases', description: "Import Excel" })}
+        variant="outline"
+        leftIcon={<FileSpreadsheet className="w-4 h-4" />}
+      >
+        Import Excel
+      </Button>
+      <Button
+        type="button"
+        onClick={() => setLowStockOnly((v) => !v)}
+        variant={lowStockOnly ? 'primary' : 'outline'}
+      >
         Low Stock
-      </button>
-      <button type="button" onClick={openCreate} className={CF_BTN_PRIMARY}>
-        <Plus className="w-4 h-4" /> Create RM Order
-      </button>
+      </Button>
+      <Button
+        type="button"
+        onClick={openCreate}
+        variant="primary"
+        leftIcon={<Plus className="w-4 h-4" />}
+      >
+        Create RM Order
+      </Button>
     </>,
     [lowStockOnly, openCreate],
   );
@@ -708,7 +722,16 @@ export function PurchaseRmPage() {
               <>
                 {String(row.status) === 'draft' && <TableIconAction variant="edit" onClick={() => openEdit(row)} />}
                 {String(row.status) === 'draft' && (
-                  <button type="button" title="Send" onClick={() => handleSendForApproval(String(row.id))} className="p-1.5 rounded-lg hover:bg-blue-50 text-blue-600 cursor-pointer text-[10px] font-bold">Send</button>
+                  <Button
+                    type="button"
+                    title="Send"
+                    variant="outline"
+                    size="sm"
+                    className="!px-2 !py-1 text-[11px]"
+                    onClick={() => handleSendForApproval(String(row.id))}
+                  >
+                    Send
+                  </Button>
                 )}
                 {['sent', 'partially_received'].includes(String(row.status)) && (
                   showReceiveCue ? (

@@ -1,5 +1,5 @@
 export const DUE_BTN_RECEIVE =
-  'inline-flex items-center justify-center rounded-lg px-2.5 py-1 text-[11px] font-bold text-indigo-700 bg-indigo-50 border border-indigo-200 hover:bg-indigo-100 transition-colors cursor-pointer';
+  'inline-flex items-center justify-center rounded-lg px-2.5 py-1.5 text-[11px] font-semibold text-indigo-700 bg-indigo-50 border border-indigo-200 hover:bg-indigo-100/70 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition-all select-none cursor-pointer';
 
 export const DUE_AVATAR_CLS =
   'flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-indigo-100 text-indigo-700 text-xs font-extrabold';

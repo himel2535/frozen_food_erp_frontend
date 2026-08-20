@@ -11,6 +11,8 @@ import {
   SlidersHorizontal,
 } from 'lucide-react';
 import { Footer } from '@/components/layout/Footer';
+import { Button } from '@/components/shared/Button';
+import { IconButton } from '@/components/shared/IconButton';
 import { useChromeSuppressed, useRegisterModuleActions } from '@/components/layout/ModuleActionsContext';
 import { AppTable, type AppTableColumn } from '@/components/shared/AppTable';
 import { ModuleFilterBar } from '@/components/shared/ModuleFilterBar';
@@ -349,13 +351,14 @@ export function ComplaintsPage() {
 
   useRegisterModuleActions(
     view === 'main' ? (
-      <button
+      <Button
         type="button"
         onClick={() => setView('form')}
-        className="bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold px-4 py-2.5 rounded-xl cursor-pointer flex items-center gap-2"
+        variant="primary"
+        leftIcon={<Plus className="w-4 h-4" />}
       >
-        <Plus className="w-4 h-4" /> {t('crm.add_complaint')}
-      </button>
+        {t('crm.add_complaint')}
+      </Button>
     ) : null,
     [view, t],
   );
@@ -450,25 +453,32 @@ export function ComplaintsPage() {
             <button type="button" className={`${MODULE_FILTER_INPUT} inline-flex items-center gap-1.5`}>
               <SlidersHorizontal className="w-3.5 h-3.5" /> More Filters
             </button>
-            <div className="inline-flex rounded-xl border border-blue-100/70 overflow-hidden shrink-0">
+            <div className="inline-flex rounded-xl border border-slate-200 overflow-hidden shrink-0 bg-white/45 p-0.5">
               <button
                 type="button"
                 onClick={() => setLayout('table')}
-                className={`px-3 py-2 text-xs font-bold inline-flex items-center gap-1.5 cursor-pointer ${layout === 'table' ? 'bg-blue-600 text-white' : 'bg-white/45 text-slate-600 hover:bg-blue-50'}`}
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold inline-flex items-center gap-1.5 cursor-pointer transition-all ${layout === 'table' ? 'bg-slate-100 text-slate-800' : 'text-slate-600 hover:bg-slate-50'}`}
               >
                 <List className="w-3.5 h-3.5" /> Table View
               </button>
               <button
                 type="button"
                 onClick={() => setLayout('kanban')}
-                className={`px-3 py-2 text-xs font-bold inline-flex items-center gap-1.5 cursor-pointer ${layout === 'kanban' ? 'bg-blue-600 text-white' : 'bg-white/45 text-slate-600 hover:bg-blue-50'}`}
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold inline-flex items-center gap-1.5 cursor-pointer transition-all ${layout === 'kanban' ? 'bg-slate-100 text-slate-800' : 'text-slate-600 hover:bg-slate-50'}`}
               >
                 <LayoutGrid className="w-3.5 h-3.5" /> Kanban View
               </button>
             </div>
-            <button type="button" onClick={() => toast.info('Export coming soon', { module: 'Complaints' })} className="inline-flex items-center justify-center w-9 h-9 rounded-xl border border-blue-100/70 bg-white/45 text-blue-700 cursor-pointer shrink-0">
+            <IconButton
+              type="button"
+              onClick={() => toast.info('Export coming soon', { module: 'Complaints' })}
+              variant="outline"
+              size="md"
+              aria-label="Export complaints"
+              className="!w-9 !h-9 !rounded-xl"
+            >
               <Download className="w-4 h-4" />
-            </button>
+            </IconButton>
           </>
         }
       />

@@ -5,6 +5,7 @@ import { toast } from '@/lib/ui/feedback';
 import { useMemo, useState } from 'react';
 import { Plus } from 'lucide-react';
 import { Footer } from '@/components/layout/Footer';
+import { Button } from '@/components/shared/Button';
 import { useRegisterModuleActions } from '@/components/layout/ModuleActionsContext';
 import { AppFormFields, AppFormModal } from '@/components/shared/AppForm';
 import { useAppStore } from '@/lib/state/app-store';
@@ -154,14 +155,14 @@ export function ProfitLossPage() {
   };
 
   useRegisterModuleActions(
-    <button
+    <Button
       type="button"
       onClick={() => openAdd()}
-      className="inline-flex items-center gap-2 self-start xl:self-auto bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold px-4 py-2.5 rounded-xl transition-colors cursor-pointer"
+      variant="primary"
+      leftIcon={<Plus className="w-4 h-4" />}
     >
-      <Plus className="w-4 h-4" />
       Add Line
-    </button>,
+    </Button>,
     [openAdd],
   );
 

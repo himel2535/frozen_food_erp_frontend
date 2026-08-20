@@ -3,6 +3,7 @@
 import { toast } from '@/lib/ui/feedback';
 
 import { FileText, BookOpen, History, StickyNote, MoreHorizontal, Building2 } from 'lucide-react';
+import { Button } from '@/components/shared/Button';
 import {
   formatDueDate,
   formatDueMoney,
@@ -103,14 +104,15 @@ function PanelFooter({
 }) {
   return (
     <div className="space-y-2 pt-2 border-t border-slate-100 mt-auto">
-      <button
+      <Button
         type="button"
         disabled={disabled}
-        className="w-full inline-flex items-center justify-center gap-2 rounded-lg bg-blue-600 hover:bg-blue-700 disabled:bg-slate-200 disabled:text-slate-400 disabled:cursor-not-allowed text-white text-sm font-bold py-2.5 cursor-pointer"
         onClick={disabled ? undefined : onPay}
+        variant="primary"
+        className="w-full text-sm py-2.5 font-bold"
       >
         Make Payment
-      </button>
+      </Button>
       <div className="flex items-center justify-center gap-2">
         {[
           { icon: BookOpen, label: 'View Ledger' },

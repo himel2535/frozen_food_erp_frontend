@@ -9,7 +9,7 @@ import { AppTable, type AppTableColumn } from '@/components/shared/AppTable';
 import { StatusBadge } from '@/components/shared/StatusBadge';
 import { TableIconAction } from '@/components/shared/TableIconAction';
 import { ModuleKpiSection } from '@/components/shared/ModuleKpiSection';
-import { CF_BTN_PRIMARY } from '@/components/modules/crm/customer-form/customer-form-styles';
+import { ModuleToolbarActions } from '@/components/shared/ListToolbar';
 import { useAppStore } from '@/lib/state/app-store';
 import { isMainAdmin, summarizeSections } from '@/lib/services/access-control-service';
 import {
@@ -125,11 +125,7 @@ export function UsersAdminPage() {
   }, [sectionOptions]);
 
   useRegisterModuleActions(
-    canManage && view === 'list' ? (
-      <button type="button" onClick={openCreate} className={CF_BTN_PRIMARY}>
-        <Plus className="w-4 h-4" /> Add User
-      </button>
-    ) : null,
+    canManage && view === 'list' ? <ModuleToolbarActions onAdd={openCreate} addLabel="Add User" /> : null,
     [canManage, view, openCreate],
   );
 

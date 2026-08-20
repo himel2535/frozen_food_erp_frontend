@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { Button } from '@/components/shared/Button';
 import { Icon } from '@iconify/react';
 import { Check, Lock } from 'lucide-react';
 import { formatMoney } from '@/lib/services/salary-sheet-service';
@@ -112,22 +113,26 @@ export function SalaryPaymentFormCard({
               onChange={(e) => setPayAmount(e.target.value)}
               readOnly={locked || (paymentType === 'full' && amountMode === 'full')}
             />
-            <button
+            <Button
               type="button"
-              className={amountMode === 'full' ? RP_PILL_TOGGLE_ACTIVE_CLS : RP_PILL_TOGGLE_IDLE_CLS}
+              variant={amountMode === 'full' ? 'primary' : 'outline'}
+              size="sm"
+              className="!rounded-lg"
               onClick={() => handleAmountMode('full')}
               disabled={locked}
             >
               Full Amount
-            </button>
-            <button
+            </Button>
+            <Button
               type="button"
-              className={amountMode === 'custom' ? RP_PILL_TOGGLE_ACTIVE_CLS : RP_PILL_TOGGLE_IDLE_CLS}
+              variant={amountMode === 'custom' ? 'primary' : 'outline'}
+              size="sm"
+              className="!rounded-lg"
               onClick={() => handleAmountMode('custom')}
               disabled={locked}
             >
               Custom
-            </button>
+            </Button>
           </div>
         </div>
 
@@ -176,14 +181,16 @@ export function SalaryPaymentFormCard({
         </div>
 
         {!locked ? (
-          <button
+          <Button
             type="button"
-            className={RP_APPROVE_BTN_CLS}
+            variant="primary"
+            size="md"
+            className="!w-full"
+            leftIcon={<Check className="w-4 h-4" />}
             onClick={() => onApprove({ amount: amountNum, method, date, note })}
           >
-            <Check className="w-4 h-4" />
             Approve &amp; Pay {formatMoney(amountNum)}
-          </button>
+          </Button>
         ) : (
           <div className="rounded-xl bg-slate-50 border border-slate-200 p-3 text-xs font-medium text-slate-600 flex items-center gap-2">
             <Lock className="w-4 h-4 shrink-0" /> Salary locked after approval.

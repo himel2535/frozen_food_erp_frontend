@@ -1,6 +1,7 @@
 'use client';
 
 import { Filter, RotateCcw } from 'lucide-react';
+import { Button } from '@/components/shared/Button';
 import {
   TRIAL_BALANCE_BRANCHES,
   TRIAL_BALANCE_COMPANIES,
@@ -96,22 +97,24 @@ export function TrialBalanceFilterCard({
           </label>
         </div>
         <div className="flex items-center gap-2">
-          <button
+          <Button
             type="button"
             onClick={onReset}
-            className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 cursor-pointer"
+            variant="outline"
+            size="sm"
+            leftIcon={<RotateCcw className="w-3.5 h-3.5" />}
           >
-            <RotateCcw className="w-3.5 h-3.5" />
             Reset
-          </button>
-          <button
+          </Button>
+          <Button
             type="button"
             onClick={onApply}
-            className="inline-flex items-center gap-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 text-xs font-semibold cursor-pointer"
+            variant="primary"
+            size="sm"
+            leftIcon={<Filter className="w-3.5 h-3.5" />}
           >
-            <Filter className="w-3.5 h-3.5" />
             Filter
-          </button>
+          </Button>
         </div>
       </div>
     </div>

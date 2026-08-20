@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { loadIcons } from '@iconify/react';
 import { Footer } from '@/components/layout/Footer';
+import { Button } from '@/components/shared/Button';
 import { PageHeader } from '@/components/shared/PageHeader';
 import { PosCartPanel } from '@/components/modules/sales/pos/PosCartPanel';
 import { PosPageSkeleton } from '@/components/modules/sales/pos/PosPageSkeleton';
@@ -550,9 +551,15 @@ export function PosPage() {
           size="compact"
           className="mb-2 shrink-0"
           actions={
-            <button type="button" onClick={startNewSale} className="bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold px-4 py-2.5 rounded-xl transition-colors inline-flex items-center gap-2 cursor-pointer">
-              <Plus className="w-4 h-4" /> {t('sales.pos_new_sale')}
-            </button>
+            <Button
+              type="button"
+              variant="primary"
+              size="sm"
+              leftIcon={<Plus className="w-4 h-4" />}
+              onClick={startNewSale}
+            >
+              {t('sales.pos_new_sale')}
+            </Button>
           }
         />
         <PosReceiptView
@@ -587,15 +594,30 @@ export function PosPage() {
         className="mb-2 shrink-0"
         actions={
           <>
-            <button type="button" onClick={holdSale} className={MODULE_SECONDARY_BTN}>
-              <PauseCircle className="w-4 h-4" /> {t('sales.pos_hold_sale')}
-            </button>
-            <button type="button" onClick={showRecentSales} className={MODULE_SECONDARY_BTN}>
-              <Clock3 className="w-4 h-4" /> {t('sales.pos_recent_sales')}
-            </button>
-            <button type="button" onClick={startNewSale} className="bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold px-4 py-2.5 rounded-xl transition-colors inline-flex items-center gap-2 cursor-pointer">
-              <Plus className="w-4 h-4" /> {t('sales.pos_new_sale')}
-            </button>
+            <Button
+              type="button"
+              onClick={holdSale}
+              variant="outline"
+              leftIcon={<PauseCircle className="w-4 h-4" />}
+            >
+              {t('sales.pos_hold_sale')}
+            </Button>
+            <Button
+              type="button"
+              onClick={showRecentSales}
+              variant="outline"
+              leftIcon={<Clock3 className="w-4 h-4" />}
+            >
+              {t('sales.pos_recent_sales')}
+            </Button>
+            <Button
+              type="button"
+              onClick={startNewSale}
+              variant="primary"
+              leftIcon={<Plus className="w-4 h-4" />}
+            >
+              {t('sales.pos_new_sale')}
+            </Button>
           </>
         }
       />
@@ -627,8 +649,11 @@ export function PosPage() {
                     <p className="text-[10px] text-slate-500">{new Date(hold.savedAt).toLocaleString()}</p>
                   </div>
                   <div className="flex gap-1.5 shrink-0">
-                    <button
+                    <Button
                       type="button"
+                      variant="primary"
+                      size="sm"
+                      className="!px-2.5 !py-1.5 !text-[11px]"
                       onClick={() => void (async () => {
                         if (cart.length > 0) {
                           const ok = await confirmAction({
@@ -641,22 +666,23 @@ export function PosPage() {
                         }
                         loadHeldSale(hold);
                       })()}
-                      className="px-2.5 py-1.5 rounded-lg bg-blue-600 text-white text-[11px] font-bold cursor-pointer"
                     >
                       Restore
-                    </button>
-                    <button
+                    </Button>
+                    <Button
                       type="button"
+                      variant="danger"
+                      size="sm"
+                      className="!px-2.5 !py-1.5 !text-[11px]"
                       onClick={() => {
                         const next = holds.filter((h) => h.id !== hold.id);
                         setHolds(next);
                         savePosHolds(next);
                         toast.success('Held sale removed', { module: 'POS' });
                       }}
-                      className="px-2.5 py-1.5 rounded-lg border border-rose-200 bg-rose-50 text-[11px] font-bold text-rose-700 cursor-pointer"
                     >
                       Delete
-                    </button>
+                    </Button>
                   </div>
                 </div>
               ))}

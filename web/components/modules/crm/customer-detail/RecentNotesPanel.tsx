@@ -8,9 +8,10 @@ import {
   CD_TITLE,
 } from '@/components/modules/crm/customer-detail/customer-detail-styles';
 import { formatDetailDate } from '@/components/modules/crm/customer-detail/customer-detail-utils';
+import { Button } from '@/components/shared/Button';
 import { useAppStore } from '@/lib/state/app-store';
 import { createCommunication } from '@/lib/services/crm-service';
-import { FORM_BTN_PRIMARY, FORM_BTN_SECONDARY, FORM_TEXTAREA_CLS } from '@/lib/ui/form-styles';
+import { FORM_TEXTAREA_CLS } from '@/lib/ui/form-styles';
 
 type NoteItem = {
   id: string;
@@ -107,14 +108,15 @@ export function RecentNotesPanel({
           <h3 className={CD_TITLE}>Recent Notes</h3>
         </div>
         {!showForm ? (
-          <button
+          <Button
             type="button"
             onClick={() => setShowForm(true)}
-            className="inline-flex items-center gap-1.5 text-sm font-bold text-blue-600 hover:text-blue-700 cursor-pointer"
+            variant="ghost"
+            className="text-blue-600 hover:text-blue-700 font-bold"
+            leftIcon={<Plus className="w-4 h-4" />}
           >
-            <Plus className="w-4 h-4" />
             Add Note
-          </button>
+          </Button>
         ) : null}
       </div>
 
@@ -133,12 +135,12 @@ export function RecentNotesPanel({
           />
           {error ? <p className="text-xs font-semibold text-rose-600">{error}</p> : null}
           <div className="flex justify-end gap-2">
-            <button type="button" onClick={handleCancel} className={FORM_BTN_SECONDARY}>
+            <Button type="button" onClick={handleCancel} variant="outline">
               Cancel
-            </button>
-            <button type="button" onClick={handleSave} className={FORM_BTN_PRIMARY}>
+            </Button>
+            <Button type="button" onClick={handleSave} variant="primary">
               Save Note
-            </button>
+            </Button>
           </div>
         </div>
       ) : null}

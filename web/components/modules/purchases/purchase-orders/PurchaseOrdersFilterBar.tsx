@@ -74,7 +74,7 @@ export function PurchaseOrdersFilterBar({
               type="button"
               onClick={() => onStatusChange(tab.id)}
               className={`px-3 py-1.5 rounded-lg text-xs font-bold cursor-pointer transition-colors whitespace-nowrap shrink-0 ${
-                statusFilter === tab.id ? PO_PILL_ACTIVE : PO_PILL_INACTIVE
+                statusFilter === tab.id ? 'bg-slate-100 text-slate-800' : 'text-slate-600 hover:bg-slate-50'
               }`}
             >
               {tab.label}

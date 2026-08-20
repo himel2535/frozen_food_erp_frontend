@@ -61,7 +61,7 @@ export function SuppliersFilterBar({
               type="button"
               onClick={() => onTabChange(item.id)}
               className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors cursor-pointer shrink-0 ${
-                tab === item.id ? SUPPLIER_PILL_ACTIVE : SUPPLIER_PILL_INACTIVE
+                tab === item.id ? 'bg-slate-100 text-slate-800' : 'text-slate-600 hover:bg-slate-50'
               }`}
             >
               {item.label}

@@ -1,6 +1,7 @@
 'use client';
 
 import { useMemo } from 'react';
+import { Button } from '@/components/shared/Button';
 import { CheckCircle2 } from 'lucide-react';
 import { AppTable, type AppTableColumn } from '@/components/shared/AppTable';
 import { InventoryItemThumb } from '@/components/shared/InventoryItemThumb';
@@ -190,34 +191,38 @@ export function SuppliersTable({
           Showing {rowTotal === 0 ? 0 : (safePage - 1) * pageSize + 1}–{Math.min(safePage * pageSize, rowTotal)} of {rowTotal} suppliers
         </span>
         <div className="flex flex-wrap items-center gap-2">
-          <button
+          <Button
             type="button"
             disabled={safePage <= 1}
             onClick={() => onPageChange(safePage - 1)}
-            className="px-3 py-1.5 border border-slate-200 rounded-lg cursor-pointer disabled:opacity-50"
+            variant="outline"
+            size="sm"
+            className="!px-3 !py-1.5"
           >
             Previous
-          </button>
+          </Button>
           {pageNumbers.map((n) => (
-            <button
+            <Button
               key={n}
               type="button"
               onClick={() => onPageChange(n)}
-              className={`min-w-[32px] px-2 py-1.5 rounded-lg font-bold cursor-pointer ${
-                n === safePage ? 'bg-blue-600 text-white' : 'border border-slate-200 hover:bg-slate-50'
-              }`}
+              variant={n === safePage ? 'primary' : 'outline'}
+              size="sm"
+              className="!min-w-[32px] !px-2 !py-1.5"
             >
               {n}
-            </button>
+            </Button>
           ))}
-          <button
+          <Button
             type="button"
             disabled={safePage >= totalPages}
             onClick={() => onPageChange(safePage + 1)}
-            className="px-3 py-1.5 border border-slate-200 rounded-lg cursor-pointer disabled:opacity-50"
+            variant="outline"
+            size="sm"
+            className="!px-3 !py-1.5"
           >
             Next
-          </button>
+          </Button>
         </div>
       </div>
     </div>

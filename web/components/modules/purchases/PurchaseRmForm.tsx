@@ -16,10 +16,8 @@ import { FormHeader } from '@/components/layout/FormHeader';
 import { MODULE_LIST_SHELL } from '@/lib/ui/module-layout';
 import { FormSectionCard } from '@/components/modules/crm/customer-form/FormSectionCard';
 import { IconInput, IconSelect, IconTextarea } from '@/components/modules/crm/customer-form/IconField';
+import { Button } from '@/components/shared/Button';
 import {
-  CF_BTN_GHOST,
-  CF_BTN_OUTLINE,
-  CF_BTN_PRIMARY,
   CF_FOOTER_CLS,
 } from '@/components/modules/crm/customer-form/customer-form-styles';
 import { PurchaseRmProductsTable } from '@/components/modules/purchases/purchase-rm-form/PurchaseRmProductsTable';
@@ -201,30 +199,30 @@ export function PurchaseRmForm({
         </div>
 
         <div className={CF_FOOTER_CLS}>
-          <button type="button" onClick={onCancel} className={CF_BTN_GHOST}>
+          <Button type="button" onClick={onCancel} variant="ghost">
             Cancel
-          </button>
+          </Button>
           <div className="flex flex-wrap items-center gap-2 sm:ml-auto">
-            <button
+            <Button
               type="button"
               disabled={isSubmitting}
-              aria-busy={isSubmitting}
               onClick={() => { saveActionRef.current = 'draft'; formRef.current?.requestSubmit(); }}
-              className={`${CF_BTN_OUTLINE} disabled:opacity-50 disabled:cursor-not-allowed`}
+              variant="outline"
+              leftIcon={<Save className="w-4 h-4" />}
+              loading={isSubmitting && saveActionRef.current === 'draft'}
             >
-              <Save className="w-4 h-4" />
-              <SubmitBusyLabel busy={isSubmitting} idle="Save Draft" />
-            </button>
-            <button
+              <SubmitBusyLabel busy={isSubmitting && saveActionRef.current === 'draft'} idle="Save Draft" />
+            </Button>
+            <Button
               type="button"
               disabled={isSubmitting}
-              aria-busy={isSubmitting}
               onClick={() => { saveActionRef.current = 'complete'; formRef.current?.requestSubmit(); }}
-              className={`${CF_BTN_PRIMARY} disabled:opacity-50 disabled:cursor-not-allowed`}
+              variant="primary"
+              leftIcon={<ShoppingCart className="w-4 h-4" />}
+              loading={isSubmitting && saveActionRef.current === 'complete'}
             >
-              <ShoppingCart className="w-4 h-4" />
-              <SubmitBusyLabel busy={isSubmitting} idle="Complete RM Order" />
-            </button>
+              <SubmitBusyLabel busy={isSubmitting && saveActionRef.current === 'complete'} idle="Complete RM Order" />
+            </Button>
           </div>
         </div>
       </form>

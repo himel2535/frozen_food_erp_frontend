@@ -4,6 +4,7 @@ import type { FormEvent, ReactNode } from 'react';
 import { Footer } from '@/components/layout/Footer';
 import { useRegisterModuleActions } from '@/components/layout/ModuleActionsContext';
 import { AppFormModal } from '@/components/shared/AppForm';
+import { Button } from '@/components/shared/Button';
 import { ModuleKpiSection } from '@/components/shared/ModuleKpiSection';
 import type { KpiCardItem } from '@/components/shared/KpiCards';
 import { shouldShowModuleKpis } from '@/lib/ui/kpi-loading';
@@ -131,10 +132,26 @@ export function PaginationBar({
   return (
     <div className="flex items-center justify-between text-xs text-slate-500">
       <span>Showing {start} to {end} of {total}</span>
-      <div className="flex gap-2">
-        <button type="button" disabled={page <= 1} onClick={() => onPageChange(page - 1)} className="px-3 py-1.5 border border-slate-200 rounded-lg cursor-pointer disabled:opacity-50">Previous</button>
-        <span className="px-2 py-1.5">Page {page} of {totalPages}</span>
-        <button type="button" disabled={page >= totalPages} onClick={() => onPageChange(page + 1)} className="px-3 py-1.5 border border-slate-200 rounded-lg cursor-pointer disabled:opacity-50">Next</button>
+      <div className="flex items-center gap-2">
+        <Button
+          type="button"
+          disabled={page <= 1}
+          onClick={() => onPageChange(page - 1)}
+          variant="outline"
+          size="sm"
+        >
+          Previous
+        </Button>
+        <span className="px-2 py-1.5 font-bold">Page {page} of {totalPages}</span>
+        <Button
+          type="button"
+          disabled={page >= totalPages}
+          onClick={() => onPageChange(page + 1)}
+          variant="outline"
+          size="sm"
+        >
+          Next
+        </Button>
       </div>
     </div>
   );

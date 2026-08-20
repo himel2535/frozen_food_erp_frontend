@@ -6,6 +6,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Plus } from 'lucide-react';
 import { Footer } from '@/components/layout/Footer';
+import { ModuleToolbarActions } from '@/components/shared/ListToolbar';
 import { useChromeSuppressed, useRegisterModuleActions } from '@/components/layout/ModuleActionsContext';
 import { useAppStore } from '@/lib/state/app-store';
 import { createSupplier, updateSupplier } from '@/lib/services/purchases-service';
@@ -24,7 +25,7 @@ import {
   supplierToFormValues,
   type SupplierFormValues,
 } from './suppliers/SupplierForm';
-import { SUPPLIER_BTN_PRIMARY, SUPPLIER_CARD_CLS } from './suppliers/suppliers-styles';
+import { SUPPLIER_CARD_CLS } from './suppliers/suppliers-styles';
 import { isModuleApiMode } from '@/lib/config/data-source';
 import { isKpiBootLoading, pickApiListRows } from '@/lib/ui/kpi-loading';
 import { usePaginatedApiResource } from '@/hooks/use-paginated-api-resource';
@@ -100,12 +101,7 @@ export function SuppliersPage() {
   useChromeSuppressed(view !== 'main');
 
   useRegisterModuleActions(
-    view === 'main' ? (
-      <button type="button" onClick={openCreate} className={`${SUPPLIER_BTN_PRIMARY} self-start`}>
-        <Plus className="w-4 h-4" />
-        Add Supplier
-      </button>
-    ) : null,
+    view === 'main' ? <ModuleToolbarActions onAdd={openCreate} addLabel="Add Supplier" /> : null,
     [view],
   );
 

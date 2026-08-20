@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { useMemo, useState } from 'react';
+import { Button } from '@/components/shared/Button';
 import { Download, Layers, Package, Pencil } from 'lucide-react';
 import { FormHeader } from '@/components/layout/FormHeader';
 import { AppTable, type AppTableColumn } from '@/components/shared/AppTable';
@@ -334,27 +335,29 @@ export function InventoryMaterialRequirementView({
               />
             </div>
             <div className="flex flex-wrap items-center justify-center gap-2 mt-5">
-              <button
+              <Button
                 type="button"
                 disabled={!linkRecipeId}
                 onClick={() => linkRecipeId && onLinkBom?.(linkRecipeId)}
-                className="inline-flex items-center gap-1.5 text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed px-4 py-2.5 rounded-xl cursor-pointer"
+                variant="primary"
+                size="sm"
               >
                 Link BOM &amp; View Requirements
-              </button>
+              </Button>
               {onEdit ? (
-                <button
+                <Button
                   type="button"
                   onClick={onEdit}
-                  className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-600 border border-slate-200 bg-white hover:bg-slate-50 px-3 py-2 rounded-xl cursor-pointer"
+                  variant="outline"
+                  size="sm"
+                  leftIcon={<Pencil className="w-3.5 h-3.5" />}
                 >
-                  <Pencil className="w-3.5 h-3.5" />
                   Edit Product
-                </button>
+                </Button>
               ) : null}
               <Link
                 href={variant === 'finished-goods' ? '/purchases/recipes/finished-goods' : '/purchases/recipes/semi-finished'}
-                className="inline-flex items-center gap-1.5 text-xs font-bold text-blue-700 border border-blue-200 bg-blue-50 hover:bg-blue-100 px-3 py-2 rounded-xl cursor-pointer"
+                className="inline-flex items-center justify-center font-semibold transition-all duration-200 cursor-pointer border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 px-3 py-1.5 text-xs rounded-lg gap-1.5 select-none"
               >
                 Open Recipes
               </Link>

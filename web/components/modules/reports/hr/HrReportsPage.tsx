@@ -3,6 +3,7 @@
 import { useMemo, useState } from 'react';
 import { Download, Filter, Printer } from 'lucide-react';
 import { Footer } from '@/components/layout/Footer';
+import { Button } from '@/components/shared/Button';
 import { useRegisterModuleActions } from '@/components/layout/ModuleActionsContext';
 import { useHrReportApiRows } from '@/hooks/use-report-api-data';
 import { ApiModeBanner } from '@/components/shared/ApiModeBanner';
@@ -188,22 +189,22 @@ export function HrReportsPage() {
 
   useRegisterModuleActions(
     <>
-      <button
+      <Button
         type="button"
         onClick={() => printSection('full')}
-        className={MODULE_PRINT_BTN}
+        variant="outline"
+        leftIcon={<Printer className="w-4 h-4" />}
       >
-        <Printer className="w-4 h-4" />
         {t('reports.hr_print_report')}
-      </button>
-      <button
+      </Button>
+      <Button
         type="button"
         onClick={handleExport}
-        className="bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold px-4 py-2.5 rounded-xl transition-colors flex items-center gap-2 cursor-pointer"
+        variant="outline"
+        leftIcon={<Download className="w-4 h-4" />}
       >
-        <Download className="w-4 h-4" />
         {t('reports.hr_export')}
-      </button>
+      </Button>
     </>,
     [printSection, handleExport, t],
   );

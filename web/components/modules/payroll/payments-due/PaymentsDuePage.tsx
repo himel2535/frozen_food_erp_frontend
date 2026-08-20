@@ -5,6 +5,7 @@ import { toast } from '@/lib/ui/feedback';
 import { useEffect, useMemo, useState } from 'react';
 import { ArrowRight, Download, Filter, Info } from 'lucide-react';
 import { Footer } from '@/components/layout/Footer';
+import { Button } from '@/components/shared/Button';
 import { useRegisterModuleActions } from '@/components/layout/ModuleActionsContext';
 import { PaymentsDueFilters } from '@/components/modules/payroll/payments-due/PaymentsDueFilters';
 import { PaymentsDueKpiBar } from '@/components/modules/payroll/payments-due/PaymentsDueKpiBar';
@@ -97,20 +98,24 @@ export function PaymentsDuePage() {
 
   useRegisterModuleActions(
     <>
-      <button
+      <Button
         type="button"
-        className={PD_BTN_OUTLINE}
+        variant="outline"
+        size="sm"
+        leftIcon={<Filter className="w-3.5 h-3.5" />}
         onClick={() => setShowFilters((v) => !v)}
       >
-        <Filter className="w-3.5 h-3.5 inline mr-1" /> Filters
-      </button>
-      <button
+        Filters
+      </Button>
+      <Button
         type="button"
-        className={PD_EXPORT_BTN_CLS}
+        variant="outline"
+        size="sm"
+        leftIcon={<Download className="w-3.5 h-3.5" />}
         onClick={() => toast.info('Feature coming soon', { module: 'Payments Due', description: "Export coming soon." })}
       >
-        <Download className="w-3.5 h-3.5" /> Export
-      </button>
+        Export
+      </Button>
     </>,
     [showFilters],
   );

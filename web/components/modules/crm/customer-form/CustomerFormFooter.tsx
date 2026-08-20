@@ -2,11 +2,8 @@
 
 import { useRef } from 'react';
 import { Save } from 'lucide-react';
-import { SubmitBusyLabel } from '@/hooks/use-submit-guard';
+import { Button } from '@/components/shared/Button';
 import {
-  CF_BTN_GHOST,
-  CF_BTN_OUTLINE,
-  CF_BTN_PRIMARY,
   CF_FOOTER_CLS,
 } from '@/components/modules/crm/customer-form/customer-form-styles';
 
@@ -25,28 +22,26 @@ export function CustomerFormFooter({
 }) {
   return (
     <div className={CF_FOOTER_CLS}>
-      <button type="button" onClick={onCancel} className={CF_BTN_GHOST}>
+      <Button type="button" onClick={onCancel} variant="ghost">
         Cancel
-      </button>
+      </Button>
       <div className="flex flex-wrap items-center gap-2 sm:justify-end">
-        <button
+        <Button
           type="button"
           onClick={onSaveAndAdd}
-          disabled={isSubmitting}
-          aria-busy={isSubmitting}
-          className={`${CF_BTN_OUTLINE} disabled:opacity-50 disabled:cursor-not-allowed`}
+          loading={isSubmitting}
+          variant="outline"
         >
-          <SubmitBusyLabel busy={isSubmitting} idle="Save & Add Another" />
-        </button>
-        <button
+          Save & Add Another
+        </Button>
+        <Button
           type="submit"
-          disabled={isSubmitting}
-          aria-busy={isSubmitting}
-          className={`${CF_BTN_PRIMARY} disabled:opacity-50 disabled:cursor-not-allowed`}
+          loading={isSubmitting}
+          variant="primary"
+          leftIcon={<Save className="w-4 h-4" />}
         >
-          <Save className="w-4 h-4" />
-          <SubmitBusyLabel busy={isSubmitting} idle={submitLabel} />
-        </button>
+          {submitLabel}
+        </Button>
       </div>
     </div>
   );

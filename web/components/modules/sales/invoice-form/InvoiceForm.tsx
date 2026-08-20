@@ -27,11 +27,9 @@ import {
   INVOICE_STATUS_OPTIONS,
   INVOICE_TERMS_OPTIONS,
 } from '@/components/modules/sales/invoice-form/inv-form-options';
+import { Button } from '@/components/shared/Button';
 import {
   INV_ADD_ITEM_BTN_CLS,
-  INV_BTN_GHOST,
-  INV_BTN_OUTLINE,
-  INV_BTN_PRIMARY,
   INV_FOOTER_CLS,
   INV_INPUT_CLS,
   INV_LABEL_CLS,
@@ -414,35 +412,44 @@ export function InvoiceForm({
         </div>
 
         <div className={INV_FOOTER_CLS}>
-          <button type="button" onClick={onCancel} className={`${INV_BTN_GHOST} sm:mr-auto`}>
+          <Button
+            type="button"
+            onClick={onCancel}
+            variant="ghost"
+            className="sm:mr-auto"
+          >
             Cancel
-          </button>
-          <button
+          </Button>
+          <Button
             type="button"
             onClick={() => onPreview(toPayload())}
-            className={INV_BTN_OUTLINE}
+            variant="outline"
+            leftIcon={<Printer className="w-4 h-4" />}
           >
-            <Printer className="w-4 h-4" /> Print Invoice
-          </button>
+            Print Invoice
+          </Button>
           <div className="relative inline-flex">
-            <button
+            <Button
               type="submit"
               disabled={isSubmitting}
-              aria-busy={isSubmitting}
               onClick={() => { saveActionRef.current = 'draft'; }}
-              className={`${INV_BTN_PRIMARY} rounded-r-none pr-4 disabled:opacity-50 disabled:cursor-not-allowed`}
+              variant="primary"
+              className="rounded-r-none pr-4"
+              leftIcon={<Save className="w-4 h-4" />}
+              loading={isSubmitting}
             >
-              <Save className="w-4 h-4" /> <SubmitBusyLabel busy={isSubmitting} idle="Save Invoice" />
-            </button>
-            <button
+              <SubmitBusyLabel busy={isSubmitting} idle="Save Invoice" />
+            </Button>
+            <Button
               type="button"
               disabled={isSubmitting}
               aria-label="More save options"
               onClick={() => setSaveMenuOpen((open) => !open)}
-              className={`${INV_BTN_PRIMARY} rounded-l-none border-l border-blue-500/40 px-2.5 disabled:opacity-50 disabled:cursor-not-allowed`}
+              variant="primary"
+              className="rounded-l-none border-l border-green-700/40 px-2.5"
             >
               ▾
-            </button>
+            </Button>
             {saveMenuOpen ? (
               <div className="absolute bottom-full right-0 mb-1 min-w-[180px] rounded-xl border border-slate-200 bg-white shadow-lg py-1 z-20">
                 <button

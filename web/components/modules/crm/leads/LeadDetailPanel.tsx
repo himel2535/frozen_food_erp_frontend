@@ -13,6 +13,7 @@ import {
   UserRound,
 } from 'lucide-react';
 import { StatusBadge } from '@/components/shared/StatusBadge';
+import { Button } from '@/components/shared/Button';
 import { useAppStore } from '@/lib/state/app-store';
 import { useLocaleFormat } from '@/hooks/useLocaleFormat';
 import { translateStatus } from '@/lib/i18n/resolve-label';
@@ -242,16 +243,16 @@ export function LeadDetailPanel({
 
       <div className="p-3 border-t border-slate-100 mt-auto shrink-0 space-y-2">
         <div className="grid grid-cols-2 gap-2">
-          <button type="button" onClick={onEdit} className="text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white rounded-xl py-2.5 px-2 cursor-pointer truncate">
+          <Button type="button" onClick={onEdit} variant="outline" className="w-full text-xs truncate">
             {t('crm.edit_lead')}
-          </button>
-          <button type="button" onClick={onConvert} className="text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white rounded-xl py-2.5 px-2 cursor-pointer truncate">
+          </Button>
+          <Button type="button" onClick={onConvert} variant="primary" className="w-full text-xs truncate">
             {t('crm.convert_to_customer')}
-          </button>
+          </Button>
         </div>
-        <button type="button" onClick={onMarkLost} className="w-full text-xs font-bold bg-rose-50 hover:bg-rose-100 text-rose-700 rounded-xl py-2.5 px-3 cursor-pointer">
+        <Button type="button" onClick={onMarkLost} variant="danger" className="w-full text-xs">
           {t('crm.mark_lost')}
-        </button>
+        </Button>
       </div>
     </aside>
   );

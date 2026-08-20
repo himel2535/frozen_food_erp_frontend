@@ -3,7 +3,7 @@
 import { Plus, Download } from 'lucide-react';
 import { ModuleFilterBar } from '@/components/shared/ModuleFilterBar';
 import { useAppStore } from '@/lib/state/app-store';
-import { MODULE_SECONDARY_BTN } from '@/lib/ui/module-chrome-styles';
+import { Button } from '@/components/shared/Button';
 
 interface ModuleToolbarActionsProps {
   onAdd?: () => void;
@@ -20,18 +20,24 @@ export function ModuleToolbarActions({ onAdd, addLabel, onExport }: ModuleToolba
   return (
     <>
       {onExport && (
-        <button type="button" onClick={onExport} className={MODULE_SECONDARY_BTN}>
-          <Download className="w-4 h-4" /> {t('common.export_label')}
-        </button>
+        <Button
+          type="button"
+          onClick={onExport}
+          variant="outline"
+          leftIcon={<Download className="w-4 h-4" />}
+        >
+          {t('common.export_label')}
+        </Button>
       )}
       {onAdd && (
-        <button
+        <Button
           type="button"
           onClick={onAdd}
-          className="bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold px-4 py-2.5 rounded-xl transition-colors flex items-center gap-2 cursor-pointer"
+          variant="primary"
+          leftIcon={<Plus className="w-4 h-4" />}
         >
-          <Plus className="w-4 h-4" /> {resolvedAddLabel}
-        </button>
+          {resolvedAddLabel}
+        </Button>
       )}
     </>
   );

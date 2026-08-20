@@ -3,10 +3,9 @@
 import { Mail, Shield, User } from 'lucide-react';
 import { FormHeader } from '@/components/layout/FormHeader';
 import { Footer } from '@/components/layout/Footer';
+import { Button } from '@/components/shared/Button';
 import { FormSectionCard } from '@/components/modules/crm/customer-form/FormSectionCard';
 import {
-  CF_BTN_GHOST,
-  CF_BTN_PRIMARY,
   CF_FOOTER_CLS,
   CF_INPUT_CLS,
   CF_LABEL_CLS,
@@ -321,16 +320,14 @@ export function UserFormView({
             })}
           </p>
           <div className="flex items-center gap-3">
-            <button type="button" onClick={onBack} className={CF_BTN_GHOST}>
+            <Button type="button" onClick={onBack} variant="ghost">
               {t('common.cancel')}
-            </button>
-            <button type="submit" disabled={saving} className={CF_BTN_PRIMARY}>
-              {saving
-                ? t('common.saving')
-                : isEdit
-                  ? t('settings.users_update_btn')
-                  : t('settings.users_create_btn')}
-            </button>
+            </Button>
+            <Button type="submit" loading={saving} variant="primary">
+              {isEdit
+                ? t('settings.users_update_btn')
+                : t('settings.users_create_btn')}
+            </Button>
           </div>
         </div>
       </form>

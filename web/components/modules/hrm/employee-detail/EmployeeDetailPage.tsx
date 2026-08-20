@@ -5,6 +5,7 @@ import { toast } from '@/lib/ui/feedback';
 import { useEffect, useMemo, useState, type FormEvent } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { Footer } from '@/components/layout/Footer';
+import { Button } from '@/components/shared/Button';
 import { ChildPageShell } from '@/components/layout/ChildPageShell';
 import { useChromeSuppressed } from '@/components/layout/ModuleActionsContext';
 import { AppFormFields, AppFormModal } from '@/components/shared/AppForm';
@@ -166,13 +167,14 @@ export function EmployeeDetailPage() {
         onBack={() => router.push('/hrm/employees')}
         backLabel="Back to Employees"
         actions={(
-          <button
+          <Button
             type="button"
             onClick={openEdit}
-            className="bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold px-4 py-2.5 rounded-xl cursor-pointer transition-colors"
+            variant="primary"
+            size="sm"
           >
             Edit Employee
-          </button>
+          </Button>
         )}
       >
         <EmployeeDetailHeader employee={employee} departmentInfo={departmentInfo} />

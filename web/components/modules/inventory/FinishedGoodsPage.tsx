@@ -5,6 +5,7 @@ import { toast } from '@/lib/ui/feedback';
 import { useMemo, useState } from 'react';
 import { ChevronDown, Calculator, Download, Info, Layers, Package, Settings2 } from 'lucide-react';
 import { Footer } from '@/components/layout/Footer';
+import { SplitButton } from '@/components/shared/SplitButton';
 import { useChromeSuppressed, useRegisterModuleActions } from '@/components/layout/ModuleActionsContext';
 import { useInventoryEditAccess } from '@/hooks/use-inventory-edit-access';
 import { InventoryEditActions } from '@/components/modules/inventory/shared/inventory-ui';
@@ -533,45 +534,22 @@ export function FinishedGoodsPage() {
 
   useRegisterModuleActions(
     view === 'main' ? (
-      <div className="relative self-start">
-        <div className="flex">
-          <button
-            type="button"
-            onClick={openCreate}
-            className="bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold px-4 py-2.5 rounded-l-xl cursor-pointer"
-          >
-            + Add Finished Product
-          </button>
-          <button
-            type="button"
-            onClick={() => setShowAddMenu((v) => !v)}
-            className="bg-blue-600 hover:bg-blue-700 text-white px-2.5 py-2.5 rounded-r-xl border-l border-blue-500 cursor-pointer"
-            aria-label="More add options"
-          >
-            <ChevronDown className="w-4 h-4" />
-          </button>
-        </div>
-        {showAddMenu ? (
-          <div className="absolute right-0 top-full mt-1 z-20 min-w-[160px] rounded-xl border border-slate-200 bg-white shadow-lg py-1">
-            <button
-              type="button"
-              onClick={() => { setShowAddMenu(false); toast.info('Feature coming soon', { module: 'Inventory', description: "Import products" }); }}
-              className="w-full text-left px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 cursor-pointer"
-            >
-              Import Products
-            </button>
-            <button
-              type="button"
-              onClick={() => { setShowAddMenu(false); toast.info('Feature coming soon', { module: 'Inventory', description: "Bulk add" }); }}
-              className="w-full text-left px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 cursor-pointer"
-            >
-              Bulk Add
-            </button>
-          </div>
-        ) : null}
-      </div>
+      <SplitButton
+        label="+ Add Finished Product"
+        onClick={openCreate}
+        items={[
+          {
+            label: 'Import Products',
+            onClick: () => toast.info('Feature coming soon', { module: 'Inventory', description: "Import products" }),
+          },
+          {
+            label: 'Bulk Add',
+            onClick: () => toast.info('Feature coming soon', { module: 'Inventory', description: "Bulk add" }),
+          },
+        ]}
+      />
     ) : null,
-    [view, showAddMenu, openCreate],
+    [view, openCreate],
   );
 
   if (view === 'detail' && detailRow) {

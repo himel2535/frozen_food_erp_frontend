@@ -25,7 +25,8 @@ import {
   defaultFollowUpContactPerson,
 } from './follow-up-contact-options';
 import type { FollowUpFormValues, StaffOption } from './follow-up-form-types';
-import { FU_BTN_OUTLINE, FU_BTN_PRIMARY, FU_CARD_CLS } from './follow-up-styles';
+import { Button } from '@/components/shared/Button';
+import { FU_CARD_CLS } from './follow-up-styles';
 import { DateInput } from '@/components/shared/DateInput';
 
 function defaultContactTime() {
@@ -300,18 +301,24 @@ export function FollowUpAddForm({
         </FollowUpFormSection>
 
         <div className={`${FU_CARD_CLS} p-4 flex flex-wrap items-center justify-between gap-3`}>
-          <button type="button" className={FU_BTN_OUTLINE} onClick={onBack}>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={onBack}
+          >
             Cancel
-          </button>
-          <button
+          </Button>
+          <Button
             type="submit"
             disabled={isSubmitting}
             aria-busy={isSubmitting}
-            className={`${FU_BTN_PRIMARY} py-2.5 px-5 text-sm disabled:opacity-50 disabled:cursor-not-allowed`}
+            variant="primary"
+            size="md"
+            rightIcon={<ArrowRight className="w-4 h-4" />}
           >
             <SubmitBusyLabel busy={isSubmitting} idle="Save & Continue" />
-            <ArrowRight className="w-4 h-4" />
-          </button>
+          </Button>
         </div>
       </form>
     </div>

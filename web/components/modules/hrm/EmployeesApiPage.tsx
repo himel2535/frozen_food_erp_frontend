@@ -19,7 +19,7 @@ import { formatMoney } from '@/lib/services/payroll-service';
 import { mapApiEmployeeRow } from '@/lib/services/entity-api-mappers';
 import { confirmAction, toast } from '@/lib/ui/feedback';
 import { isModuleBootLoading, pickApiListRows } from '@/lib/ui/kpi-loading';
-import { CF_BTN_PRIMARY } from '@/components/modules/crm/customer-form/customer-form-styles';
+import { ModuleToolbarActions } from '@/components/shared/ListToolbar';
 
 export function EmployeesApiPage() {
   const router = useRouter();
@@ -76,9 +76,7 @@ export function EmployeesApiPage() {
   ], []);
 
   useRegisterModuleActions(
-    <button type="button" onClick={() => router.push('/hrm/employees/new')} className={CF_BTN_PRIMARY}>
-      <Plus className="w-4 h-4" /> Register Employee
-    </button>,
+    <ModuleToolbarActions onAdd={() => router.push('/hrm/employees/new')} addLabel="Register Employee" />,
     [router],
   );
 

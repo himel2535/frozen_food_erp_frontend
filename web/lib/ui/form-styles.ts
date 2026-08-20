@@ -14,10 +14,10 @@ export const FORM_GRID_CLS =
 export const FORM_CARD_CLS = 'premium-card premium-shadow p-6 space-y-6';
 
 export const FORM_BTN_PRIMARY =
-  'bg-gradient-to-b from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white text-xs font-bold px-5 py-2.5 rounded-xl shadow-sm shadow-blue-600/20 cursor-pointer transition-all';
+  'btn-premium-3d-green text-white text-xs font-semibold px-4 py-2.5 rounded-xl cursor-pointer focus:outline-none focus:ring-2 focus:ring-green-600/30 transition-all select-none';
 
 export const FORM_BTN_SECONDARY =
-  'border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold px-5 py-2.5 rounded-xl shadow-sm cursor-pointer transition-all';
+  'border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 text-xs font-semibold px-4 py-2.5 rounded-xl cursor-pointer focus:outline-none focus:ring-2 focus:ring-slate-500/20 transition-all select-none';
 
 export const FORM_ALERT_ERROR_CLS =
   'rounded-xl border border-rose-200/80 bg-rose-50/80 px-4 py-3 text-xs font-medium text-rose-700 backdrop-blur-sm';

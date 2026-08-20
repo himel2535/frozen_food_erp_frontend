@@ -4,6 +4,7 @@ import { useMemo, useState } from 'react';
 import { Download, Filter, Printer } from 'lucide-react';
 import { Footer } from '@/components/layout/Footer';
 import { FormHeader } from '@/components/layout/FormHeader';
+import { Button } from '@/components/shared/Button';
 import { useChromeSuppressed, useRegisterModuleActions } from '@/components/layout/ModuleActionsContext';
 import { useProductSalesReportApiRows } from '@/hooks/use-report-api-data';
 import { ApiModeBanner } from '@/components/shared/ApiModeBanner';
@@ -177,18 +178,22 @@ export function ProductSalesReportsPage() {
 
   const headerActions = (
     <>
-      <button type="button" onClick={() => printSection('full')} className={MODULE_PRINT_BTN}>
-        <Printer className="w-4 h-4" />
+      <Button
+        type="button"
+        onClick={() => printSection('full')}
+        variant="outline"
+        leftIcon={<Printer className="w-4 h-4" />}
+      >
         {t('reports.print_full')}
-      </button>
-      <button
+      </Button>
+      <Button
         type="button"
         onClick={handleExport}
-        className="bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold px-4 py-2.5 rounded-xl transition-colors flex items-center gap-2 cursor-pointer"
+        variant="outline"
+        leftIcon={<Download className="w-4 h-4" />}
       >
-        <Download className="w-4 h-4" />
         {t('reports.product_sales_export')}
-      </button>
+      </Button>
     </>
   );
 

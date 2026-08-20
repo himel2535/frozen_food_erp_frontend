@@ -3,6 +3,7 @@
 import { confirmAction, toast } from '@/lib/ui/feedback';
 
 import { useMemo, useState, useCallback } from 'react';
+import { Button } from '@/components/shared/Button';
 import { Footer } from '@/components/layout/Footer';
 import { useChromeSuppressed, useRegisterModuleActions } from '@/components/layout/ModuleActionsContext';
 import { AppFormPage, FORM_GRID_CLS, FORM_INPUT_CLS, FORM_LABEL_CLS, FORM_SELECT_CLS, FORM_TEXTAREA_CLS } from '@/components/shared/AppForm';
@@ -192,17 +193,23 @@ export function SalesDocumentModule({ config }: { config: SalesDocumentConfig })
           actions={
             <div className="flex gap-2">
               {config.apiModule === 'quotations' && (
-                <button
+                <Button
                   type="button"
-                  className="px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl cursor-pointer"
+                  variant="primary"
+                  size="sm"
                   onClick={() => void handleConvertQuotation()}
                 >
                   {config.convertLabel ?? t('common.convert')}
-                </button>
+                </Button>
               )}
-              <button type="button" onClick={() => openEdit(detailRow)} className="px-3 py-2 border border-slate-200 text-xs font-bold rounded-xl cursor-pointer">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => openEdit(detailRow)}
+              >
                 {t('common.edit')}
-              </button>
+              </Button>
             </div>
           }
         >

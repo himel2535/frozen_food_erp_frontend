@@ -2,6 +2,7 @@
 
 import { Icon } from '@iconify/react';
 import { ArrowRight } from 'lucide-react';
+import { Button } from '@/components/shared/Button';
 import { SignatureCard } from '@/components/modules/settings/signatures/SignatureCard';
 import { SignatureSettingsHeader } from '@/components/modules/settings/signatures/SignatureSettingsHeader';
 import { ST_BODY, ST_CARD_COMPACT, ST_CAPTION, ST_GRID, ST_STACK } from '@/components/modules/settings/settings-styles';
@@ -64,13 +65,15 @@ export function SignatureSettingsOverview({
           </div>
           <h3 className="text-base font-extrabold text-slate-900">{labels.emptyTitle}</h3>
           <p className="text-xs text-slate-500 font-medium mt-1 max-w-md mx-auto">{labels.emptyHint}</p>
-          <button
+          <Button
             type="button"
             onClick={onAdd}
-            className="mt-5 inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold px-4 py-2.5 rounded-xl cursor-pointer transition-colors"
+            variant="primary"
+            size="sm"
+            className="mt-5"
           >
             {labels.add}
-          </button>
+          </Button>
         </div>
       ) : (
         <>
@@ -97,14 +100,16 @@ export function SignatureSettingsOverview({
               <h3 className={`${ST_BODY} text-sm font-extrabold text-slate-900`}>{labels.goInvoiceHint}</h3>
               <p className={`${ST_CAPTION} mt-0.5`}>{labels.subtitle}</p>
             </div>
-            <button
+            <Button
               type="button"
               onClick={onGoInvoice}
-              className="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold px-4 py-2.5 rounded-xl cursor-pointer transition-colors shrink-0 self-start sm:self-auto"
+              variant="primary"
+              size="sm"
+              rightIcon={<ArrowRight className="w-4 h-4" />}
+              className="!shrink-0 !self-start sm:!self-auto"
             >
               {labels.goInvoice}
-              <ArrowRight className="w-4 h-4" />
-            </button>
+            </Button>
           </div>
         </>
       )}

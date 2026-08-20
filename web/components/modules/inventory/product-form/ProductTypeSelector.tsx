@@ -31,16 +31,16 @@ export function ProductTypeSelector({
             onClick={() => onChange(card.id)}
             className={`flex flex-col items-start gap-2 p-3 rounded-xl border text-left transition-all cursor-pointer min-h-[100px] ${
               selected
-                ? 'border-blue-500 bg-blue-50/50 ring-1 ring-blue-200'
+                ? 'border-green-500 bg-green-50/50 ring-1 ring-green-200'
                 : 'border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50/80'
             }`}
           >
             <span
               className={`w-4 h-4 rounded-full border-2 shrink-0 flex items-center justify-center ${
-                selected ? 'border-blue-600' : 'border-slate-300'
+                selected ? 'border-green-600' : 'border-slate-300'
               }`}
             >
-              {selected ? <span className="w-2 h-2 rounded-full bg-blue-600" /> : null}
+              {selected ? <span className="w-2 h-2 rounded-full bg-green-600" /> : null}
             </span>
             <span className="flex items-center justify-center w-8 h-8 rounded-lg bg-slate-100 text-slate-600 shrink-0">
               <Icon className="w-4 h-4" />

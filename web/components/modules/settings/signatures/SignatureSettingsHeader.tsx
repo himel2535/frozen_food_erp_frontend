@@ -1,6 +1,7 @@
 'use client';
 
 import { ArrowRight, PenLine, Plus } from 'lucide-react';
+import { Button } from '@/components/shared/Button';
 import { Icon } from '@iconify/react';
 import {
   ST_ACCENT_BAR,
@@ -59,24 +60,26 @@ export function SignatureSettingsHeader({
 
         <div className="flex flex-col items-end justify-between gap-3 shrink-0">
           <div className="flex flex-wrap items-center justify-end gap-2">
-            <button
+            <Button
               type="button"
               onClick={onGoInvoice}
               disabled={!canGoInvoice}
               title={canGoInvoice ? invoiceLabel : invoiceDisabledHint}
-              className="inline-flex items-center gap-2 border border-blue-200 bg-white hover:bg-blue-50 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-white text-blue-700 text-sm font-bold px-4 py-2.5 rounded-xl cursor-pointer transition-colors"
+              variant="outline"
+              size="sm"
+              rightIcon={<ArrowRight className="w-4 h-4" />}
             >
               {invoiceLabel}
-              <ArrowRight className="w-4 h-4" />
-            </button>
-            <button
+            </Button>
+            <Button
               type="button"
               onClick={onAdd}
-              className="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold px-4 py-2.5 rounded-xl cursor-pointer transition-colors"
+              variant="primary"
+              size="sm"
+              leftIcon={<Plus className="w-4 h-4" />}
             >
-              <Plus className="w-4 h-4" />
               {addLabel}
-            </button>
+            </Button>
           </div>
           {!canGoInvoice ? (
             <p className={`${ST_CAPTION} text-right max-w-[220px]`}>{invoiceDisabledHint}</p>

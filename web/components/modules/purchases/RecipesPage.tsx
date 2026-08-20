@@ -6,6 +6,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { Icon } from '@iconify/react';
 import { ArrowDown, ArrowUp, Calculator, Layers, Package, Paperclip } from 'lucide-react';
+import { Button } from '@/components/shared/Button';
 import { Footer } from '@/components/layout/Footer';
 import { FormHeader } from '@/components/layout/FormHeader';
 import { useChromeSuppressed, useRegisterModuleActions } from '@/components/layout/ModuleActionsContext';
@@ -746,13 +747,15 @@ export function RecipesPage({ variant = 'finished-goods' }: { variant?: RecipeVa
           emptyMessage={config.emptyMessage}
           renderActions={(row) => (
             <>
-              <button
+              <Button
                 type="button"
                 onClick={() => openBom(row.id)}
-                className="inline-flex items-center px-2.5 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-[11px] font-bold cursor-pointer whitespace-nowrap"
+                variant="primary"
+                size="sm"
+                className="!px-2.5 !py-1.5 !text-[11px]"
               >
                 {row.materials.length > 0 ? 'Manage BOM' : 'Create BOM'}
-              </button>
+              </Button>
               <button
                 type="button"
                 onClick={() => openPlanInput(row.id)}

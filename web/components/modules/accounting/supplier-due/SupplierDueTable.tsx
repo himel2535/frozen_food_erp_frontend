@@ -11,10 +11,10 @@ import {
   getSupplierStatusLabel,
   type SupplierPayable,
 } from '@/lib/services/supplier-payables-service';
+import { Button } from '@/components/shared/Button';
 import {
   DUE_AVATAR_CLS,
   SUPPLIER_DUE_AGING_BADGE,
-  SUPPLIER_DUE_BTN_PAY,
   SUPPLIER_DUE_STATUS_BADGE,
 } from './supplier-due-styles';
 
@@ -124,49 +124,63 @@ export function SupplierDueTable({
         renderActions={(row) => (
           <div className="flex items-center justify-center gap-1">
             {row.totalDue > 0 ? (
-              <button type="button" className={SUPPLIER_DUE_BTN_PAY} onClick={(e) => { e.stopPropagation(); onPay(row); }}>
-                Pay ৳
-              </button>
-            ) : (
-              <button
+              <Button
                 type="button"
-                className="inline-flex items-center gap-1 rounded-lg px-2.5 py-1 text-[11px] font-bold text-slate-600 bg-slate-50 border border-slate-200 hover:bg-slate-100 cursor-pointer"
+                variant="success"
+                size="sm"
+                className="!px-2.5 !py-1 text-[11px]"
+                onClick={(e) => { e.stopPropagation(); onPay(row); }}
+              >
+                Pay ৳
+              </Button>
+            ) : (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="!px-2.5 !py-1 text-[11px]"
+                leftIcon={<Eye className="w-3.5 h-3.5" />}
                 onClick={(e) => { e.stopPropagation(); onRowClick(row); }}
               >
-                <Eye className="w-3.5 h-3.5" />
                 View
-              </button>
+              </Button>
             )}
           </div>
         )}
       />
       <div className="px-3 py-2 border-t border-slate-100 flex items-center justify-end gap-1 text-xs text-slate-500">
-        <button
+        <Button
           type="button"
           disabled={safePage <= 1}
-          className="px-2 py-1 rounded border border-slate-200 disabled:opacity-40 cursor-pointer disabled:cursor-not-allowed"
+          variant="outline"
+          size="sm"
+          className="!px-2 !py-1"
           onClick={() => onPageChange(safePage - 1)}
         >
           Previous
-        </button>
+        </Button>
         {Array.from({ length: Math.min(totalPages, 3) }, (_, i) => i + 1).map((n) => (
-          <button
+          <Button
             key={n}
             type="button"
-            className={`px-2.5 py-1 rounded border cursor-pointer ${n === safePage ? 'border-indigo-300 bg-indigo-50 text-indigo-700 font-bold' : 'border-slate-200'}`}
+            variant={n === safePage ? 'primary' : 'outline'}
+            size="sm"
+            className="!px-2.5 !py-1"
             onClick={() => onPageChange(n)}
           >
             {n}
-          </button>
+          </Button>
         ))}
-        <button
+        <Button
           type="button"
           disabled={safePage >= totalPages}
-          className="px-2 py-1 rounded border border-slate-200 disabled:opacity-40 cursor-pointer disabled:cursor-not-allowed"
+          variant="outline"
+          size="sm"
+          className="!px-2 !py-1"
           onClick={() => onPageChange(safePage + 1)}
         >
           Next
-        </button>
+        </Button>
       </div>
     </div>
   );

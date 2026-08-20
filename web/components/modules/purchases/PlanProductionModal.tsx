@@ -1,7 +1,7 @@
 'use client';
 
 import { toast } from '@/lib/ui/feedback';
-
+import { Button } from '@/components/shared/Button';
 import { useEffect, useState } from 'react';
 import { X } from 'lucide-react';
 import { formatMoney, getRecipeBomCost, type Recipe } from '@/lib/services/recipes-service';
@@ -9,7 +9,7 @@ import { formatMoney, getRecipeBomCost, type Recipe } from '@/lib/services/recip
 const QUICK_QTY = [100, 500, 1000];
 
 const INPUT_CLS =
-  'w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-xs font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500/10';
+  'w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-xs font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-slate-500/10';
 
 interface PlanProductionModalProps {
   open: boolean;
@@ -115,20 +115,22 @@ export function PlanProductionModal({
         </div>
 
         <div className="flex justify-end gap-2 pt-1">
-          <button
+          <Button
             type="button"
             onClick={onClose}
-            className="px-4 py-2.5 rounded-xl border border-slate-200 text-xs font-bold cursor-pointer"
+            variant="outline"
+            size="sm"
           >
             Cancel
-          </button>
-          <button
+          </Button>
+          <Button
             type="button"
             onClick={handleSubmit}
-            className="px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold cursor-pointer"
+            variant="primary"
+            size="sm"
           >
             Calculate Materials
-          </button>
+          </Button>
         </div>
       </div>
     </div>

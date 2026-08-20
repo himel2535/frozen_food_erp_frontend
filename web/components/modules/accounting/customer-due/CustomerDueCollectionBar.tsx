@@ -1,6 +1,7 @@
 'use client';
 
 import { ArrowRight, Phone, Calendar, AlertCircle, Briefcase } from 'lucide-react';
+import { Button } from '@/components/shared/Button';
 import { getTodayCollectionStats } from '@/lib/services/customer-receivables-service';
 
 type TodayCollectionStats = ReturnType<typeof getTodayCollectionStats>;
@@ -42,14 +43,14 @@ export function CustomerDueCollectionBar({
           ))}
         </div>
       </div>
-      <button
+      <Button
         type="button"
         onClick={onStartCollection}
-        className="inline-flex items-center justify-center gap-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold px-4 py-2.5 transition-colors cursor-pointer self-start lg:self-auto shrink-0"
+        variant="primary"
+        rightIcon={<ArrowRight className="w-4 h-4" />}
       >
         Start Today&apos;s Collection
-        <ArrowRight className="w-4 h-4" />
-      </button>
+      </Button>
     </div>
   );
 }

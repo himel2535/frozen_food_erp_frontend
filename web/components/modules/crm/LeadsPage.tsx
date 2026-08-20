@@ -5,6 +5,7 @@ import { toast } from '@/lib/ui/feedback';
 import { useMemo, useState, useCallback } from 'react';
 import { MessageCircle, Phone, Plus, Upload } from 'lucide-react';
 import { Footer } from '@/components/layout/Footer';
+import { Button } from '@/components/shared/Button';
 import { useChromeSuppressed, useRegisterModuleActions } from '@/components/layout/ModuleActionsContext';
 import { useAppStore } from '@/lib/state/app-store';
 import { useLocaleFormat } from '@/hooks/useLocaleFormat';
@@ -304,20 +305,23 @@ export function LeadsPage({ initialLeads }: { initialLeads?: Record<string, unkn
   useRegisterModuleActions(
     view === 'main' ? (
       <div className="flex items-center gap-2 self-start">
-        <button
+        <Button
           type="button"
           onClick={() => toast.info('Feature coming soon', { module: 'Leads', description: "Import leads" })}
-          className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-600 border border-slate-200 bg-white hover:bg-slate-50 px-4 py-2.5 rounded-xl cursor-pointer"
+          variant="outline"
+          leftIcon={<Upload className="w-4 h-4" />}
         >
-          <Upload className="w-4 h-4" /> {t('crm.import_leads')}
-        </button>
-        <button
+          {t('crm.import_leads')}
+        </Button>
+        <Button
           type="button"
           onClick={openCreate}
-          className="bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold px-4 py-2.5 rounded-xl transition-colors flex items-center gap-2 cursor-pointer"
+          variant="primary"
+          className="rounded-full px-6 py-2.5"
+          leftIcon={<Plus className="w-4 h-4" />}
         >
-          <Plus className="w-4 h-4" /> {t('crm.add_lead')}
-        </button>
+          {t('crm.add_lead')}
+        </Button>
       </div>
     ) : null,
     [view, openCreate, t],
@@ -447,7 +451,7 @@ export function LeadsPage({ initialLeads }: { initialLeads?: Record<string, unkn
         const isToday = Boolean(row.isFollowUpToday);
         const isOverdue = Boolean(row.isOverdue);
         return (
-          <div className={`text-xs min-w-[120px] ${isOverdue ? 'text-rose-600' : isToday ? 'text-blue-700' : 'text-slate-700'}`}>
+          <div className={`text-xs min-w-[120px] ${isOverdue ? 'text-rose-600' : isToday ? 'text-emerald-700' : 'text-slate-700'}`}>
             <div className="font-bold flex items-center gap-1">
               <span>{NEXT_ACTION_ICONS[actionType] || '🔔'}</span>
               {actionType}
@@ -567,7 +571,7 @@ export function LeadsPage({ initialLeads }: { initialLeads?: Record<string, unkn
             rows={displayRows}
             loading={bootLoading}
             emptyMessage={t('crm.no_leads')}
-            rowClassName={(row) => (String(row.id) === selectedId ? 'bg-blue-50/80' : '')}
+            rowClassName={(row) => (String(row.id) === selectedId ? 'bg-emerald-50/60 border-l-2 border-emerald-500' : '')}
             onRowClick={(row) => setSelectedId(String(row.id))}
             renderActions={(row) => (
               <>

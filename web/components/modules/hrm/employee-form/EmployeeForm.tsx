@@ -5,10 +5,7 @@ import { toast } from '@/lib/ui/feedback';
 import { useRef, useState, type FormEvent } from 'react';
 import { FormHeader } from '@/components/layout/FormHeader';
 import { EmployeeRegisterForm } from '@/components/modules/hrm/employee-form/EmployeeRegisterForm';
-import {
-  PO_BTN_GHOST,
-  PO_BTN_PRIMARY,
-} from '@/components/modules/purchases/purchase-order-form/po-form-styles';
+import { Button } from '@/components/shared/Button';
 import { validateEmployeeForm } from '@/components/modules/hrm/employee-form/employee-form-validation';
 import { MODULE_LIST_SHELL } from '@/lib/ui/module-layout';
 import type { AppState } from '@/lib/state/types';
@@ -75,15 +72,23 @@ export function EmployeeForm({
             backLabel="Back to Employees"
           />
           <div className="flex flex-wrap items-center gap-2 self-start">
-            <button type="button" onClick={onCancel} className={PO_BTN_GHOST}>Cancel</button>
-            <button
+            <Button
+              type="button"
+              onClick={onCancel}
+              variant="outline"
+              size="sm"
+            >
+              Cancel
+            </Button>
+            <Button
               type="submit"
               disabled={isSubmitting}
               aria-busy={isSubmitting}
-              className={`${PO_BTN_PRIMARY} disabled:opacity-50 disabled:cursor-not-allowed`}
+              variant="primary"
+              size="sm"
             >
               <SubmitBusyLabel busy={isSubmitting} idle={submitLabel} />
-            </button>
+            </Button>
           </div>
         </div>
 

@@ -4,6 +4,7 @@ import { toast } from '@/lib/ui/feedback';
 
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import Link from 'next/link';
+import { Button } from '@/components/shared/Button';
 import { Calculator, CloudUpload, Package, Plus, Search, X } from 'lucide-react';
 import { BomMaterialInsight } from '@/components/modules/purchases/BomMaterialInsight';
 import {
@@ -521,13 +522,17 @@ export function BomMaterialForm({
       </div>
 
       <div className="flex flex-wrap justify-end gap-2 pt-3 border-t border-slate-100">
-        <button type="button" onClick={onCancel} className="px-4 py-2.5 rounded-lg border border-slate-200 bg-white text-sm font-semibold text-slate-700 hover:bg-slate-50 cursor-pointer">
+        <Button type="button" onClick={onCancel} variant="outline">
           Cancel
-        </button>
-        <button type="button" onClick={handleSubmit} className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold cursor-pointer">
-          <Plus className="w-4 h-4" />
+        </Button>
+        <Button
+          type="button"
+          onClick={handleSubmit}
+          variant="primary"
+          leftIcon={<Plus className="w-4 h-4" />}
+        >
           {editingMaterialId ? 'Update Material' : 'Add Material'}
-        </button>
+        </Button>
       </div>
     </div>
   );

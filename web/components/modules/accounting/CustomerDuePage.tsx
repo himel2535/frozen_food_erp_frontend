@@ -11,6 +11,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Plus } from 'lucide-react';
 
 import { useRegisterModuleActions } from '@/components/layout/ModuleActionsContext';
+import { Button } from '@/components/shared/Button';
 
 import { AppFormFields, AppFormModal } from '@/components/shared/AppForm';
 
@@ -563,43 +564,26 @@ export function CustomerDuePage() {
 
     <>
 
-      <button
-
+      <Button
         type="button"
-
         onClick={() => setShowAddDueModal(true)}
-
-        className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition-colors cursor-pointer"
-
+        variant="outline"
+        leftIcon={<Plus className="w-4 h-4" />}
       >
-
-        <Plus className="w-4 h-4" />
-
         Add Due
+      </Button>
 
-      </button>
-
-      <button
-
+      <Button
         type="button"
-
         onClick={() => {
-
           const target = selectedCustomer ?? allCustomers.find((c) => c.totalDue > 0);
-
           if (target) openReceive(target);
-
           else toast.error('Action required', { module: 'Customer Due', description: 'Select a customer with outstanding due first.' });
-
         }}
-
-        className="bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold px-4 py-2.5 rounded-xl transition-colors flex items-center gap-2 cursor-pointer"
-
+        variant="primary"
       >
-
         Receive Payment
-
-      </button>
+      </Button>
 
     </>,
 

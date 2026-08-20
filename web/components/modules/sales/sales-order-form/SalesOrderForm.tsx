@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { ImageUploadField, type PendingImageUpload } from '@/components/shared/ImageUploadField';
 import { SubmitBusyLabel, useSubmitGuard } from '@/hooks/use-submit-guard';
+import { Button } from '@/components/shared/Button';
 import { FormHeader } from '@/components/layout/FormHeader';
 import { useChromeSuppressed } from '@/components/layout/ModuleActionsContext';
 import { MODULE_FORM_SHELL } from '@/lib/ui/module-layout';
@@ -27,15 +28,11 @@ import { PoPaymentInfo } from '@/components/modules/purchases/purchase-order-for
 import { SoCustomerDetailsCard } from '@/components/modules/sales/sales-order-form/SoCustomerDetailsCard';
 import { SO_STATUS_OPTIONS } from '@/components/modules/sales/sales-order-form/so-form-options';
 import {
-  SO_BTN_GHOST,
-  SO_BTN_OUTLINE,
-  SO_BTN_PRIMARY,
   SO_CARD_CLS,
   SO_CARD_COMPACT_CLS,
   SO_INPUT_CLS,
   SO_LABEL_CLS,
   SO_SECTION_TITLE_CLS,
-  SO_ADD_ITEM_BTN_CLS,
 } from '@/components/modules/sales/sales-order-form/so-form-styles';
 import {
   computeSoTotalsFromForm,
@@ -176,34 +173,34 @@ export function SalesOrderForm({
             backLabel="Back to Sales Orders"
           />
           <div className="flex flex-wrap items-center gap-2 self-start">
-            <button type="button" onClick={onCancel} className={SO_BTN_GHOST}>Cancel</button>
-            <button
+            <Button type="button" onClick={onCancel} variant="ghost">Cancel</Button>
+            <Button
               type="button"
               disabled={isSubmitting}
-              aria-busy={isSubmitting}
               onClick={() => {
                 if (savingRef.current) return;
                 saveActionRef.current = 'draft';
                 formRef.current?.requestSubmit();
               }}
-              className={`${SO_BTN_OUTLINE} disabled:opacity-50 disabled:cursor-not-allowed`}
+              variant="outline"
+              loading={isSubmitting && saveActionRef.current === 'draft'}
             >
-              <SubmitBusyLabel busy={isSubmitting} idle="Save Draft" />
-            </button>
-            <button
+              <SubmitBusyLabel busy={isSubmitting && saveActionRef.current === 'draft'} idle="Save Draft" />
+            </Button>
+            <Button
               type="button"
               disabled={isSubmitting}
-              aria-busy={isSubmitting}
               onClick={() => {
                 if (savingRef.current) return;
                 saveActionRef.current = 'create';
                 updateForm({ status: form.status === 'draft' ? 'confirmed' : form.status });
                 formRef.current?.requestSubmit();
               }}
-              className={`${SO_BTN_PRIMARY} disabled:opacity-50 disabled:cursor-not-allowed`}
+              variant="primary"
+              loading={isSubmitting && saveActionRef.current === 'create'}
             >
-              <SubmitBusyLabel busy={isSubmitting} idle="Create Order" />
-            </button>
+              <SubmitBusyLabel busy={isSubmitting && saveActionRef.current === 'create'} idle="Create Order" />
+            </Button>
           </div>
         </div>
 
@@ -297,20 +294,24 @@ export function SalesOrderForm({
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
                 <h3 className={SO_SECTION_TITLE_CLS}>Order Items</h3>
                 <div className="flex items-center gap-2">
-                  <button
+                  <Button
                     type="button"
                     onClick={() => updateForm({ items: [...form.items, createEmptySoLineItem()] })}
-                    className={SO_ADD_ITEM_BTN_CLS}
+                    variant="primary"
+                    size="sm"
+                    leftIcon={<Plus className="w-3.5 h-3.5" />}
                   >
-                    <Plus className="w-3.5 h-3.5" /> Add Item
-                  </button>
-                  <button
+                    Add Item
+                  </Button>
+                  <Button
                     type="button"
                     onClick={() => toast.info('Feature coming soon', { module: 'Sales', description: "Import Items" })}
-                    className={SO_BTN_OUTLINE}
+                    variant="outline"
+                    size="sm"
+                    leftIcon={<FileSpreadsheet className="w-4 h-4" />}
                   >
-                    <FileSpreadsheet className="w-4 h-4" /> Import Items
-                  </button>
+                    Import Items
+                  </Button>
                 </div>
               </div>
               <PoItemsTable

@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { ChevronDown, Mail, MapPin, Phone, User } from 'lucide-react';
+import { Button } from '@/components/shared/Button';
 import { toast } from '@/lib/ui/feedback';
 import type { SupplierDetailProfile } from '@/lib/services/suppliers-service';
 import { InventoryItemThumb } from '@/components/shared/InventoryItemThumb';
@@ -22,27 +23,30 @@ export function SupplierDetailHeaderActions({
 
   return (
     <>
-      <button
+      <Button
         type="button"
-        className={SD_BTN_PRIMARY}
+        variant="primary"
+        size="sm"
         onClick={() => router.push(`/purchases/orders/new?supplierId=${supplier.id}`)}
       >
         + Create PO
-      </button>
-      <button
+      </Button>
+      <Button
         type="button"
-        className={SD_BTN_OUTLINE}
+        variant="outline"
+        size="sm"
         onClick={() => toast.info('Feature coming soon', { module: 'Suppliers', description: 'Add Bill coming soon.' })}
       >
         + Add Bill
-      </button>
-      <button
+      </Button>
+      <Button
         type="button"
-        className={SD_BTN_GREEN}
+        variant="primary"
+        size="sm"
         onClick={() => router.push(`/accounting/payables?supplierId=${supplier.id}`)}
       >
         Record Payment
-      </button>
+      </Button>
       <div className="relative">
         <button
           type="button"

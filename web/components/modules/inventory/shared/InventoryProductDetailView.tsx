@@ -1,6 +1,7 @@
 'use client';
 
 import { Download, ListTree, Pencil } from 'lucide-react';
+import { Button } from '@/components/shared/Button';
 import { useLocaleFormat } from '@/hooks/useLocaleFormat';
 import { DetailViewShell } from '@/components/shared/DetailViewShell';
 import { StatusBadge } from '@/components/shared/StatusBadge';
@@ -99,22 +100,24 @@ export function InventoryProductDetailView({
               Manage BOM
             </button>
           ) : null}
-          <button
+          <Button
             type="button"
             onClick={() => downloadInventoryProductCsv(row, variant, appState)}
-            className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-600 border border-slate-200 bg-white hover:bg-slate-50 px-3 py-2 rounded-xl cursor-pointer"
+            variant="outline"
+            size="sm"
+            leftIcon={<Download className="w-3.5 h-3.5" />}
           >
-            <Download className="w-3.5 h-3.5" />
             Download Spec
-          </button>
-          <button
+          </Button>
+          <Button
             type="button"
             onClick={onEdit}
-            className="inline-flex items-center gap-1.5 text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 px-3 py-2 rounded-xl cursor-pointer"
+            variant="primary"
+            size="sm"
+            leftIcon={<Pencil className="w-3.5 h-3.5" />}
           >
-            <Pencil className="w-3.5 h-3.5" />
             Edit
-          </button>
+          </Button>
         </div>
       )}
     >

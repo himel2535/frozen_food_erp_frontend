@@ -1,6 +1,7 @@
 'use client';
 
 import { Trash2 } from 'lucide-react';
+import { Button } from '@/components/shared/Button';
 import { StatusBadge } from '@/components/shared/StatusBadge';
 import { formatMoney, getRecipeBomCost, type Recipe } from '@/lib/services/recipes-service';
 
@@ -36,13 +37,15 @@ export function RecipeCard({ recipe, onCreateBom, onPlanProduction, onDelete }: 
       </p>
 
       <div className="flex items-center gap-1.5 pt-2 border-t border-slate-100">
-        <button
+        <Button
           type="button"
           onClick={onCreateBom}
-          className="flex-1 min-w-0 px-2 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-[10px] font-bold cursor-pointer truncate"
+          variant="primary"
+          size="sm"
+          className="flex-1 min-w-0 !px-2 !py-2 !text-[10px]"
         >
           {hasMaterials ? 'Manage BOM' : 'Create BOM'}
-        </button>
+        </Button>
         <button
           type="button"
           onClick={onPlanProduction}

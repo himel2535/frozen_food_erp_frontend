@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState, type FormEvent } from 'react';
+import { Button } from '@/components/shared/Button';
 import { SubmitBusyLabel, useSubmitGuard } from '@/hooks/use-submit-guard';
 import {
   Banknote,
@@ -311,7 +312,7 @@ export function LeadForm({
               <button
                 type="button"
                 onClick={() => setShowAdvanced((v) => !v)}
-                className="text-xs font-bold text-blue-600 hover:text-blue-700 cursor-pointer"
+                className="text-xs font-bold text-emerald-600 hover:text-emerald-700 cursor-pointer"
               >
                 {showAdvanced ? 'Hide Advanced Details' : 'Show Advanced Details'}
               </button>
@@ -473,18 +474,17 @@ export function LeadForm({
         </div>
 
         <div className={CF_FOOTER_CLS}>
-          <button type="button" onClick={onCancel} className={CF_BTN_GHOST}>
+          <Button type="button" onClick={onCancel} variant="ghost">
             Cancel
-          </button>
-          <button
+          </Button>
+          <Button
             type="submit"
-            disabled={isSubmitting}
-            aria-busy={isSubmitting}
-            className={`${CF_BTN_PRIMARY} disabled:opacity-50 disabled:cursor-not-allowed`}
+            loading={isSubmitting}
+            variant="primary"
+            leftIcon={<Save className="w-4 h-4" />}
           >
-            <Save className="w-4 h-4" />
-            <SubmitBusyLabel busy={isSubmitting} idle="Save Lead" />
-          </button>
+            Save Lead
+          </Button>
         </div>
       </form>
     </div>

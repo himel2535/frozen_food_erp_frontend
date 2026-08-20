@@ -4,7 +4,7 @@ import { toast } from '@/lib/ui/feedback';
 import { ChevronDown } from 'lucide-react';
 import { ModuleFilterBar } from '@/components/shared/ModuleFilterBar';
 import { FilterTabs } from '@/components/shared/FilterTabs';
-import { MODULE_SECONDARY_BTN } from '@/lib/ui/module-chrome-styles';
+import { Button } from '@/components/shared/Button';
 import { SUPPLIER_DUE_STATUS_TABS } from './supplier-due-options';
 
 export function SupplierDueFilterBar({
@@ -26,14 +26,14 @@ export function SupplierDueFilterBar({
       filters={
         <>
           <FilterTabs tabs={SUPPLIER_DUE_STATUS_TABS} active={statusFilter} onChange={onStatusChange} />
-          <button
+          <Button
             type="button"
-            className={MODULE_SECONDARY_BTN}
+            variant="outline"
             onClick={() => toast.info('Feature coming soon', { module: 'Supplier Due', description: 'More filters coming soon.' })}
+            rightIcon={<ChevronDown className="w-3.5 h-3.5" />}
           >
             More Filters
-            <ChevronDown className="w-3.5 h-3.5" />
-          </button>
+          </Button>
         </>
       }
     />

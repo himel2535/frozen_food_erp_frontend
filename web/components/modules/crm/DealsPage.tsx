@@ -4,6 +4,7 @@ import { toast } from '@/lib/ui/feedback';
 import { useMemo, useState } from 'react';
 import { LayoutGrid, List, Plus, SlidersHorizontal } from 'lucide-react';
 import { Footer } from '@/components/layout/Footer';
+import { Button } from '@/components/shared/Button';
 import { useChromeSuppressed, useRegisterModuleActions } from '@/components/layout/ModuleActionsContext';
 import { AppFormFields, AppFormModal, FORM_GRID_CLS, FORM_LABEL_CLS, FORM_SELECT_CLS } from '@/components/shared/AppForm';
 import { AppTable, type AppTableColumn } from '@/components/shared/AppTable';
@@ -347,9 +348,14 @@ export function DealsPage() {
   useChromeSuppressed(view === 'form');
 
   useRegisterModuleActions(
-    <button type="button" onClick={() => openCreate()} className="flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold px-4 py-2.5 rounded-xl cursor-pointer">
-      <Plus className="w-4 h-4" /> {t('crm.add_deal')}
-    </button>,
+    <Button
+      type="button"
+      onClick={() => openCreate()}
+      variant="primary"
+      leftIcon={<Plus className="w-4 h-4" />}
+    >
+      {t('crm.add_deal')}
+    </Button>,
     [t],
   );
 
@@ -408,18 +414,18 @@ export function DealsPage() {
         searchPlaceholder={t('crm.search_deals')}
         filters={
           <>
-            <div className="inline-flex rounded-xl border border-blue-100/70 overflow-hidden shrink-0">
+            <div className="inline-flex rounded-xl border border-slate-200/70 overflow-hidden shrink-0">
               <button
                 type="button"
                 onClick={() => setLayoutMode('kanban')}
-                className={`px-3 py-2 text-xs font-bold inline-flex items-center gap-1.5 cursor-pointer ${layoutMode === 'kanban' ? 'bg-blue-600 text-white' : 'bg-white/45 text-slate-600 hover:bg-blue-50'}`}
+                className={`px-3 py-2 text-xs font-bold inline-flex items-center gap-1.5 cursor-pointer ${layoutMode === 'kanban' ? 'btn-premium-3d-green text-white' : 'bg-white/45 text-slate-600 hover:bg-green-50/50'}`}
               >
                 <LayoutGrid className="w-3.5 h-3.5" /> {t('crm.layout_kanban')}
               </button>
               <button
                 type="button"
                 onClick={() => setLayoutMode('table')}
-                className={`px-3 py-2 text-xs font-bold inline-flex items-center gap-1.5 cursor-pointer ${layoutMode === 'table' ? 'bg-blue-600 text-white' : 'bg-white/45 text-slate-600 hover:bg-blue-50'}`}
+                className={`px-3 py-2 text-xs font-bold inline-flex items-center gap-1.5 cursor-pointer ${layoutMode === 'table' ? 'btn-premium-3d-green text-white' : 'bg-white/45 text-slate-600 hover:bg-green-50/50'}`}
               >
                 <List className="w-3.5 h-3.5" /> {t('crm.layout_table')}
               </button>
@@ -522,7 +528,7 @@ export function DealsPage() {
               <li key={i} className="border-l-2 border-blue-200 pl-3">{String(e.summary ?? e.type ?? e.note)}</li>
             ))}</ul>
             <div className="flex gap-2 flex-wrap">
-              <button type="button" className="px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl cursor-pointer" onClick={() => void handleMarkWon()}>{t('crm.mark_won')}</button>
+              <button type="button" className="px-3 py-2 btn-premium-3d-green font-bold rounded-xl cursor-pointer" onClick={() => void handleMarkWon()}>{t('crm.mark_won')}</button>
               <button type="button" className="px-3 py-2 bg-rose-600 text-white font-bold rounded-xl cursor-pointer" onClick={() => void handleMarkLost()}>{t('crm.mark_lost_deal')}</button>
               <button type="button" className="px-3 py-2 border border-slate-200 font-bold rounded-xl cursor-pointer" onClick={() => openEdit(String(detailDeal.id))}>{t('common.edit')}</button>
             </div>

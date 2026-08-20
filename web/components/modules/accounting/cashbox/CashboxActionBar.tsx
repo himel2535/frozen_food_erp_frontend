@@ -1,7 +1,7 @@
 'use client';
 
 import { ArrowDownLeft, ArrowRightLeft, ArrowUpRight, Plus, Minus } from 'lucide-react';
-import { CB_BTN_CASH_IN, CB_BTN_CASH_OUT, CB_BTN_TRANSFER } from './cashbox-styles';
+import { Button } from '@/components/shared/Button';
 import type { CashboxTab } from './cashbox-types';
 
 export function CashboxActionBar({
@@ -15,18 +15,33 @@ export function CashboxActionBar({
 }) {
   return (
     <div className="flex flex-wrap items-center justify-end gap-2">
-      <button type="button" className={CB_BTN_CASH_IN} onClick={onCashIn}>
-        <Plus className="w-4 h-4" />
+      <Button
+        type="button"
+        variant="success"
+        size="sm"
+        leftIcon={<Plus className="w-4 h-4" />}
+        onClick={onCashIn}
+      >
         Cash In
-      </button>
-      <button type="button" className={CB_BTN_CASH_OUT} onClick={onCashOut}>
-        <Minus className="w-4 h-4" />
+      </Button>
+      <Button
+        type="button"
+        variant="danger"
+        size="sm"
+        leftIcon={<Minus className="w-4 h-4" />}
+        onClick={onCashOut}
+      >
         Cash Out
-      </button>
-      <button type="button" className={CB_BTN_TRANSFER} onClick={onTransfer}>
-        <ArrowRightLeft className="w-4 h-4" />
+      </Button>
+      <Button
+        type="button"
+        variant="outline"
+        size="sm"
+        leftIcon={<ArrowRightLeft className="w-4 h-4" />}
+        onClick={onTransfer}
+      >
         Transfer
-      </button>
+      </Button>
     </div>
   );
 }

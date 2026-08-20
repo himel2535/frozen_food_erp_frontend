@@ -5,6 +5,7 @@ import { toast, confirmAction } from '@/lib/ui/feedback';
 import { useMemo, useState } from 'react';
 import { Download, Package, Settings2 } from 'lucide-react';
 import { Footer } from '@/components/layout/Footer';
+import { Button } from '@/components/shared/Button';
 import { useChromeSuppressed, useRegisterModuleActions } from '@/components/layout/ModuleActionsContext';
 import { AppFormFields, AppFormModal, FORM_GRID_CLS, FORM_LABEL_CLS } from '@/components/shared/AppForm';
 import { AppTable, type AppTableColumn } from '@/components/shared/AppTable';
@@ -395,13 +396,13 @@ export function RawMaterialsPage() {
 
   useRegisterModuleActions(
     view === 'main' ? (
-      <button
+      <Button
         type="button"
         onClick={() => { resetForm(); setView('form'); }}
-        className="bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold px-4 py-2.5 rounded-xl cursor-pointer"
+        variant="primary"
       >
         + Add Raw Material
-      </button>
+      </Button>
     ) : null,
     [view],
   );

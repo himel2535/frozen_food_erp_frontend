@@ -15,8 +15,8 @@ import {
 } from 'lucide-react';
 import { FormHeader } from '@/components/layout/FormHeader';
 import { FormSectionCard } from '@/components/modules/crm/customer-form/FormSectionCard';
+import { Button } from '@/components/shared/Button';
 import {
-  CF_BTN_OUTLINE,
   CF_FIELD_ERROR_CLS,
   CF_INPUT_CLS,
   CF_LABEL_CLS,
@@ -132,13 +132,15 @@ export function ProductForm({
             subtitle="Add a new product to your inventory."
             onBack={onCancel}
           />
-          <button
+          <Button
             type="button"
             onClick={() => toast.info('Feature coming soon', { module: 'Inventory', description: "Import Excel" })}
-            className={`${CF_BTN_OUTLINE} self-start`}
+            variant="outline"
+            leftIcon={<FileSpreadsheet className="w-4 h-4" />}
+            className="!self-start"
           >
-            <FileSpreadsheet className="w-4 h-4" /> Import from Excel
-          </button>
+            Import from Excel
+          </Button>
         </div>
 
         <div className="flex flex-col gap-3 flex-1">
@@ -171,16 +173,17 @@ export function ProductForm({
                       placeholder="TOY-000124"
                       className={`${CF_INPUT_CLS} pl-4 flex-1 min-w-0 ${errors.sku ? 'border-rose-400' : ''}`}
                     />
-                    <button
+                    <Button
                       type="button"
                       disabled={isSubmitting}
                       onClick={() => {
                         void Promise.resolve(onGenerateSku()).then((sku) => updateForm({ sku }));
                       }}
-                      className="shrink-0 px-3 py-2 rounded-xl border border-blue-200 bg-blue-50 text-blue-700 text-xs font-bold hover:bg-blue-100 cursor-pointer transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      variant="outline"
+                      className="shrink-0"
                     >
                       Generate
-                    </button>
+                    </Button>
                   </div>
                   {errors.sku ? <p className={CF_FIELD_ERROR_CLS}>{errors.sku}</p> : null}
                 </div>
@@ -219,7 +222,7 @@ export function ProductForm({
                     </select>
                     <Link
                       href="/inventory/categories"
-                      className="shrink-0 inline-flex items-center px-3 py-2 rounded-xl border border-blue-200 bg-blue-50 text-blue-700 text-xs font-bold hover:bg-blue-100 cursor-pointer transition-colors"
+                      className="shrink-0 inline-flex items-center justify-center border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 text-xs font-semibold px-3 py-2 rounded-xl transition-colors"
                     >
                       + New
                     </Link>

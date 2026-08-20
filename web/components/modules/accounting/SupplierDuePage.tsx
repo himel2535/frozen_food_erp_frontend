@@ -5,6 +5,7 @@ import { toast } from '@/lib/ui/feedback';
 import { useMemo, useState } from 'react';
 import { Plus, CreditCard } from 'lucide-react';
 import { Footer } from '@/components/layout/Footer';
+import { Button } from '@/components/shared/Button';
 import { PageSkeleton } from '@/components/shared/PageSkeleton';
 import { useRegisterModuleActions } from '@/components/layout/ModuleActionsContext';
 import { AppFormFields, AppFormModal } from '@/components/shared/AppForm';
@@ -329,15 +330,15 @@ export function SupplierDuePage() {
 
   useRegisterModuleActions(
     <>
-      <button
+      <Button
         type="button"
         onClick={() => setShowAddPayableModal(true)}
-        className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition-colors cursor-pointer"
+        variant="outline"
+        leftIcon={<Plus className="w-4 h-4" />}
       >
-        <Plus className="w-4 h-4" />
         Add Payable
-      </button>
-      <button
+      </Button>
+      <Button
         type="button"
         onClick={() => {
           const target = selectedSupplier ?? allSuppliers.find((s) => s.totalDue > 0);
@@ -347,11 +348,11 @@ export function SupplierDuePage() {
             toast.error('Action required', { module: 'Accounting', description: "Select a supplier with outstanding due first." });
           }
         }}
-        className="bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold px-4 py-2.5 rounded-xl transition-colors flex items-center gap-2 cursor-pointer"
+        variant="primary"
+        leftIcon={<CreditCard className="w-4 h-4" />}
       >
-        <CreditCard className="w-4 h-4" />
         Make Payment
-      </button>
+      </Button>
     </>,
     [selectedSupplier, allSuppliers, selectedBillIds, openPay],
   );

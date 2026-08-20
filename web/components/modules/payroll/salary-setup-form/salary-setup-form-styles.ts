@@ -28,7 +28,7 @@ export const SS_INFO_BOX_CLS =
   'rounded-xl bg-emerald-50 border border-emerald-100 px-3 py-2 text-[11px] font-medium text-emerald-800';
 
 export const SS_TOGGLE_ON_CLS =
-  'relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent bg-blue-600 transition-colors';
+  'relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent bg-emerald-600 transition-colors';
 
 export const SS_TOGGLE_OFF_CLS =
   'relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent bg-slate-200 transition-colors';

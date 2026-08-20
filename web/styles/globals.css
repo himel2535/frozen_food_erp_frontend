@@ -13,19 +13,6 @@
   --color-slate-800: #27272a;
   --color-slate-900: #18181b;
   --color-slate-950: #09090b;
-
-  /* Toy Factory Vibrant Colors */
-  --color-blue-50: #eff6ff;
-  --color-blue-100: #dbeafe;
-  --color-blue-200: #bfdbfe;
-  --color-blue-300: #93c5fd;
-  --color-blue-400: #60a5fa;
-  --color-blue-500: #3b82f6;
-  --color-blue-600: #2563eb;
-  --color-blue-700: #1d4ed8;
-  --color-blue-800: #1e40af;
-  --color-blue-900: #1e3a8a;
-  --color-blue-950: #172554;
 }
 
 body {
@@ -1502,4 +1489,105 @@ body.dashboard-page .dashboard-chart-label {
 
 .app-toast-enter {
   animation: app-toast-in 0.22s ease-out;
+}
+
+/* Automatically apply the premium deep-green gradient to all blue/emerald/green primary buttons, preserving original shape and padding */
+button.bg-blue-500,
+button.bg-blue-600,
+button.bg-blue-700,
+button.bg-emerald-500,
+button.bg-emerald-600,
+button.bg-emerald-700,
+button.bg-green-500,
+button.bg-green-600,
+button.bg-green-700,
+a.bg-blue-500,
+a.bg-blue-600,
+a.bg-blue-700,
+a.bg-emerald-500,
+a.bg-emerald-600,
+a.bg-emerald-700,
+a.bg-green-500,
+a.bg-green-600,
+a.bg-green-700,
+.btn-primary {
+  border: none !important;
+  background: linear-gradient(to bottom, #0d5c2c 0%, #0d5c2c 85%, #d4a317 100%) !important;
+  color: #ffffff !important;
+  box-shadow: 0 4px 10px rgba(13, 92, 44, 0.2) !important;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.25) !important;
+  transition: background 0.2s ease-in-out, box-shadow 0.2s ease-in-out, transform 0.1s ease-in-out !important;
+}
+
+button.bg-blue-500:hover,
+button.bg-blue-600:hover,
+button.bg-blue-700:hover,
+button.bg-emerald-500:hover,
+button.bg-emerald-600:hover,
+button.bg-emerald-700:hover,
+button.bg-green-500:hover,
+button.bg-green-600:hover,
+button.bg-green-700:hover,
+a.bg-blue-500:hover,
+a.bg-blue-600:hover,
+a.bg-blue-700:hover,
+a.bg-emerald-500:hover,
+a.bg-emerald-600:hover,
+a.bg-emerald-700:hover,
+a.bg-green-500:hover,
+a.bg-green-600:hover,
+a.bg-green-700:hover,
+.btn-primary:hover {
+  background: linear-gradient(to bottom, #0a4d24 0%, #0a4d24 85%, #bfa010 100%) !important;
+  box-shadow: 0 6px 14px rgba(13, 92, 44, 0.3) !important;
+}
+
+button.bg-blue-500:active,
+button.bg-blue-600:active,
+button.bg-blue-700:active,
+button.bg-emerald-500:active,
+button.bg-emerald-600:active,
+button.bg-emerald-700:active,
+button.bg-green-500:active,
+button.bg-green-600:active,
+button.bg-green-700:active,
+a.bg-blue-500:active,
+a.bg-blue-600:active,
+a.bg-blue-700:active,
+a.bg-emerald-500:active,
+a.bg-emerald-600:active,
+a.bg-emerald-700:active,
+a.bg-green-500:active,
+a.bg-green-600:active,
+a.bg-green-700:active,
+.btn-primary:active {
+  transform: scale(0.97) !important;
+}
+
+/* Specific button layout style for the Add/Save Lead buttons in CRM */
+.btn-premium-3d-green {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border: none !important;
+  background: linear-gradient(to bottom, #0d5c2c 0%, #0d5c2c 85%, #d4a317 100%) !important;
+  color: #ffffff !important;
+  font-size: 11px !important;
+  font-weight: 800 !important;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  box-shadow: 0 4px 10px rgba(13, 92, 44, 0.2) !important;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+}
+
+.btn-premium-3d-green:hover {
+  background: linear-gradient(to bottom, #0a4d24 0%, #0a4d24 85%, #bfa010 100%) !important;
+  box-shadow: 0 6px 14px rgba(13, 92, 44, 0.3) !important;
+}
+
+.btn-premium-3d-green:active {
+  transform: scale(0.97);
 }

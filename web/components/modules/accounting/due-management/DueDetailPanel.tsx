@@ -1,6 +1,7 @@
 'use client';
 
 import { X, MessageCircle } from 'lucide-react';
+import { Button } from '@/components/shared/Button';
 import {
   formatDueDate,
   formatDueMoney,
@@ -119,14 +120,16 @@ export function DueDetailPanel({
         <p className="text-xs text-slate-500 py-6 text-center">No reminders sent yet.</p>
       )}
 
-      <button
+      <Button
         type="button"
-        className="w-full inline-flex items-center justify-center gap-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold py-2.5 cursor-pointer"
+        variant="primary"
+        size="sm"
+        leftIcon={<MessageCircle className="w-4 h-4" />}
+        className="!w-full"
         onClick={onSendReminder}
       >
-        <MessageCircle className="w-4 h-4" />
         Send Reminder
-      </button>
+      </Button>
     </aside>
   );
 }
