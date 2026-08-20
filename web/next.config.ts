@@ -153,7 +153,7 @@ const nextConfig: NextConfig = {
     return [
       {
         source: '/favicon.ico',
-        destination: '/images/logo-toys.png',
+        destination: '/images/food-fun-logo-v3.png',
       },
       {
         source: '/api/v1/:path*',

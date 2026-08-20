@@ -84,13 +84,13 @@ export function HeaderMessagesDropdown({ open, onOpenChange }: HeaderMessagesDro
       </button>
 
       {open ? (
-        <div className="absolute right-0 top-full mt-3 z-50">
+        <div className="fixed left-2 right-2 top-[58px] md:absolute md:left-auto md:right-0 md:top-full md:inset-x-auto md:w-[380px] mt-3 z-50">
           <div
-            className="absolute -top-1.5 right-3.5 w-3 h-3 bg-white border-l border-t border-slate-200 rotate-45"
+            className="absolute -top-1.5 right-[130px] md:right-3.5 w-3 h-3 bg-white border-l border-t border-slate-200 rotate-45"
             aria-hidden
           />
 
-          <div className="w-[380px] max-w-[calc(100vw-2rem)] rounded-2xl border border-slate-200 bg-white shadow-xl overflow-hidden">
+          <div className="w-full md:w-[380px] rounded-2xl border border-slate-200 bg-white shadow-xl overflow-hidden">
             <div className="px-4 pt-4 pb-0">
               <div className="flex items-center gap-2">
                 <h3 className="text-sm font-extrabold text-slate-900">{t('messages.dropdown_title')}</h3>

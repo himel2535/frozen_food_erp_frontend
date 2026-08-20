@@ -1,4 +1,4 @@
-# Toys Factory ERP
+# Food Fun Agro Foods
 
 **Live app:** [https://toys-factory-erp-one.vercel.app/dashboard](https://toys-factory-erp-one.vercel.app/dashboard)
 

@@ -31,7 +31,7 @@ export type PageSkeletonProps = {
 const TABLE_COLUMNS = 5;
 const TABLE_ROWS = 5;
 const DEFAULT_KPI_COUNT = 2;
-const DEFAULT_SIDEBAR_COUNT = 7;
+const DEFAULT_SIDEBAR_COUNT = 11;
 const DEFAULT_GENERIC_COUNT = 4;
 
 function SkeletonModuleHeader() {

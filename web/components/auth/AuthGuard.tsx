@@ -11,6 +11,7 @@ import {
 import { toast } from '@/lib/ui/feedback';
 import { DashboardLoadingSkeleton } from '@/components/skeletons/DashboardLoadingSkeleton';
 import { DASHBOARD_KPI_CARDS, DASHBOARD_KPI_LCP_LABELS, isDashboardPath } from '@/lib/ui/dashboard-kpi';
+import { MODULE_DASHBOARD_SHELL } from '@/lib/ui/module-layout';
 
 export function AuthGuard({ children }: { children: React.ReactNode }) {
   const router = useRouter();
@@ -66,10 +67,12 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
   if (!hydrated || !ready) {
     if (isDashboardPath(pathname)) {
       return (
-        <DashboardLoadingSkeleton
-          label="Loading workspace"
-          kpiLabels={[...DASHBOARD_KPI_LCP_LABELS]}
-        />
+        <div className={MODULE_DASHBOARD_SHELL}>
+          <DashboardLoadingSkeleton
+            label="Loading workspace"
+            kpiLabels={[...DASHBOARD_KPI_LCP_LABELS]}
+          />
+        </div>
       );
     }
     return null;
@@ -78,10 +81,12 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
   if (!authReady) {
     if (isDashboardPath(pathname)) {
       return (
-        <DashboardLoadingSkeleton
-          label="Loading workspace"
-          kpiLabels={DASHBOARD_KPI_CARDS.map((card) => t(card.labelKey))}
-        />
+        <div className={MODULE_DASHBOARD_SHELL}>
+          <DashboardLoadingSkeleton
+            label="Loading workspace"
+            kpiLabels={DASHBOARD_KPI_CARDS.map((card) => t(card.labelKey))}
+          />
+        </div>
       );
     }
     return null;

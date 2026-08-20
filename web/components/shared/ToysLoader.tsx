@@ -31,8 +31,8 @@ export function ToysLoader({
           {/* Bouncing Teddy Bear Icon */}
           <div className="relative z-10 w-12 h-12 flex items-center justify-center bg-white rounded-2xl shadow-xs border border-slate-100 p-1.5 animate-bounce">
             <Image
-              src="/images/logo-toys.png"
-              alt="Toys Factory Loader"
+              src="/images/food-fun-logo-v3.png"
+              alt="Food Fun Agro Foods Loader"
               width={40}
               height={40}
               className="object-contain shrink-0"
@@ -44,8 +44,8 @@ export function ToysLoader({
 
         {/* Brand Title */}
         <div className="text-base font-black tracking-tight mb-1">
-          <span className="text-amber-700">Toys</span>
-          <span className="text-cyan-600 ml-0.5">Factory</span>
+          <span className="text-emerald-600">Food</span>
+          <span className="text-amber-500 ml-0.5">Fun</span>
           <span className="ml-1 text-[10px] font-black tracking-widest text-slate-400 uppercase">ERP</span>
         </div>
 

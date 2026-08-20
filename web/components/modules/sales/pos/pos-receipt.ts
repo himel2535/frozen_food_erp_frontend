@@ -43,7 +43,7 @@ function formatDisplayDate(date: string, displayDate?: string): string {
 
 function receiptHtml(data: PosReceiptData, formatMoney: (n: number) => string): string {
   const company = data.company;
-  const companyName = escapeHtml(company?.name || 'Toys Factory ERP');
+  const companyName = escapeHtml(company?.name || 'Food Fun Agro Foods');
   const address = company?.address ? escapeHtml(company.address) : '';
   const phone = company?.phone ? escapeHtml(company.phone) : '';
   const email = company?.email ? escapeHtml(company.email) : '';

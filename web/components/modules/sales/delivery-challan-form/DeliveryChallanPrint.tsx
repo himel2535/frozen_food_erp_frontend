@@ -97,7 +97,7 @@ export function DeliveryChallanPrint({
             />
             <div>
               <h1 className="text-base font-extrabold text-slate-900 leading-tight">
-                Toys Factory <span className="text-slate-400 font-bold">ERP</span>
+                Food Fun Agro Foods <span className="text-slate-400 font-bold">ERP</span>
               </h1>
               <p className="text-[10px] font-bold text-slate-600 mt-0.5">{DC_COMPANY_INFO.tagline}</p>
               <p className="text-[9px] text-slate-500 leading-snug">{DC_COMPANY_INFO.description}</p>

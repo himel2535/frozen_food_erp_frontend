@@ -1,11 +1,11 @@
 ---
 name: hookerp-guide
-description: Specific development guidelines for creating, modifying, and structuring screens in Toys Factory ERP. Includes routing, layout parameters, form design, and dynamic rendering scripts.
+description: Specific development guidelines for creating, modifying, and structuring screens in Food Fun Agro Foods. Includes routing, layout parameters, form design, and dynamic rendering scripts.
 ---
 
-# Toys Factory ERP Development Skill
+# Food Fun Agro Foods Development Skill
 
-Use this skill when designing, building, or modifying views, navigation menus, and screens for Toys Factory ERP.
+Use this skill when designing, building, or modifying views, navigation menus, and screens for Food Fun Agro Foods.
 
 All frontend work lives in **`web/`** (Next.js App Router + TypeScript).
 

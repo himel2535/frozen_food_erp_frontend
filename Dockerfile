@@ -1,4 +1,4 @@
-# Toys Factory ERP — frontend (Next.js App Router)
+# Food Fun Agro Foods — frontend (Next.js App Router)
 # Build context is ./toys_factory_erp/web (see docker-compose.yml).
 #
 # NEXT_PUBLIC_* is inlined at `next build`. Pass URLs as build args:

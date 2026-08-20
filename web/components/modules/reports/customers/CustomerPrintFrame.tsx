@@ -101,7 +101,7 @@ export function CustomerPrintFrame(props: CustomerPrintFrameProps) {
       <div className={`${RP_PRINT_BODY} customer-print-body inventory-print-body`}>
         <header className="inventory-print-letterhead customer-print-letterhead">
           <div className="inventory-print-letterhead-left">
-            <p className="inventory-print-brand">{company.name ?? 'Toys Factory ERP'}</p>
+            <p className="inventory-print-brand">{company.name ?? 'Food Fun Agro Foods'}</p>
             <p className="inventory-print-legal">{company.legalName}</p>
             {address ? <p className="inventory-print-meta">{address}</p> : null}
             <p className="inventory-print-meta">

@@ -14,7 +14,7 @@ export const DEFAULT_CURRENT_USER: CurrentUserProfile = {
   employeeId: 'EMP-001',
   timezone: 'Asia/Dhaka',
   dateFormat: 'DD/MM/YYYY',
-  bio: 'System administrator overseeing Toys Factory ERP operations.',
+  bio: 'System administrator overseeing Food Fun Agro Foods operations.',
   emergencyContact: 'Operations Desk',
   emergencyPhone: '+880 1711-000002',
   notifyEmail: true,
@@ -31,11 +31,11 @@ export const DEFAULT_CURRENT_USER: CurrentUserProfile = {
 };
 
 export const DEFAULT_COMPANY_PROFILE: CompanyProfile = {
-  name: 'Toys Factory ERP',
-  legalName: 'Toys Factory Manufacturing Ltd.',
+  name: 'Food Fun Agro Foods',
+  legalName: 'Food Fun Agro Foods Ltd.',
   industry: 'Toy Manufacturing',
   registrationNo: 'TRAD/DSCC/2020/10482',
-  logoUrl: '/images/logo-toys.png',
+  logoUrl: '/images/food-fun-logo-v3.png',
   logoPublicId: '',
   phone: '+880 2-55001234',
   email: 'info@toysfactory.com',
@@ -51,7 +51,7 @@ export const DEFAULT_COMPANY_PROFILE: CompanyProfile = {
   postalCode: '1208',
   country: 'Bangladesh',
   invoicePrefix: 'INV',
-  letterheadFooter: 'Thank you for your business. Toys Factory Manufacturing Ltd.',
+  letterheadFooter: 'Thank you for your business. Food Fun Agro Foods Ltd.',
   paymentTermsNote: 'Net 30 days from invoice date unless otherwise agreed.',
   establishedYear: '2018',
   dateFormat: 'DD/MM/YYYY',

@@ -1,6 +1,6 @@
-# Toys Factory ERP AI Coding Rules and Constraints
+# Food Fun Agro Foods AI Coding Rules and Constraints
 
-These instructions govern all future modifications to Toys Factory ERP to maintain UI consistency, codebase safety, and logical simplicity.
+These instructions govern all future modifications to Food Fun Agro Foods to maintain UI consistency, codebase safety, and logical simplicity.
 
 ## Architecture (Next.js — `web/`)
 

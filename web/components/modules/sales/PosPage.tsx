@@ -60,7 +60,7 @@ function buildCompanyInfo(appState: Parameters<typeof getCompanyProfile>[0]): Po
     .filter(Boolean)
     .join(', ');
   return {
-    name: profile.name || 'Toys Factory ERP',
+    name: profile.name || 'Food Fun Agro Foods',
     address: address || undefined,
     phone: profile.phone || undefined,
     email: profile.email || undefined,

@@ -1,5 +1,5 @@
 export const INV_COMPANY_INFO = {
-  name: 'Toys Factory ERP',
+  name: 'Food Fun Agro Foods',
   tagline: 'Smart Toy Business Management',
   description: 'Real-time manufacturing, sales, stock & factory management',
   address: 'House # 12, Road # 5, Sector # 7, Uttara, Dhaka-1230, Bangladesh',
@@ -10,7 +10,7 @@ export const INV_COMPANY_INFO = {
   authorizedBy: 'John Wick',
   bank: {
     name: 'Dutch-Bangla Bank PLC',
-    accountName: 'Toys Factory ERP Ltd.',
+    accountName: 'Food Fun Agro Foods Ltd.',
     accountNo: '1234567890123',
     routingNo: '090270123',
   },

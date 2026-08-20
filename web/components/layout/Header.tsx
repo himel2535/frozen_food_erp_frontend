@@ -92,34 +92,34 @@ export function Header({ title }: HeaderProps) {
         />
         <div className="min-w-0 shrink-0">
           {showBrand ? (
-            <h2 className="m-0 leading-none flex items-center gap-2 whitespace-nowrap">
+            <h2 className="m-0 leading-none flex items-center gap-0.5 md:gap-2 whitespace-nowrap">
               <Image
-                src="/images/logo-toys.png"
-                alt="Toys Factory"
-                width={20}
-                height={20}
-                className="object-contain shrink-0 drop-shadow-xs h-5 w-auto"
-                style={{ width: 'auto', height: '1.25rem' }}
+                src="/images/food-fun-logo-v3.png"
+                alt="Food Fun Logo"
+                width={30}
+                height={30}
+                className="object-contain shrink-0 drop-shadow-xs h-[30px] w-auto md:hidden"
+                style={{ width: 'auto', height: '30px' }}
                 unoptimized
               />
               <span className="inline-flex items-baseline shrink-0 whitespace-nowrap">
-                <span className="text-[15px] font-black tracking-tight">
-                  <span className="text-amber-700">Toys</span>
-                  <span className="text-cyan-600 ml-0.5">Factory</span>
+                <span className="text-[15px] md:text-[15px] font-black tracking-tight bg-gradient-to-r from-sky-600 via-cyan-600 to-teal-500 bg-clip-text text-transparent">
+                  <span className="md:hidden">Food Factory ERP</span>
+                  <span className="hidden md:inline">Factory Management System</span>
                 </span>
-                <span className="ml-1.5 text-xs font-black tracking-widest text-slate-400 uppercase">
+                <span className="hidden md:inline-block ml-2 text-[10px] font-black tracking-wider text-cyan-600 bg-cyan-50 border border-cyan-100 px-1 py-0.5 rounded-md uppercase">
                   ERP
                 </span>
               </span>
             </h2>
           ) : (
-            <h2 className="text-sm md:text-[15px] font-black text-slate-900 tracking-tight truncate">
+            <h2 className="text-sm md:text-[15px] font-black bg-gradient-to-r from-sky-600 to-cyan-600 bg-clip-text text-transparent tracking-tight truncate">
               {displayTitle}
             </h2>
           )}
-          <div className="flex items-center gap-1.5 text-[11px] font-medium text-slate-500 truncate max-md:hidden -mt-0.5">
-            <Icon icon="fluent-color:database-24" width={13} height={13} className="shrink-0 opacity-80" />
-            <span>Real-time manufacturing, sales, stock &amp; factory management</span>
+          <div className="flex items-center gap-1.5 text-[11px] font-semibold text-slate-400 truncate max-md:hidden -mt-0.5">
+            <Icon icon="ph:snowflake-bold" width={13} height={13} className="shrink-0 text-cyan-500/80" style={{ animation: 'spin 12s linear infinite' }} />
+            <span className="text-slate-500 font-medium">Real-time manufacturing, sales, stock &amp; factory management</span>
           </div>
         </div>
       </div>
@@ -171,12 +171,14 @@ export function Header({ title }: HeaderProps) {
           ) : null}
         </div>
 
-        <DateInput
-          value={navDate}
-          onChange={setNavDate}
-          aria-label="Business date"
-          className="max-md:hidden h-9 w-[9.5rem] bg-white/50 hover:bg-white/90 border border-white/80 rounded-xl px-3 text-xs font-semibold text-slate-700 shadow-xs focus:outline-none focus:ring-2 focus:ring-blue-500/20 cursor-pointer shrink-0"
-        />
+        <div className="hidden md:block">
+          <DateInput
+            value={navDate}
+            onChange={setNavDate}
+            aria-label="Business date"
+            className="h-9 w-[9.5rem] bg-white/50 hover:bg-white/90 border border-white/80 rounded-xl px-3 text-xs font-semibold text-slate-700 shadow-xs focus:outline-none focus:ring-2 focus:ring-blue-500/20 cursor-pointer shrink-0"
+          />
+        </div>
 
         <HeaderMessagesDropdown
           open={openPanel === 'messages'}

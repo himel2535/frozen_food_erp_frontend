@@ -143,7 +143,7 @@ function getSummaryCards(summary: ProductionPlanSummary, options: ProductionPlan
 
 async function loadLogoDataUrl(): Promise<string | null> {
   try {
-    const res = await fetch('/images/logo-toys.png');
+    const res = await fetch('/images/food-fun-logo-v3.png');
     if (!res.ok) return null;
     const blob = await res.blob();
     return await new Promise((resolve) => {
@@ -238,7 +238,7 @@ function drawPageHeader(
   setText(doc, C.purple);
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(13);
-  doc.text('TOYS FACTORY ERP', MARGIN + logoSize + 3, 14.5);
+  doc.text('FOOD FUN AGRO FOODS ERP', MARGIN + logoSize + 3, 14.5);
 
   setText(doc, C.slate500);
   doc.setFont('helvetica', 'normal');
@@ -334,7 +334,7 @@ function drawNoteBox(doc: import('jspdf').jsPDF, y: number): number {
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(6.8);
   const note =
-    'This production plan is generated automatically by Toys Factory ERP. Please review the shortfall items and take necessary procurement actions.';
+    'This production plan is generated automatically by Food Fun Agro Foods. Please review the shortfall items and take necessary procurement actions.';
   const wrapped = doc.splitTextToSize(note, CONTENT_W - 14);
   doc.text(wrapped, MARGIN + 9.5, y + 9.5);
 
@@ -358,7 +358,7 @@ function drawPageFooter(doc: import('jspdf').jsPDF, logoDataUrl: string | null) 
   setText(doc, C.purple);
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(7.5);
-  doc.text('TOYS FACTORY ERP', MARGIN + logoSize + 2.5, footerY + 2.5);
+  doc.text('FOOD FUN AGRO FOODS ERP', MARGIN + logoSize + 2.5, footerY + 2.5);
 
   setText(doc, C.slate500);
   doc.setFont('helvetica', 'normal');

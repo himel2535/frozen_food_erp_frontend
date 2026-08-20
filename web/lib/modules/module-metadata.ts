@@ -125,7 +125,7 @@ export const MODULE_REGISTRY: Record<string, ModuleConfig> = {
   'settings-roles': { id: 'settings-roles', title: 'Roles', subtitle: 'Role definitions.', columns: [{ key: 'name', label: 'Role' }, { key: 'users', label: 'Users' }], staticRows: [{ name: 'Administrator', users: 2 }] },
   'settings-permissions': { id: 'settings-permissions', title: 'Permissions', subtitle: 'Permission matrix.', columns: [{ key: 'module', label: 'Module' }, { key: 'access', label: 'Access' }], staticRows: [] },
   'settings-documents': { id: 'settings-documents', title: 'Documents', subtitle: 'Document templates and settings.', columns: [{ key: 'name', label: 'Document' }, { key: 'type', label: 'Type' }], staticRows: [] },
-  'settings-company': { id: 'settings-company', title: 'Company Settings', subtitle: 'Company profile and preferences.', columns: [{ key: 'field', label: 'Field' }, { key: 'value', label: 'Value' }], staticRows: [{ field: 'Company Name', value: 'Toys Factory ERP' }] },
+  'settings-company': { id: 'settings-company', title: 'Company Settings', subtitle: 'Company profile and preferences.', columns: [{ key: 'field', label: 'Field' }, { key: 'value', label: 'Value' }], staticRows: [{ field: 'Company Name', value: 'Food Fun Agro Foods' }] },
   'settings-audit-logs': {
     id: 'settings-audit-logs',
     title: 'System Audit Logs',

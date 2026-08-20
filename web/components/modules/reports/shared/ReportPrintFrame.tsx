@@ -74,7 +74,7 @@ export function ReportPrintFrame(props: ReportPrintFrameProps) {
       <div className={RP_PRINT_BODY}>
         <header className="report-print-header">
           <div>
-            <p className="report-print-brand">Toys Factory ERP</p>
+            <p className="report-print-brand">Food Fun Agro Foods</p>
             <h1 className="report-print-title">{reportTitle}</h1>
             <p className="report-print-meta">
               {generatedLabel}: {generatedAt}

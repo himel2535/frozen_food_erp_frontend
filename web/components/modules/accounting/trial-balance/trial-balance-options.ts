@@ -1,4 +1,4 @@
-export const TRIAL_BALANCE_COMPANIES = ['Toys Factory Ltd.'];
+export const TRIAL_BALANCE_COMPANIES = ['Food Fun Agro Foods Ltd.'];
 export const TRIAL_BALANCE_BRANCHES = ['Dhaka Factory', 'Chittagong Warehouse', 'Gazipur Unit'];
 export const TRIAL_BALANCE_FISCAL_YEARS = ['2024', '2025', '2026'];
 export const TRIAL_BALANCE_COST_CENTERS = ['All', 'Production', 'Administration', 'Sales'];

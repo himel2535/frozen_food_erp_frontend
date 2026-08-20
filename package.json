@@ -2,7 +2,7 @@
   "name": "hookerp",
   "version": "1.0.0",
   "private": true,
-  "description": "Toys Factory ERP — Next.js frontend",
+  "description": "Food Fun Agro Foods — Next.js frontend",
   "scripts": {
     "dev": "cross-env npm_config_devdir= npm run dev --prefix web",
     "build": "cross-env npm_config_devdir= npm run build --prefix web",

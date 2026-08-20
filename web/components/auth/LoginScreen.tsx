@@ -69,8 +69,8 @@ export function LoginScreen({
           <div className="flex items-center justify-center gap-3">
             <div className="w-10 h-10 flex items-center justify-center shrink-0">
               <Image
-                src="/images/logo-toys.png"
-                alt="Toys Factory Logo"
+                src="/images/food-fun-logo-v3.png"
+                alt="Food Fun Agro Foods Logo"
                 width={40}
                 height={40}
                 className="object-contain drop-shadow-xs"
@@ -80,8 +80,8 @@ export function LoginScreen({
             </div>
             <div className="flex items-baseline">
               <span className="text-xl sm:text-2xl font-black tracking-tight">
-                <span className="text-amber-700">Toys</span>
-                <span className="text-cyan-600 ml-0.5">Factory</span>
+                <span className="text-emerald-600">Food</span>
+                <span className="text-amber-500 ml-0.5">Fun</span>
               </span>
               <span className="ml-1.5 text-xs font-black tracking-widest text-slate-400 uppercase">
                 ERP
@@ -197,7 +197,7 @@ export function LoginScreen({
 
         <footer className="w-full max-w-md text-center space-y-1 pt-1">
           <p className="text-[11px] font-semibold text-slate-400">{t('login.footer')}</p>
-          <p className="text-[10px] text-slate-400/80">© 2026 Toys Factory ERP Cloud</p>
+          <p className="text-[10px] text-slate-400/80">© 2026 Food Fun Agro Foods Cloud</p>
         </footer>
       </div>
     </div>
